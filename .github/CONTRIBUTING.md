@@ -4,7 +4,7 @@ We love pull requests from everyone.
 
 When contributing to this repository, please first discuss the change you wish to make via issue, email, or any other method with the owners of this repository before making a change.
 
-Please note we have a [coding style guide](../doc/CODE_OF_CONDUCT.md), please follow it in all your interactions with the project.
+Please note we have a [coding style guide](../docs/CODE_OF_CONDUCT.md), please follow it in all your interactions with the project.
 
 1. Fork, then clone the repo
 
@@ -25,5 +25,5 @@ Please note we have a [coding style guide](../doc/CODE_OF_CONDUCT.md), please fo
 
 __Some things that will increase the chance that your pull request is accepted__
 
-* Follow our [coding style guide](../doc/CODE_OF_CONDUCT.md).
+* Follow our [coding style guide](../docs/CODE_OF_CONDUCT.md).
 * Write a good commit message.
