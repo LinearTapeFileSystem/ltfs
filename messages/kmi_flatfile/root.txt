@@ -1,0 +1,68 @@
+//
+//
+//  OO_Copyright_BEGIN
+//
+//
+//  Copyright 2010, 2017 IBM Corp.
+//
+//  Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions
+//  are met:
+//  1. Redistributions of source code must retain the above copyright
+//     notice, this list of conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright
+//     notice, this list of conditions and the following disclaimer in the
+//  documentation and/or other materials provided with the distribution.
+//  3. Neither the name of the copyright holder nor the names of its
+//     contributors may be used to endorse or promote products derived from
+//     this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
+//
+//  OO_Copyright_END
+//
+
+// Messages for the key manager interface flat file plugin.
+// This backend shares IDs 15500-15999 with other key manager interface plugins and the plugin
+// interface functions, so be sure to make a note in messages/libltfs/root.txt whenever an
+// ID is allocated here.
+root:table {
+	messages:table {
+		start_id:int { 15500 }
+		end_id:int { 15999 }
+
+		// Message IDs 15500-15009 are reserved for the cropto direct plugins.
+		// DO NOT add messages with those IDs to this file.
+
+		15510D:string { "Flat File plug-in initialized." }
+		15511D:string { "Flat File plug-in uninitialized." }
+		15512E:string { "Flat File plug-in failed to parse options." }
+		15513E:string { "Flat File plug-in failed to open the file (%d,%d)." }
+		15514E:string { "Flat File plug-in detected key format violation." }
+
+		// for LTFS specific format
+		15600E:string { "Encryption key format violation (%s): %s." }
+		15603E:string { "Cannot find data key." }
+		15604E:string { "Option parsing for the key manager interface backend failed (%d)." }
+		15605E:string { "Invalid sequence error (%d,%d): %s." }
+		15606E:string { "Failed to parse data key and/or data key identifier." }
+		15607E:string { "Cannot find data key of the data key identifier." }
+		15608I:string { "Key manager interface flatfile plug-in options:\n"
+						"    -o kmi_dki_for_format=<DKi>\n"
+						"                              Data key identifier to format a cartridge\n"
+						"    -o kmi_dk_list=FILE\n"
+						"                              Data key and data key identifier pairs' list file\n\n." }
+	}
+}
+

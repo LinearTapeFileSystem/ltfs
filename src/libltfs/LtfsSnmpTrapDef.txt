@@ -1,0 +1,34 @@
+#
+# LTFS SNMP TRAP DEFINITION FILE
+#
+
+# 14104I # Launched command
+# 14105I # This binary type
+# 14106I # GCC version
+# 17087I # Kernel version
+# 17089I # Distribution
+# 14063I # Sync type
+# 17085I # Plugin: Loading message
+# 12165I # lin_tape version
+# 12118I # Changer or Drive identification
+# 12162I # Vendor ID
+# 12159I # Firmware revision
+# 12160I # Changer serial
+# 12158I # Opening a device through ibmtape driver
+# 12160I # Drive serial
+# 17160I # Maximum device block size
+# 12158I # Opening a device through ibmtape driver
+# 16500I # Cartridge repository plugin 
+# 13500I # GPFS: On-demand dentry cache is initialized
+# 11679I # This node is started up as 'primary' node
+# 11545I # Rebuilding the cartridge inventory
+# 11675I # Cartridge allocation information
+# 13500I # GPFS: On-demand dentry cache is initialized
+# 11666I # Notify library status change : 353 => 354
+# 11705I # Set read lock on the lock of the multi-node config file
+# 14708I # LTFS admin server is listening on port 2112
+  14111I # Initial setup completed successfully
+# 14112I # Invoke 'mount' command to check the result of final setup
+# 14113I # Specified mount point is listed if succeeded
+# 14029I # Ready to receive file system requests
+# 14158I # Holding the regular node lock in the main process of LTFS

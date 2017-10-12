@@ -1,0 +1,58 @@
+LTFS-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        OBJECT-TYPE, NOTIFICATION-TYPE, MODULE-IDENTITY, enterprises
+        FROM SNMPv2-SMI;
+
+ibmLTFS MODULE-IDENTITY
+        LAST-UPDATED "201503200000Z"
+        ORGANIZATION "International Business Machines Corp."
+        CONTACT-INFO "IBM Support"
+        DESCRIPTION  "This file defines IBM Spectrum Archive LE/SDE MIB.
+                      Licensed Materials - Property of IBM
+                      (C) Copyright IBM Corp. 2014, 2015"
+        ::= { ibmProd 248 }
+
+ibm                  OBJECT IDENTIFIER ::= { enterprises 2 }
+ibmProd              OBJECT IDENTIFIER ::= { ibm 6 }
+ltfsObjects          OBJECT IDENTIFIER ::= { ibmLTFS 1 }
+ltfsTraps            OBJECT IDENTIFIER ::= { ibmLTFS 2 }
+
+ltfsInfo OBJECT-TYPE
+    SYNTAX  OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS  current
+    DESCRIPTION
+       "A string that represents the error/notification contents."
+    ::= { ltfsObjects 1 }
+
+ltfsStartTrap NOTIFICATION-TYPE
+    STATUS  current
+    DESCRIPTION
+       "This trap indicates that the ltfs process started."
+    ::= { ltfsTraps 1 }
+
+ltfsStopTrap NOTIFICATION-TYPE
+    STATUS  current
+    DESCRIPTION
+       "This trap indicates that the ltfs process stopped."
+    ::= { ltfsTraps 2 }
+
+ltfsInfoTrap NOTIFICATION-TYPE
+    OBJECTS {
+             ltfsInfo
+            }
+    STATUS  current
+    DESCRIPTION
+       "This trap indicates that there are contents of which a user should be notified."
+    ::= { ltfsTraps 3 }
+
+ltfsErrorTrap NOTIFICATION-TYPE
+    OBJECTS {
+             ltfsInfo
+            }
+    STATUS  current
+    DESCRIPTION
+       "This trap indicates that a fatal error is detected in ltfs process."
+    ::= { ltfsTraps 4 }
+END

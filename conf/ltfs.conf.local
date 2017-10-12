@@ -1,0 +1,21 @@
+#
+# This file is the local configuration file for LTFS SDE
+#
+# The default LTFS configuration file includes this file.
+# Any directives that are placed here will be kept across software updates.
+#
+# Lines that begin with "##" show default settings.
+# Lines that begin with "###" show example settings.
+
+################################################################################
+# Configuration example of sync timing
+
+# Sync the index of a mounted cartridge every 5 minutes. The sync interval for 
+# this sync type is configured in minutes.
+##option single-drive sync_type=time@5
+
+# Sync the index of a cartridge when the cartridge is unmounted
+###option single-drive sync_type=unmount
+
+# Sync the index of a cartridge when a file in the cartridge is closed
+###option single-drive sync_type=close

@@ -1,0 +1,363 @@
+//
+//
+//  OO_Copyright_BEGIN
+//
+//
+//  Copyright 2010, 2017 IBM Corp.
+//
+//  Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions
+//  are met:
+//  1. Redistributions of source code must retain the above copyright
+//     notice, this list of conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright
+//     notice, this list of conditions and the following disclaimer in the
+//  documentation and/or other materials provided with the distribution.
+//  3. Neither the name of the copyright holder nor the names of its
+//     contributors may be used to endorse or promote products derived from
+//     this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
+//
+//  OO_Copyright_END
+//
+
+root:table {
+	// Fallback messages. These messages do not have unique IDs; they are printed when
+	// the message function receives an unrecognized unique ID or fails to
+	// generate a message for a known unique ID.
+	// These messages are accessed by key, not by index: so they may be
+	// reordered, but they should not be renamed.
+	fallback_messages:table {
+		notfound:string { "(no message found)." }
+		overflow:string { "(message too long)." }
+	}
+
+	// Message list for LTFS internal error codes.
+	messages:table {
+		start_id:int { "99998" }
+		end_id:int { "99999" }
+
+		// I1000 - I1999 (LTFS internal error codes)
+		I1000E:string{ "Unexpected NULL function argument." }
+		I1001E:string{ "Memory allocation failed." }
+		I1002E:string{ "Attempted to lock or unlock an uninitialized mutex." }
+		I1003E:string{ "Attempted to unlock an already unlocked mutex." }
+		I1004E:string{ "Invalid device data structure." }
+		I1005E:string{ "Invalid partition number requested." }
+		I1006E:string{ "A libxml2 call failed." }
+		I1007E:string{ "Device is not ready." }
+		I1008E:string{ "No medium is present in the device." }
+		I1009E:string{ "Device does not support the formatted block size." }
+		I1010E:string{ "Locate operation resulted in an unexpected position." }
+		I1011E:string{ "Medium contains only one partition." }
+		I1012E:string{ "Invalid partition label." }
+		I1013E:string{ "Partition labels do not match." }
+		I1014E:string{ "Invalid XML index or index back chain pointer. Recovery might be possible." }
+		I1015E:string{ "Volume is inconsistent, but recoverable." }
+		I1016E:string{ "Unsupported medium or medium cannot be partitioned." }
+		I1017E:string{ "Index generation mismatch between the cached copy and the tape." }
+		I1018E:string{ "MAM cache is invalid." }
+		I1019E:string{ "Index cache is invalid." }
+		I1020E:string{ "Empty name rule encountered during policy parsing." }
+		I1021E:string{ "Mutex initialization failed." }
+		I1022E:string{ "Generic error for an invalid function argument." }
+		I1023E:string{ "A path name component is too long." }
+		I1024E:string{ "No such file or directory exists." }
+		I1025E:string{ "Path cannot be UTF-8 encoded or contains invalid characters." }
+		I1026E:string{ "Like LTFS_INVALID_PATH, but for paths the caller expects to exist." }
+		I1027E:string{ "Cannot remove the existing target path." }
+		I1028E:string{ "Cannot remove the non-empty directory." }
+		I1029E:string{ "Cannot remove the root directory." }
+		I1030E:string{ "Cannot move the directory because of the MacFUSE bug." }
+		I1031E:string{ "Cannot rename files or directories in the directory." }
+		I1032E:string{ "Block read from tape is smaller than expected." }
+		I1033E:string{ "Operation is only valid on files." }
+		I1034E:string{ "Medium has no EOD in one partition." }
+		I1035E:string{ "Medium has no EOD in both partitions." }
+		I1036E:string{ "Unexpected value detected in LTFS." }
+		I1037E:string{ "Unsupported method call." }
+		I1038E:string{ "The ANSI Label may be valid but the length is wrong." }
+		I1039E:string{ "Not a valid tape. Remove cartridge directory." }
+		I1040E:string{ "Failed to find an extended attribute." }
+		I1041E:string{ "Failed to set signal handler." }
+		I1042E:string{ "Catch signals to terminate process." }
+		I1043E:string{ "Unsupported format version is detected in the index." }
+		I1044E:string{ "Received an unexpected error from ICU." }
+		I1045E:string{ "Error while loading a plug-in." }
+		I1046E:string{ "Error while unloading a plug-in." }
+		I1047E:string{ "Cannot modify read-only extended attribute." }
+		I1048E:string{ "User should not overwrite the existing extended attribute." }
+		I1049E:string{ "User-provided buffer is too small." }
+		I1050E:string{ "Volume is in read-only mode." }
+		I1051E:string{ "Volume is full." }
+		I1052E:string{ "Extended attribute value is too large." }
+		I1053E:string{ "Index search failed." }
+		I1054E:string{ "Requested extended attribute namespace is not supported." }
+		I1055E:string{ "Configuration file parsing failed." }
+		I1056E:string{ "Plug-in does not implement a required function." }
+		I1057E:string{ "Requested plug-in is not known." }
+		I1058E:string{ "Cannot parse policy string." }
+		I1059E:string{ "Operation is valid only on directories." }
+		I1060E:string{ "Failed to find the target tape volume." }
+		I1061E:string{ "Cannot change the data placement policy." }
+		I1062E:string{ "Block size is too small." }
+		I1063E:string{ "Bar code has the wrong length." }
+		I1064E:string{ "Bar code contains invalid characters." }
+		I1065E:string{ "Insufficient number of drives available to move between tapes." }
+		I1066E:string{ "Device lock request denied." }
+		I1067E:string{ "Medium revalidation in progress." }
+		I1068E:string{ "Medium revalidation failed." }
+		I1069E:string{ "Library is in the full slot condition." }
+		I1070E:string{ "Library is in the slot shortage condition." }
+		I1071E:string{ "Library is in an error condition." }
+		I1072E:string{ "Unexpected tape medium found." }
+		I1073E:string{ "No home slot is assigned." }
+		I1074E:string{ "Attempt to move active cartridge to IE slot." }
+		I1075E:string{ "There are no IE slots available." }
+		I1076E:string{ "Cannot move the tape to the requested location: failed to specify a valid target." }
+		I1077E:string{ "Unsupported cartridge in LTFS." }
+		I1078E:string{ "Cartridge is stuck in the drive." }
+		I1079E:string{ "The operation is not allowed." }
+		I1080E:string{ "This operation is not allowed on a duplicate cartridge." }
+		I1081E:string{ "This operation is not allowed on an unsupported cartridge." }
+		I1082E:string{ "This operation is not allowed on an inaccessible cartridge." }
+		I1083E:string{ "This operation is not allowed on an unformatted cartridge." }
+		I1084E:string{ "This operation is not allowed on an invalid cartridge." }
+		I1085E:string{ "This operation is not allowed on a cartridge with an error." }
+		I1086E:string{ "This operation is not allowed on a cartridge with a critical error." }
+		I1087E:string{ "This operation is not allowed on a cleaning cartridge." }
+		I1088E:string{ "This operation is not allowed on a read-only cartridge." }
+		I1089E:string{ "This cartridge is already included in the file system." }
+		I1090E:string{ "This cartridge is not included in the file system." }
+		I1091E:string{ "Cannot move the cartridge to the IE slot: the cartridge must be removed from the file system." }
+		I1092E:string{ "This operation is not allowed on a cartridge without a bar code." }
+		I1093E:string{ "Cannot remove the drive: 'Critical' cartridge is loaded." }
+		I1094E:string{ "Cannot add the drive: the drive is already added." }
+		I1095E:string{ "Unexpected inventory rebuild error (have to manage within LTFS itself)." }
+		I1096E:string{ "Library failes to get inventory. Try to unmount LTFS and re-mount LTFS again." }
+		I1097E:string{ "Operation needs to be restarted." }
+		I1098E:string{ "No target drive is found." }
+		I1099E:string{ "No supported filesystem type for dcache is in this system." }
+		I1100E:string{ "The disk image already exists." }
+		I1101E:string{ "The disk image is already mounted." }
+		I1102E:string{ "The disk image is not mounted." }
+		I1103E:string{ "/etc/mtab is not a regular file." }
+		I1104E:string{ "Failed to open /etc/mtab." }
+		I1105E:string{ "Failed to lock /etc/mtab." }
+		I1106E:string{ "Failed to seek /etc/mtab." }
+		I1107E:string{ "Failed to update /etc/mtab." }
+		I1108E:string{ "Failed to flush /etc/mtab." }
+		I1109E:string{ "Failed to unlock /etc/mtab." }
+		I1110E:string{ "Failed to close /etc/mtab." }
+		I1111E:string{ "Failed to copy /etc/mtab to temporary file." }
+		I1112E:string{ "Failed to open the temporary file for /etc/mtab." }
+		I1113E:string{ "Failed to seek the temporary file for /etc/mtab." }
+		I1114E:string{ "Failed to create a directory tree for the disk image." }
+		I1115E:string{ "Failed to cache dentry due to limitation of host filesystem." }
+		I1116E:string{ "The disk image reached the maximum size." }
+		I1117E:string{ "Cannot find data key." }
+		I1118E:string{ "A function is called in invalid sequence." }
+		I1119E:string{ "Cannot update the root directory." }
+		I1120E:string{ "Conflicting symlink tag and extent tag in XML." }
+		I1121E:string{ "Failed to initialize the network connection for ltfsadmintool." }
+		I1122E:string{ "Insufficient number of drives available for the operation." }
+		I1123E:string{ "Invalid volume serial number." }
+		I1124E:string{ "Volume has no space to write a file." }
+		I1125E:string{ "Volume is in physical and/or logical write protect mode." }
+		I1126E:string{ "Write error has previously occurred on the current mount." }
+		I1127E:string{ "Unexpected length of barcode label is set on the cartridge." }
+		I1128E:string{ "Conversion from string to value is failed, may be invalid string." }
+		I1129E:string{ "Failed to initialize admin session." }
+		I1130E:string{ "Invalid message on admin_channel." }
+		I1131E:string{ "Invalid password to log in via admin_channel." }
+		I1132E:string{ "Login credentials are not yet valid." }
+		I1133E:string{ "Deep recovery cannot be performed to a WORM cartridge." }
+		I1134E:string{ "WORM cartridge cannot be rollbacked." }
+		I1135E:string{ "Salvage list is valid only for WORM cartridge." }
+		I1136E:string{ "Cartridge is already formatted." }
+		I1137E:string{ "Placement policy cannot be set to WORM cartridge." }
+		I1138E:string{ "Specified block size is not correct." }
+		I1139E:string{ "Specified volume name is not correct." }
+		I1140E:string{ "Specified placement policy is not correct." }
+		I1141E:string{ "Need to specify a genaration to be rollbacked." }
+		I1142E:string{ "Specified generation is not correct." }
+		I1143E:string{ "Rollback target generation is not specified." }
+		I1144E:string{ "Multiple target indexes were found on the cartridge." }
+		I1145E:string{ "Salvage list is not required for this cartridge." }
+		I1146E:string{ "This operation is not allowed for worm enabled entry." }
+		I1147E:string{ "Specified cartridge has opened files." }
+		I1148E:string{ "The inventory is being rebuilt." }
+		I1149E:string{ "There is another LE process using the library." }
+		I1150E:string{ "Cannot find cartridge." }
+		I1151E:string{ "Cannot lock cache files." }
+		I1152E:string{ "Cannot unlock cache files." }
+		I1153E:string{ "Error in file operation(open,stat,truncate,etc)." }
+		I1154E:string{ "Read error (cartridge repository)." }
+		I1155E:string{ "Write error (cartridge repository)." }
+		I1156E:string{ "Invalid operation(invalid arg, op, etc)." }
+		I1157E:string{ "Error in file operation (mkdir,stat,rename, etc)." }
+		I1158E:string{ "Cannot use the cartridge." }
+		I1159E:string{ "Cannot find lock entry." }
+		I1160E:string{ "Cannot mount/unmount." }
+		I1161E:string{ "Cannot find device." }
+		I1162E:string{ "Failed to set/get Extended Attribute." }
+		I1163E:string{ "Failed to perform file tree walk." }
+		I1164E:string{ "Failed to update time stamp." }
+		I1165E:string{ "Block device is required." }
+		I1166E:string{ "Disk quota exceeded." }
+		I1167E:string{ "Too many open files in system." }
+		I1168E:string{ "Link dir exists." }
+		I1169E:string{ "No dmap entry." }
+		I1170E:string{ "Host filesystem returns recoverable error." }
+		I1171E:string{ "No additional cache space." }
+		// unused I1172E:string{ "." }
+		// unused I1173E:string{ "." }
+		// unused I1174E:string{ "." }
+		// unused I1175E:string{ "." }
+		// unused I1176E:string{ "." }
+		// unused I1177E:string{ "." }
+		// unused I1178E:string{ "." }
+		// unused I1179E:string{ "." }
+		// unused I1180E:string{ "." }
+		I1181E:string{ "Cache files are corrupted and discarded." }
+		I1182E:string{ "Long write lock is acquired." }
+		I1183E:string{ "Incompatible cache file is detected." }
+		I1184E:string{ "Dcache is not initialized yet." }
+		I1185E:string{ "The multi-node config file is locked." }
+		I1186E:string{ "Failed to create POSIX message queue." }
+		I1187E:string{ "Failed to fork process." }
+		I1188E:string{ "No ACK message is received from child process." }
+		I1189E:string{ "Node type detection is failed." }
+		I1190E:string{ "Invalid message is detected in node detection." }
+		I1191E:string{ "Failed to degate other nodes." }
+		I1192E:string{ "Failed to operate against a cluster-wide lock." }
+		I1193E:string{ "Received a request against an unmounted cartridge." }
+		I1194E:string{ "Read-only cartridge and drive generation combination." }
+		I1195E:string{ "Drive selection is needed again." }
+		I1196E:string{ "Mutex is already locked." }
+		I1197E:string{ "This tape is already being used." }
+		I1198E:string{ "The tape is already removed." }
+		I1199E:string{ "You need to move tape to a storage slot first before the operation." }
+		I1200E:string{ "The operation needs to be started again." }
+
+		// Special error codes
+		I9997E:string{ "Child process error (ltfsck/mkltfs): %s (%d)." }
+		I9998E:string{ "System error: %s (%d)." }
+		I9999E:string{ "Message for %s is not found (%d)." }
+
+		// D0000 - D9999 (Device error codes)
+		D0000E:string{ "No sense data exists." }
+		D0002E:string{ "Read overrun condition when sili bit is off." }
+		D0003E:string{ "Read underrun condition when sili bit is off." }
+		D0004E:string{ "File mark is detected." }
+		D0005E:string{ "Early warning condition is detected." }
+		D0006E:string{ "Beginning of partition is detected." }
+		D0007E:string{ "Programable early warning condition is detected." }
+		D0008E:string{ "ITD_RES Media is cleaning the cartridge." }
+		D0009E:string{ "ITD_RES Voltag is not readable." }
+		D0010E:string{ "ITD_RES Media presence is not detected." }
+		D0011E:string{ "ITD_RES Media presence is not detected." }
+		D0012E:string{ "(TS3500/TS4500) Slot state is unknown." }
+		D0013E:string{ "(TS3500/TS4500) Drive is not available." }
+		D0014E:string{ "Record not found." }
+		D0015E:string{ "Insufficient time for operation (string search)." }
+		D0098E:string{ "(IBM LTO 00/8282) Drive requests cleaning." }
+		D0100E:string{ "Recovered error (should be ignored)." }
+		D0101E:string{ "Mode select parameter is rounded by the drive (should be ignored)." }
+		D0198E:string{ "(IBM LTO 01/8252) Degraded medium is detected." }
+		D0200E:string{ "Drive is not ready." }
+		D0201E:string{ "Cannot report an error for this condition." }
+		D0202E:string{ "Device is becoming ready." }
+		D0203E:string{ "Initialize command is required." }
+		D0204E:string{ "Manual intervention is required." }
+		D0205E:string{ "Operation is in progress." }
+		D0206E:string{ "Device is offline." }
+		D0207E:string{ "Door is open." }
+		D0208E:string{ "Device is too hot." }
+		D0209E:string{ "Drive has no medium." }
+		D0210E:string{ "Device has not self-configured yet." }
+		D0211E:string{ "SA creation parameter value rejected." }
+		D0297E:string{ "Cleaning is in progress." }
+		D0298E:string{ "(TS3500/TS4500) I/O slot is opened." }
+		D0300E:string{ "Other medium errors." }
+		D0301E:string{ "Read or write permanent error." }
+		D0302E:string{ "CM RW error." }
+		D0303E:string{ "Incompatible or unknown format." }
+		D0304E:string{ "Corrupt format is detected." }
+		D0305E:string{ "Drive rejects a read operation because of an unexpected overwrite on the WORM medium." }
+		D0306E:string{ "Load/Unload error." }
+		D0307E:string{ "Cleaning operation failed." }
+		D0308E:string{ "Permanent read error." }
+		D0309E:string{ "Permanent write error." }
+		D0399E:string{ "Maximum medium error value." }
+		D0400E:string{ "All H/W errors." }
+		D0401E:string{ "Logical Block Guard Check Failed." }
+		D0402E:string{ "Logical Block Protection read error." }
+		D0499E:string{ "Maximum hardware error value." }
+		D0500E:string{ "All illegal request errors." }
+		D0501E:string{ "Invalid field in CDB." }
+		D0502E:string{ "Medium destination element full." }
+		D0503E:string{ "Medium source element empty." }
+		D0504E:string{ "Medium magazine is not accessible." }
+		D0505E:string{ "Element address is invalid." }
+		D0506E:string{ "Medium removal prevented. Drive media removal prevented state set." }
+		D0600E:string{ "Other UA conditions." }
+		D0601E:string{ "Not ready to transition: medium might have changed." }
+		D0602E:string{ "IE slot is accessed." }
+		D0603E:string{ "POR/Bus reset occurred." }
+		D0604E:string{ "Drive configuration is changed." }
+		D0605E:string{ "Command is cleared by another initiator." }
+		D0606E:string{ "Operator medium removal request." }
+		D0607E:string{ "Cannot remove the medium." }
+		D0608E:string{ "Medium magazine inserted." }
+		D0609E:string{ "Drive configuration is changed." }
+		D0700E:string{ "Other data protect conditions." }
+		D0701E:string{ "Write-protected." }
+		D0702E:string{ "WORM cartridge." }
+		D0703E:string{ "Attempt to overwrite in append-only mode." }
+		D0800E:string{ "Other blank check conditions." }
+		D0801E:string{ "EOD detected." }
+		D0802E:string{ "EOD not found." }
+		D1100E:string{ "Other aborted command conditions." }
+		D1101E:string{ "Overlapping commands." }
+		D1102E:string{ "Initiator response timeout." }
+		D1300E:string{ "The medium is full." }
+		D1600E:string{ "Other encryption-related errors." }
+		D1601E:string{ "Key service timeout or failure." }
+		D1602E:string{ "Detect key change." }
+		D1603E:string{ "Detect key change." }
+		D1700E:string{ "Internal logic error." }
+		D1701E:string{ "Driver reports an error." }
+		D1702E:string{ "Host reports an error." }
+		D1703E:string{ "Target reports an error." }
+		D1704E:string{ "Memory allocation failure." }
+		D1705E:string{ "Unsupported function." }
+		D1706E:string{ "Parameter code of log page not found." }
+		D1707E:string{ "Cannot get the sense data from a lower level." }
+		D1708E:string{ "Invalid argument." }
+		D1709E:string{ "IO error on saving dump." }
+		D1710E:string{ "Medium is already mounted or in use." }
+		D1711E:string{ "Cannot open the device." }
+		D1712E:string{ "Cannot support the device." }
+		D1713E:string{ "The device is not an IBM product." }
+		D1714E:string{ "Cannot support the firmware." }
+		D1715E:string{ "Unsupported SCSI command." }
+		D1716E:string{ "The actual transfer length and residual length do not match." }
+		D1717E:string{ "A buffer overrun is detected." }
+		D1718E:string{ "The number of drives are not correct." }
+		D9998E:string{ "Unknown sense." }
+		D9999E:string{ "Vendor unique sense. ASC >= 0x80 or ASCQ >= 0x80." }
+	}
+}

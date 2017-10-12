@@ -1,0 +1,124 @@
+//
+//
+//  OO_Copyright_BEGIN
+//
+//
+//  Copyright 2010, 2017 IBM Corp.
+//
+//  Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions
+//  are met:
+//  1. Redistributions of source code must retain the above copyright
+//     notice, this list of conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright
+//     notice, this list of conditions and the following disclaimer in the
+//  documentation and/or other materials provided with the distribution.
+//  3. Neither the name of the copyright holder nor the names of its
+//     contributors may be used to endorse or promote products derived from
+//     this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
+//
+//  OO_Copyright_END
+//
+
+// Messages for the iokit backend.
+// This backend shares IDs 12000-12999 with the file and ibmtape backends and the backend
+// interface functions, so be sure to make a note in messages/ltfs/root.txt whenever an
+// ID is allocated here.
+root:table {
+	messages:table {
+		start_id:int { 30800 }
+		end_id:int { 30999 }
+
+		30800I:string { "Cannot set scatter gather, The opcode = %02x (%d)." }
+		30801I:string { "Cannot set CDB, The opcode = %02x (%d)." }
+		30802I:string { "Cannot set timeout, The opcode = %02x (%d)." }
+		30803I:string { "Failed to execute CDB, The opcode = %02x (%d)." }
+		30804D:string { "CDB check condition: sense = %06x, %s." }
+		30805D:string { "CDB %s." }
+		30806I:string { "Unexpected CDB status: 0x%08x." }
+		30807D:string { "%s (0x%02x) expected error %d." }
+		30808I:string { "%s (0x%02x) returns %d." }
+		30809I:string { "Cannot open device: inquiry failed (%d)." }
+		30810I:string { "Opening a device through iokit driver (%s)." }
+		30811I:string { "Cannot open device: failed to convert devname to devnumber (%s)." }
+		30812I:string { "Cannot get the drive identifier of %s." }
+		30813I:string { "Unsupported drive \'%s\'." }
+		30814I:string { "Vendor ID is %s." }
+		30815I:string { "Product ID is \'%s\'." }
+		30816I:string { "Firmware revision is %s." }
+		30817I:string { "Drive serial is %s." }
+		30818I:string { "Reopening a device through iokit driver (%s)." }
+		30819W:string { "A length mismatch is detected. (Act = %d, resid = %d, resid_sense = %d)." }
+		30820I:string { "Read block: overrun in illegal length. residual = %d, actual = %d." }
+		30821D:string { "Read block: underrun in illegal length. residual = %d, actual = %d." }
+		30822D:string { "Read block: file mark detected." }
+		30823I:string { "Drive cleaning required." }
+		30824E:string { "Logical block protection Error on read." }
+		30825W:string { "Received low space warning (early warning) in %s." }
+		30826W:string { "Received low space warning (programmable early warning) in %s." }
+		30827D:string { "EOD detected (%s): ignore sense." }
+		30828I:string { "Unrecognized space type." }
+		30829I:string { "A long data wipe is in progress. (%d minutes passed)." }
+		30830I:string { "A long data wipe is in progress. %d %%." }
+		30831I:string { "Unsupported cartridge (0x%x, 0x%x)." }
+		30832I:string { "Cannot get remaining capacity: get log page 0x%02x failed (%d)." }
+		30833I:string { "Cannot parse remaining capacity (0x%x, %d)." }
+		30834I:string { "Unexpected field in remaining capacity (0x%x)." }
+		30835I:string { "Cannot get remaining capacity: failed to parse the log page." }
+		30836I:string { "Cannot read attribute (%d)." }
+		30837I:string { "Cannot get log page 0x%02x (%d) in %s." }
+		30838I:string { "Cannot parse the log page 0x%02x in %s." }
+		30839I:string { "Unexpected parameter size for getting active CQ loss write (%d)." }
+		30840W:string { "Cannot get EOD status: failed to get log page 0x%02x (%d)." }
+		30841W:string { "Cannot get EOD status: failed to parse the log page." }
+		30842W:string { "Cannot get EOD status: value length or partition number is wrong %d - (%d, %d)." }
+		30843E:string { "Invalid scsi_lbprotect option: %s." }
+		30844E:string { "Encryption method of the drive is not AME but %s (0x%02X)." }
+		30845E:string { "Encryption feature is not supported on the drive: %d." }
+		//unused 30846
+		//unused 30847
+		//unused 30848
+		//unused 30849
+		//unused 30850
+		30851W:string { "Drive firmware must be upgraded to %s or later." }
+		30852W:string { "Drive firmware level does not correctly detect the EOD status." }
+		30853I:string { "Logical block protection is enabled." }
+		30854I:string { "Logical block protection is disabled." }
+		30855I:string { "Saving drive dump to %s." }
+		30856W:string { "Cannot retrieve drive dump: failed to create dump file (%d)." }
+		30857D:string { "Total dump data length is %lld." }
+		30858D:string { "Total number of transfers is %d." }
+		30859D:string { "Transferring dump data." }
+		30860W:string { "Cannot retrieve drive dump: failed to read buffer (%d)." }
+		30861W:string { "Cannot retrieve drive dump: failed to write to dump file (%d)." }
+		30862W:string { "Cannot retrieve drive dump: wrote %d bytes out, expected %d." }
+		30863I:string { "Taking drive dump in buffer." }
+		30864I:string { "Forcing drive dump." }
+		30865I:string { "%s returns %s (%d) %s." }
+		30866E:string { "%s returns msg = NULL (%d) %s." }
+
+		30992D:string { "Backend %s %s." }
+		30993D:string { "Backend %s: %d %s." }
+		30994D:string { "Backend %s: %zu %s." }
+		30995D:string { "Backend %s: %zu bytes %s." }
+		30996D:string { "Backend %s: %llu %s." }
+		30997D:string { "Backend %s: (%llu, %llu) %s." }
+		30998D:string { "Backend %s: (%llu, %llu) FM = %llu %s." }
+		30999I:string { "iokit backend options:\n"
+						"    -o devname=<dev>          tape device (default=%s)\n"
+						"    -o scsi_lbprotect=<on|off> enable drive logical block protection (default=off)\n." }
+        }
+}

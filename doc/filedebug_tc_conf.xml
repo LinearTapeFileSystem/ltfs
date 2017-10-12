@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<filedebug_cartridge_config>
+    <dummy_io>false</dummy_io>
+    <emulate_readonly>false</emulate_readonly>
+    <capacity_mb>3072</capacity_mb>
+    <cart_type>L5</cart_type>
+    <density_code>58</density_code>
+</filedebug_cartridge_config>

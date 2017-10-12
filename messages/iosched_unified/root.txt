@@ -1,0 +1,68 @@
+//
+//
+//  OO_Copyright_BEGIN
+//
+//
+//  Copyright 2010, 2017 IBM Corp.
+//
+//  Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions
+//  are met:
+//  1. Redistributions of source code must retain the above copyright
+//     notice, this list of conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright
+//     notice, this list of conditions and the following disclaimer in the
+//  documentation and/or other materials provided with the distribution.
+//  3. Neither the name of the copyright holder nor the names of its
+//     contributors may be used to endorse or promote products derived from
+//     this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
+//
+//  OO_Copyright_END
+//
+
+// Messages for the unified scheduler.
+// This backend shares IDs 13000-13999 with other schedulers and the scheduler
+// interface functions, so be sure to make a note in messages/ltfs/root.txt whenever an
+// ID is allocated here.
+root:table {
+	messages:table {
+		start_id:int { 13005 }
+		end_id:int { 13499 }
+
+		13005E:string { "Cannot initialize scheduler: failed to initialize cache manager." }
+		13006E:string { "Cannot initialize scheduler: failed to initialize mutex %s (%d)." }
+		13007E:string { "Cannot initialize scheduler: failed to initialize condition variable %s (%d)." }
+		13008E:string { "Cannot initialize scheduler: failed to create thread %s (%d)." }
+		13009E:string { "Failed to initialize mutex in scheduler private data (%d)." }
+		13010E:string { "Cannot write: failed to allocate scheduler private data (%d)." }
+		13011E:string { "Invalid back pointer to the dentry in the dentry_priv structure." }
+		13012E:string { "Invalid request_state received when updating the queue membership (%d)." }
+		13013W:string { "Index partition writer: failed to write data to the tape (%d)." }
+		13014W:string { "Data partition writer: failed to write data to the tape (%d)." }
+		13015D:string { "Unified I/O scheduler initialized." }
+		13016D:string { "Unified I/O scheduler uninitialized." }
+		13017E:string { "Cannot write: failed to allocate a cache block (%d)." }
+		13018E:string { "Cannot write: failed to allocate a write request." }
+		13019E:string { "Cannot flush: failed to write to data partition (%d)." }
+		13020E:string { "Aborting full flush: flushing dentry '%s' failed (%d)." }
+		13021W:string { "Failed to save index partition extents for a dentry (%d)." }
+		13022W:string { "Freeing a dentry priv with outstanding write requests. This is a bug." }
+		//unused 13023W:string { "Failed to copy a request: will stop writing file to the index partition." }
+		13024I:string { "Clean up extents and append index at index partition (%d)." }
+		13025I:string { "Get error position (%d, %d)." }
+		13026E:string { "Write perm handling error : %s (%d)." }
+	}
+}

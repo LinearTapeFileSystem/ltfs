@@ -1,0 +1,155 @@
+//
+//
+//  OO_Copyright_BEGIN
+//
+//
+//  Copyright 2010, 2017 IBM Corp.
+//
+//  Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions
+//  are met:
+//  1. Redistributions of source code must retain the above copyright
+//     notice, this list of conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright
+//     notice, this list of conditions and the following disclaimer in the
+//  documentation and/or other materials provided with the distribution.
+//  3. Neither the name of the copyright holder nor the names of its
+//     contributors may be used to endorse or promote products derived from
+//     this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
+//
+//  OO_Copyright_END
+//
+
+// Messages for the file backend.
+// This backend shares IDs 12000-12999 with ibmtape, iokit and the backend interface functions,
+// so be sure to make a note in messages/ltfs/root.txt whenever an ID is allocated here.
+root:table {
+	messages:table {
+		start_id:int { 30000 }
+		end_id:int { 30199 }
+
+		30000I:string { "Opening a device through generic file driver (%s)." }
+		30001I:string { "Opening a redirecting file through generic file driver (%s)." }
+		30002E:string { "Cannot open redirecting file (%s)." }
+		30003I:string { "Opening a directory through generic file driver (%s)." }
+		30004E:string { "Cannot open the device directory (%s)." }
+		30005D:string { "Backend read: %u bytes (from position=(%u, %llu), FMs %llu)." }
+		30006E:string { "Cannot read: unit not ready." }
+		30007E:string { "Pseudo-error on %s." }
+		30008E:string { "Cannot read: already at EOD." }
+		30009E:string { "Cannot read: check for file mark failed (%d)." }
+		30010E:string { "Cannot read: check for record failed (%d)." }
+		30011E:string { "Cannot read: failed to open file (%d)." }
+		30012E:string { "Cannot read: failed to read file (%d)." }
+		30013E:string { "Cannot read: failed to close file (%d)." }
+		30014D:string { "Backend read: returning %zd bytes." }
+		30015E:string { "Cannot read: no block at current position." }
+		30016D:string { "Backend write: %u bytes (at position=(%u, %llu), FMs %llu)." }
+		30017E:string { "Cannot write: unit not ready." }
+		30018E:string { "Cannot write: null input buffer." }
+		30019I:string { "Pseudo-error on write. Good return code, but a record to emulate a write error did not get sent to the drive." }
+		30020E:string { "Cannot write: requested size (%u) exceeds maximum block size (%u)." }
+		30021E:string { "Cannot write: failed to remove current record (%d)." }
+		30022E:string { "Cannot write: failed to set write pass (%d)." }
+		30023E:string { "Cannot write: failed to generate file name." }
+		30024E:string { "Cannot write: failed to create file \'%s\' (%d)." }
+		30025E:string { "Cannot write: failed to write file (%d)." }
+		30026E:string { "Cannot write: failed to close file (%d)." }
+		30027E:string { "Cannot write: failed to update EOD (%d)." }
+		30028D:string { "Backend write file marks: %u (at position=(%u, %llu), FMs %llu)." }
+		30029E:string { "Cannot write file marks: unit not ready." }
+		30030E:string { "Cannot write file marks: failed to set write pass (%d)." }
+		30031E:string { "Cannot write file marks: failed to remove current record (%d)." }
+		30032E:string { "Cannot write file marks: failed to generate file name." }
+		30033E:string { "Cannot write file marks: failed to create file \'%s\' (%d)." }
+		30034E:string { "Cannot write file marks: failed to close file (%d)." }
+		30035E:string { "Cannot write file marks: failed to update EOD (%d)." }
+		30036E:string { "Cannot rewind: unit not ready." }
+		30037E:string { "Cannot locate: unit not ready." }
+		30038E:string { "Cannot locate: invalid partition %lu." }
+		30039E:string { "Cannot locate: failed to generate file name." }
+		30040E:string { "Cannot space: unit not ready." }
+		30041E:string { "Cannot space: Unrecognized space type." }
+		30042E:string { "Cannot space: failed to generate file name." }
+		30043E:string { "Cannot erase: unit not ready." }
+		30044D:string { "Erase partition %lu." }
+		30045E:string { "Cannot get a redirect location (%s)." }
+		30046I:string { "Dummy device shows empty (%s)." }
+		30047E:string { "Cannot find the location pointed by redirecting file (%s)." }
+		30048I:string { "Loading a directory through generic file driver (%s)." }
+		30049E:string { "Cannot allocate memory for cartridge configuration file (%d)." }
+		30050E:string { "Cartridge configuration file is already existed as directory (%d)." }
+		30051E:string { "Cannot load cartridge configuration file (%d)." }
+		30052E:string { "Cannot load: failed to find EOD on partition %u (%d)." }
+		30053E:string { "Cannot load: failed to get write pass." }
+		30054E:string { "Cannot read position: unit not ready." }
+		30055E:string { "Cannot set capacity: must issue command from partition 0, block 0." }
+		30056E:string { "Cannot format: must issue command from partition 0, block 0." }
+		30057E:string { "Cannot format: unknown format type." }
+		30058E:string { "Cannot get remaining capacity: unit not ready." }
+		30059E:string { "Device already reserved." }
+		30060E:string { "Cannot lock medium: unit not ready." }
+		30061E:string { "Cannot unlock medium: unit not ready." }
+		30062W:string { "Cannot read attribute: failed to open file (%d)." }
+		30063W:string { "Cannot read attribute: failed to read file (%d)." }
+		30064E:string { "Cannot write attribute: failed to generate file name." }
+		30065E:string { "Cannot write attribute: failed to create file (%d)." }
+		30066E:string { "Cannot write attribute: failed to write file (%d)." }
+		30067E:string { "Cannot set compression: unit not ready." }
+		30068E:string { "Cannot find EOD: failed to generate file name." }
+		30069E:string { "Cannot find EOD: failed to check for file (%d)." }
+		30070E:string { "Cannot find EOD: failed to update EOD (%d)." }
+		30071E:string { "Cannot update EOD: failed to remove current record (%d)." }
+		30072E:string { "Cannot update EOD: failed to generate file name." }
+		30073E:string { "Cannot update EOD: failed to create file (%d)." }
+		30074E:string { "Cannot update EOD: failed to remove file (%d)." }
+		30075E:string { "Cannot remove record: failed to make file name." }
+		30076E:string { "Cannot remove record: failed to unlink file (%d)." }
+		30077E:string { "Cannot space file marks: tried to space over EOD." }
+		30078E:string { "Cannot space file marks: failed to generate file name." }
+		30079E:string { "Cannot space file marks: failed to check for file (%d)." }
+		30080E:string { "Cannot space file marks: tried to space over BOT." }
+		30081I:string { "Getting the device directory (%s)." }
+		30082I:string { "No device directory is specified (%s)." }
+		30083I:string { "Scanning the devices directory (%s)." }
+		30084D:string { "Found a device (%s, %s, %s, %s)." }
+		30085I:string { "Cartridge is read-only (%d, %s)." }
+		30086I:string { "Cartridge is unsupported (%s, 0x%02x)." }
+		30087I:string { "Cartridge is unsupported (0x%x, 0x%02x)." }
+		30088I:string { "Unsupported density code (0x%x, 0x%02x)." }
+
+		30150E:string { "Cannot parse cartridge configuration file: start document (%d)." }
+		30151E:string { "Cannot parse cartridge configuration file: end document (%d)." }
+		30152E:string { "Cannot parse cartridge configuration file: writer creation." }
+		30153E:string { "Cannot parse cartridge configuration file: writer fail." }
+		30154W:string { "Cannot parse cartridge configuration file: 0-byte output." }
+		30155E:string { "Cannot parse cartridge configuration file: toptag = %s." }
+		30156E:string { "Cannot parse cartridge configuration file: encoding = %s." }
+		30157E:string { "Cannot create xml reader for cartridge configuration file." }
+		30158E:string { "Cannot parse cartridge configuration file: XML." }
+
+		30195D:string { "Backend %s." }
+		30196D:string { "Backend %s: %llu." }
+		30197D:string { "Backend %s: (%llu, %llu)." }
+		30198D:string { "Backend %s: (%llu, %llu) FM = %llu." }
+		30199I:string { "FILE backend options:\n"
+						"    -o devname=<dev>          LTFS emulation directory (default=%s)\n"
+						"    -o emulate_delays         Emulate delays on seeks\n"
+						"    -o file_readonly          Emulate operation in read-only mode\n"
+						"    -o file_p0_warning=<num>  Set early warning position partition 0\n"
+						"    -o file_p1_warning=<num>  Set early warning position partition 1\n." }
+	}
+}

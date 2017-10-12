@@ -1,0 +1,13 @@
+# The default LTFS configuration file includes this one.
+# Any directives placed here will be kept across software updates.
+#
+# It is possible to remove a plugin specified previously.
+# Syntax: -iosched PLUGIN-NAME
+#         -driver PLUGIN-NAME
+#         -kmi PLUGIN-NAME
+# Example: -driver file
+#
+# It is also possible to unset a previously specified default plugin.
+# Syntax: -default PLUGIN-TYPE
+# Example: -default driver
+

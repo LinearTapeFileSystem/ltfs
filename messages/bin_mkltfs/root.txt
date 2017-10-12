@@ -1,0 +1,131 @@
+//
+//
+//  OO_Copyright_BEGIN
+//
+//
+//  Copyright 2010, 2017 IBM Corp.
+//
+//  Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions
+//  are met:
+//  1. Redistributions of source code must retain the above copyright
+//     notice, this list of conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright
+//     notice, this list of conditions and the following disclaimer in the
+//  documentation and/or other materials provided with the distribution.
+//  3. Neither the name of the copyright holder nor the names of its
+//     contributors may be used to endorse or promote products derived from
+//     this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
+//
+//  OO_Copyright_END
+//
+
+// Messages for mkltfs.
+root:table {
+	messages:table {
+		start_id:int { 15000 }
+		end_id:int { 15499 }
+
+		15000I:string { "Starting mkltfs, %s version %s, log level %d." }
+		15001E:string { "Cannot allocate LTFS volume structure." }
+		15002E:string { "Option validation failed." }
+		15003I:string { "Formatting device \'%s\'." }
+		15004I:string { "LTFS volume blocksize: %lu." }
+		15005I:string { "Index partition placement policy: %s." }
+		15006D:string { "Opening the device." }
+		15007D:string { "Device opened." }
+		15008E:string { "Cannot open backend \'%s\'." }
+		15009E:string { "Cannot open device \'%s\' (%d)." }
+		15010I:string { "Creating data partition %c on SCSI partition %d." }
+		15011I:string { "Creating index partition %c on SCSI partition %d." }
+		15012E:string { "Failed to format the medium." }
+		15013I:string { "Volume UUID is: %s." }
+		15014E:string { "Cannot set policy override flag in the index (%d)." }
+		15015E:string { "Cannot parse data placement rules (%d)." }
+		//unused 15016E:string { "Cannot create a backup of the policy rules (%d)." }
+		15019I:string { "Volume capacity is %llu GB." }
+		15020D:string { "Closing the device." }
+		15021W:string { "Cannot unload backend." }
+		15022D:string { "Device closed." }
+		15023I:string { "Formatting failed." }
+		15024I:string { "Medium formatted successfully." }
+		15025D:string { "Validating command line options." }
+		15026E:string { "Device name must use the \'%s\' option." }
+		//unused 15027E:string { "Block size must be greater than zero." }
+		15028E:string { "Block size must be at least %d." }
+		15029E:string { "Tape serial must be 6 characters." }
+		15030E:string { "Tape serial must contain only ASCII digits and capital letters." }
+		15031E:string { "Volume name must conform to file name rules." }
+		//unused 15032E:string { "Data placement rules contain invalid characters." }
+		//unused 15033E:string { "Data placement rules are too long." }
+		15034E:string { "Cannot format data placement rules (%d)." }
+		//unused 15035E:string { "Cannot parse data placement rules (%d)." }
+		//unused 15036E:string { "Cannot specify name rules with a zero file size." }
+		15037D:string { "Command line options are valid." }
+		15038E:string { "Failed to unformat the medium." }
+		15039I:string { "Unformatting failed." }
+		15040I:string { "Medium unformatted successfully." }
+		15041I:string { "Launched by \"%s\"." }
+		15042I:string { "%s." }
+		15043I:string { "GCC version is %s." }
+		15044E:string { "Cannot set up tape device." }
+		15045E:string { "Formatting was canceled by the user." }
+		15046E:string { "Unformatting was canceled by the user." }
+		15047E:string { "Medium is already formatted (%d)." }
+		15048I:string { "Need to specify -f or --force option to format this medium." }
+                15049I:string { "Checking the medium (%s)." }
+		15050E:string { "Cannot open key manager interface backend \'%s\'." }
+		15051W:string { "Cannot unload key manager interface backend." }
+		15052E:string { "Could not initialize the key manager interface plug-in. \'%s\' (%d)." }
+		15053E:string { "Key manager interface backend option parsing failed." }
+		15054E:string { "Tape backend option parsing failed." }
+		15055E:string { "Unknown option '%s %s'." }
+		15056E:string { "Failed to decrypt the medium." }
+		15057I:string { "Need to specify the correct data key or -f option to format this medium." }
+        15058E:string { "Cannot set the tape attribute: %s." }
+		15059I:string { "%s version %s." }
+                15060E:string { "Index criteria update is not allowed on this medium." }
+                15061E:string { "Failed to format the medium due to WORM error." }
+                15062E:string { "Failed to unformat the medium due to WORM error." }
+
+		// Help messages
+		15400I:string { "Usage: %s <options>" }
+		15401I:string { "Available options are:" }
+		15402I:string { "  -d, --device=<name>       Tape device (required)" }
+		15403I:string { "  -s, --tape-serial=<id>    Tape serial number (6 alphanumeric ASCII characters)" }
+		15404I:string { "  -n, --volume-name=<name>  Tape volume name (empty by default)" }
+		15405I:string { "  -r, --rules=<rules>       Rules for choosing files to write to the index partition.\n                            The syntax of the rule argument is:\n                                size=1M\n                                size=1M/name=pattern\n                                size=1M/name=pattern1:pattern2:pattern3\n                            A file is written to the index partition if it is no larger\n                            than the given size AND matches at least one of the name\n                            patterns (if specified). The size argument accepts K, M, and G\n                            suffixes. Name patterns might contain the special characters\n                            '?' (match any single character) and '*' (match zero or more\n                            characters)" }
+		15406I:string { "      --no-override         Disallow mount-time data placement policy changes" }
+		15407I:string { "  -q, --quiet               Suppress progress information and general messages" }
+		15408I:string { "  -t, --trace               Enable function call tracing" }
+		15409I:string { "  -h, --help                This help" }
+		15410I:string { "Usage example:" }
+		15411I:string { "  %s --device=%s --rules=\"%s\"" }
+		15412I:string { "  -p, --advanced-help       Full help, including advanced options" }
+		15413I:string { "  -i, --config=<file>       Use the specified configuration file (default: %s)" }
+		15414I:string { "  -e, --backend=<name>      Use the specified tape device backend (default: %s)" }
+		15415I:string { "  -b, --blocksize=<num>     Set the LTFS record size (default: %d)" }
+		15416I:string { "  -c, --no-compression      Disable compression on the volume" }
+		15417I:string { "  -x, --fulltrace           Enable full function call tracing (slow)" }
+		15418I:string { "  -w, --wipe                Restore the LTFS medium to an unpartitioned medium (format to a legacy scratch medium)" }
+		15419I:string { "  -k, --keep-capacity       Keep the tape medium's total capacity proportion" }
+		15420I:string { "  -f, --force               Force to format medium" }
+		15421I:string { "      --kmi-backend=<name>  Use the specified key manager interface backend (default: %s)" }
+		15422I:string { "      --syslogtrace               Enable diagnostic output to stderr and syslog" }
+		15423I:string { "  -V, --version             Version information" }
+		15424I:string { "      --long-wipe           Unformat the medium and erase any data on the tape by overwriting special data pattern.\n                            This operation takes over 3 hours. Once you start, you cannot interrupt it" }
+	}
+}

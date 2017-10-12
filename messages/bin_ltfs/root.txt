@@ -1,0 +1,250 @@
+//
+//
+//  OO_Copyright_BEGIN
+//
+//
+//  Copyright 2010, 2017 IBM Corp.
+//
+//  Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions
+//  are met:
+//  1. Redistributions of source code must retain the above copyright
+//     notice, this list of conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright
+//     notice, this list of conditions and the following disclaimer in the
+//  documentation and/or other materials provided with the distribution.
+//  3. Neither the name of the copyright holder nor the names of its
+//     contributors may be used to endorse or promote products derived from
+//     this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
+//
+//  OO_Copyright_END
+//
+
+// Messages for the main ltfs application (src/main.c, src/ltfs_fuse.c).
+root:table {
+	messages:table {
+		start_id:int { 14000 }
+		end_id:int { 14499 }
+
+		14000I:string { "LTFS starting, %s version %s, log level %d." }
+		14001E:string { "Cannot enable FUSE option %s (%d)." }
+		14002E:string { "Cannot set up permissions (%d)." }
+		14003E:string { "min_pool_size (%d) cannot be greater than max_pool_size (%d)." }
+		14004E:string { "Cannot create work directory (%d)." }
+		14005E:string { "Path \'%s\' exists, but is not a directory." }
+		14006E:string { "Invalid umask \'%s\' (must be 3 octal digits, such as 022)." }
+		14007E:string { "Invalid fmask \'%s\' (must be 3 octal digits, such as 022)." }
+		14008E:string { "Invalid dmask \'%s\' (must be 3 octal digits, such as 022)." }
+		14009E:string { "The backend \'%s\' does not have a default device. Specify one using the \"-o devname=\" option." }
+		//unused 14010E:string { "Cannot load I/O scheduler \'%s\'." }
+		14011E:string { "Cannot allocate LTFS volume structure." }
+		14012E:string { "Tape backend option parsing failed." }
+		14013E:string { "Cannot mount the volume." }
+		//unused 14014E:string { "Cannot duplicate index criteria." }
+		14015W:string { "Volume does not allow index criteria override. Ignoring user-specified criteria." }
+		14016E:string { "Cannot format data placement rules (%d)." }
+		14017E:string { "Cannot parse data placement rules (%d)." }
+		14018E:string { "Cannot get read-only status of the medium." }
+		14019I:string { "Medium is write protected. Mounting read-only." }
+		//unused 14020E:string { "The data placement rules must be 255 characters or less." }
+		//unused 14021E:string { "The data placement rules contain invalid characters." }
+		14022E:string { "Cannot flush file data to the medium. Data might be lost (%s)." }
+		14023E:string { "Cannot set extended attribute: position option must be zero." }
+		14024E:string { "Cannot get extended attribute: position option must be zero." }
+		//unused 14025D:string { "Cannot read directory: no file handle provided." }
+		14026D:string { "Cannot read directory: no buffer space." }
+		14027E:string { "Cannot read directory: convert to system locale failed (%s, %d)." }
+		14028W:string { "Cannot initialize I/O scheduler. The scheduler is disabled. Performance might decrease and memory usage might increase." }
+		14029I:string { "Ready to receive file system requests." }
+		14030D:string { "FUSE fgetattr for \'%s\'." }
+		14031D:string { "FUSE getattr for \'%s\'." }
+		14032D:string { "FUSE open file \'%s\' (%s)." }
+		14033D:string { "FUSE open directory \'%s\'." }
+		14034D:string { "FUSE release directory \'%s\'." }
+		14035D:string { "FUSE release file \'%s\'." }
+		14036D:string { "FUSE fsync \'%s\'." }
+		14037D:string { "FUSE flush \'%s\'." }
+		14038D:string { "FUSE set times \'%s\'." }
+		14039D:string { "FUSE chmod \'%s\'." }
+		14040D:string { "FUSE create file \'%s\'." }
+		14041D:string { "FUSE mkdir \'%s\'." }
+		14042D:string { "FUSE truncate \'%s\' (length=%lld)." }
+		14043D:string { "FUSE ftruncate \'%s\' (length=%lld)." }
+		14044D:string { "FUSE unlink \'%s\'." }
+		14045D:string { "FUSE rmdir \'%s\'." }
+		14046D:string { "FUSE rename \'%s\' to \'%s\'." }
+		14047D:string { "FUSE readdir \'%s\'." }
+		14048D:string { "FUSE write \'%s\' (offset=%lld, count=%zu)." }
+		14049D:string { "FUSE read \'%s\' (offset=%lld, count=%zu)." }
+		14050D:string { "FUSE setxattr \'%s\' (name=\'%s\', size=%zu)." }
+		14051D:string { "FUSE getxattr \'%s\' (name=\'%s\')." }
+		14052D:string { "FUSE listxattr \'%s\'." }
+		14053D:string { "FUSE removexattr \'%s\' (name=\'%s\')." }
+		14054E:string { "Failed to load tape drive plug-in (%d)." }
+		14055E:string { "Failed to load I/O scheduler plug-in (%d)." }
+		14056E:string { "No driver plug-in configured and no default found." }
+		14057E:string { "Failed to load kmi plug-in (%d)." }
+		14058I:string { "%s version %s." }
+		//unused 14059E:string { "No changer plug-in configured and no default found." }
+		14060E:string { "Failed to convert the sync time (%s)." }
+		14061E:string { "Unknown type of sync (%s)." }
+		14062I:string { "Sync time is 0. Set sync type \"none\"." }
+		14063I:string { "Sync type is \"%s\", Sync time is %ld sec." }
+		14064I:string { "Sync type is \"%s\"." }
+		14065E:string { "Unexpected sync type (%d)." }
+		14066E:string { "Sync time should be a positive value." }
+		14067E:string { "Failed to convert the sync time because it is too big or too small (%s)." }
+		14068E:string { "Specified sync time is too big or too small (%ld)." }
+		//unused 14069E:string { "Failed to load changer plug-in (%d)." }
+		//unused 14070E:string { "The backend \'%s\' does not have a default device. Specify one using the \"-o changer_devname=\" option." }
+		14071I:string { "Medium has no space to write data. Mounting as read-only." }
+		14072I:string { "Rollback mount is specified. Mounting as read-only at generation %d." }
+		14073I:string { "Index partition has no space to write index. Mounting as read-only." }
+		14074I:string { "Data partition has no space to write index. Mounting as read-only." }
+		14075E:string { "Cannot set up tape drive." }
+		14076I:string { "Attempting to mount the cartridge without EOD existence check." }
+		14077I:string { "The cartridge will be mounted as read-only." }
+		// unused 14078E:string { "CM in the cartridge might be corrupted. Try to run ltfs with the \"-o force_mount_no_eod\" option." }
+		14079E:string { "Invalid uid \'%s\' (must be a positive integer or valid user name)." }
+		14080E:string { "Invalid gid \'%s\' (must be a positive integer or valid group name)." }
+		//unused 14081E:string { "Failed to create a dentry cache view for cartridge \"%s\"." }
+		//unused 14082E:string { "Failed to enable dentry cache for cartridge \"%s\"." }
+		//unused 14083E:string { "Failed to remove existing dentry cache for cartridge \"%s\" (%d)." }
+		//unused 14084E:string { "Failed to load the dentry cache module (%d)." }
+		//unused 14085E:string { "Could not initialize the dentry cache manager (%d)." }
+		//unused 14086E:string { "Could not configure the dentry cache manager (%d)." }
+		//unused 14087E:string { "Failed to unload the dentry cache module (%d)." }
+		//unused 14088E:string { "Failed to destroy the dentry cache manager (%d)." }
+		14089E:string { "Could not initialize the kmi plug-in." }
+		14090E:string { "KMI backend option parsing failed." }
+		14091E:string { "Invalid generation for rollback mount is specified. %s." }
+		14092I:string { "Symbolic link type is (%s)." }
+		14093E:string { "Unknown type of symbolic link (%s)." }
+		14094E:string { "Cannot get mount point (%d)." }
+		14095I:string { "Set the tape device write-anywhere mode to avoid cartridge ejection." }
+
+		//unused 14100W:string { "The device name specified with \'-o devname\' is ignored in library mode." }
+		//unused 14101W:string { "The eject option is not available in library mode." }
+		//unused 14102E:string { "Time-based sync is not available in library mode." }
+		//unused 14103E:string { "Cannot specify both a single drive name and a changer device name." }
+		14104I:string { "Launched by \"%s\"." }
+		14105I:string { "%s." }
+		14106I:string { "GCC version is %s." }
+		//unused 14107W:string { "d->dentry_proxy is NULL unexpectedly: %s." }
+		//unused 14108E:string { "The single drive feature is not supported in this binary." }
+		14109E:string { "Minimum pool size must be a positive number." }
+		14110E:string { "Maximum pool size must be a positive number." }
+		14111I:string { "Initial setup completed successfully." }
+		14112I:string { "Invoke 'mount' command to check the result of final setup." }
+		14113I:string { "Specified mount point is listed if succeeded." }
+		14114E:string { "Cannot initialize the open file table." }
+		14115E:string { "Invalid scsi_append_only_mode option: %s." }
+                14116E:string { "This medium is not supported (%d)." }
+
+		// 14150 - 14199 are reserved for LE+
+
+		// Help messages
+		14400I:string { "usage: %s mountpoint [options]" }
+		14401I:string { "LTFS options:" }
+		14402I:string { "    -o devname=<dev>          Tape device (default: %s)" }
+		14403I:string { "    -o devname=<dev>          Tape device" }
+		14404I:string { "    -o work_directory=<dir>   LTFS work directory (default: %s)" }
+		14405I:string { "    -o trace                  Enable diagnostic output (same as verbose=3)" }
+		14406I:string { "    -a                        Advanced help, including standard FUSE options" }
+		14407I:string { "    -V, --version             Output version information and exit" }
+		14408I:string { "    -h, --help                Display this help and exit" }
+		14409I:string { "FUSE options:" }
+		14410I:string { "    -o umask=M                Set file permissions (octal)" }
+		14411I:string { "    -o uid=N                  Set file owner" }
+		14412I:string { "    -o gid=N                  Set file group" }
+		14413I:string { "    -o config_file=<file>     Configuration file (default: %s)" }
+		14414I:string { "    -o atime                  Update index if only access times have changed" }
+		14415I:string { "    -o tape_backend=<name>    tape backend to use (default: %s)" }
+		14416I:string { "    -o iosched_backend=<name> I/O scheduler implementation to use (default: %s, use \"none\" to disable)" }
+		14417I:string { "    -o umask=<mode>           Override default permission mask (3 octal digits, default: 000)" }
+		14418I:string { "    -o fmask=<mode>           Override file permission mask (3 octal digits, default: 000)" }
+		14419I:string { "    -o dmask=<mode>           Override directory permission mask (3 octal digits, default: 000)" }
+		14420I:string { "    -o min_pool_size=<num>    Minimum write cache pool size. Cache objects are 1 MB each (default: %d)" }
+		14421I:string { "    -o max_pool_size=<num>    Maximum write cache pool size. Cache objects are 1 MB each (default: %d)" }
+		14422I:string { "    -o rules=<rules>          Rules for choosing files to write to the index partition.\n"
+				   		"                              The syntax of the rule argument is:\n"
+						"                              size=1M\n"
+						"                              size=1M/name=pattern\n"
+						"                              size=1M/name=pattern1:pattern2:pattern3\n"
+						"                              A file is written to the index partition if it is no larger\n"
+						"                              than the given size AND matches at least one of the name\n"
+						"                              patterns (if specified). The size argument accepts K, M, and G\n"
+						"                              suffixes. Name patterns might contain the special characters\n"
+						"                              '?' (match any single character) and '*' (match zero or more\n"
+						"                              characters)" }
+		14423I:string { "    -o quiet                  Disable informational messages (same as verbose=1)" }
+		14424I:string { "    -o fulltrace              Enable full call tracing (same as verbose=4)" }
+		14425I:string { "    -o eject                  Eject the cartridge after unmount" }
+		// Reserved 14426I
+		14427I:string { "    -o sync_type=<type>       Specify sync type (default: time@5)\n"
+				        "                              <type> should be specified as follows:\n"
+						"                              time@min:  LTFS attempts to write an index each 'min' minutes.\n"
+						"                                         min should be a decimal number from 1 to %ld\n"
+						"                                         It is equivalent to \"-o sync_type=unmount\" when 0 is specified\n"
+						"                                         (default: min=5)\n"
+						"                              close:     LTFS attempts to write an index when a file is closed\n"
+						"                              unmount:   LTFS attempts to write an index when the medium is unmounted" }
+
+		// Reserved 14428I
+		// Reserved 14429I
+		// Reserved 14430I
+		// Reserved 14431E
+		// Reserved 14432I
+		// Reserved 14433E
+		// Reserved 14434E
+		// Reserved 14435I
+		14436I:string { "    -o device_list            Show available tape devices" }
+		14437I:string { "    -o rollback_mount=<gen>   Attempt to mount on previous index generation (read-only mount)" }
+		// Reserved 14438I
+		14439I:string { "    -o noeject                Do not eject the cartridge after unmount (default)" }
+		14440I:string { "    -o noatime                Do not update index if only access times have changed (default)" }
+		14441I:string { "    -o verbose=<num>          Override output verbosity directly (default: %d)" }
+		// Reserved 14442I
+		14443I:string { "    -o force_mount_no_eod     Skip EOD existence check when mounting (read-only mount)\n"
+                        "                              Only use for a CM corrupted medium" }
+		// Reserved 14444I
+		// Reserved 14445I
+		// Reserved 14446I
+		// Reserved 14447I
+		14448I:string { "    -o release_device         Clear device reservation (should be specified with -o devname" }
+		// Reserved 14449I
+		// Reserved 14450I
+		// Reserved 14451I
+		// Reserved 14454I
+		14455I:string { "    -o kmi_backend=<name>     Key manager interface implementation to use (default: %s, use \"none\" to disable)" }
+		14456I:string { "    -o capture_index          Capture latest index to work directory at unmount" }
+		// Reserved 14457I
+		// Reserved 14458I
+		// Reserved 14459I
+		// Reserved 14460I
+		14461I:string { "    -o symlink_type=<type>    Specify symbolic link type (default: posix)\n"
+				        "                              <type> should be specified with one of the following values:\n"
+						"                              posix:  LTFS behavior is same as standard symbolic link\n"
+						"                              live:   LTFS replaces mount point path by current mount point" }
+		// Reserved 14462I
+		14463I:string { "    -o scsi_append_only_mode=<on|off>  Set the tape device append-only mode (default=on)" }
+		// Reserved 14464I
+		// Reserved 14465I
+		// Reserved 14466I
+		14467I:string { "    -o syslogtrace            Enable diagnostic output to stderr and syslog(same as verbose=303)" }
+		// Reserved 14468I
+	}
+}

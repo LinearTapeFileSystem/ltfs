@@ -1,0 +1,137 @@
+#!/bin/bash
+#
+# /etc/init.d/ltfs
+#
+#  OO_Copyright_BEGIN
+#
+#
+#  Copyright 2010, 2017 IBM Corp.
+#
+#  Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions
+#  are met:
+#  1. Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#  2. Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in the
+#  documentation and/or other materials provided with the distribution.
+#  3. Neither the name of the copyright holder nor the names of its
+#     contributors may be used to endorse or promote products derived from
+#     this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+#  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#  POSSIBILITY OF SUCH DAMAGE.
+#
+#
+#  OO_Copyright_END
+#
+#
+#       ltfs: IBM Linear Tape File System
+#       This script ensures that all LTFS volumes are cleanly
+#       unmounted before shutdown or reboot.
+#
+# chkconfig: 2345 24 76
+# description: Ensures that all LTFS volumes are unmounted before shutdown
+#
+### BEGIN INIT INFO
+# Provides:       ltfs
+# Required-Start:
+# Required-Stop:
+# Default-Start:  2 3 4 5
+# Default-Stop:   0 1 6
+# Description:    Ensure all LTFS volumes are unmounted cleanly
+### END INIT INFO
+
+if [ -f /etc/init.d/functions ]; then
+	. /etc/init.d/functions
+elif [ -f /etc/rc.status ]; then
+	. /etc/rc.status
+	rc_reset
+elif [ -f /lib/lsb/init-functions ]; then
+	. /lib/lsb/init-functions
+fi
+
+# Used to decide how to generate output
+fn_exists() {
+	type -t $1 | grep -q 'function'
+}
+
+# List mounted LTFS volumes. This does not always detect v1.00 mounts
+# because those sometimes have $1 == "fuse" and $3 == "fuse".
+LTFSMTAB=`LC_ALL=C awk 'match($1,/^ltfs:?/) && match($3,/^fuse/) { print $2 }' /proc/mounts`
+
+# Time to wait, in units of 2 seconds (so 300 is 10 minutes)
+wait_time=300
+
+wait_exit() {
+	# Send SIGTERM to all ltfs processes
+	ltfspid=`ls -l /proc/[0123456789]*/exe 2>/dev/null | grep '/ltfs\(\|-singledrive\|-library\)$' | awk 'BEGIN{FS="/"}{print $3}'`
+	[ -z "$ltfspid" ] && return 0
+	/bin/kill -TERM $ltfspid
+
+	# Wait for ltfs processes to exit
+	counter=0
+	while [ "$counter" -lt "$wait_time" ]; do
+		procs=`ls -l /proc/[0123456789]*/exe 2>/dev/null | grep '/ltfs\(\|-singledrive\|-library\)$'`
+		[ -z "$procs" ] && break
+		counter=$(( $counter + 1 ))
+		sleep 2
+	done
+	procs=`ls -l /proc/[0123456789]*/exe 2>/dev/null | grep '/ltfs\(\|-singledrive\|-library\)$'`
+	[ -n "$procs" ] && return 1
+	return 0
+}
+
+stop() {
+	fn_exists log_daemon_msg && log_daemon_msg "Unmounting LTFS file systems"
+	fn_exists rc_status && echo -n "Unmounting LTFS file systems "
+
+	# Unmount all LTFS file systems
+	if (fn_exists __umount_loop && [ -n "$LTFSMTAB" ]); then
+		__umount_loop 'match($1,"ltfs:*") && $3 == "fuse" { print $2 }' \
+			/proc/mounts \
+			"Unmounting LTFS filesystems: " \
+			"Unmounting LTFS filesystems (retry): " \
+			"-f"
+	fi
+
+	# Wait for all LTFS processes to complete
+	if fn_exists action; then
+		action "Waiting for LTFS processes to finish:" wait_exit
+	else
+		wait_exit
+	fi
+	rc=$?
+	fn_exists log_end_msg && log_end_msg "$rc"
+	rm -f /var/lock/subsys/ltfs
+	return $rc
+}
+
+case "$1" in
+	start)
+		[ -d /var/lock/subsys ] && touch /var/lock/subsys/ltfs
+		exit 0
+		;;
+	stop)
+		if fn_exists rc_status; then
+			stop
+			rc_status -v
+			rc_exit
+		else
+			stop
+			exit $?
+		fi
+		;;
+	*)
+		echo "Usage: $0 {start|stop}"
+		exit 1
+esac

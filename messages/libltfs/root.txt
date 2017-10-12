@@ -1,0 +1,801 @@
+//
+//
+//  OO_Copyright_BEGIN
+//
+//
+//  Copyright 2010, 2017 IBM Corp.
+//
+//  Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions
+//  are met:
+//  1. Redistributions of source code must retain the above copyright
+//     notice, this list of conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright
+//     notice, this list of conditions and the following disclaimer in the
+//  documentation and/or other materials provided with the distribution.
+//  3. Neither the name of the copyright holder nor the names of its
+//     contributors may be used to endorse or promote products derived from
+//     this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
+//
+//  OO_Copyright_END
+//
+
+root:table {
+	// Fallback messages. These messages do not have unique IDs; they are printed when
+	// the message function receives an unrecognized unique ID or fails to
+	// generate a message for a known unique ID.
+	// These messages are accessed by key, not by index: so they may be
+	// reordered, but they should not be renamed.
+	fallback_messages:table {
+		notfound:string { "(no message found)." }
+		overflow:string { "(message too long)." }
+	}
+
+	// Message list for libltfs.
+	// Notes:
+	//   - Message IDs less than 10000 are not officially supported. A few are listed here
+	//     for legacy reasons. DO NOT add new ones.
+	//   - Message IDs from 10000 to 10099 are generic messages which may be used outside libltfs.
+	//   - Other messages listed here should not be used outside libltfs.
+	messages:table {
+		start_id:int { 9000 }
+		end_id:int { 19999 }
+
+		// Messages with IDs less than 10000. These are here for legacy reasons only.
+		// DO NOT add new messages with IDs less than 10000.
+		9001E:string { "Failed to parse command line options." }
+		9006E:string { "Cannot load resource \"fallback_messages\" (ures_getByKey: %d)." }
+		9008E:string { "Cannot open output converter (ucnv_open: %d)." }
+		9010E:string { "Invalid option \'%s\'." }
+		9011E:string { "Logging initialization failed." }
+		9012E:string { "Cannot specify \"--quiet\" with \"--trace\" or \"--fulltrace\"." }
+		9013E:string { "Cannot specify \"--quiet\" with \"--trace\" or \"--fulltrace\"." }
+		9014E:string { "Cannot create work directory \'%s\': %s." }
+		9015W:string { "Setting the locale to 'en_US.UTF-8'. If this setting is wrong, set the LANG environment variable before starting %s." }
+		9016E:string { "Cannot set the LANG environment variable." }
+
+		// Generic messages (IDs 10000 through 10099).
+		// These may be used in multiple components.
+		10000E:string { "Failed to initialize libltfs (%d)." }
+		10001E:string { "Memory allocation failed (%s)." }
+		10002E:string { "Cannot initialize mutex (%d)." }
+		10003E:string { "Cannot initialize condition variable (%d)." }
+		10004E:string { "Cannot open device \'%s\'." }
+		10005E:string { "Null argument (%s) to %s." }
+		10006W:string { "Null argument (%s) to %s." }
+		10007E:string { "Not yet implemented (%s)." }
+		10008E:string { "Failed to load the configuration file (%d)." }
+		10009E:string { "No driver plug-in specified and no default found." }
+		//unused 10010E:string { "Cannot initialize plugin: failed to load messages (%d)." }
+		//unused 10011E:string { "Failed to load message data for %s." }
+		10012E:string { "Failed to register messages with libltfs (%d)." }
+		10013E:string { "Failed to set up signal handler." }
+		10014E:string { "Failed to clean up signal handler." }
+		//unused 10015E:string { "Failed to get shared memory (%d)." }
+		//unused 10016E:string { "Failed to attach shared memory (%d)." }
+		//unused 10017E:string { "Failed to set mutex attribute as shared (%d)." }
+		//unused 10018E:string { "No key manager interface plug-in specified and no default found (%s, %d, %d)." }
+		10019E:string { "Error on runcommand (%s, %d, %d)." }
+		10020E:string { "Error on %s: %s (%d, %d)." }
+		10021D:string { "xattr: %s: %s (%d, %d)." }
+
+		11000E:string { "Cannot instantiate LTFS volume: failed to allocate device data." }
+		11001E:string { "Cannot instantiate LTFS volume: failed to allocate label data." }
+		11002E:string { "Cannot instantiate LTFS volume: failed to allocate index data." }
+		11003E:string { "Cannot retrieve device capacity data (%d)." }
+		11004E:string { "Cannot take the device lock (%s)." }
+		11005I:string { "Mounting the volume." }
+		11006E:string { "Cannot read volume: failed to load the tape." }
+		11007D:string { "Tape is loaded." }
+		11008D:string { "Reading partition labels." }
+		11009E:string { "Cannot read volume: failed to read partition labels." }
+		11010E:string { "Cannot read volume: failed to set medium compression." }
+		11011E:string { "Cannot read volume: block size is %lu, but the device only supports a block size of %u." }
+		11012D:string { "Loading the tape." }
+		11013D:string { "Partition labels are valid." }
+		11014D:string { "Reading MAM parameters." }
+		11015W:string { "VCR MAM parameter is not usable. Mounting will take longer." }
+		11016W:string { "The index partition MAM parameter is not usable. Mounting will take longer." }
+		11017W:string { "The data partition MAM parameter is not usable. Mounting will take longer." }
+		11018D:string { "Done reading MAM parameters." }
+		11019D:string { "Checking volume consistency." }
+		11020E:string { "Cannot mount volume: seek to index failed on the data partition." }
+		11021E:string { "Cannot mount volume: read index failed on the data partition." }
+		11022I:string { "Restoring volume consistency by writing an index to the index partition." }
+		11023E:string { "Cannot mount volume: seek to index failed on the index partition." }
+		11024E:string { "Cannot mount volume: read index failed on the index partition." }
+		11025D:string { "Volume is consistent." }
+		11026I:string { "Performing a full medium consistency check." }
+		11027E:string { "Cannot mount volume: medium consistency check failed." }
+		11028D:string { "Consistency check finished." }
+		11029E:string { "Cannot mount volume: failed to save the append position for the index partition." }
+		11030I:string { "Failed to sync volume (%d). Stop the periodic sync thread." }
+		//unused 11030E:string { "Cannot release the device lock (%s)." }
+		//11031D:string { "Volume mounted successfully." }
+		11032D:string { "Unmounting the volume." }
+		11033E:string { "Cannot unmount: failed to write an index." }
+		11034I:string { "Volume unmounted successfully." }
+		//unused 11035D:string { "Medium is write protected." }
+		//unused 11036D:string { "Medium is writeable." }
+		//unused 11037E:string { "Cannot get attributes: failed to format the path (%d)." }
+		//unused 11038E:string { "Cannot get attributes: path lookup failed (%d)." }
+		11039E:string { "Cannot open file: failed to format the path (%d)." }
+		11040E:string { "Cannot open file: path lookup failed (%d)." }
+		//unused 11041E:string { "Cannot set times: failed to format the path (%d)." }
+		//unused 11042E:string { "Cannot set times: path lookup failed (%d)." }
+		//unused 11043E:string { "Cannot set read-only flag: failed to format the path (%d)." }
+		//unused 11044E:string { "Cannot set read-only flag: path lookup failed (%d)." }
+		11045E:string { "Cannot set times: device is not ready." }
+		11046E:string { "Cannot set read-only flag: device is not ready." }
+		11047E:string { "Cannot create: device is not ready." }
+		11048E:string { "Cannot create: failed to format the path (%d)." }
+		11049E:string { "Cannot create: path lookup failed (%d)." }
+		11050E:string { "Cannot unlink: device is not ready." }
+		11051E:string { "Cannot unlink: failed to format the path (%d)." }
+		11052E:string { "Cannot unlink: path lookup failed (%d)." }
+		11053E:string { "Cannot rename: device is not ready." }
+		11054E:string { "Cannot rename: failed to format the source path (%d)." }
+		11055E:string { "Cannot rename: failed to format the destination path (%d)." }
+		11056E:string { "Cannot rename: path lookup failed for source (%d)." }
+		11057E:string { "Cannot rename: path lookup failed for destination (%d)." }
+		//unused 11058E:string { "Cannot rename: unable to overwrite destination (%d)." }
+		11059E:string { "Cannot truncate: length must not be negative." }
+		//unused 11060E:string { "Cannot truncate: failed to format the path (%d)." }
+		//unused 11061E:string { "Cannot truncate: path lookup failed (%d)." }
+		11062E:string { "Cannot truncate: device is not ready." }
+		//unused 11063E:string { "Cannot truncate: failed to write an index while switching partitions (%d)." }
+		//unused 11064E:string { "Cannot truncate: failed to write zero bytes to the medium (%d)." }
+		//unused 11065E:string { "Cannot truncate: failed to update the extent list (%d)." }
+		//unused 11066E:string { "Cannot save extent: offset is greater than the file size." }
+		11067E:string { "Cannot write blocks: invalid partition identifier." }
+		11068E:string { "Cannot write blocks: multiple repetitions specified with an irregular buffer size." }
+		11069E:string { "Cannot write blocks: failed to write an index while switching partitions (%d)." }
+		11070E:string { "Cannot write blocks: locate append position failed on partition %c." }
+		11071E:string { "Cannot write blocks: failed to determine medium position (%d)." }
+		11072E:string { "Cannot write blocks: failed to write to the medium (%d)." }
+		//unused 11073E:string { "Cannot write blocks: write to medium returned %zd, expected %u." }
+		//unused 11074E:string { "Cannot write: invalid partition identifier." }
+		//unused 11075E:string { "Cannot write: failed to write an index while switching partitions (%d)." }
+		//unused 11076E:string { "Cannot write: failed to extend the file with zeros (%d)." }
+		11077E:string { "Cannot write: failed to write blocks to the medium (%d)." }
+		//unused 11078E:string { "Cannot write: failed to update extent list (%d)." }
+		//unused 11079E:string { "Cannot write index to index partition: failed to write index to data partition." }
+		11080E:string { "Cannot write index: failed to locate append position on partition %c (%d)." }
+		11081E:string { "Cannot write index: failed to determine medium position (%d)." }
+		11082E:string { "Cannot write index: failed to write file mark (%d)." }
+		11083E:string { "Cannot write index: failed to generate and write XML data (%d). The medium might be in an inconsistent state; unmount and run ltfsck." }
+		11084E:string { "Cannot write index: failed to write a trailing file mark (%d). The medium is in an inconsistent state; unmount and run ltfsck." }
+		11085E:string { "Cannot read: failed to determine medium position (%d)." }
+		11086E:string { "Cannot read: failed to locate (%d) to partition %c, record %llu." }
+		11087E:string { "Cannot read: expected %u bytes from cache, but received %lu bytes." }
+		11088E:string { "Cannot read: failed to get a block from the medium (%d)." }
+		11089E:string { "Cannot read: expected %u bytes from the medium, but received %u bytes." }
+		11090W:string { "Data partition identifier requested on an uninitialized volume." }
+		11091W:string { "Index partition identifier requested on an uninitialized volume." }
+		//unused 11092I:string { "Loading the medium." }
+		11093E:string { "Cannot format: failed to load the medium (%d)." }
+		//unused 11094I:string { "Medium is loaded." }
+		11095E:string { "Cannot format: the medium is write protected." }
+		11096E:string { "Cannot format: requested block size is %lu bytes, but the device only supports %u." }
+		11097I:string { "Partitioning the medium." }
+		11098E:string { "Cannot format: failed to partition the medium (%d)." }
+		11099E:string { "Cannot format: failed to set the medium compression (%d)." }
+
+		11100I:string { "Writing label to partition %c." }
+		11101E:string { "Cannot format: failed to locate (%d) to partition %u, block 0." }
+		11102E:string { "Cannot format: failed to write ANSI label (%d) on partition %u." }
+		//unused 11103E:string { "Cannot format: failed to write ANSI label on partition %u (expected %u, received %zd)." }
+		11104E:string { "Cannot format: failed to write file mark after ANSI label (%d) on partition %u." }
+		11105E:string { "Cannot format: failed to generate LTFS label." }
+		11106E:string { "Cannot format: failed to write XML label (%d) on partition %u." }
+		//unused 11107E:string { "Cannot format: failed to write XML label on partition %u (expected %u, received %zd)." }
+		11108E:string { "Cannot format: failed to write file mark after XML label (%d) on partition %u." }
+		//unused 11109E:string { "Cannot format: failed to generate empty Index data structure (%d)." }
+		11110E:string { "Cannot get current time (%d)." }
+		11111E:string { "Base64 decoder: empty input." }
+		11112E:string { "Base64 decoder: invalid character in the input." }
+		11113E:string { "Base64 decoder: input length is not a multiple of 4." }
+		11114E:string { "Cache manager: failed to initialize the pool." }
+		11115W:string { "Cache manager: failed to fully expand the pool." }
+		11116E:string { "Cache manager: failed to grow the pool." }
+		11117E:string { "Cannot set extended attribute: device is not ready." }
+		11118E:string { "Cannot set extended attribute: failed to format the path (%d)." }
+		11119E:string { "Cannot set extended attribute: failed to format the name (%d)." }
+		11120E:string { "Cannot set extended attribute: failed to validate the name (%d)." }
+		11121E:string { "Cannot set extended attribute: failed to look up the path (%d)." }
+		11122E:string { "Cannot set extended attribute: failed to look up the xattr (%d)." }
+		11123E:string { "Cannot get extended attribute: NULL value with non-zero size." }
+		11124E:string { "Cannot get extended attribute: failed to format the path (%d)." }
+		11125E:string { "Cannot get extended attribute: failed to format the name (%d)." }
+		11126E:string { "Cannot get extended attribute: failed to validate the name (%d)." }
+		11127E:string { "Cannot get extended attribute: failed to look up the path (%d)." }
+		11128E:string { "Cannot get extended attribute: failed to look for virtual xattrs (%d)." }
+		11129E:string { "Cannot get extended attribute: failed to look up the xattr (%d)." }
+		11130E:string { "Cannot list extended attributes: NULL output buffer with a non-zero size." }
+		11131E:string { "Cannot list extended attributes: failed to format the path (%d)." }
+		11132E:string { "Cannot list extended attributes: failed to look up the path (%d)." }
+		11133E:string { "Cannot list extended attributes: failed to list real xattrs (%d)." }
+		//unused 11134E
+		11135E:string { "Cannot remove extended attribute: device is not ready." }
+		11136E:string { "Cannot remove extended attribute: failed to format the path (%d)." }
+		11137E:string { "Cannot remove extended attribute: failed to format the name (%d)." }
+		11138E:string { "Cannot remove extended attribute: failed to validate the name (%d)." }
+		11139E:string { "Cannot remove extended attribute: failed to look up the path (%d)." }
+		11140E:string { "Cannot remove extended attribute: failed to look up the xattr (%d)." }
+		11141E:string { "Cannot list physical xattrs: failed to generate namespace prefix (%d)." }
+		11142E:string { "Cannot list physical xattrs: failed to convert key to system locale (%d)." }
+		//unused 11143E
+		//unused 11144E:string { "Cannot list physical xattrs: failed to convert key to system locale (%d)." }
+		11145E:string { "Cannot get attribute %s: failed to generate the time string." }
+		11146E:string { "Invalid index criteria option \'%s\'." }
+		11147E:string { "Duplicate index criteria option \'%s\'." }
+		11148E:string { "More than one non-numeric character follows the size criterion." }
+		11149E:string { "Invalid size criterion multiplier \'%c\'." }
+		11150E:string { "Size= rule must contain a valid size." }
+		11151E:string { "Size= rule must contain a digit." }
+		11152E:string { "Cannot parse index criteria: rules are invalid." }
+		11153E:string { "Cannot parse index criteria: failed to parse name rule (%d)." }
+		11154E:string { "Cannot parse index criteria: error while seeking name rule." }
+		11155E:string { "Cannot parse index criteria: failed to parse size rule (%d)." }
+		11156E:string { "Cannot parse index criteria: error while seeking size rule." }
+		11157E:string { "Cannot specify a name rule without a size rule." }
+		11158E:string { "Cannot match name: failed to initialize glob cache (%d)." }
+		11159E:string { "Cannot match name: failed to prepare for caseless matching (%d)." }
+		11160E:string { "Cannot prepare glob cache: failed to prepare name for caseless matching (%d)." }
+		11161E:string { "Cannot match name: match function failed (%d)." }
+		11162E:string { "Cannot perform matching: failed to open text boundary iterator for criteria (%d)." }
+		11163E:string { "Cannot perform matching: failed to open text boundary iterator for filename (%d)." }
+		11164E:string { "Failed to push file name onto a null stack pointer." }
+		11165E:string { "Failed to pop a file name from a null stack pointer." }
+		11166E:string { "Cannot allocate index data: failed to initialize mutex (%d)." }
+		11167E:string { "Cannot create file or directory: failed to allocate dentry." }
+		11168E:string { "Cannot allocate index data: failed to allocate root dentry." }
+		11169E:string { "Cannot read labels: failed to allocate label data (%d)." }
+		11170E:string { "Failed to read label (%d) from partition 0." }
+		11171E:string { "Failed to read label (%d) from partition 1." }
+		11172E:string { "Cannot verify labels: comparison failed (%d)." }
+		11173E:string { "Cannot read label (%d): failed to seek to block 0 (partition %lu)." }
+		11174E:string { "Cannot read ANSI label: read failed (%d)." }
+		11175E:string { "Cannot read ANSI label: expected 80 bytes, but received %d." }
+		11176E:string { "The ANSI label indicates this is not an LTFS volume." }
+		11177E:string { "The ANSI label is too long (%d)." }
+		11178E:string { "Cannot read LTFS label: read failed (%d)." }
+		11179E:string { "Cannot read LTFS label: parsing failed (%d)." }
+		11180E:string { "Cannot read partition label: failed to space forward over the trailing file mark (%d)." }
+		11181E:string { "Cannot read partition label: failed to find the trailing file mark." }
+		11182E:string { "Comparing labels: tape bar code number mismatch." }
+		11183E:string { "Comparing labels: volume UUID mismatch." }
+		11184E:string { "Comparing labels: format time mismatch." }
+		11185E:string { "Comparing labels: block size mismatch." }
+		11186E:string { "Comparing labels: compression mismatch." }
+		11187E:string { "Comparing labels: partition IDs must be lowercase ASCII characters." }
+		11188E:string { "Comparing labels: partition IDs must be distinct." }
+		11189E:string { "Comparing labels: partition map mismatch." }
+		11190E:string { "Comparing labels: unknown partition ID." }
+		11191E:string { "Comparing labels: partitions have the same ID \'%c\'." }
+		11192E:string { "Comparing labels: invalid bar code number." }
+		11193E:string { "Cannot read index: failed to determined medium position (%d)." }
+		11194W:string { "Cannot read index: failed to read and parse XML data (%d)." }
+		11195W:string { "This index belongs to a different volume." }
+		11196W:string { "Cannot read index: self-pointer mismatch." }
+		11197E:string { "Cannot read index: back pointer is corrupt." }
+		11198E:string { "Cannot read index: failed to space forward 1 file mark (%d)." }
+		11199E:string { "Cannot locate index: failed to locate to EOD (%d)." }
+		11200E:string { "Cannot locate index: failed to determined medium position (%d)." }
+		11201E:string { "Cannot locate index: failed to space back 1 file mark (%d)." }
+		11202E:string { "Cannot locate index: failed to space forward 1 file mark (%d)." }
+		11203E:string { "Cannot locate index: failed to space back 2 file marks (%d)." }
+		11204D:string { "No index found. Space back and try again." }
+		11205E:string { "Index partition contains a back pointer, but no index found on the data partition." }
+		11206E:string { "Index partition back pointer is invalid." }
+		11207E:string { "Missing required index partition back pointer." }
+		//unused 11208E:string { "Back pointer chain is broken." }
+		11209E:string { "Cannot create lost and found directory: failed to allocate directory data." }
+		11210W:string { "Ignoring unexpected file mark in partition %lu." }
+		11211E:string { "Cannot populate lost and found directory: failed to allocate file data." }
+		11212E:string { "Cannot create lost and found directory: seek failed (%d)." }
+		11213E:string { "Cannot check medium: seek index failed on the data partition (%d)." }
+		11214E:string { "Cannot check medium: seek index failed on the index partition (%d)." }
+		11215E:string { "Cannot check medium: failed to locate to EOD on the data partition (%d)." }
+		11216E:string { "Cannot check medium: failed to locate to EOD on the index partition (%d)." }
+		11217E:string { "Cannot check medium: failed to write a file mark to the data partition (%d)." }
+		11218E:string { "Cannot check medium: failed to write a file mark to the index partition (%d)." }
+		11219E:string { "Cannot check medium: pointer verification failed (%d)." }
+		11220E:string { "Medium check failed: extra blocks detected. Run ltfsck." }
+		11221E:string { "Medium check failed: detected invalid extents." }
+		11222E:string { "Cannot check medium: failed to save index partition append position (%d)." }
+		11223I:string { "Generating lost and found directory." }
+		11224E:string { "Cannot restore medium consistency: failed to generate lost and found (%d)." }
+		11225E:string { "Cannot check medium: failed to allocate index data (%d)." }
+		11226I:string { "Erasing bad blocks from the index partition." }
+		11227I:string { "Erasing bad blocks from the data partition." }
+		11228E:string { "Cannot restore medium consistency: failed to save data partition append position (%d)." }
+		11229E:string { "Cannot restore medium consistency: failed to save index partition append position (%d)." }
+		11230I:string { "Writing index(es) to restore consistency." }
+		11231E:string { "A simple fix is possible to restore the consistency of the tape." }
+		11232E:string { "Rerun the consistency check with simple fixes enabled." }
+		11233I:string { "Updating MAM coherency data." }
+		11234E:string { "Cannot validate extended attribute value: code point iteration failed." }
+		11235E:string { "Cannot validate name: failed to iterate code point." }
+		11236E:string { "Cannot fold string case: failed to get output buffer size (%d)." }
+		11237E:string { "Cannot fold string case: failed to fill output buffer (%d)." }
+		11238E:string { "Cannot apply NFC: failed to get output buffer size (%d)." }
+		11239E:string { "Cannot apply NFC: failed to fill output buffer (%d)." }
+		11240E:string { "Cannot apply NFD: failed to get output buffer size (%d)." }
+		11241E:string { "Cannot apply NFD: failed to fill output buffer (%d)." }
+		11242E:string { "Cannot convert UTF-8 to UTF-16: failed to get output buffer size (%d)." }
+		11243E:string { "Cannot convert UTF-8 to UTF-16: failed to fill output buffer (%d)." }
+		11244E:string { "Cannot convert UTF-16 to UTF-8: failed to get output buffer size (%d)." }
+		11245E:string { "Cannot convert UTF-16 to UTF-8: failed to fill output buffer (%d)." }
+		11246E:string { "Cannot convert system locale to UTF-16: failed to open converter (%d)." }
+		11247E:string { "Cannot convert system locale to UTF-16: failed to set up converter (%d)." }
+		11248E:string { "Cannot convert system locale to UTF-16: failed to get output buffer size (%d) for '%s'." }
+		11249E:string { "Cannot convert system locale to UTF-16: failed to fill output buffer (%d) for '%s'." }
+		11250E:string { "Cannot convert UTF-8 to system locale: failed to get output buffer size (%d)." }
+		11251E:string { "Cannot convert UTF-8 to system locale: failed to fill output buffer (%d)." }
+		11252D:string { "libltfs write to \'%s\': offset = %lld, count = %u." }
+		11253E:string { "No index found in the medium." }
+		11254D:string { "libltfs read from \'%s\': offset = %lld, count = %u." }
+		11255I:string { "Appending a file mark to the data partition." }
+		11256I:string { "Appending a file mark to the index partition." }
+		11257I:string { "No index found in the index partition." }
+		11258I:string { "No index found in the data partition." }
+		11259I:string { "Cannot move directory: Directory move is prohibited because of a MacFUSE bug." }
+		11260E:string { "Plug-in \'%s\' was not found in the configuration file." }
+		11261E:string { "Cannot load plug-in: %s." }
+		11262E:string { "Cannot unload plug-in: %s." }
+		11263E:string { "Cannot resolve plug-in operation interface: %s." }
+		11264E:string { "Cannot get plug-in operations." }
+		11265E:string { "Cannot parse configuration file: \'default\' directive must be followed by a plug-in type and name." }
+		//unused 11266E:string { "Cannot parse configuration file: unknown plugin type \'%s\' in \'default\' directive." }
+		11267E:string { "Cannot get library path: unknown plug-in type \'%s\' or plug-in name \'%s\'." }
+		11268E:string { "Cannot open configuration file \'%s\' (%d)." }
+		11269E:string { "Cannot parse configuration file: line too long." }
+		11270E:string { "Cannot parse configuration file: \'-default\' directive must be followed by a plug-in type." }
+		11271E:string { "Cannot parse configuration file: unknown plug-in type \'%s\' in \'-default\' directive." }
+		11272E:string { "Cannot parse configuration file: \'option\' directive must be followed by an option type and LTFS mount option." }
+		11273E:string { "Cannot parse configuration file: \'%s\' directive must be followed by a valid %s name." }
+		//unused 11274E:string { "Cannot define a scheduler plug-in using the reserved name \'none\'." }
+		11275E:string { "Cannot parse configuration file: \'plug-in\' directive must be followed by a plug-in type, name, and library path." }
+		11276W:string { "Ignoring unknown configuration directive \'%s\'." }
+		11277W:string { "Cannot find the %s plug-in \'%s\' at \'%s\'." }
+		11278I:string { "Writing index to partition %c." }
+		11279E:string { "Cannot write index to partition %c (%d)." }
+		11280E:string { "Unknown default %s \'%s\'." }
+		11281E:string { "Cannot load messages: failed to get message table (%d)." }
+		11282E:string { "Cannot load messages: failed to determine first message ID (ures_getByKey: %d)." }
+		11283E:string { "Cannot load messages: failed to determine first message ID (ures_getInt: %d)." }
+		11284E:string { "Cannot resolve plug-in message bundle interface: %s." }
+		11285E:string { "Cannot load %s plug-in \'%s\': failed to load the message bundle (%d)." }
+		11286E:string { "Cannot load messages: failed to open resource bundle (%d)." }
+		11287E:string { "Cannot load messages: failed to register message data (%d)." }
+		11288W:string { "No end ID found for this message bundle: assigning 1000 message IDs." }
+		11289I:string { "Ejecting cartridge." }
+		11290E:string { "Failed to eject the cartridge (%s)." }
+		11291I:string { "Eject successful." }
+		//unused 11292E
+		11293E:string { "Cannot load messages for libltfs (%d)." }
+		//unused 11294E
+		11295E:string { "Cannot read partition label: check for file mark after the ANSI label failed (%d)." }
+		11296E:string { "Cannot read partition label: failed to find a file mark after the ANSI label." }
+		11297E:string { "Cannot read index: failed to allocate index structure (%d)." }
+		11298E:string { "Cannot read volume: unsupported medium." }
+		11299E:string { "Cannot format: unsupported medium." }
+		//unused 11300E:string { "Cannot rename: failed check of target file existence (%d)." }
+		11301E:string { "Unable to read index: cannot duplicate index partition criteria." }
+		11302E:string { "Data placement rule contains invalid character(s): '%s'." }
+		11303E:string { "Data placement rule is too long: '%s'." }
+		11304E:string { "Failed to validate data placement rule (%d)." }
+		11305E:string { "Empty data placement rule in '%s'." }
+		11306E:string { "Cannot get read-only state of partition: invalid partition identifier." }
+		11307W:string { "All unique IDs for volume %s are used. No new files or directories can be created for the volume." }
+		11308E:string { "Commit message must be 65536 bytes or less." }
+		11309E:string { "Cannot parse configuration file: \'-plugin\' directive must be followed by a plug-in type and name." }
+		11310W:string { "Cannot set the traversal mode: failed to get a valid selection %d." }
+		11311E:string { "Cannot format: failed to reset capacity proportion (%d)." }
+		11312D:string { "Revalidating the medium." }
+		11313E:string { "Medium revalidation failed (%d). Unmount the tape before continuing." }
+		11314E:string { "Cannot format: failed to get data key (%d)." }
+		11315E:string { "Cannot format: failed to set data key (%d)." }
+		11316E:string { "Failed to print help message of key manager interface backend." }
+		11317E:string { "Cannot print help message: unknown type: '%s'." }
+		11318W:string { "Unknown log level (%d), forced the level to (%d)." }
+		11319E:string { "Cannot add the key to hash table at %s (%d)." }
+		11320E:string { "Cannot search the key from hash table at %s (%d)." }
+		11321E:string { "Symbolic link might be replaced by data file. Use ltfsck for recovery." }
+		11322D:string { "Makeing a symlink '%s' target '%s'." }
+		11323D:string { "Symlink EA prefix valuse is (%s)." }
+		11324D:string { "Path changed from '%s' to '%s'." }
+		11325E:string { "Cannot set extended attribute: failed to flush (%d)." }
+		11326E:string { "Cannot write index: failed to flush buffered data (%d)." }
+		11327E:string { "Failed to seek EOD: seek invalid partition (%d, %d)." }
+		11328E:string { "Failed to seek index: seek invalid partition (%c, %c)." }
+		11329E:string { "Failed to recover tape: cannot write the index to an invalid position in the data partition (%lld, %lld, %d)." }
+		11330I:string { "Loading cartridge." }
+		11331E:string { "Failed to load the cartridge (%s)." }
+		11332I:string { "Load successful." }
+		11333I:string { "A cartridge with a write-perm error is detected. Seek the newest index (%d, %d)." }
+		11334I:string { "Remove extent : %s (%d, %d)." }
+		11335D:string { "Get physical block position (%d - %d)." }
+		11336I:string { "The attribute does not exist. Ignore the expected error." }
+		11337I:string { "Update index-dirty flag (%d) - %s (0x%p)." }
+		11338I:string { "Syncing index of %s %s." }
+		11339D:string { "%s volume lock status (%d)." }
+
+		// Message IDs 11400 through 11800 are allocated to the libchanger.
+		// DO NOT add messages with those IDs to this file.
+
+		//unused 11997E:string { "Comparing labels: failed to match versions." }
+		11998W:string { "Unable to delete dentry '%s': it still has outstanding references." }
+		11999E:string { "Cannot load the medium: failed to get capacity data (%d)." }
+		//unused 12000E:string { "Cannot open device backend library directory." }
+		//unused 12001E:string { "Failed to open device backend library: %s." }
+		//unused 12002E:string { "Failed to get device operations: %s." }
+		//unused 12003E:string { "Device backend returned an empty set of operations." }
+		12004E:string { "Device backend does not implement all required methods." }
+		//unused 12005E:string { "Failed to inquiry tape page: backend call failed (%d)." }
+		//unused 12006E:string { "Cannot allocate device data: failed to set mutex attributes (%d)." }
+		//unused 12007E:string { "Cannot allocate device data: failed to set mutex type (%d)." }
+		12008E:string { "Cannot allocate device data: failed to initialize mutex (%d)." }
+		//unused 12009E:string { "Cannot allocate device data: failed to free mutex attributes (%d)." }
+		12010E:string { "Failed to grab the device lock (%s)." }
+                //unused 12011E:string { "Failed to release the device lock (%s)." }
+		12012E:string { "Cannot open device: failed backend open call." }
+		12013E:string { "Cannot inquire the tape device: backend call failed (%d)." }
+		12014E:string { "Cannot open device: failed to reserve the device (%d)." }
+		//unused 12015D:string { "Attempting to load the medium." }
+		12016E:string { "No medium present." }
+		12017E:string { "Cannot load the medium (%d)." }
+		12018E:string { "Cannot load the medium: failed to lock the medium in the drive (%d)." }
+		12019E:string { "Cannot load the medium: failed to determine medium position (%d)." }
+		12020E:string { "Cannot load the medium: failed to set device defaults (%d)." }
+		12021E:string { "Cannot load the medium: failed to get device parameters (%d)." }
+		12022I:string { "Unloading medium." }
+		12023D:string { "Reserving device." }
+		12024E:string { "Cannot reserve device: backend call failed (%d)." }
+		12025D:string { "Releasing device." }
+		12026D:string { "Locking medium in the drive." }
+		12027E:string { "Cannot lock medium in the drive: backend call failed (%d)." }
+		12028D:string { "Unlocking medium." }
+		12029E:string { "Device is not ready (%d)." }
+		12030E:string { "Cannot get capacity data: backend call failed (%d)." }
+		12031E:string { "Cannot set compression: backend call failed (%d)." }
+		12032E:string { "Cannot set append position: invalid partition %lu." }
+		12033E:string { "Cannot seek to append position: seek failed (%d)." }
+		12034E:string { "Cannot get maximum device blocksize: backend call failed (%d)." }
+		12035E:string { "Cannot rewind medium: backend call failed (%d)." }
+		12036E:string { "Seek failed: final position is not what was requested." }
+		12037E:string { "Cannot seek: backend call failed (%d)." }
+		12038E:string { "Cannot seek EOD: invalid partition %lu." }
+		12039E:string { "Cannot seek EOD: backend locate call failed (%d)." }
+		12040E:string { "Cannot parse backend options: backend call failed (%d)." }
+		12041E:string { "Cannot space file marks: backend call failed (%d)." }
+		12042E:string { "Cannot write block: must open the device first." }
+		12043E:string { "Cannot write block: device is read-only." }
+		12044E:string { "Cannot write a %u-byte block: maximum block size is %lu." }
+		12045E:string { "Cannot write block: backend call failed (%d). Dropping to read-only mode." }
+		12046E:string { "Cannot write file marks: must open the device first." }
+		12047E:string { "Cannot write file marks: backend call failed (%d). Dropping to read-only mode." }
+		12048E:string { "Cannot read: must open the device first." }
+		12049E:string { "Cannot read: backend call failed (%d)." }
+		12050E:string { "Cannot format medium: locate to partition 0, block 0 failed (%d)." }
+		12051E:string { "Cannot format medium: Mode Sense for Medium Partition failed (%d)." }
+		//unused 12052E:string { "Cannot format medium: Mode Select for Medium Partition failed (%d)." }
+		12053E:string { "Cannot format medium: backend call failed (%d)." }
+		12054E:string { "Cannot unformat medium: locate to partition 0, block 0 failed (%d)." }
+		12055E:string { "Cannot unformat medium: backend call failed (%d)." }
+		12056W:string { "Cannot get Volume Change Reference parameter: read attribute failed (%d)." }
+		12057W:string { "Cannot get VCI data: read attribute failed (%d)." }
+		12058W:string { "Cannot get VCI data: unexpected ID 0x%04x." }
+		12059W:string { "Cannot get VCI data: unexpected length 0x%04x." }
+		12060W:string { "Cannot get VCI data: unexpected VCR length 0x%04x." }
+		12061W:string { "Cannot get VCI data: unexpected Application Specific Info length %d." }
+		12062W:string { "Cannot get VCI data: unexpected Application Specific Info signature." }
+		12063W:string { "Cannot set VCI data: backend call failed (%d)." }
+		12064E:string { "Cannot write block: no space left on device." }
+		// unused 12065E:string { "Cannot write file marks: error during retry on out of space condition (%d). Dropping to read-only mode." }
+		// unused 12066E:string { "Cannot write block: error during retry on out of space condition (%d). Dropping to read-only mode." }
+
+		// Message IDs 12067 through 12499 are allocated to IBM tape device plugins.
+		// DO NOT add messages with those IDs to this file.
+
+		//unused 13000E:string { "Failed to open I/O scheduler backend: %s." }
+		//unused 13001E:string { "Failed to get scheduler operations: %s." }
+		//unused 13002E:string { "Scheduler backend returned an empty set of operations." }
+		13003E:string { "Scheduler backend does not implement all required methods." }
+		13004E:string { "Dentry cache backend does not implement all required methods." }
+
+		// Message IDs 13005 through 13499 are allocated to IBM I/O scheduler plugins.
+		// DO NOT add messages with those IDs to this file.
+
+		// Message IDs 13500-13999 are allocated to dentry cache plugins.
+		// DO NOT add messages with those IDs to this file.
+
+		// Message IDs 14000-14499 are reserved for the ltfs executable.
+		// DO NOT add messages with those IDs to this file.
+
+		// Message IDs 14500-14999 are reserved for the admin_channel interface.
+		// DO NOT add messages with those IDs to this file.
+
+		// Message IDs 15000-15499 are reserved for the mkltfs executable.
+		// DO NOT add messages with those IDs to this file.
+
+		// Message IDs 15500-15999 are reserved for the cropto plugins.
+		// DO NOT add messages with those IDs to this file.
+
+		// Message IDs 16000-16499 are reserved for the ltfsck executable.
+		// DO NOT add messages with those IDs to this file.
+
+		// Message IDs 16500-16999 are reserved for the cartrige repository plugins.
+		// DO NOT add messages with those IDs to this file.
+
+		17000E:string { "XML parser: not all required tags found in \'%s\'." }
+		17001E:string { "XML parser: duplicate required tag \'%s\'." }
+		17002E:string { "XML parser: duplicate optional tag \'%s\'." }
+		17003E:string { "XML parser: cannot determine whether tag is empty." }
+		17004E:string { "XML parser: tag \'%s\' must not be empty." }
+		17005E:string { "XML parser: extra content in tag \'%s\'." }
+		17006W:string { "XML parser: ignoring unrecognized tag \'%s\' inside \'%s\'." }
+		17007E:string { "Cannot instantiate an LTFS label parser for file \'%s\'." }
+		17008E:string { "Cannot parse XML label from file \'%s\'." }
+		17009E:string { "Cannot instantiate an LTFS label parser for a memory buffer." }
+		17010E:string { "Cannot parse XML label from memory." }
+		17011E:string { "Cannot instantiate an index parser for file \'%s\'." }
+		17012E:string { "Cannot parse index from file \'%s\'." }
+		17013E:string { "Cannot parse index: failed to determine medium position (%d)." }
+		17014E:string { "Cannot parse index: failed to create XML parser input buffer." }
+		17015E:string { "Cannot parse index: failed to create XML reader." }
+		17016E:string { "Cannot parse index direct from medium." }
+		17017E:string { "XML parser: unexpected top-level tag \'%s\'." }
+		17018E:string { "XML parser: unsupported encoding \'%s\'." }
+		17019E:string { "XML parser: no schema version found." }
+		17020E:string { "XML parser: invalid schema version \'%s\'." }
+		17021E:string { "XML parser: unsupported %s version %s." }
+		17022E:string { "XML parser: invalid block size %s." }
+		17023E:string { "XML parser: invalid generation number %s." }
+		17024E:string { "XML parser: invalid size criterion %s." }
+		17025E:string { "XML parser: failed to normalize value (%d)." }
+		17026E:string { "XML parser: file size is shorter than extent list." }
+		17027E:string { "XML parser: unsupported extended attribute type \'%s\'." }
+		17028E:string { "XML parser: base64 decoding failed." }
+		17029E:string { "XML parser: invalid UUID %s." }
+		17030E:string { "XML parser: failed to normalize name \'%s\'." }
+		17031E:string { "XML parser: invalid name \'%s\'." }
+		17032E:string { "XML parser: compression must be \'true\' (1) or \'false\' (0)." }
+		17033E:string { "XML parser: invalid partition \'%s\'." }
+		17034E:string { "XML parser: invalid time \'%s\' (%d)." }
+		17035E:string { "XML parser: expected a text node." }
+		17036E:string { "XML parser: expected a text node (received type %d)." }
+		17037E:string { "XML parser: failed to read from XML stream." }
+		17038E:string { "XML parser: unexpected end of XML stream." }
+		17039E:string { "XML parser: failed to read a block from the medium (%d)." }
+		17040E:string { "XML parser: failed to space back 1 file mark." }
+		17041E:string { "XML parser: read failed while looking for a file mark (%d)." }
+		17042E:string { "XML writer: error creating tag (%s)." }
+		17043E:string { "Cannot instantiate an LTFS label writer to memory." }
+		17044E:string { "Label writer: failed to start the document (%d)." }
+		17045E:string { "Label writer: failed to format time." }
+		17046E:string { "Label writer: failed to close the document (%d)." }
+		17047E:string { "Cannot generate LTFS label: failed to allocate buffer." }
+		17048E:string { "Cannot generate index data in memory: failed to allocate buffer." }
+		17049E:string { "Cannot instantiate index writer to memory." }
+		17050E:string { "Cannot generate index data in memory." }
+		17051E:string { "Cannot instantiate an index writer to file \'%s\'." }
+		17052E:string { "Cannot generate index data (%d) in file \'%s\'." }
+		17053E:string { "Cannot generate index data direct to tape: failed to create output buffer." }
+		17054E:string { "Cannot instantiate an index writer direct to tape." }
+		17055E:string { "Cannot generate index data direct to tape (%d)." }
+		17056E:string { "XML writer: cannot format time (gmtime failed)." }
+		17057E:string { "Index writer: failed to start the document (%d)." }
+		17058E:string { "Index writer: failed to close the document (%d)." }
+		17059E:string { "Index writer: cannot validate extended attribute value (%d)." }
+		17060E:string { "XML writer: failed to write a block to the medium (%d)." }
+		17061E:string { "XML writer: failed to flush cached data to the medium (%d)." }
+		17062E:string { "XML writer: tried to write a directory as a file." }
+		17063W:string { "Periodic sync thread failed to flush file data to the medium. Data might be lost (%s)." }
+		17064D:string { "Sync is done. (%s)." }
+		17065D:string { "Periodic sync thread initialized." }
+		17066D:string { "Periodic sync thread uninitialized." }
+		17067D:string { "Sync is kicked. (%s)." }
+		17068I:string { "Syncing index of %s (Reason: %s) %s." }
+		17069E:string { "Failed to sync index." }
+		17070I:string { "Synced index of %s (%d) %s." }
+		17071I:string { "Unpartitioning the medium." }
+		17072E:string { "Cannot unformat: failed to unpartition the medium (%d)." }
+		17073I:string { "Tape Device list:." }
+		17074I:string { "Device Name = %s, Vender ID = %s, Product ID = %s, Serial Number = %s, Product Name =%s." }
+		17075E:string { "Traverse(%c): cannot read index from %d (%c)." }
+		17076E:string { "Traverse(%c): cannot locate to the next index position (%c)." }
+		17077I:string { "Traverse(%c): find target generation %d (%c)." }
+		17078D:string { "Traverse(%c): cannot find target generation %d (%c)." }
+		17079E:string { "Traverse: cannot find target generation %d." }
+		17080D:string { "Traverse(%c): find generation %d (%c)." }
+		17081E:string { "Traverse(%c): callback function failed %d (%c)." }
+		17082E:string { "Traverse(%c): cannot locate to the first index position (%c)." }
+		17083E:string { "Traverse(%c): cannot locate to the last index position (%c)." }
+		17084E:string { "XML parser: failed to read extent list from file (%d)." }
+		17085I:string { "Plugin: Loading \"%s\" %s backend." }
+		17086W:string { "Cannot get kernel version." }
+		17087I:string { "Kernel version: %s." }
+		17088W:string { "Cannot get distribution information." }
+		17089I:string { "Distribution: %s." }
+		17090W:string { "sysctl system call failed (%s)." }
+		17091E:string { "Cannot save tag: libxml2 could not return text for this node." }
+		17092E:string { "Index writer: failed to write opaque tags (%s)." }
+		17093E:string { "XML parser: failed to skip tag." }
+		17094E:string { "XML parser: comment field is longer than 64 KiB." }
+		17095W:string { "The index read from the tape uses an old version of the LTFS format. If this tape is modified, the index upgrades format version to %s from %d.%d.%d." }
+		17096W:string { "The index read from the tape uses a newer version of the LTFS format than the one supported by this software. Some functionality might be unavailable. If this tape is modified, the index downgrades format version to %s from %d.%d.%d." }
+		17097E:string { "XML parser: two extents overlap." }
+		17098E:string { "XML parser: invalid name pattern '%s\'." }
+		17099E:string { "Failed to spawn the periodic sync thread (%d)." }
+
+		17100E:string { "XML parser: UID on the root directory must be 1." }
+		17101E:string { "XML parser: UID 1 is reserved for the root directory." }
+		17102E:string { "Cannot set PEWS: Mode Sense for Device Configuration Extension failed (%d)." }
+		17103E:string { "Cannot set PEWS: Mode Select for Device Configuration Extension failed (%d)." }
+		17104E:string { "Cannot get PEWS: Mode Sense for Device Configuration Extension failed (%d)." }
+		17105E:string { "Cannot load the medium: failed to get programmable early warning size (%d)." }
+		17106E:string { "XML parser: UID 0 is reserved." }
+		17107E:string { "Version mismatch of MAM, IP=%d, DP=%d." }
+		17108E:string { "Cannot find partition id \'%c\'(0x%x)." }
+		17109E:string { "Failed to detect the final index or the final record." }
+		17110I:string { "The MAM was written by PGA1 or earlier." }
+		17111I:string { "The MAM was written by PGA2 or later." }
+		17112I:string { "Starting EOD recovery (GA/PGA1)." }
+		17113I:string { "Starting EOD recovery: reading an index from (%llu, %llu)." }
+		17114I:string { "Seaching the final index in IP." }
+		17115E:string { "Failed to search the final index in IP." }
+		17116I:string { "Detecting the final record in DP." }
+		17117E:string { "Failed to search the final index in DP." }
+		17118I:string { "Seeking to the final index in %s (%llu, %llu)." }
+		17119E:string { "Failed to seek to the final index in %s (%d)." }
+		17120I:string { "Reading the final index in %s (%llu, %llu)." }
+		17121E:string { "Failed to read the final index in %s (%d)." }
+		//unused 17122I:string { "Search one more index after current index (%llu, %llu)." }
+		17123E:string { "Unexpected genaration value (Gen = %d, MAM IP = %d, MAM DP = %d)." }
+		17124I:string { "Seeking to the final record in %s (%llu, %llu)." }
+		17125E:string { "Failed to seek to the final record in %s (%d)." }
+		17126E:string { "Unexpected EOD status (%d, %d)." }
+		17127I:string { "Detecting the final record to read by hitting read error takes about 20 minutes." }
+		//unused 17128W:string { "Unexpected EOD detection on the missing EOD cartridge occurred. No action required." }
+		17129W:string { "Unexpected read error occurred." }
+		17130I:string { "Expected read error occurred." }
+		17131I:string { "Recovering EOD at (%llu, %llu) takes about 20 minutes." }
+		17132E:string { "Failed to get current position." }
+		17133E:string { "Failed to unload the cartridge." }
+		17134E:string { "Failed to reload the cartridge." }
+		17135E:string { "Failed to seek to EOD recovery point." }
+		17136E:string { "Failed to erase at EOD recovery point." }
+		17137E:string { "Failed to recover EOD status (%d)." }
+		17138I:string { "Recovered EOD status successfully (%d)." }
+		17139I:string { "Starting a deep recovery operation: missing EOD." }
+		17140E:string { "Tape backend does not support missing EOD detection." }
+		17141I:string { "Both EODs are detected. A deep recovery operation is unnecessary." }
+		17142E:string { "Both EODs are missing." }
+		17143I:string { "EOD of %s(%d) is missing." }
+		17144E:string { "The MAM of %s is not usable." }
+		17145W:string { "Tape backend does not support missing EOD detection." }
+		17146E:string { "EOD of %s(%d) is missing. A deep recovery operation is required." }
+		17147I:string { "Attempting to mount a cartridge without EOD status check." }
+		17148E:string { "Use ltfsck with the --deep-recovery option." }
+		17149E:string { "Cannot erase: backend call failed (%d)." }
+		//unused 17150I:string { "PEWS field in Device Configuration Extension mode page was changed to disable programmable early warning." }
+		17151E:string { "Cannot set WRITE MODE: Failed to unload medium (%d)." }
+		17152E:string { "Cannot set WRITE MODE: Failed to load medium (%s, %d)." }
+		// unused 17153E:string { "Cannot set WRITE MODE: Invalid mode is specified (%x)." }
+		17154E:string { "Cannot set WRITE MODE: Mode Sense for Device Configuration Extension failed (%d)." }
+		17155E:string { "Cannot set WRITE MODE: Mode Select for Device Configuration Extension failed (%d)." }
+		17156E:string { "Cannot get WRITE MODE: Mode Sense for Device Configuration Extension failed (%d)." }
+		17157I:string { "Changing the drive setting %s." }
+		//unused 17158E:string { "Cannot set up tape drive." }
+		17159I:string { "Process was interruped by user." }
+		17160I:string { "Maximum device block size is %d." }
+		17161I:string { "EOD information (%s) is corrupted." }
+		17162I:string { "Trying a simple recovery that requires several minutes to complete." }
+		//unused 17163E:string { "Cannot reset the capacity proportion: failed to locate partition 0, block 0 (%d)." }
+		17164E:string { "Cannot reset the capacity proportion: backend call failed (%d)." }
+		17165I:string { "Resetting the medium's capacity proportion." }
+		17166D:string { "Coherency Data: %s (%lld, %lld, %lld, %u, %s, %c)." }
+		17167E:string { "Cannot read volume: failed to get capacity data (%d)." }
+		17168E:string { "Cannot read volume: medium is not partitioned." }
+		17169I:string { "Detected EOD on the missing EOD cartridge." }
+		17170E:string { "Failed to parse LTFS dcache configuration rules: invalid option '%s'." }
+		17171E:string { "Failed to parse LTFS dcache configuration rules: invalid value '%d' for option '%s'." }
+		17172W:string { "Time conversion is overflowed. (%04d-%02d-%02dT%02d:%02d:%02dZ)." }
+		17173W:string { "Time conversion is underflowed. (%04d-%02d-%02dT%02d:%02d:%02dZ)." }
+		17174E:string { "Key manager interface backend does not implement all required methods." }
+		17175E:string { "Cannot read: failed to get data key identifier (%d)." }
+		17176E:string { "Cannot read: failed to get data key (%d)." }
+		17177E:string { "Cannot read: no correct key." }
+		17178E:string { "Cannot read: failed to set data key (%d)." }
+		17179I:string { "Cleaning cartridge was loaded. (TA=%016llx)." }
+		17180E:string { "File %s has both of symbolic link and extents." }
+		17181E:string { "Cannot reopen device: failed backend reopen call." }
+		17182D:string { "Writing schema to disk: UUID='%s', barcode='%s'." }
+		17183E:string { "Error writing XML schema to file '%s' on the disk." }
+		17184E:string { "Error changing index cache file's permission (%d)." }
+		17185E:string { "Cannot read LTFS label: max transfer length is shorter than max LTFS label length (%d)." }
+		17186E:string { "Called releaseread_mrsw with zero or less count." }
+		17187E:string { "Unexpected not ready state (%d)." }
+		17188I:string { "Device is not ready (%d)." }
+		17189I:string { "Device is becoming ready (%d)." }
+		17190I:string { "Data key is set to enable encryption feature." }
+		17191I:string { "Data key is cleared to disable encryption feature." }
+		17192W:string { "Cannot read: medium is encrypted." }
+		17193I:string { "Stack[%02d]: %p, %s." }
+		17194I:string { "Stack[%02d]: %p." }
+		17195E:string { "Cannot get maximum block size : %s (%d)." }
+		17196W:string { "Cannot retrieve the tape attribute data: unexpected ID 0x%04x." }
+		17197W:string { "Cannot retrieve the tape attribute data: unexpected length 0x%04x." }
+		17198D:string { "Cannot get the tape attribute: 0x%04x (%s)." }
+		17199W:string { "Cannot update the tape attribute (type: 0x%04x): %s." }
+		17200E:string { "XML parser: cannot save tag, libxml2 workaround failed (%s)." }
+		17201I:string { "Starting a long wipe operation. This can take over 3 hours." }
+		17202E:string { "Failed to wipe the medium (%d)." }
+		17203W:string { "Truncate the tape attribute: %s (%s) to %d bytes." }
+		17204W:string { "Cannot set: unkown tape attribute type(0x%04x): %s." }
+		17205E:string { "Cannot set the tape attribute (type: 0x%04x): %s ." }
+		17206E:string { "Cannot write XML data to file descriptor (%s, %d, %ld)." }
+		17207E:string { "Use the ltfsck command with the --salvage-rollback-points option and select the latest index from the list\n           Then use the ltfs command with the -o rollback-mount-no-eod option by specifying the generation." }
+		17208I:string { "Encountered the last data on the tape (%d). The last read index generation is %d." }
+		17217W:string { "%s is out of range in setting time (%s:%llu sec=%lld)." }
+		17218W:string { "%s is out of range in parsing the label (%s)." }
+		17219W:string { "%s is out of range in parsing the index (%s)." }
+		17220W:string { "%s is out of range in parsing dentry (%s:%llu %s)." }
+		17221W:string { "%s is out of range in setting xattr (%s:%llu %s)." }
+		17222W:string { "%s is out of range in getting xattr (%s:%llu sec = %lld)." }
+		17223W:string { "%s is out of range in creating the label (%lld)." }
+		17224W:string { "%s is out of range in creating the index (%lld)." }
+		17225W:string { "%s is out of range in creating dentry (%lld)." }
+		17226W:string { "Cannot update the tape attribute: the maximum (%s) attribute length is %d." }
+		17227I:string { "Tape attribute: %s = %s." }
+		17228I:string { "Tape attribute: %s = 0x%02x." }
+		17229D:string { "Truncate the tape attribute: %s (%s) to %d bytes." }
+		17230W:string { "The bar code information is null." }
+		17231E:string { "Cannot %s the tape attribute: %s." }
+		17232E:string { "Failed to initialize file system component (%d)." }
+		17233E:string { "Failed to kick gcore." }
+		17234W:string { "The index read from the tape uses a newer version of the LTFS format than the one supported by this software. If this tape is modified, the index downgrades to format version %s from %d.%d.%d." }
+		17235I:string { "Writing index of %s to %c (Reason: %s, %lld files) %s." }
+		17236I:string { "Wrote index of %s (%c, %s)." }
+		17237E:string { "WORM related error (%s)." }
+		17238I:string { "WORM status updated (%s=>%d) '%s'." }
+		17239E:string { "Failed to update density (%s) %d." }
+		17240I:string { "Density code is updated to x%02x." }
+		17241W:string { "Failed to open the advisory lock '%s' (%d)." }
+		17242W:string { "Failed to acquire the advisory lock '%s' (%d)." }
+		17243W:string { "Failed to release the advisory lock (%d)." }
+		17244E:string { "XML writer: failed to write a block to the disk (%d)." }
+		17245E:string { "XML writer: failed to flush cached data to the disk (%d)." }
+		17246E:string { "Failed to % (%d)." }
+		17247W:string { "Failed to create the path of %s (%s)." }
+		17248W:string { "Failed to open %s (%s)." }
+		17249I:string { "Information of %lld files are written to the offset cache." }
+		17250I:string { "Information of %lld files are written to the sync list." }
+		17251I:string { "File %s (%lld) was opened when this index was written." }
+		17252W:string { "Invalid value (%s) in the %s tag in UID %lld." }
+
+		// For Debug 19999I:string { "%s %s %d." }
+
+		// DO NOT place messages with IDs 20000 or higher here!
+		// If you are writing a plugin for libltfs, create a separate message bundle
+		// containing messages with
+		// start_id 20000 and end_id 20999 (for driver plugins) or
+		// start_id 21000 and end_id 21999 (for scheduler plugins).
+		// See messages/README for more information.
+	}
+}

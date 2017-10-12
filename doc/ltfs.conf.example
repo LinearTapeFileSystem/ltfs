@@ -1,0 +1,38 @@
+# Automatically generated LTFS configuration file for Linux.
+# Edit this file to add or remove tape driver plugins and I/O
+# schedulers or to change default settings.
+#
+# To make configuration changes that will persist across software
+# updates, edit ltfs.conf.local instead of this file.
+
+# Tape device plugins
+# Syntax: driver PLUGIN-NAME PLUGIN-PATH
+# The PLUGIN-PATH may contain spaces.
+driver ibmtape /opt/IBM/ltfs/lib64/ltfs/libdriver-ibmtape.so
+driver file /opt/IBM/ltfs/lib64/ltfs/libdriver-file.so
+
+# I/O scheduler plugins
+# Syntax: iosched PLUGIN-NAME PLUGIN-PATH
+# The PLUGIN-PATH may contain spaces.
+iosched unified /opt/IBM/ltfs/lib64/ltfs/libiosched-unified.so
+iosched fcfs /opt/IBM/ltfs/lib64/ltfs/libiosched-fcfs.so
+
+# Key Manager Interface plugins
+# Syntax: kmi PLUGIN-NAME PLUGIN-PATH
+# The PLUGIN-PATH may contain spaces.
+kmi flatfile /opt/IBM/ltfs/lib64/ltfs/libkmi-flatfile.so
+kmi simple /opt/IBM/ltfs/lib64/ltfs/libkmi-simple.so
+
+# Default plugins
+# Syntax: default PLUGIN-TYPE PLUGIN-NAME
+# The PLUGIN-NAME must be one of those defined using a "driver" or "iosched" line.
+# For a PLUGIN-TYPE of iosched, the special "none" name may be used to indicate that
+# no I/O scheduler should be used by default.
+default driver ibmtape
+default iosched unified
+default kmi none
+
+# Include the local settings file. That file is not overwritten when a newer
+# version of LTFS is installed.
+include /etc/ltfs.conf.local
+

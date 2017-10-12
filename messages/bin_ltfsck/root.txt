@@ -1,0 +1,188 @@
+//
+//
+//  OO_Copyright_BEGIN
+//
+//
+//  Copyright 2010, 2017 IBM Corp.
+//
+//  Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions
+//  are met:
+//  1. Redistributions of source code must retain the above copyright
+//     notice, this list of conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright
+//     notice, this list of conditions and the following disclaimer in the
+//  documentation and/or other materials provided with the distribution.
+//  3. Neither the name of the copyright holder nor the names of its
+//     contributors may be used to endorse or promote products derived from
+//     this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
+//
+//  OO_Copyright_END
+//
+
+// Messages for ltfsck.
+root:table {
+	messages:table {
+		start_id:int { 16000 }
+		end_id: int { 16499 }
+
+		16000I:string { "Starting ltfsck, %s version %s, log level %d." }
+		16001E:string { "Cannot allocate LTFS volume structure." }
+		16002E:string { "Option validation failed." }
+		16003E:string { "Must provide search criteria using -g." }
+		16004E:string { "Unexpected condition: str_gen is not specified." }
+		16005E:string { "Invalid generation number %s." }
+		16006I:string { "Rolling back to generation %d." }
+		//unused 16007E:string { "Invalid time string %s." }
+		//unused 16008D:string { "Specified time is %04d-%02d-%02d %02d:%02d:%02d.%09ld %s." }
+		16009E:string { "Must provide device name." }
+		16010E:string { "Cannot load backend \'%s\' (%d)." }
+		16011E:string { "Cannot open device \'%s\'." }
+		//unused 16012E:string { "Cannot load medium." }
+		//unused 16013E:string { "Cannot take the device lock (%d)." }
+		16014I:string { "Checking LTFS file system on \'%s\'." }
+		16015I:string { "Rolling back LTFS file system on \'%s\'." }
+		16016E:string { "Invalid search mode." }
+		16017I:string { "Verify rollback point on \'%s\'." }
+		16018I:string { "Listing LTFS file system rollback points on \'%s\'." }
+		16019E:string { "Invalid operation mode." }
+		16020W:string { "Failed to close the device (%d)." }
+		16021E:string { "Volume is inconsistent and was not corrected." }
+		16022I:string { "Volume is consistent." }
+		16023I:string { "LTFS volume information:." }
+		16024I:string { "Volser (bar code) : %s." }
+		16025I:string { "Volume UUID     : %s." }
+		16026I:string { "Format time     : %04d-%02d-%02d %02d:%02d:%02d.%09ld %s." }
+		16027I:string { "Block size      : %lu." }
+		16028I:string { "Compression     : %s." }
+		16029I:string { "Index partition : ID = %c, SCSI Partition = %u." }
+		16030I:string { "Data partition  : ID = %c, SCSI Partition = %u." }
+		16031I:string { "Data placement policy information:." }
+		16032I:string { "Size threshold : %llu." }
+		16033I:string { "Name pattern   : %s." }
+		16034I:string { "Policy update  : %s." }
+		//unused 16035E:string { "Cannot traverse indexes: failed to seek EOD on partition %c (%d)." }
+		//unused 16036E:string { "Cannot traverse indexes: failed to space back 1 file mark (%d)." }
+		//unused 16037E:string { "Cannot traverse indexes: failed to space forward 1 file mark (%d)." }
+		//unused 16038I:string { "Partition %c ends in a valid index, but no trailing file mark was found. Closing the partition with a file mark." }
+		//unused 16039D:string { "Partition %c ends in a file mark." }
+		//unused 16040I:string { "Partition %c ends in a valid index, but no trailing file mark was found." }
+		//unused 16041D:string { "Partition %c ends in a valid index." }
+		//Unused 16042E:string { "Cannot traverse indexes: callback function failed (%d)." }
+		//unused 16043I:string { "Partition %c does not end in a valid index." }
+		//unused 16044E:string { "Cannot traverse indexes: failed to space back file marks (%d)." }
+		16045D:string { "Erasing history from (%c, %llu)." }
+		16046D:string { "Rolling back %s: (%c, %llu)." }
+		//unused 16047E:string { "Cannot read volume: failed to load the tape (%d)." }
+		//unused 16048E:string { "Cannot read volume: failed to read the partition labels (%d)." }
+		//unused 16049E:string { "Cannot read volume: failed to set compression (%d)." }
+		16050D:string { "Erase history: spacing to end of index." }
+		16051E:string { "Cannot erase history: failed to space forward 1 file mark (%d)." }
+		16052D:string { "Erase history: spacing back and writing a file mark." }
+		16053E:string { "Cannot erase history: failed to space back 1 file mark (%d)." }
+		16054E:string { "Cannot erase history: failed to write a file mark (%d)." }
+		16055E:string { "Cannot roll back the data partition: failed to erase history (%d)." }
+		16056E:string { "Cannot roll back the data partition: failed to write an index (%d)." }
+		16057E:string { "Cannot roll back: the medium is read-only." }
+		16058I:string { "Rolling back from the index partition." }
+		16059E:string { "Cannot roll back the index partition: failed to erase history (%d)." }
+		16060E:string { "Cannot roll back the index partition: failed to write an index (%d)." }
+		16061E:string { "Cannot roll back: invalid partition ID %c." }
+		16062I:string { "Roll back from the data partition." }
+		16063I:string { "Specified rollback point is the current index. The volume is consistent. No operation is required." }
+		//unused 16064I:string { "Specified rollback point is the current index, but there are extra blocks on the medium." }
+		//unused 16065I:string { "Restoring volume consistency based on the following index." }
+		//unused 16066I:string { "At least one index is not at the end of its partition." }
+		16067I:string { "Rolling back based on the following index chain." }
+		16068E:string { "Cannot roll back: found 2 or more target indexes in one partition (%d)." }
+		//unused 16069E:string { "Cannot roll back: found 3 or more target indexes." }
+		16070E:string { "Cannot roll back: failed to load the volume (%d)." }
+		16071E:string { "Cannot roll back: failed to traverse the index partition (%d)." }
+		16072E:string { "Cannot roll back: failed to traverse the data partition (%d)." }
+		16073E:string { "Cannot roll back: failed to find indexes." }
+		16074E:string { "Cannot list rollback points: failed to load the volume (%d)." }
+		16075E:string { "Cannot list rollback points: failed to traverse the index partition (%d)." }
+		16076E:string { "Cannot list rollback points: failed to traverse the data partition (%d)." }
+		//unused 16077I:string { "Valid indexes:." }
+		//unused 16078I:string { "No indexes found." }
+		16079E:string { "Cannot roll back: failed to save index partition append position (%d)." }
+		16080E:string { "Cannot check volume (%d)." }
+		16081D:string { "Latest index generation is %d (%c, %llu)." }
+		16082I:string { "Saving latest index to data partition to save history." }
+		16083I:string { "List indexes in forward direction strategy." }
+		16084I:string { "List indexes in backward direction strategy." }
+		16085E:string { "Unexpected traverse strategy." }
+		16086I:string { "Volume is rolled back successfully." }
+		16087E:string { "Volume is inconsistent. Try to recover consistency with ltfsck first." }
+		16088I:string { "Launched by \"%s\"." }
+		16089I:string { "%s." }
+		16090I:string { "GCC version is %s." }
+		16091E:string { "Cannot recover missing EOD (%d)." }
+		16092E:string { "Cannot set up tape drive (%s)." }
+		16093E:string { "Cannot recover the cartridge with ltfsck." }
+		16094E:string { "CM in the cartridge might be corrupted. Try to run ltfs with the \"-o force_mount_no_eod\" option." }
+		// unused 16095
+		16096W:string { "Both EODs are missing. Attempt to list index information." }
+		16097E:string { "Both EODs are missing. Roll back operation is not permitted." }
+		16098E:string { "Cannot roll back the cartridge: found unsupported index version." }
+		16099E:string { "Use the latest version of LTFS software." }
+		16100E:string { "Cannot recover the cartridge: found unsupported index version." }
+		16101E:string { "Please use the latest version os LTFS software or --deep-recovery option." }
+		16102E:string { "Cannot open key manager interface backend \'%s\'." }
+		16103W:string { "Cannot unload key manager interface backend." }
+		16104E:string { "Could not initialize the key manager interface plug-in. \'%s\' (%d)." }
+		16105E:string { "Key manager interface backend option parsing failed." }
+		16106E:string { "Tape backend option parsing failed." }
+		16107E:string { "Unknown option '%s %s'." }
+		16108I:string { "%s version %s." }
+		16109E:string { "This operation is not allowed on this medium (%s)." }
+		16110E:string { "The --salvage-rollback-points option was specified against a normal cartridge." }
+		16111I:string { "The recovery process is skipped because of a locked cartridge (%d)." }
+
+		// Help messages
+		16400I:string { "Usage: %s [options] filesys" }
+		16401I:string { "filesys                           Device file for the tape drive" }
+		16402I:string { "Available options are:" }
+		16403I:string { "  -g, --generation=<generation>   Specify the generation to roll back" }
+		16404I:string { "  -r, --rollback                  Roll back to the point specified by -g" }
+		16405I:string { "  -n, --no-rollback               Do not roll back. Verify the point specified by -g (default)" }
+		16406I:string { "  -f, --full-recovery             Recover extra data blocks into directory %s" }
+		16407I:string { "  -l, --list-rollback-points      List rollback points" }
+		16408I:string { "  -j, --erase-history             Erase history at rollback" }
+		16409I:string { "  -k, --keep-history              Keep history at rollback (default)" }
+		16410I:string { "  -q, --quiet                     Suppress informational messages" }
+		16411I:string { "  -t, --trace                     Enable diagnostic output" }
+		16412I:string { "  -h, --help                      This help" }
+		16413I:string { "  -p, --advanced-help             Full help, including advanced options" }
+		16414I:string { "  -i, --config=<file>             Use the specified configuration file (default: %s)" }
+		16415I:string { "  -e, --backend=<name>            Override the default tape device backend" }
+		16416I:string { "  -x, --fulltrace                 Enable full function call tracing (slow)" }
+		//unused 16417I
+		//unused 16418I:string { "  -t, --time=<time>               Specify the time to roll back" }
+		//unused 16419I:string { "                                  Time value should be \"yyyy-mm-dd HH:MM:SS.nanosec\"" }
+		16420I:string { "  -v, --traverse=<strategy>       Set traverse mode for listing roll back points. Strategy should be forward or backward. (default: backward)" }
+		16421I:string { "  -z, --deep-recovery             Recover EOD missing cartridge.\n"
+				"                                  Some blocks might be erased, but recover to final unmount point\n"
+				"                                  with an index version of at least "2.0.0" or earlier.\n"
+				"                                  (Must be used for a cartridge that cannot be recovered by a normal option.)" }
+		16422I:string { "  -m, --full-index-info           Display full index information (Effective only for -l option)" }
+		16423I:string { "      --kmi-backend=<name>        Override the default key manager interface backend" }
+		16424I:string { "      --capture-index             Capture index information to the current directory (-g is effective for this option)" }
+		16425I:string { "      --syslogtrace               Enable diagnostic output to stderr and syslog" }
+		16426I:string { "  -V, --version                   Version information" }
+		16427I:string { "      --salvage-rollback-points   List the rollback points of the cartridge that has no EOD" }
+	}
+}

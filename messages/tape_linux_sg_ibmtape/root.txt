@@ -1,0 +1,122 @@
+//
+//
+//  OO_Copyright_BEGIN
+//
+//
+//  Copyright 2010, 2017 IBM Corp.
+//
+//  Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions
+//  are met:
+//  1. Redistributions of source code must retain the above copyright
+//     notice, this list of conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright
+//     notice, this list of conditions and the following disclaimer in the
+//  documentation and/or other materials provided with the distribution.
+//  3. Neither the name of the copyright holder nor the names of its
+//     contributors may be used to endorse or promote products derived from
+//     this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
+//
+//  OO_Copyright_END
+//
+
+// Messages for the sg backend.
+root:table {
+	messages:table {
+		start_id:int { 30200 }
+		end_id:int { 30399 }
+
+		30200I:string { "Failed to execute SG_IO ioctl, opcode = %02x (%d)." }
+		30201D:string { "CDB check condition: sense = %06x, %s." }
+		30202D:string { "CDB %s." }
+		30203I:string { "CDB unexpected status: S = 0x%02x, H = 0x02%x, D = 0x%02x." }
+		30204D:string { "%s (0x%02x) expected error %d." }
+		30205I:string { "%s (0x%02x) returns %d." }
+		30206I:string { "Cannot open device: inquiry failed (%d)." }
+		30207I:string { "Vendor ID is %s." }
+		30208I:string { "Product ID is %s." }
+		30209I:string { "Opening a device through sg-ibmtape driver (%s)." }
+		30210I:string { "Cannot open device: failed to open %s (%d)." }
+		30211I:string { "Cannot %s blocking mode (%d)." }
+		30212I:string { "Cannot get drive identifier of %s." }
+		30213I:string { "Unsupported Drive \'%s\'." }
+		30214I:string { "Firmware revision is %s." }
+		30215I:string { "Drive serial is %s." }
+		30216W:string { "Length mismatch is detected. (Act = %d, resid = %d, resid_sense = %d)." }
+		30217I:string { "Read block: overrun in illegal length. residual = %d, actual = %d." }
+		30218D:string { "Read block: underrun in illegal length. residual = %d, actual = %d." }
+		30219D:string { "Read block: file mark detected." }
+		30220I:string { "Drive cleaning required." }
+		30221E:string { "Logical block protection Error on read." }
+		30222W:string { "Received low space warning (early warning) in %s." }
+		30223W:string { "Received low space warning (programmable early warning) in %s." }
+		30224D:string { "EOD detected (%s): ignore sense." }
+		30225I:string { "Unrecognized space type." }
+		30226I:string { "A long data wipe is in progress. (%d minutes passed)." }
+		30227I:string { "A long data wipe is in progress. %d %%." }
+		30228I:string { "Unsupported cartridge (0x%x, 0x%x)." }
+		30229I:string { "Cannot get remaining capacity: get log page 0x%02x failed (%d)." }
+		30230I:string { "Cannot parse remaining capacity (0x%x, %d)." }
+		30231I:string { "Unexpected field in remaining capacity (0x%x)." }
+		30232I:string { "Cannot get remaining capacity: failed to parse the log page." }
+		30233I:string { "Cannot read attribute (%d)." }
+		30234I:string { "Cannot get log page 0x%02x (%d) in %s." }
+		30235I:string { "Cannot parse the log page 0x%02x in %s." }
+		30236I:string { "Unexpected parameter size for getting active CQ loss write (%d)." }
+		30237W:string { "Cannot get EOD status: failed to get log page 0x%02x (%d)." }
+		30238W:string { "Cannot get EOD status: failed to parse the log page." }
+		30239W:string { "Cannot get EOD status: value length or partition number is wrong %d - (%d, %d)." }
+		30240I:string { "Cannot open directory (/dev)." }
+		30241E:string { "Invalid scsi_lbprotect option: %s." }
+		30242E:string { "Encryption method of the drive is not AME but %s (0x%02X)." }
+		30243E:string { "Encryption feature is not supported on the drive: %d." }
+		//unused 30244
+		//unused 30245
+		//unused 30246
+		//unused 30247
+		//unused 30248
+		30249W:string { "Drive firmware must be upgraded to %s or later." }
+		30250W:string { "Drive firmware level does not correctly detect the EOD status." }
+		30251I:string { "Logical block protection is enabled." }
+		30252I:string { "Logical block protection is disabled." }
+		30253I:string { "Saving drive dump to %s." }
+		30254W:string { "Cannot retrieve drive dump: failed to create dump file (%d)." }
+		30255D:string { "Total dump data length is %lld." }
+		30256D:string { "Total number of transfers is %d." }
+		30257D:string { "Transferring dump data." }
+		30258W:string { "Cannot retrieve drive dump: failed to read buffer (%d)." }
+		30259W:string { "Cannot retrieve drive dump: failed to write to dump file (%d)." }
+		30260W:string { "Cannot retrieve drive dump: wrote %d bytes out, expected %d." }
+		30261I:string { "Taking drive dump in buffer." }
+		30262I:string { "Forcing drive dump." }
+		30263I:string { "%s returns %s (%d) %s." }
+		30264E:string { "%s returns msg = NULL (%d) %s." }
+		30265W:string { "Failed to get medium type code: medium type check is skipped." }
+
+		30392D:string { "Backend %s %s." }
+		30393D:string { "Backend %s: %d %s." }
+		30394D:string { "Backend %s: %zu %s." }
+		30395D:string { "Backend %s: %zu bytes %s." }
+		30396D:string { "Backend %s: %llu %s." }
+		30397D:string { "Backend %s: (%llu, %llu) %s." }
+		30398D:string { "Backend %s: (%llu, %llu) FM = %llu %s." }
+		30399I:string { "sg tape backend for IBM tape options:\n"
+						"    -o devname=<dev>           tape device (default=%s)\n"
+						"    -o autodump                enable autodump (default)\n"
+						"    -o noautodump              disable autodump\n"
+						"    -o scsi_lbprotect=<on|off> enable drive logical block protection (default=off)\n." }
+        }
+}
