@@ -1,24 +1,24 @@
+Coding Style guide for LTFS
+=============
 
 Naming conventions
-------------------
+-------------
 
-- We don't use capital letters, except on defines and enumerators 
-  (see below).
-
+- We don't use capital letters, except on defines and enumerators (see below).
 - Public APIs are always prefixed by the name of that module:
-  ltfs.c: ltfs_statfs(), ltfs_open(), ltfs_close(), ltfs_read()
-  fs.c: fs_resolve_dentry(), fs_set_name(), fs_set_creation_time()
+  * ltfs.c: ltfs_statfs(), ltfs_open(), ltfs_close(), ltfs_read()
+  * fs.c: fs_resolve_dentry(), fs_set_name(), fs_set_creation_time()
 
 
 Spaces, tabs and commas
------------------------
+-------------
 
-When indenting the code, always use TABs with 4 spaces. Do not
-replace TABs by spaces.
+When indenting the code, always use TABs with 4 spaces. Do not replace TABs by spaces. Remove trailing spaces of a line and empty lines at the end of file.
 
-When writing arguments to a function or defining enums, also use 
-the following comma conventions:
+When writing arguments to a function or defining enums, also use the following comma conventions:
 
+
+```
 call_function(arg1, arg2, arg3);
 
 call_another_function(
@@ -32,26 +32,27 @@ enum very_cool_enumerator {
 	VERY_COOL_2,
 	VERY_COOL_3,
 };
-
+```
 
 Macros and defines
-------------------
+-------------
 
-When defining wrappers around functions using macros do that
-using lowercase characters. Defines always go in uppercase.
+When defining wrappers around functions using macros do that using lowercase characters. Defines always go in uppercase.
 
+```
 #define wrapper_around_some_function(x,y) \
 	...
 
 #define LTFS_MAX_VALUE 2112
-
+```
 
 Functions
----------
+-------------
 
-Return type, function name and its parameters should go all
-in a single line, except if the parameters are too long.
+Return type, function name and its parameters should go all in a single line, except if the parameters are too long.
 
+
+```
 void ltfs_function(void *params)
 {
 }
@@ -60,11 +61,12 @@ void ltfs_function_with_many_parameters(void *params1,
 	void *params2, void *params3)
 {
 }
-
+```
 
 Conditional tests
------------------
+-------------
 
+```
 if (condition) {
 	line 1;
 	line 2;
@@ -77,7 +79,7 @@ else
 	do that;
 
 if (yet another condition) {
-	/* 
+	/*
 	 * It's ok to open brackets when adding comments,
 	 * just to make it clear where the scope ends.
 	 * That can improve readability when comments
@@ -85,30 +87,32 @@ if (yet another condition) {
 	 */
 	 do something else;
 }
-
+```
 
 Loops
------
+-------------
 
+```
 for (x=start; x<end; ++x) {
 	body
 }
-
+```
 
 Comments
---------
+-------------
 
 Please do not use C++ style comments (//), except when
 temporarily commenting out a line of code. If too many
 lines are being commented out consider using #if 0 instead
 or, preferably, just remove that code completely.
 
-For comments, always use the C style (/* comments */), 
+For comments, always use the C style (/* comments */),
 even if that's just a single line.
 
 For documenting functions, please use the Doxygen-friendly
 format below:
 
+```
 /**
  * General comments about the function go here.
  * @param var1 Describe what var1 does.
@@ -121,9 +125,9 @@ format below:
 int function(void *var1, void *var2)
 {
 }
-
+```
 
 Maximum line length
--------------------
+-------------
 
 Lines must not exceed 100 characters.
