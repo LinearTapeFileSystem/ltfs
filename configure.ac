@@ -9,13 +9,13 @@
 ;;   modification, are permitted provided that the following conditions
 ;;  are met:
 ;;  1. Redistributions of source code must retain the above copyright
-;;     notice, this list of conditions and the following disclaimer.
+;;   notice, this list of conditions and the following disclaimer.
 ;;  2. Redistributions in binary form must reproduce the above copyright
-;;     notice, this list of conditions and the following disclaimer in the
+;;   notice, this list of conditions and the following disclaimer in the
 ;;  documentation and/or other materials provided with the distribution.
 ;;  3. Neither the name of the copyright holder nor the names of its
-;;     contributors may be used to endorse or promote products derived from
-;;     this software without specific prior written permission.
+;;   contributors may be used to endorse or promote products derived from
+;;   this software without specific prior written permission.
 ;;
 ;;  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
 ;;  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -39,6 +39,8 @@ dnl
 AC_INIT([LTFS], [2.4.0.0 (10022)], IBM corporation.)
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_MACRO_DIRS([m4])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_HOST
 AC_CANONICAL_BUILD
 AC_CANONICAL_TARGET
@@ -51,13 +53,32 @@ AM_PROG_AR
 AC_PROG_LIBTOOL
 
 dnl
+dnl Check OS
+dnl
+
+host_linux=no
+host_mac=no
+
+case "${host_os}" in
+	linux*)
+		host_linux=yes
+		;;
+	darwin*)
+		host_mac=yes
+		;;
+	*)
+		AC_MSG_ERROR(["OS $host_os is not supported"])
+		;;
+esac
+
+dnl
 dnl Check for debug
 dnl
 AC_MSG_CHECKING([whether to compile in debug mode])
 AC_ARG_ENABLE([debug],
-    [AS_HELP_STRING([--enable-debug],[compile with extra debugging output])],
-    [use_debug=$enableval],
-    [use_debug=no]
+	[AS_HELP_STRING([--enable-debug],[compile with extra debugging output])],
+	[use_debug=$enableval],
+	[use_debug=no]
 )
 AC_MSG_RESULT([$use_debug])
 
@@ -78,9 +99,9 @@ dnl Check for livelink enable
 dnl
 AC_MSG_CHECKING([whether to enable livelink mode support [default=yes] ])
 AC_ARG_ENABLE([livelink],
-    [AS_HELP_STRING([--enable-livelink],[compile with livelink mode support [default=yes]])],
-    [livelink=$enableval],
-    [livelink=yes]
+	[AS_HELP_STRING([--enable-livelink],[compile with livelink mode support [default=yes]])],
+	[livelink=$enableval],
+	[livelink=yes]
 )
 AC_MSG_RESULT([$livelink])
 
@@ -98,7 +119,14 @@ dnl Check for special environment variables
 dnl
 if test -z "$DEFAULT_TAPE"
 then
-	DEFAULT_TAPE=lin_tape
+	if test "x${host_linux}" = "xyes"
+	then
+		DEFAULT_TAPE=lin_tape
+	fi
+	if test "x${host_mac}" = "xyes"
+	then
+		DEFAULT_TAPE=iokit
+	fi
 fi
 if test -z "$DEFAULT_IOSCHED" ; then
 	DEFAULT_IOSCHED=unified
@@ -115,11 +143,11 @@ dnl Check for pkg-config
 dnl
 if test -z "$PKG_CONFIG"
 then
-    AC_PATH_PROG(PKG_CONFIG, pkg-config, [no])
+	AC_PATH_PROG(PKG_CONFIG, pkg-config, [no])
 fi
 if test "x${PKG_CONFIG}" = "xno"
 then
-    AC_MSG_ERROR([pkg-config was not found])
+	AC_MSG_ERROR([pkg-config was not found])
 fi
 
 dnl
@@ -144,8 +172,14 @@ dnl
 dnl Check for FUSE, libuuid, and libxml2
 dnl
 PKG_CHECK_MODULES([FUSE_MODULE], [fuse >= 2.6.0])
-PKG_CHECK_MODULES([UUID_MODULE], [uuid >= 1.36])
 PKG_CHECK_MODULES([LIBXML2_MODULE], [libxml-2.0 >= 2.6.16])
+
+if test "x${host_mac}" = "xyes"
+then
+	PKG_CHECK_MODULES([UUID_MODULE], [uuid >= 1.6])
+else
+	PKG_CHECK_MODULES([UUID_MODULE], [uuid >= 1.36])
+fi
 
 dnl
 dnl Check for ICU
@@ -154,7 +188,7 @@ ICU_MODULE_CFLAGS="`icu-config --cppflags 2> /dev/null`";
 ICU_MODULE_LIBS="`icu-config --ldflags 2> /dev/null`";
 if test -z "$ICU_MODULE_LIBS"
 then
-    PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
+	PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
 fi
 
 dnl
@@ -165,12 +199,12 @@ SNMP_MODULE_LIBS_A="`net-snmp-config --agent-libs` 2> /dev/null";
 SNMP_MODULE_LIBS="`net-snmp-config --libs 2> /dev/null`";
 if test -z "$SNMP_MODULE_LIBS_A"
 then
-    PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
+	PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
 fi
 
 if test -z "$SNMP_MODULE_LIBS"
 then
-    PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
+	PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
 fi
 
 dnl
@@ -215,11 +249,11 @@ SAVE_CFLAGS=$CFLAGS
 CFLAGS="$CFLAGS ${LIBXML2_MODULE_CFLAGS}"
 AC_MSG_CHECKING(for XML_PARSE_HUGE)
 AC_CACHE_VAL(ac_cv_xml_huge,
-    AC_TRY_COMPILE([#include <libxml/parser.h>],
-                   [int foo = XML_PARSE_HUGE; return 0],
-                   ac_cv_xml_huge=yes,
-                   ac_cv_xml_huge=no
-                   ))
+	AC_TRY_COMPILE([#include <libxml/parser.h>],
+				   [int foo = XML_PARSE_HUGE; return 0],
+				   ac_cv_xml_huge=yes,
+				   ac_cv_xml_huge=no
+				   ))
 AC_MSG_RESULT($ac_cv_xml_huge)
 CFLAGS="$SAVE_CFLAGS"
 
@@ -242,7 +276,7 @@ else
 	AM_CFLAGS="${AM_CFLAGS} -fkeep-inline-functions -rdynamic"
 	if test "x$use_debug" = "xyes"
 	then
-    	AM_CPPFLAGS="${AM_CPPFLAGS} -DDEBUG -DTRACE"
+		AM_CPPFLAGS="${AM_CPPFLAGS} -DDEBUG -DTRACE"
 	fi
 fi
 
@@ -294,13 +328,23 @@ fi
 dnl
 dnl Configure standard options
 dnl
-AM_CFLAGS=`echo ${AM_CFLAGS} | sed -n 's|-D_FORTIFY_SOURCE=. ||gp'`
+if test -x /usr/local/bin/gsed
+then
+	SED='gsed'
+else
+	SED='sed'
+fi
+
+AM_CFLAGS=`echo ${AM_CFLAGS} | ${SED} 's|-D_FORTIFY_SOURCE=. ||g'`
 AM_LDFLAGS="${AM_LDFLAGS} ${FUSE_MODULE_LIBS} ${UUID_MODULE_LIBS} ${LIBXML2_MODULE_LIBS} ${ICU_MODULE_LIBS} ${SNMP_MODULE_LIBS_A} ${SNMP_MODULE_LIBS}"
 CFLAGS="${CFLAGS} ${OPT_FLAGS}"
 
 dnl
 dnl Define options
 dnl
+AM_CONDITIONAL([PLATFORM_LINUX], [test "$host_linux" = "yes"])
+AM_CONDITIONAL([PLATFORM_MAC], [test "$host_mac" = "yes"])
+
 AC_SUBST(CFLAGS)
 AC_SUBST(CRC_OPTIMIZE)
 AC_SUBST(AM_CPPFLAGS)
@@ -312,19 +356,21 @@ dnl Output files
 dnl
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
-    Makefile
-    messages/Makefile
-    conf/Makefile
-    man/Makefile
-    init.d/Makefile
-    src/Makefile
-    src/libltfs/Makefile
-    src/tape_drivers/generic/file/Makefile
-    src/tape_drivers/generic/itdtimg/Makefile
-    src/tape_drivers/linux/lin_tape/Makefile
-    src/tape_drivers/linux/sg-ibmtape/Makefile
-    src/iosched/Makefile
-    src/kmi/Makefile
-    src/utils/Makefile
+	Makefile
+	messages/Makefile
+	conf/Makefile
+	man/Makefile
+	init.d/Makefile
+	src/Makefile
+	src/libltfs/Makefile
+	src/tape_drivers/generic/file/Makefile
+	src/tape_drivers/generic/itdtimg/Makefile
+	src/tape_drivers/linux/lin_tape/Makefile
+	src/tape_drivers/linux/sg-ibmtape/Makefile
+	src/tape_drivers/osx/iokit-ibmtape/Makefile
+	src/iosched/Makefile
+	src/kmi/Makefile
+	src/utils/Makefile
 ])
+
 AC_OUTPUT

@@ -8,8 +8,8 @@
 # Tape device plugins
 # Syntax: plugin tape PLUGIN-NAME PLUGIN-PATH
 # The PLUGIN-PATH may contain spaces.
-plugin tape lin_tape __LIBDIR__/ltfs/libtape-lin_tape.so
-plugin tape sg __LIBDIR__/ltfs/libtape-sg-ibmtape.so
+
+__PLATFORM_DRIVERS__
 plugin tape file __LIBDIR__/ltfs/libtape-file.so
 plugin tape itdtimg __LIBDIR__/ltfs/libtape-itdtimg.so
 

@@ -63,7 +63,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-#ifdef __APPLE__
+#ifdef __APPLE_MAKEFILE__
 #include <ICU/unicode/utf8.h>
 #include <ICU/unicode/ustring.h>
 #else

@@ -40,6 +40,14 @@ ltfs_DEPENDENCIES = libltfs/libltfs.la ../messages/bin_ltfs_dat.o
 ltfs_CPPFLAGS = @AM_CPPFLAGS@ -I ../ltfs-sde/src
 ltfs_LDADD = libltfs/libltfs.la ../messages/bin_ltfs_dat.o
 
-platform_drivers = tape_drivers/linux/lin_tape tape_drivers/linux/sg-ibmtape
+if PLATFORM_LINUX
+PLAT_OPT = tape_drivers/linux/lin_tape tape_drivers/linux/sg-ibmtape
+endif
+
+if PLATFORM_MAC
+PLAT_OPT = tape_drivers/osx/iokit-ibmtape
+endif
+
 generic_drivers = tape_drivers/generic/file tape_drivers/generic/itdtimg
+platform_drivers = $(PLAT_OPT)
 SUBDIRS = $(generic_drivers) $(platform_drivers) iosched kmi libltfs utils

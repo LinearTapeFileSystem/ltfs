@@ -5,10 +5,16 @@ set -e
 KERNEL_NAME=`uname -s`
 if [ "$KERNEL_NAME" = "Darwin" ]; then
 	ICU_FRAMEWORK=/Library/Frameworks/ICU.framework
-	export PATH=${PATH}:${ICU_FRAMEWORK}/Versions/Current/usr/bin
-	export DYLD_LIBRARY_PATH=${ICU_FRAMEWORK}/Versions/Current/usr/lib
-	GENRB=${ICU_FRAMEWORK}/Versions/Current/usr/bin/genrb
-	PKGDATA=${ICU_FRAMEWORK}/Versions/Current/usr/bin/pkgdata
+
+	if [ -d ${ICU_FRAMEWORK} ]; then
+		export PATH=${PATH}:${ICU_FRAMEWORK}/Versions/Current/usr/bin
+		export DYLD_LIBRARY_PATH=${ICU_FRAMEWORK}/Versions/Current/usr/lib
+		GENRB=${ICU_FRAMEWORK}/Versions/Current/usr/bin/genrb
+		PKGDATA=${ICU_FRAMEWORK}/Versions/Current/usr/bin/pkgdata
+	else
+		GENRB=genrb
+		PKGDATA=pkgdata
+	fi
 else
 	if [ -x /usr/bin/genrb ]; then
 		GENRB=/usr/bin/genrb

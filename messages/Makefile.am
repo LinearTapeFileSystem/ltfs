@@ -56,6 +56,7 @@ RESOURCES = \
 	tape_generic_itdtimg_dat.o \
 	tape_linux_lin_tape_dat.o \
 	tape_linux_sg_ibmtape_dat.o \
+	tape_iokit_ibmtape_dat.o \
 	iosched_fcfs_dat.o \
 	iosched_unified_dat.o \
 	libltfs_dat.o \
