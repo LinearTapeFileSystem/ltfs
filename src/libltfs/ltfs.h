@@ -82,7 +82,7 @@ extern "C" {
 #include <sys/shm.h>
 #endif
 
-#ifdef __APPLE__
+#ifdef __APPLE_MAKEFILE__
 #include <ICU/unicode/utypes.h>
 #else
 #include <unicode/utypes.h>

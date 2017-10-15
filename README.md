@@ -12,23 +12,57 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-* automake 1.13.4 or later
-* autoconf 2.69 or later
-* libtool 2.4.2 or later
-* fuse 2.6.0 or later
-* uuid 1.36 or later (Linux)
-* libxml-2.0 2.6.16 or later
-* net-snmp 5.3 or later
-* icu4c 4.8 or later
+- Linux
+  * automake 1.13.4 or later
+  * autoconf 2.69 or later
+  * libtool 2.4.2 or later
+  * fuse 2.6.0 or later
+  * uuid 1.36 or later (Linux)
+  * libxml-2.0 2.6.16 or later
+  * net-snmp 5.3 or later
+  * icu4c 4.8 or later
+
+- OSX (macOS)
+  + Following packages on homebrew
+    * automake
+    * autoconf
+    * libtool
+    * osxfuse (brew cask install osxfuse)
+    * ossp-uuid
+    * libxml-2.0
+    * net-snmp 5.3
+    * icu4c
+    * gnu-sed
 
 ### Installing
 
+#### Buid and install on Linux
+
 ```
-./autogen
+./autogen.sh
 ./configure
 make
 make install
 ```
+
+`./configure --help` shows various options for build and install.
+
+#### Build and install on OSX (macOS)
+
+Before build on OSX (macOS), some include path adjustment is required.
+
+```
+brew link --force icu4c
+brew link --force libxml2
+```
+
+```
+./autogen.sh
+./configure
+make
+make install
+```
+
 `./configure --help` shows various options for build and install.
 
 ## Contributing

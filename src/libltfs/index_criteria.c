@@ -47,7 +47,7 @@
 *************************************************************************************
 */
 
-#ifdef __APPLE__
+#ifdef __APPLE_MAKEFILE__
 #include <ICU/unicode/ubrk.h>
 #include <ICU/unicode/ustring.h>
 #else
@@ -140,7 +140,7 @@ bool index_criteria_contains_invalid_options(const char *str)
  * @param error output flag if a syntax error was found while parsing the options
  * @return true on success or false if the option could not be found
  */
-bool index_criteria_find_option(const char *str, const char *substr, 
+bool index_criteria_find_option(const char *str, const char *substr,
 	const char **start, const char **end, bool *error)
 {
 	const char *str_start = NULL, *str_end = NULL;

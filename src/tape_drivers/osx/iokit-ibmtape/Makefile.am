@@ -1,4 +1,3 @@
-#!/bin/sh
 #
 #
 #  OO_Copyright_BEGIN
@@ -34,18 +33,28 @@
 #  OO_Copyright_END
 #
 
-# Bootstrap LTFS
+lib_LTLIBRARIES = libtape-iokit-ibmtape.la
+libdir = @libdir@/ltfs
 
-mkdir -p build-aux
+AM_LIBTOOLFLAGS = --tag=disable-static
 
-aclocal
+libtape_iokit_ibmtape_la_SOURCES = iokit_ibmtape.c iokit_scsi.c iokit_service.c ibm_tape.c
+libtape_iokit_ibmtape_la_DEPENDENCIES = ../../../../messages/tape_iokit_ibmtape_dat.o ./libtape_iokit_ibmtape_la-reed_solomon_crc.lo ./libtape_iokit_ibmtape_la-crc32c_crc.lo
+libtape_iokit_ibmtape_la_LIBADD = ../../../../messages/tape_iokit_ibmtape_dat.o ./libtape_iokit_ibmtape_la-reed_solomon_crc.lo ./libtape_iokit_ibmtape_la-crc32c_crc.lo
+libtape_iokit_ibmtape_la_LDFLAGS = -avoid-version -module
+libtape_iokit_ibmtape_la_CPPFLAGS = @AM_CPPFLAGS@ -I ../../.. -I ../..
 
-if [ -x /usr/local/bin/glibtoolize ]; then
-	glibtoolize
-else
-	libtoolize
-fi
+ibm_tape.c:
+	ln -s ../../ibm_tape.c ./ibm_tape.c
 
-autoconf
-autoheader
-automake --add-missing --copy
+clean-local:
+	rm -f ibm_tape.c
+
+libtape_iokit_ibmtape_la-reed_solomon_crc.lo: ../../reed_solomon_crc.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_iokit_ibmtape_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_iokit_ibmtape_la-reed_solomon_crc.lo -MD -MP -c -o libtape_iokit_ibmtape_la-reed_solomon_crc.lo $<
+
+libtape_iokit_ibmtape_la-crc32c_crc.lo: ../../crc32c_crc.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_iokit_ibmtape_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_iokit_ibmtape_la-crc32c_crc.lo -MD -MP -c -o libtape_iokit_ibmtape_la-crc32c_crc.lo $<
+
+install-exec-hook:
+	for f in $(lib_LTLIBRARIES); do rm -f $(libdir)/$$f; done

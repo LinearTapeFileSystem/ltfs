@@ -61,6 +61,7 @@ libltfs_la_SOURCES = \
 	xattr.c \
 	ltfslogging.c \
 	ltfstrace.c \
+	ltfs_thread.c \
 	config_file.c \
 	plugin.c \
 	periodic_sync.c \

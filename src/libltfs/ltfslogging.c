@@ -56,7 +56,7 @@
 #include <syslog.h>
 #endif
 
-#ifdef __APPLE__
+#ifdef __APPLE_MAKEFILE__
 #include <ICU/unicode/ucnv.h>
 #include <ICU/unicode/ures.h>
 #include <ICU/unicode/utypes.h>
