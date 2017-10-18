@@ -4,7 +4,7 @@ Linear Tape File System (LTFS) is a filesystem to mount a LTFS formatted tape in
 
 Objective of this project is being the reference implementation of the LTFS format Specifications in SNIA (https://www.snia.org/tech_activities/standards/curr_standards/ltfs).
 
-At this time, the LTFS format specifications 2.4 is the target.
+At this time, the LTFS format specifications 2.4 is the target. The LTFS format specification 2.4 is now under public review (https://www.snia.org/tech_activities/publicreview#ltfs).
 
 ## Getting Started
 
@@ -23,16 +23,18 @@ These instructions will get you a copy of the project up and running on your loc
   * icu4c 4.8 or later
 
 - OSX (macOS)
-  + Following packages on homebrew
-    * automake
-    * autoconf
-    * libtool
-    * osxfuse (brew cask install osxfuse)
-    * ossp-uuid
-    * libxml-2.0
-    * net-snmp 5.3
-    * icu4c
-    * gnu-sed
+
+  Following packages on homebrew
+  
+  * automake
+  * autoconf
+  * libtool
+  * osxfuse (brew cask install osxfuse)
+  * ossp-uuid
+  * libxml-2.0
+  * net-snmp 5.3
+  * icu4c
+  * gnu-sed
 
 ### Installing
 
