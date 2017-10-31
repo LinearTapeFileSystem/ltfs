@@ -116,33 +116,55 @@ dnl Handle --enable-snmp (default:yes)
 dnl
 AC_MSG_CHECKING([whether to enable snmp or not])
 AC_ARG_ENABLE([snmp],
-	[AS_HELP_STRING([--enable-snmp],[Support SNMP handling or not])],
+	[AS_HELP_STRING([--enable-snmp],[Support SNMP or not])],
 	[snmp=$enableval],
 	[snmp=yes]
 )
 AC_MSG_RESULT([$snmp])
 
 dnl
-dnl Check for special environment variables
+dnl Handle --enable-lin-tape (default:no, Linux Only)
+dnl
+AC_MSG_CHECKING([whether to enable lin_tape or not (Linux Only)])
+AC_ARG_ENABLE([lintape],
+	[AS_HELP_STRING([--enable-lintape],[Support IBM's lin_tape driver or not])],
+	[lintape=$enableval],
+	[lintape=no]
+)
+AC_MSG_RESULT([$lintape])
+
+dnl
+dnl Handle default backends
 dnl
 if test -z "$DEFAULT_TAPE"
 then
 	if test "x${host_linux}" = "xyes"
 	then
-		DEFAULT_TAPE=lin_tape
+		DEFAULT_TAPE=sg
 	fi
 	if test "x${host_mac}" = "xyes"
 	then
 		DEFAULT_TAPE=iokit
 	fi
 fi
+
+if test "x${DEFAULT_TAPE}" = "xlin_tape"
+then
+	if test "x${lintape}" != "xyes"
+	then
+		AC_MSG_ERROR([lin_tape is not enabled --enable-lintape is required.])
+	fi
+fi
+
 if test -z "$DEFAULT_IOSCHED" ; then
 	DEFAULT_IOSCHED=unified
 fi
+
 if test -z "$DEFAULT_KMI" ; then
 	DEFAULT_KMI=none
 fi
-AC_ARG_VAR([DEFAULT_TAPE], [default tape device plugin, e.g. lin_tape])
+
+AC_ARG_VAR([DEFAULT_TAPE], [default tape device plugin, e.g. sg])
 AC_ARG_VAR([DEFAULT_IOSCHED], [default I/O scheduler plugin, e.g. unified])
 AC_ARG_VAR([DEFAULT_KMI], [default key manager interface plugin, e.g. none])
 
@@ -358,8 +380,9 @@ CFLAGS="${CFLAGS} ${OPT_FLAGS}"
 dnl
 dnl Define options
 dnl
-AM_CONDITIONAL([PLATFORM_LINUX], [test "$host_linux" = "yes"])
-AM_CONDITIONAL([PLATFORM_MAC], [test "$host_mac" = "yes"])
+AM_CONDITIONAL([PLATFORM_LINUX], [test "x${host_linux}" = "xyes"])
+AM_CONDITIONAL([ENABLE_LIN_TAPE], [test "x${lintape}" = "xyes"])
+AM_CONDITIONAL([PLATFORM_MAC], [test "x${host_mac}" = "xyes"])
 
 AC_SUBST(CFLAGS)
 AC_SUBST(CRC_OPTIMIZE)

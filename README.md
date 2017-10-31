@@ -10,7 +10,7 @@ At this time, the LTFS format specifications 2.4 is the target. The LTFS format 
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
-### Prerequisites
+## Prerequisites
 
 - Linux
   * automake 1.13.4 or later
@@ -35,9 +35,9 @@ These instructions will get you a copy of the project up and running on your loc
   * icu4c
   * gnu-sed
 
-### Installing
+## Installing
 
-#### Buid and install on Linux
+### Buid and install on Linux
 
 ```
 ./autogen.sh
@@ -48,7 +48,11 @@ make install
 
 `./configure --help` shows various options for build and install.
 
-#### Build and install on OSX (macOS)
+#### IBM lin_tape driver support
+
+You need to add `--enable-lintappe` as an argument of ./configure script if you want to build the backend for lin_tape. You also need to add `DEFAULT_TAPE=lin_tape` if you set the lin_tape backend as default backend.
+
+### Build and install on OSX (macOS)
 
 Before build on OSX (macOS), some include path adjustment is required.
 
