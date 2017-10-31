@@ -474,31 +474,17 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *id, .
 		*msg_out = strdup(msg_buf);
 	}
 
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
+#ifdef ENABLE_SNMP
 	if (is_snmp_enabled()) {
-#if 0 // SNMP Error Trap
-		if (level <= LTFS_ERR) {
-			/* Send a trap of Error (id and pos+1) */
+		if (is_snmp_trapid(id) == true) {
+			/* Send a trap of Info (id and pos+1) */
 			char *pos;
 			va_start(argp, id);
 			vsprintf(msg_buf, output_buf, argp);
 			va_end(argp);
 			pos = strstr(msg_buf, " ");
-			send_ltfsErrorTrap(pos+1);
-		} else  {
-#endif
-			if (is_snmp_trapid(id) == true) {
-				/* Send a trap of Info (id and pos+1) */
-				char *pos;
-				va_start(argp, id);
-				vsprintf(msg_buf, output_buf, argp);
-				va_end(argp);
-				pos = strstr(msg_buf, " ");
-				send_ltfsInfoTrap(pos+1);
-			}
-#if 0 // SNMP Error Trap
+			send_ltfsInfoTrap(pos+1);
 		}
-#endif
 	}
 #endif
 

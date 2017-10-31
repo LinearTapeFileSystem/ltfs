@@ -53,9 +53,8 @@ AM_PROG_AR
 AC_PROG_LIBTOOL
 
 dnl
-dnl Check OS
+dnl Detecting OS
 dnl
-
 host_linux=no
 host_mac=no
 
@@ -72,7 +71,7 @@ case "${host_os}" in
 esac
 
 dnl
-dnl Check for debug
+dnl Handle --enable-debug (default:no)
 dnl
 AC_MSG_CHECKING([whether to compile in debug mode])
 AC_ARG_ENABLE([debug],
@@ -83,7 +82,7 @@ AC_ARG_ENABLE([debug],
 AC_MSG_RESULT([$use_debug])
 
 dnl
-dnl Check for max speed
+dnl Handle --enable-fast (default:no)
 dnl
 AC_MSG_CHECKING([whether to enable optimizations])
 AC_ARG_ENABLE([fast],
@@ -93,9 +92,16 @@ AC_ARG_ENABLE([fast],
 )
 AC_MSG_RESULT([$use_fast])
 
+if test "x${use_fast}" != "xno"
+then
+	if test "x${use_debug}" != "xno"
+	then
+		AC_MSG_ERROR([Cannot specify --enable-fast and --enable-debug at the same time.])
+	fi
+fi
 
 dnl
-dnl Check for livelink enable
+dnl Handle --enable-livelink (default:yes)
 dnl
 AC_MSG_CHECKING([whether to enable livelink mode support [default=yes] ])
 AC_ARG_ENABLE([livelink],
@@ -105,14 +111,16 @@ AC_ARG_ENABLE([livelink],
 )
 AC_MSG_RESULT([$livelink])
 
-
-if test "x${use_fast}" != "xno"
-then
-	if test "x${use_debug}" != "xno"
-	then
-		AC_MSG_ERROR([Cannot specify --enable-fast and --enable-debug at the same time.])
-	fi
-fi
+dnl
+dnl Handle --enable-snmp (default:yes)
+dnl
+AC_MSG_CHECKING([whether to enable snmp or not])
+AC_ARG_ENABLE([snmp],
+	[AS_HELP_STRING([--enable-snmp],[Support SNMP handling or not])],
+	[snmp=$enableval],
+	[snmp=yes]
+)
+AC_MSG_RESULT([$snmp])
 
 dnl
 dnl Check for special environment variables
@@ -194,17 +202,25 @@ fi
 dnl
 dnl Check for SNMP
 dnl
-SNMP_MODULE_CFLAGS="`net-snmp-config --cflags 2> /dev/null`";
-SNMP_MODULE_LIBS_A="`net-snmp-config --agent-libs` 2> /dev/null";
-SNMP_MODULE_LIBS="`net-snmp-config --libs 2> /dev/null`";
-if test -z "$SNMP_MODULE_LIBS_A"
+SNMP_ENABLE=""
+SNMP_MODULE_CFLAGS=""
+SNMP_MODULE_LIBS_A=""
+SNMP_MODULE_LIBS=""
+if test "x${snmp}" != "xno"
 then
-	PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
-fi
+	SNMP_ENABLE="-D ENABLE_SNMP"
+	SNMP_MODULE_CFLAGS="`net-snmp-config --cflags 2> /dev/null`";
+	SNMP_MODULE_LIBS_A="`net-snmp-config --agent-libs` 2> /dev/null";
+	SNMP_MODULE_LIBS="`net-snmp-config --libs 2> /dev/null`";
+	if test -z "$SNMP_MODULE_LIBS_A"
+	then
+		PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
+	fi
 
-if test -z "$SNMP_MODULE_LIBS"
-then
-	PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
+	if test -z "$SNMP_MODULE_LIBS"
+	then
+		PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
+	fi
 fi
 
 dnl
@@ -266,7 +282,7 @@ dnl Update flags
 dnl Sets CFLAGS to force optimization and debugging options, which isn't quite kosher
 dnl
 AM_CPPFLAGS="-D_GNU_SOURCE -I\$(top_srcdir)/src -DLTFS_CONFIG_FILE='\"${sysconfdir}/ltfs.conf\"' -DLTFS_BASE_DIR='\"${prefix}\"'"
-AM_CFLAGS="-Wall -Wsign-compare ${FUSE_MODULE_CFLAGS} ${UUID_MODULE_CFLAGS} ${LIBXML2_MODULE_CFLAGS} ${ICU_MODULE_CFLAGS} ${SNMP_MODULE_CFLAGS}"
+AM_CFLAGS="-Wall -Wsign-compare ${FUSE_MODULE_CFLAGS} ${UUID_MODULE_CFLAGS} ${LIBXML2_MODULE_CFLAGS} ${ICU_MODULE_CFLAGS} ${SNMP_ENABLE} ${SNMP_MODULE_CFLAGS}"
 
 if test "x$use_fast" = "xyes"
 then
@@ -288,7 +304,7 @@ fi
 dnl
 dnl Specify CPU specific optimizer options for CRC calculation
 dnl
-AC_MSG_CHECKING([SSE4.2])
+AC_MSG_CHECKING([for SSE4.2])
 CRC_OPTIMIZE="-O2"
 
 if test "x$GCC" = 'xyes'
