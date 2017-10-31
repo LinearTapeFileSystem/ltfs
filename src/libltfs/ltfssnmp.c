@@ -54,7 +54,7 @@
 #define AGENT "ltfs"
 #define TABLE_FILE_MODE "rb"
 
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
+#ifdef ENABLE_SNMP
 #define DEFAULT_DEFFILE LTFS_BASE_DIR "/share/snmp/LtfsSnmpTrapDef.txt"
 static const oid snmptrap_oid[] = { 1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0 };
 #else
@@ -145,7 +145,7 @@ bool is_snmp_trapid(const char *id)
 
 int ltfs_snmp_init(char *snmp_deffile)
 {
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
+#ifdef ENABLE_SNMP
 	ltfs_snmp_enabled = true;
 	netsnmp_ds_set_boolean(NETSNMP_DS_APPLICATION_ID, NETSNMP_DS_AGENT_ROLE, 1);
 	init_agent(AGENT);
@@ -160,7 +160,7 @@ int ltfs_snmp_finish()
 	struct trap_entry *entry = NULL;
 	TAILQ_FOREACH(entry, &trap_entries, list)
 		free(entry->id);
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
+#ifdef ENABLE_SNMP
 	send_ltfsStopTrap();
 	snmp_shutdown(AGENT);
 #endif
@@ -169,7 +169,7 @@ int ltfs_snmp_finish()
 
 int send_ltfsStartTrap(void)
 {
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
+#ifdef ENABLE_SNMP
 	netsnmp_variable_list *var_list = NULL;
 	const oid ltfsStartTrap_oid[] = { 1, 3, 6, 1, 4, 1, 2, 6, 248, 2, 1 };
 
@@ -191,7 +191,7 @@ int send_ltfsStartTrap(void)
 
 int send_ltfsStopTrap(void)
 {
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
+#ifdef ENABLE_SNMP
 	netsnmp_variable_list *var_list = NULL;
 	const oid ltfsStopTrap_oid[] = { 1, 3, 6, 1, 4, 1, 2, 6, 248, 2, 2 };
 
@@ -213,7 +213,7 @@ int send_ltfsStopTrap(void)
 
 int send_ltfsInfoTrap(char *str)
 {
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
+#ifdef ENABLE_SNMP
 	netsnmp_variable_list *var_list = NULL;
 	const oid ltfsInfoTrap_oid[] = { 1, 3, 6, 1, 4, 1, 2, 6, 248, 2, 3 };
 	const oid ltfsTrapInfo_oid[] = { 1, 3, 6, 1, 4, 1, 2, 6, 248, 1, 1, 0 };
@@ -244,7 +244,7 @@ int send_ltfsInfoTrap(char *str)
 
 int send_ltfsErrorTrap(char *str)
 {
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
+#ifdef ENABLE_SNMP
 	netsnmp_variable_list *var_list = NULL;
 	const oid ltfsErrorTrap_oid[] = { 1, 3, 6, 1, 4, 1, 2, 6, 248, 2, 4 };
 	const oid ltfsTrapInfo_oid[] = { 1, 3, 6, 1, 4, 1, 2, 6, 248, 1, 1, 0 };

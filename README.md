@@ -25,14 +25,13 @@ These instructions will get you a copy of the project up and running on your loc
 - OSX (macOS)
 
   Following packages on homebrew
-  
+
   * automake
   * autoconf
   * libtool
   * osxfuse (brew cask install osxfuse)
   * ossp-uuid
-  * libxml-2.0
-  * net-snmp 5.3
+  * libxml2
   * icu4c
   * gnu-sed
 
@@ -58,9 +57,11 @@ brew link --force icu4c
 brew link --force libxml2
 ```
 
+On OSX (macOS), snmp cannot be supported. Need to disable it on configure script.
+
 ```
 ./autogen.sh
-./configure
+./configure --disable-snmp
 make
 make install
 ```
