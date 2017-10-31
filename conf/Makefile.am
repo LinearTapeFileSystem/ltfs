@@ -1,11 +1,17 @@
 dist_sysconf_DATA = ltfs.conf
 
+PLAT_OPT =
+
 if PLATFORM_LINUX
-PLAT_OPT = plugin tape lin_tape __LIBDIR__/ltfs/libtape-lin_tape.so\\nplugin tape sg __LIBDIR__/ltfs/libtape-sg-ibmtape.so
+PLAT_OPT += plugin tape sg __LIBDIR__/ltfs/libtape-sg-ibmtape.so
 endif
 
 if PLATFORM_MAC
-PLAT_OPT = plugin tape iokit __LIBDIR__/ltfs/libtape-iokit-ibmtape.so
+PLAT_OPT += plugin tape iokit __LIBDIR__/ltfs/libtape-iokit-ibmtape.so
+endif
+
+if ENABLE_LIN_TAPE
+PLAT_OPT += \\nplugin tape lin_tape __LIBDIR__/ltfs/libtape-lin_tape.so
 endif
 
 ltfs.conf: ltfs.conf.in
