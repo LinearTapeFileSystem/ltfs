@@ -350,6 +350,9 @@
 #define EDEV_MEDIA_REMOVAL_PREV      20607  /* 06/5302 Media removal prevented */
 #define EDEV_DOOR_CLOSED             20608  /* 06/3B13 Medium magazine inserted */
 #define EDEV_TIME_STAMP_CHANGED      20609  /* 06/2A01 Drive configuration is changed */
+#define EDEV_RESERVATION_PREEMPTED   20610  /* 06/2A03 Reservations preempted */
+#define EDEV_RESERVATION_RELEASED    20611  /* 06/2A04 Reservations released */
+#define EDEV_REGISTRATION_PREEMPTED  20612  /* 06/2A05 Registrations preempted */
 #define EDEV_UA_MAX                  20699  /* Minimum UA error value */
 #define IS_UNIT_ATTENTION(e)         ((e>=EDEV_UA_MIN)&&(e<=EDEV_UA_MAX))
 
@@ -398,6 +401,7 @@
 #define EDEV_LENGTH_MISMATCH         21716  /* Actual transfer length and residual length is not matched */
 #define EDEV_BUFFER_OVERFLOW         21717  /* Detect buffer overrun */
 #define EDEV_DRIVES_MISMATCH         21718  /* Number of drives are not correct */
+#define EDEV_RESERVATION_CONFLICT    21719  /* Reservation Conflict */
 
 /* Vendor Unique codes */
 #define EDEV_UNKNOWN                 29998  /* Unknown sense code */

@@ -202,6 +202,32 @@ enum {
 #define MODE_DEVICE_CONFIG_SIZE      (32)
 
 #define SENDDIAG_BUF_LEN             (8)
+#define PRO_BUF_LEN                  (0x18)
+#define PRI_BUF_HEADER               (0x08) // Header of PRI
+#define PRI_BUF_LEN                  (0xF8) // Initial buffer size (Header + 5 x full info)
+
+enum pro_type {
+	PRO_TYPE_NONE          = 0x00,
+	PRO_TYPE_EXCLUSIVE     = 0x03,
+	PRO_TYPE_EX_REGISTANTS = 0x06
+};
+
+enum pro_action {
+	PRO_ACT_REGISTER        = 0x00,
+	PRO_ACT_RESERVE         = 0x01,
+	PRO_ACT_RELEASE         = 0x02,
+	PRO_ACT_CLEAR           = 0x03,
+	PRO_ACT_PREENPT         = 0x04,
+	PRO_ACT_PREEMPT_ABORT   = 0x05,
+	PRO_ACT_REGISTER_IGNORE = 0x06,
+	PRO_ACT_REGISTER_MOVE   = 0x07
+};
+
+struct reservation_info {
+	unsigned char key_type;
+	char hint[64]; /* The longest length is last 7-bytes of IPv6 */
+	char wwid[8]; /* WWPN */
+};
 
 extern DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density[];
 extern DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density_strict[];
@@ -231,6 +257,13 @@ int ibmtape_is_mountable(const int drive_type,
 						 const bool strict);
 
 int ibmtape_is_supported_tape(unsigned char type, unsigned char density, bool *is_worm);
+
+#define KEYLEN (8)
+#define KEY_PREFIX_HOST (0x10)
+#define KEY_PREFIX_IPV4 (0x40)
+#define KEY_PREFIX_IPV6 (0x60)
+
+int ibmtape_genkey(unsigned char *key);
 
 extern struct supported_device *ibm_supported_drives[];
 extern struct supported_device *usb_supported_drives[];

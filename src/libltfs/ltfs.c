@@ -1788,8 +1788,12 @@ void ltfs_set_index_dirty(bool locking, bool atime, struct ltfs_index *idx)
 		if (locking)
 			ltfs_mutex_unlock(&idx->dirty_lock);
 
-		if (!was_dirty && idx->dirty)
-			ltfsmsg(LTFS_INFO, "11337I", true, idx->root->vol->label->barcode, idx->root->vol);
+		if (!was_dirty && idx->dirty) {
+			if (idx->root->vol->label->barcode[0] != ' ')
+				ltfsmsg(LTFS_INFO, "11337I", true, idx->root->vol->label->barcode, idx->root->vol);
+			else
+				ltfsmsg(LTFS_INFO, "11337I", true, LTFS_NO_BARCODE, idx->root->vol);
+		}
 	}
 }
 
@@ -1813,8 +1817,12 @@ void ltfs_unset_index_dirty(bool update_version, struct ltfs_index *idx)
 			idx->version = LTFS_INDEX_VERSION;
 		ltfs_mutex_unlock(&idx->dirty_lock);
 
-		if (was_dirty && !idx->dirty)
-			ltfsmsg(LTFS_INFO, "11337I", false, idx->root->vol->label->barcode, idx->root->vol);
+		if (was_dirty && !idx->dirty) {
+			if (idx->root->vol->label->barcode[0] != ' ')
+				ltfsmsg(LTFS_INFO, "11337I", false, idx->root->vol->label->barcode, idx->root->vol);
+			else
+				ltfsmsg(LTFS_INFO, "11337I", false, LTFS_NO_BARCODE, idx->root->vol);
+		}
 	}
 }
 
@@ -2279,8 +2287,13 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		}
 	}
 
-	ltfsmsg(LTFS_INFO, "17235I", vol->label->barcode, partition, reason,
-			vol->index->file_count, tape_get_serialnumber(vol->device));
+	if (vol->label->barcode[0] != ' ') {
+		ltfsmsg(LTFS_INFO, "17235I", vol->label->barcode, partition, reason,
+				vol->index->file_count, tape_get_serialnumber(vol->device));
+	} else {
+		ltfsmsg(LTFS_INFO, "17235I", LTFS_NO_BARCODE, partition, reason,
+				vol->index->file_count, tape_get_serialnumber(vol->device));
+	}
 
 	ret = tape_write_filemark(vol->device, 1, true, true, true);	// immediate WFM
 	if (ret < 0) {
@@ -2331,8 +2344,13 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	 * ignore failures when updating MAM parameters. */
 	ltfs_update_cart_coherency(vol);
 
-	ltfsmsg(LTFS_INFO, "17236I", vol->label->barcode, partition,
-			tape_get_serialnumber(vol->device));
+	if (vol->label->barcode[0] != ' ') {
+		ltfsmsg(LTFS_INFO, "17236I", vol->label->barcode, partition,
+				tape_get_serialnumber(vol->device));
+	} else {
+		ltfsmsg(LTFS_INFO, "17236I", LTFS_NO_BARCODE, partition,
+				tape_get_serialnumber(vol->device));
+	}
 
 	/* update append position */
 	if (partition == ltfs_ip_id(vol)) {
@@ -2396,8 +2414,13 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, 
 		return -ENOMEM;
 	}
 
-	ltfsmsg(LTFS_INFO, "17235I", vol->label->barcode, 'Z', "Volume Cache",
-			vol->index->file_count, path);
+	if (vol->label->barcode[0] != ' ') {
+		ltfsmsg(LTFS_INFO, "17235I", vol->label->barcode, 'Z', "Volume Cache",
+				vol->index->file_count, path);
+	} else {
+		ltfsmsg(LTFS_INFO, "17235I", LTFS_NO_BARCODE, 'Z', "Volume Cache",
+				vol->index->file_count, path);
+	}
 
 	ret = xml_schema_to_file(path, vol->index->creator, reason, vol->index);
 	if (ret < 0) {
@@ -2413,7 +2436,10 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, 
 		ltfsmsg(LTFS_ERR, "17184E", errno);
 	}
 
-	ltfsmsg(LTFS_INFO, "17236I", vol->label->barcode, 'Z', path);
+	if (vol->label->barcode[0] != ' ')
+		ltfsmsg(LTFS_INFO, "17236I", vol->label->barcode, 'Z', path);
+	else
+		ltfsmsg(LTFS_INFO, "17236I", LTFS_NO_BARCODE, 'Z', path);
 
 	free(path);
 	return ret;
@@ -2976,7 +3002,10 @@ int ltfs_revalidate(bool have_write_lock, struct ltfs_volume *vol)
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
-	ltfsmsg(LTFS_DEBUG, "11312D");
+	if (vol->label->barcode[0] != ' ')
+		ltfsmsg(LTFS_INFO, "11312I", vol->label->barcode);
+	else
+		ltfsmsg(LTFS_INFO, "11312I", LTFS_NO_BARCODE);
 
 	/* Block other libltfs operations until revalidation finishes */
 	ltfs_thread_mutex_lock(&vol->reval_lock);
@@ -3164,8 +3193,17 @@ out:
 	ltfs_thread_mutex_unlock(&vol->reval_lock);
 	releasewrite_mrsw(&vol->lock);
 
-	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "11313E", ret);
+	if (ret < 0) {
+		if (vol->label->barcode[0] != ' ')
+			ltfsmsg(LTFS_ERR, "11313E", ret, vol->label->barcode);
+		else
+			ltfsmsg(LTFS_ERR, "11313E", ret, LTFS_NO_BARCODE);
+	} else {
+		if (vol->label->barcode[0] != ' ')
+			ltfsmsg(LTFS_INFO, "11340I", vol->label->barcode);
+		else
+			ltfsmsg(LTFS_INFO, "11340I", LTFS_NO_BARCODE);
+	}
 
 	return ret;
 }

@@ -150,6 +150,8 @@ struct device_data;
 
 #define INDEX_MAX_COMMENT_LEN         65536 /* Maximum comment field length (per LTFS Format) */
 
+#define LTFS_NO_BARCODE               "NO_BARCODE"
+
 #ifdef __APPLE__
 #define PACKAGE_NAME                  "LTFS"
 #define PACKAGE_VERSION              "2.4.0.0 (10022)"

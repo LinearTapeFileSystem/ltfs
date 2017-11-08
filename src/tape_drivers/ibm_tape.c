@@ -47,6 +47,12 @@
 *************************************************************************************
 */
 
+#include <netdb.h>
+#include <ifaddrs.h>
+#include <unistd.h>
+
+#define LOOP_BACK_DEVICE "lo"
+
 #include "tape_drivers/ibm_tape.h"
 
 DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density[] = {
@@ -413,9 +419,9 @@ struct error_table standard_tape_errors[] = {
 	{0x062906, -EDEV_UNIT_ATTENTION,            "Transceiver Mode Changed To LVD"},
 	{0x062A01, -EDEV_CONFIGURE_CHANGED,         "Mode Parameters Changed"},
 	{0x062A02, -EDEV_CONFIGURE_CHANGED,         "Mode Parameters Changed"},
-	{0x062A03, -EDEV_UNIT_ATTENTION,            "Reservations preempted"},
-	{0x062A04, -EDEV_UNIT_ATTENTION,            "Reservations released"},
-	{0x062A05, -EDEV_UNIT_ATTENTION,            "Registrations preempted"},
+	{0x062A03, -EDEV_RESERVATION_PREEMPTED,     "Reservations preempted"},
+	{0x062A04, -EDEV_RESERVATION_RELEASED,      "Reservations released"},
+	{0x062A05, -EDEV_REGISTRATION_PREEMPTED,    "Registrations preempted"},
 	{0x062A10, -EDEV_TIME_STAMP_CHANGED,        "Time stamp changed"},
 	{0x062A11, -EDEV_CRYPTO_ERROR,              "Encryption - Data Encryption Parameters Changed by Another I_T Nexus"},
 	{0x062A12, -EDEV_CRYPTO_ERROR,              "Encryption - Data Encryption Parameters Changed by Vendor Specific Event"},
@@ -1151,4 +1157,81 @@ int ibmtape_is_supported_tape(unsigned char type, unsigned char density, bool *i
 	}
 
 	return ret;
+}
+
+/**
+ *  Generate a key for persistent reservation
+ */
+int ibmtape_genkey(unsigned char *key)
+{
+	unsigned char host[KEYLEN];
+
+	struct ifaddrs *ifaddr, *ifa;
+	int family, n;
+
+	struct sockaddr_in *addr4;
+	struct sockaddr_in6 *addr6;
+	unsigned char key4[KEYLEN];
+	unsigned char key6[KEYLEN];
+	bool a4_found = false;
+	bool a6_found = false;
+
+	/* Capture host name. In the failure case, x1000000000000000 will be used */
+	memset(host, 0x00, KEYLEN);
+	gethostname((char *)host, KEYLEN);
+
+	if (!getifaddrs(&ifaddr)) {
+		for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++) {
+			if (ifa->ifa_addr == NULL)
+				continue;
+
+			if (!strcmp(ifa->ifa_name, LOOP_BACK_DEVICE))
+				continue;
+
+			family = ifa->ifa_addr->sa_family;
+
+			switch (family) {
+				case AF_INET:
+					if (!a4_found) {
+						addr4 = (struct sockaddr_in *)ifa->ifa_addr;
+						memset(key4, 0x00, KEYLEN);
+						key4[0] = KEY_PREFIX_IPV4;
+						memcpy(key4 + 4, &addr4->sin_addr.s_addr, 4);
+						a4_found = true;
+					}
+					break;
+				case AF_INET6:
+					if (!a6_found) {
+						addr6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+						memset(key6, 0x00, KEYLEN);
+						key6[0] = KEY_PREFIX_IPV6;
+						memcpy(key6 + 1, addr6->sin6_addr.s6_addr + 9, 7);
+						a6_found = true;
+					}
+					break;
+				default:
+					break;
+			}
+		}
+		freeifaddrs(ifaddr);
+
+		if (a4_found) {
+			memcpy(key, key4, KEYLEN);
+			return 0;
+		}
+
+		if (a6_found) {
+			memcpy(key, key6, KEYLEN);
+			return 0;
+		}
+
+		ltfsmsg(LTFS_WARN, "39810W");
+	} else
+		ltfsmsg(LTFS_WARN, "39811W", errno);
+
+	/* Return host name based key */
+	*key = KEY_PREFIX_HOST;
+	memcpy(key + 1, host, KEYLEN -1);
+
+	return 0;
 }

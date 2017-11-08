@@ -138,7 +138,7 @@ static inline int ltfs_thread_cond_destroy(ltfs_thread_cond_t *cond)
 	return pthread_cond_destroy(cond);
 }
 
-	static inline int ltfs_thread_cond_init(ltfs_thread_cond_t *restrict cond)
+static inline int ltfs_thread_cond_init(ltfs_thread_cond_t *restrict cond)
 {
 	return pthread_cond_init(cond, NULL);
 }
@@ -171,9 +171,9 @@ static inline int ltfs_thread_create(ltfs_thread_t *thread,
 }
 
 static inline int ltfs_thread_create_detached(ltfs_thread_t *thread,
-									 const ltfs_thread_attr_t *attr,
-									 ltfs_thread_return_detached (*start_routine) (void *),
-									 void *arg)
+											  const ltfs_thread_attr_t *attr,
+											  ltfs_thread_return_detached (*start_routine) (void *),
+											  void *arg)
 {
 	return pthread_create(thread, attr, start_routine, arg);
 }
