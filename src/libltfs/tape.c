@@ -1441,7 +1441,8 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 	if (density_code) {
 		if (mp_medium_partition[2]!=TC_MP_JB && mp_medium_partition[2]!=TC_MP_JC && mp_medium_partition[2]!=TC_MP_JD
 			&& mp_medium_partition[2]!=TC_MP_JK && mp_medium_partition[2]!=TC_MP_JL
-			&& mp_medium_partition[2]!=TC_MP_JY && mp_medium_partition[2]!=TC_MP_JZ){
+			&& mp_medium_partition[2]!=TC_MP_JY && mp_medium_partition[2]!=TC_MP_JZ
+			&& mp_medium_partition[2]!=TC_MP_LTO7D_CART){
 			ltfsmsg(LTFS_ERR, "17239E", "unsupported cartridge", mp_medium_partition[2]);
 			return -LTFS_OP_NOT_ALLOWED;
 		}

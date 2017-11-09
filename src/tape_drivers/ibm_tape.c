@@ -145,13 +145,14 @@ DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density_strict[] = {
 DRIVE_DENSITY_SUPPORT_MAP lto_drive_density[] = {
 	/* LTO8 */
 	{ DRIVE_GEN_LTO8, TC_MP_LTO8D_CART, TC_DC_LTO8,    MEDIUM_PERFECT_MATCH},
+	{ DRIVE_GEN_LTO8, TC_MP_LTO7D_CART, TC_DC_LTOM8,   MEDIUM_PERFECT_MATCH},
 	{ DRIVE_GEN_LTO8, TC_MP_LTO8D_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
 	{ DRIVE_GEN_LTO8, TC_MP_LTO7D_CART, TC_DC_LTO7,    MEDIUM_WRITABLE},
 	{ DRIVE_GEN_LTO8, TC_MP_LTO7D_CART, TC_DC_UNKNOWN, MEDIUM_WRITABLE},
 
 	/* LTO7 */
 	{ DRIVE_GEN_LTO7, TC_MP_LTO7D_CART, TC_DC_LTO7,    MEDIUM_PERFECT_MATCH},
-	{ DRIVE_GEN_LTO7, TC_MP_LTO7D_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
+	{ DRIVE_GEN_LTO7, TC_MP_LTO7D_CART, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE},
 	{ DRIVE_GEN_LTO7, TC_MP_LTO6D_CART, TC_DC_LTO6,    MEDIUM_WRITABLE},
 	{ DRIVE_GEN_LTO7, TC_MP_LTO6D_CART, TC_DC_UNKNOWN, MEDIUM_WRITABLE},
 	{ DRIVE_GEN_LTO7, TC_MP_LTO5D_CART, TC_DC_LTO5,    MEDIUM_READONLY},
@@ -171,11 +172,12 @@ DRIVE_DENSITY_SUPPORT_MAP lto_drive_density[] = {
 DRIVE_DENSITY_SUPPORT_MAP lto_drive_density_strict[] = {
 	/* LTO8 */
 	{ DRIVE_GEN_LTO8, TC_MP_LTO8D_CART, TC_DC_LTO8,    MEDIUM_PERFECT_MATCH},
+	{ DRIVE_GEN_LTO8, TC_MP_LTO8D_CART, TC_DC_LTOM8,   MEDIUM_PERFECT_MATCH},
 	{ DRIVE_GEN_LTO8, TC_MP_LTO8D_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
 
 	/* LTO7 */
 	{ DRIVE_GEN_LTO7, TC_MP_LTO7D_CART, TC_DC_LTO7,    MEDIUM_PERFECT_MATCH},
-	{ DRIVE_GEN_LTO7, TC_MP_LTO7D_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
+	{ DRIVE_GEN_LTO7, TC_MP_LTO7D_CART, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE},
 
 	/* LTO6 */
 	{ DRIVE_GEN_LTO6, TC_MP_LTO6D_CART, TC_DC_LTO6,    MEDIUM_PERFECT_MATCH},
@@ -208,6 +210,7 @@ const unsigned char supported_density[] = {
 	TC_DC_JAG5,
 	TC_DC_JAG4,
 	TC_DC_LTO8,
+	TC_DC_LTOM8,
 	TC_DC_LTO7,
 	TC_DC_LTO6,
 	TC_DC_LTO5,
@@ -987,46 +990,61 @@ int ibm_tape_get_timeout(struct timeout_tape* table, int op_code)
 	}
 }
 
-static inline unsigned char _assume_cartridge_type(char btype)
+static inline unsigned char _assume_cartridge_type(char product, char btype)
 {
 	unsigned char ctype = 0;
 
-	switch (btype) {
-		case 'B':
-			ctype = TC_MP_JB;
-			break;
-		case 'C':
-			ctype = TC_MP_JC;
-			break;
-		case 'K':
-			ctype = TC_MP_JK;
-			break;
-		case 'Y':
-			ctype = TC_MP_JY;
-			break;
-		case 'D':
-			ctype = TC_MP_JD;
-			break;
-		case 'L':
-			ctype = TC_MP_JL;
-			break;
-		case 'Z':
-			ctype = TC_MP_JZ;
-			break;
-		case '5':
-			ctype = TC_MP_LTO5D_CART;
-			break;
-		case '6':
-			ctype = TC_MP_LTO6D_CART;
-			break;
-		case '7':
-			ctype = TC_MP_LTO7D_CART;
-			break;
-		case '8':
-			ctype = TC_MP_LTO8D_CART;
-			break;
-		default:
-			break;
+	if (product == 'J') {
+		switch (btype) {
+			case 'B':
+				ctype = TC_MP_JB;
+				break;
+			case 'C':
+				ctype = TC_MP_JC;
+				break;
+			case 'K':
+				ctype = TC_MP_JK;
+				break;
+			case 'Y':
+				ctype = TC_MP_JY;
+				break;
+			case 'D':
+				ctype = TC_MP_JD;
+				break;
+			case 'L':
+				ctype = TC_MP_JL;
+				break;
+			case 'Z':
+				ctype = TC_MP_JZ;
+				break;
+			default:
+				break;
+		}
+	} else if (product == 'L') {
+		switch (btype) {
+			case '5':
+				ctype = TC_MP_LTO5D_CART;
+				break;
+			case '6':
+				ctype = TC_MP_LTO6D_CART;
+				break;
+			case '7':
+				ctype = TC_MP_LTO7D_CART;
+				break;
+			case '8':
+				ctype = TC_MP_LTO8D_CART;
+				break;
+			default:
+				break;
+		}
+	} else if (product == 'M') {
+		switch (btype) {
+			case '8':
+				ctype = TC_MP_LTO7D_CART;
+				break;
+			default:
+				break;
+		}
 	}
 
 	return ctype;
@@ -1082,7 +1100,13 @@ static inline int _is_mountable(const int drive_type,
 
 	/* Assume cartridge type from barcode */
 	if (ctype == 0)
-		ctype = _assume_cartridge_type(btype);
+		ctype = _assume_cartridge_type(product, btype);
+
+	/* Special case, assume M8 as TC_DC_M8 when density code is not fetched yet */
+	if (density_code == 0x00) {
+		if (product == 'M' && btype == '8')
+			dcode = TC_DC_LTOM8;
+	}
 
 	for (i = 0; i < num_table; i++) {
 		if ( (table->drive_generation == drive_generation) &&
@@ -1264,4 +1288,6 @@ int ibmtape_parsekey(unsigned char *key, struct reservation_info *r)
 	}
 
 	memcpy(r->wwid, key + 32, sizeof(r->wwid));
+
+	return 0;
 }
