@@ -146,6 +146,7 @@ enum {
 	TC_DC_LTO5    = 0x58,
 	TC_DC_LTO6    = 0x5A,
 	TC_DC_LTO7    = 0x5C,
+	TC_DC_LTOM8   = 0x5D,
 	TC_DC_LTO8    = 0x5E,
 	TC_DC_JAG1    = 0x51,
 	TC_DC_JAG2    = 0x52,
