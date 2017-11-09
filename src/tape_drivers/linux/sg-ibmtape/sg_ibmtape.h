@@ -68,6 +68,7 @@ struct sg_ibmtape_data {
 	uint64_t             read_counter;         /**< read call counter for pseudo write perm */
 	int                  force_errortype;      /**< 0 is R/W Perm, otherwise no sense */
 	char                 *devname;             /**< Identifier for drive on host */
+	unsigned char        key[KEYLEN];          /**< Key for persistent reserve */
 	bool                 is_worm;              /**< Is worm cartridge loaded? */
 	unsigned char        cart_type;            /**< Cartridge type in CM */
 	unsigned char        density_code;         /**< Density code */

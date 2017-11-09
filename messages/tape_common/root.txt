@@ -49,5 +49,7 @@ root:table {
 		39807E:string { "Is medium mountable: invalid bar code %s." }
 		39808I:string { "Is medium mountable: unsupported medium %s is detected." }
 		39809D:string { "WORM cartridge is loaded." }
+		39810W:string { "No IP address was found. Use host name based reservation key." }
+		39811W:string { "Cannot fetch network I/F information. Use host name based reservation key. (%d)" }
 	}
 }

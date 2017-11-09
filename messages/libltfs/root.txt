@@ -406,8 +406,8 @@ root:table {
 		11309E:string { "Cannot parse configuration file: \'-plugin\' directive must be followed by a plug-in type and name." }
 		11310W:string { "Cannot set the traversal mode: failed to get a valid selection %d." }
 		11311E:string { "Cannot format: failed to reset capacity proportion (%d)." }
-		11312D:string { "Revalidating the medium." }
-		11313E:string { "Medium revalidation failed (%d). Unmount the tape before continuing." }
+		11312I:string { "Revalidation process of the medium is starting. (%s)" }
+		11313E:string { "Medium revalidation failed (%d). Unmount the tape before continuing. (%s)" }
 		11314E:string { "Cannot format: failed to get data key (%d)." }
 		11315E:string { "Cannot format: failed to set data key (%d)." }
 		11316E:string { "Failed to print help message of key manager interface backend." }
@@ -434,6 +434,7 @@ root:table {
 		11337I:string { "Update index-dirty flag (%d) - %s (0x%p)." }
 		11338I:string { "Syncing index of %s %s." }
 		11339D:string { "%s volume lock status (%d)." }
+		11340I:string { "Revalidation process is successfully done. (%s)" }
 
 		// Message IDs 11400 through 11800 are allocated to the libchanger.
 		// DO NOT add messages with those IDs to this file.

@@ -323,6 +323,9 @@ root:table {
 		D0607E:string{ "Cannot remove the medium." }
 		D0608E:string{ "Medium magazine inserted." }
 		D0609E:string{ "Drive configuration is changed." }
+		D0610E:string{ "Reservations preempted." }
+		D0611E:string{ "Reservations released." }
+		D0612E:string{ "Registrations preempted." }
 		D0700E:string{ "Other data protect conditions." }
 		D0701E:string{ "Write-protected." }
 		D0702E:string{ "WORM cartridge." }

@@ -177,7 +177,7 @@ int sg_issue_cdb_command(struct sg_tape *device, sg_io_hdr_t *req, char **msg)
 			break;
 		case SCSI_RESERVATION_CONFLICT:
 			ltfsmsg(LTFS_DEBUG, "30202D", "reservation conflict");
-			ret = -EDEV_DRIVER_ERROR;
+			ret = -EDEV_RESERVATION_CONFLICT;
 			if (msg) {
 				*msg = "Drive reservation conflict";
 			}

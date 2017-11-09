@@ -237,7 +237,7 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 			break;
 		case kSCSITaskStatus_RESERVATION_CONFLICT:
 			ltfsmsg(LTFS_DEBUG, "30805D", "reservation conflict");
-			ret = -EDEV_DRIVER_ERROR;
+			ret = -EDEV_RESERVATION_CONFLICT;
 			if (msg) {
 				*msg = "Drive reservation conflict";
 			}

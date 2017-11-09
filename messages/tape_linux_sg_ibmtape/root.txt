@@ -105,6 +105,9 @@ root:table {
 		30263I:string { "%s returns %s (%d) %s." }
 		30264E:string { "%s returns msg = NULL (%d) %s." }
 		30265W:string { "Failed to get medium type code: medium type check is skipped." }
+		30266W:string { "The drive is already reserved: %s (%s)" }
+		30267W:string { "WWPID of reservation: x%02x%02x%02x%02x%02x%02x%02x%02x (%s)" }
+		30268I:string { "Retry to reserve from key registration (%s)" }
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }

@@ -75,7 +75,11 @@ extern "C" {
 #define MB   (KB * 1024)
 #define GB   (MB * 1024)
 
-#define NEED_REVAL(ret) (ret == -EDEV_POR_OR_BUS_RESET || ret == -EDEV_MEDIUM_MAY_BE_CHANGED)
+#define NEED_REVAL(ret) (ret == -EDEV_POR_OR_BUS_RESET	\
+						 || ret == -EDEV_MEDIUM_MAY_BE_CHANGED	\
+						 || ret == -EDEV_RESERVATION_PREEMPTED	\
+						 || ret == -EDEV_REGISTRATION_PREEMPTED)
+
 #define IS_UNEXPECTED_MOVE(ret) (ret == -EDEV_MEDIUM_REMOVAL_REQ)
 
 struct device_data {
