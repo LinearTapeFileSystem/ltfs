@@ -612,12 +612,6 @@ static int _cdb_pri(void *device, unsigned char *buf, int size)
 	return ret;
 }
 
-/**
- *  Fetch current key that reserved this device from the reserved device
- */
-
-#define PRI_FULL_LEN_BASE (24)
-
 static int _fetch_reservation_key(void *device, struct reservation_info *r)
 {
 	int ret = -EDEV_UNKNOWN;
@@ -662,33 +656,8 @@ start:
 
 	/* Print holder information here */
 	if (holder) {
-		r->key_type = cur[0];
-		switch (r->key_type) {
-			case KEY_PREFIX_IPV6:
-				snprintf(r->hint, sizeof(r->hint),
-						 "IPv6 (last 7 bytes): xx%02x:%02x%02x:%02x%02x:%02x%02x",
-						 cur[1], cur[2], cur[3], cur[4], cur[5], cur[6], cur[7]);
-				break;
-			case KEY_PREFIX_HOST:
-				snprintf(r->hint, sizeof(r->hint),
-						 "HOSTNAME (first 7 bytes): %c%c%c%c%c%c%c",
-						 cur[1], cur[2], cur[3], cur[4], cur[5], cur[6], cur[7]);
-				break;
-			case KEY_PREFIX_IPV4:
-				if (!cur[1] && !cur[2] && !cur[3]) {
-					snprintf(r->hint, sizeof(r->hint),
-							 "IPv4: %d.%d.%d.%d",
-							 cur[4], cur[5], cur[6], cur[7]);
-					break;
-				} // else fall through
-			default:
-				snprintf(r->hint, sizeof(r->hint),
-						 "KEY: x%02x%02x%02x%02x%02x%02x%02x%02x",
-						 cur[0], cur[1], cur[2], cur[3], cur[4], cur[5], cur[6], cur[7]);
-		}
-
-		memcpy(r->wwid, cur + 32, sizeof(r->wwid));
-
+		memcpy(r->key, cur, KEYLEN);
+		ibmtape_parsekey(cur, r);
 	} else
 		ret = -EDEV_INTERNAL_ERROR;
 
@@ -701,7 +670,7 @@ static int _cdb_pro(void *device,
 					enum pro_action action, enum pro_type type,
 					unsigned char *key, unsigned char *sakey)
 {
-	int ret = -EDEV_UNKNOWN, f_ret;;
+	int ret = -EDEV_UNKNOWN, f_ret;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;

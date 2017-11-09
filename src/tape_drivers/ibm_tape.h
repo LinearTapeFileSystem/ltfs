@@ -223,12 +223,6 @@ enum pro_action {
 	PRO_ACT_REGISTER_MOVE   = 0x07
 };
 
-struct reservation_info {
-	unsigned char key_type;
-	char hint[64]; /* The longest length is last 7-bytes of IPv6 */
-	char wwid[8]; /* WWPN */
-};
-
 extern DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density[];
 extern DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density_strict[];
 extern DRIVE_DENSITY_SUPPORT_MAP lto_drive_density[];
@@ -258,12 +252,22 @@ int ibmtape_is_mountable(const int drive_type,
 
 int ibmtape_is_supported_tape(unsigned char type, unsigned char density, bool *is_worm);
 
+#define PRI_FULL_LEN_BASE (24)
+
 #define KEYLEN (8)
 #define KEY_PREFIX_HOST (0x10)
 #define KEY_PREFIX_IPV4 (0x40)
 #define KEY_PREFIX_IPV6 (0x60)
 
+struct reservation_info {
+	unsigned char key_type;
+	char hint[64];             /* The longest length is last 7-bytes of IPv6 */
+	unsigned char key[KEYLEN]; /* Raw key */
+	unsigned char wwid[8];     /* WWPN */
+};
+
 int ibmtape_genkey(unsigned char *key);
+int ibmtape_parsekey(unsigned char *key, struct reservation_info *r);
 
 extern struct supported_device *ibm_supported_drives[];
 extern struct supported_device *usb_supported_drives[];

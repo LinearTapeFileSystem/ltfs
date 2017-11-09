@@ -152,9 +152,9 @@ struct device_data;
 
 #define LTFS_NO_BARCODE               "NO_BARCODE"
 
-#ifdef __APPLE__
+#ifdef __APPLE_MAKEFILE__
 #define PACKAGE_NAME                  "LTFS"
-#define PACKAGE_VERSION              "2.4.0.0 (10022)"
+#define PACKAGE_VERSION               "2.4.0 (%SNAPSHOT%)"
 #else
 #include "config.h"
 #endif

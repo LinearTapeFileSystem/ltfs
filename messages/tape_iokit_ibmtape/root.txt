@@ -109,6 +109,9 @@ root:table {
 		30864I:string { "Forcing drive dump." }
 		30865I:string { "%s returns %s (%d) %s." }
 		30866E:string { "%s returns msg = NULL (%d) %s." }
+		30867W:string { "WWPID of reservation: x%02x%02x%02x%02x%02x%02x%02x%02x (%s)" }
+		30868I:string { "Retry to reserve from key registration (%s)" }
+		30869W:string { "The drive is already reserved: %s (%s)" }
 
 		30992D:string { "Backend %s %s." }
 		30993D:string { "Backend %s: %d %s." }

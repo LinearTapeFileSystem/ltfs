@@ -555,6 +555,190 @@ static int _cdb_force_dump(struct iokit_ibmtape_data *priv)
 	return ret;
 }
 
+static int _cdb_pri(void *device, unsigned char *buf, int size)
+{
+	int ret = -EDEV_UNKNOWN;
+	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+
+	struct iokit_scsi_request req;
+	unsigned char cdb[CDB10_LEN];
+	int timeout;
+	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "PRI";
+	char *msg;
+
+	memset(cdb, 0, sizeof(cdb));
+	memset(buf, 0, size);
+
+	/* Build CDB */
+	cdb[0] = PERSISTENT_RESERVE_IN;
+	cdb[1] = 0x03; /* Full Info */
+	cdb[6] = (unsigned char)(size >> 16) & 0xFF;
+	cdb[7] = (unsigned char)(size >> 8)  & 0xFF;
+	cdb[8] = (unsigned char) size        & 0xFF;
+
+	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	if (timeout < 0)
+		return -EDEV_UNSUPPORETD_COMMAND;
+
+	/* Build request */
+	req.dxfer_direction = SCSI_FROM_TARGET_TO_INITIATOR;
+	req.cmd_len         = sizeof(cdb);
+	req.mx_sb_len       = sizeof(SCSI_Sense_Data);
+	req.dxfer_len       = size;
+	req.dxferp          = buf;
+	req.cmdp            = cdb;
+	memset(&req.sense_buffer, 0, req.mx_sb_len);
+	req.timeout         = IOKitConversion(timeout);
+	req.desc            = cmd_desc;
+
+	ret = iokit_issue_cdb_command(&priv->dev, &req, &msg);
+	if (ret < 0){
+		_process_errors(device, ret, msg, cmd_desc, true);
+	}
+
+	return ret;
+}
+
+static int _fetch_reservation_key(void *device, struct reservation_info *r)
+{
+	int ret = -EDEV_UNKNOWN;
+
+	unsigned char *buf = NULL, *cur = NULL;
+	unsigned int offset = 0, addlen;
+	unsigned int bufsize = PRI_BUF_LEN;
+	unsigned int pri_len = 0;
+	bool holder = false;
+
+start:
+	buf = calloc(1, bufsize);
+	if (!buf) {
+		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		return -EDEV_NO_MEMORY;
+	}
+
+	ret = _cdb_pri(device, buf, bufsize);
+	if (!ret) {
+		pri_len = ltfs_betou32(buf + 4);
+		if (pri_len + PRI_BUF_HEADER > bufsize) {
+			free(buf);
+			bufsize = pri_len + PRI_BUF_HEADER;
+			goto start;
+		}
+
+		/* Parse PRI output and search reservation holder */
+		offset = PRI_BUF_HEADER;
+		while (offset < (pri_len + PRI_BUF_HEADER) - 1) {
+			cur = buf + offset;
+
+			if (cur[12] & 0x01) {
+				holder = true;
+				break;
+			}
+
+			addlen = ltfs_betou32(cur + 20);
+			offset += (PRI_FULL_LEN_BASE + addlen);
+		}
+
+	}
+
+	/* Print holder information here */
+	if (holder) {
+		memcpy(r->key, cur, KEYLEN);
+		ibmtape_parsekey(cur, r);
+	} else
+		ret = -EDEV_INTERNAL_ERROR;
+
+	free(buf);
+
+	return ret;
+}
+
+static int _cdb_pro(void *device,
+					enum pro_action action, enum pro_type type,
+					unsigned char *key, unsigned char *sakey)
+{
+	int ret = -EDEV_UNKNOWN, f_ret;
+	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+
+	struct iokit_scsi_request req;
+	unsigned char cdb[CDB10_LEN];
+	int timeout;
+	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "PRO";
+	unsigned char buf[PRO_BUF_LEN];
+	char *msg;
+
+	struct reservation_info r_info;
+
+	memset(cdb, 0, sizeof(cdb));
+	memset(buf, 0, sizeof(buf));
+
+	/* Build CDB */
+	cdb[0] = PERSISTENT_RESERVE_OUT;
+	cdb[1] = action;
+	cdb[2] = type;
+	cdb[8] = PRO_BUF_LEN; /* parameter length */
+
+	/* Build parameter list, clear key when key is NULL */
+	if (key)
+		memcpy(buf, key, KEYLEN);
+
+	if (sakey)
+		memcpy(buf + 8, sakey, KEYLEN);
+
+	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	if (timeout < 0)
+		return -EDEV_UNSUPPORETD_COMMAND;
+
+	/* Build request */
+	req.dxfer_direction = SCSI_FROM_INITIATOR_TO_TARGET;
+	req.cmd_len         = sizeof(cdb);
+	req.mx_sb_len       = sizeof(SCSI_Sense_Data);
+	req.dxfer_len       = PRO_BUF_LEN;
+	req.dxferp          = buf;
+	req.cmdp            = cdb;
+	memset(&req.sense_buffer, 0, req.mx_sb_len);
+	req.timeout         = IOKitConversion(timeout);
+	req.desc            = cmd_desc;
+
+	ret = iokit_issue_cdb_command(&priv->dev, &req, &msg);
+	if (ret < 0){
+		if (ret == -EDEV_RESERVATION_CONFLICT && action == PRO_ACT_RESERVE) {
+			/* Read reservation information and print */
+			memset(&r_info, 0x00, sizeof(r_info));
+			f_ret = _fetch_reservation_key(device, &r_info);
+			if (!f_ret) {
+				ltfsmsg(LTFS_WARN, "30869W", r_info.hint, priv->drive_serial);
+				ltfsmsg(LTFS_WARN, "30867W",
+						r_info.wwid[0], r_info.wwid[1], r_info.wwid[2], r_info.wwid[3],
+						r_info.wwid[6], r_info.wwid[5], r_info.wwid[6], r_info.wwid[7],
+						priv->drive_serial);
+			} else {
+				ltfsmsg(LTFS_WARN, "30869W", "unknown host (reserve command)", priv->drive_serial);
+			}
+		} else {
+			_process_errors(device, ret, msg, cmd_desc, true);
+		}
+	}
+
+	return ret;
+}
+
+static int _register_key(void *device, unsigned char *key)
+{
+	int ret = -EDEV_UNKNOWN;
+
+start:
+	ret = _cdb_pro(device, PRO_ACT_REGISTER_IGNORE, PRO_TYPE_NONE,
+			 NULL, key);
+
+	if (ret == -EDEV_RESERVATION_PREEMPTED ||
+		ret == -EDEV_RESERVATION_RELEASED ||
+		ret == -EDEV_REGISTRATION_PREEMPTED )
+		goto start;
+
+	return ret;
+}
+
 /* Global functions */
 int iokit_ibmtape_open(const char *devname, void **handle)
 {
@@ -642,6 +826,10 @@ int iokit_ibmtape_open(const char *devname, void **handle)
 	standard_table = standard_tape_errors;
 	vendor_table   = ibm_tape_errors;
 	ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
+
+	/* Register reservation key */
+	ibmtape_genkey(priv->key);
+	_register_key(priv, priv->key);
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_OPEN));
 
@@ -737,6 +925,7 @@ int iokit_ibmtape_close(void *device)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_CLOSE));
 
 	_set_lbp(device, false);
+	_register_key(device, NULL);
 
 	if(priv->dev.exclusive_lock)
 		ret = iokit_release_exclusive_access(&priv->dev);
@@ -2187,6 +2376,7 @@ int iokit_ibmtape_reserve(void *device)
 	int ret = -EDEV_UNKNOWN;
 	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
 
+#ifdef USE_RESERVE6
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
@@ -2223,6 +2413,33 @@ int iokit_ibmtape_reserve(void *device)
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_RESERVEUNIT));
 
+#else /* Use persistent reserve */
+
+	int count = 0;
+
+	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RESERVEUNIT));
+	ltfsmsg(LTFS_DEBUG, "30392D", "reserve (PRO)", priv->drive_serial);
+
+start:
+	ret = _cdb_pro(device, PRO_ACT_RESERVE, PRO_TYPE_EXCLUSIVE,
+				   priv->key, NULL);
+
+	/* Retry if reservation is preempted */
+	if ( !count &&
+		 ( ret == -EDEV_RESERVATION_PREEMPTED ||
+		   ret == -EDEV_REGISTRATION_PREEMPTED ||
+		   ret == -EDEV_RESERVATION_CONFLICT)
+		) {
+		ltfsmsg(LTFS_INFO, "30868I", priv->drive_serial);
+		_register_key(device, priv->key);
+		count++;
+		goto start;
+	}
+
+	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_RESERVEUNIT));
+
+#endif
+
 	return ret;
 }
 
@@ -2231,6 +2448,7 @@ int iokit_ibmtape_release(void *device)
 	int ret = -EDEV_UNKNOWN;
 	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
 
+#ifdef USE_RESERVE6
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
@@ -2266,6 +2484,18 @@ int iokit_ibmtape_release(void *device)
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_RELEASEUNIT));
+
+#else /* Use persistent reserve */
+
+	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RELEASEUNIT));
+	ltfsmsg(LTFS_DEBUG, "30392D", "release (PRO)", priv->drive_serial);
+
+	ret = _cdb_pro(device, PRO_ACT_RELEASE, PRO_TYPE_EXCLUSIVE,
+				   priv->key, NULL);
+
+	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_RELEASEUNIT));
+
+#endif
 
 	return ret;
 }

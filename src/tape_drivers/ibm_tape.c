@@ -1185,7 +1185,7 @@ int ibmtape_genkey(unsigned char *key)
 			if (ifa->ifa_addr == NULL)
 				continue;
 
-			if (!strcmp(ifa->ifa_name, LOOP_BACK_DEVICE))
+			if (!strncmp(ifa->ifa_name, LOOP_BACK_DEVICE, 2))
 				continue;
 
 			family = ifa->ifa_addr->sa_family;
@@ -1234,4 +1234,34 @@ int ibmtape_genkey(unsigned char *key)
 	memcpy(key + 1, host, KEYLEN -1);
 
 	return 0;
+}
+
+int ibmtape_parsekey(unsigned char *key, struct reservation_info *r)
+{
+	r->key_type = key[0];
+	switch (r->key_type) {
+		case KEY_PREFIX_IPV6:
+			snprintf(r->hint, sizeof(r->hint),
+					 "IPv6 (last 7 bytes): xx%02x:%02x%02x:%02x%02x:%02x%02x",
+					 key[1], key[2], key[3], key[4], key[5], key[6], key[7]);
+			break;
+		case KEY_PREFIX_HOST:
+			snprintf(r->hint, sizeof(r->hint),
+					 "HOSTNAME (first 7 bytes): %c%c%c%c%c%c%c",
+					 key[1], key[2], key[3], key[4], key[5], key[6], key[7]);
+			break;
+		case KEY_PREFIX_IPV4:
+			if (!key[1] && !key[2] && !key[3]) {
+				snprintf(r->hint, sizeof(r->hint),
+						 "IPv4: %d.%d.%d.%d",
+						 key[4], key[5], key[6], key[7]);
+				break;
+			} // else fall through
+		default:
+			snprintf(r->hint, sizeof(r->hint),
+					 "KEY: x%02x%02x%02x%02x%02x%02x%02x%02x",
+					 key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7]);
+	}
+
+	memcpy(r->wwid, key + 32, sizeof(r->wwid));
 }
