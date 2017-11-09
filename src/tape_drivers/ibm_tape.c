@@ -1105,7 +1105,7 @@ static inline int _is_mountable(const int drive_type,
 	/* Special case, assume M8 as TC_DC_M8 when density code is not fetched yet */
 	if (density_code == 0x00) {
 		if (product == 'M' && btype == '8')
-			density_code = TC_DC_LTOM8;
+			dcode = TC_DC_LTOM8;
 	}
 
 	for (i = 0; i < num_table; i++) {
