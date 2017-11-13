@@ -35,9 +35,6 @@
 
 lib_LTLIBRARIES = libltfs.la
 
-noinst_HEADERS =
-nobase_pkginclude_HEADERS = ltfs.h tape_ops.h ltfs_types.h ltfslogging.h ltfstrace.h ltfs_thread.h ltfs_locking.h queue.h plugin.h config_file.h ltfs_error.h ltfssnmp.h
-
 libltfs_la_SOURCES = \
 	ltfs.c \
 	ltfs_internal.c \
