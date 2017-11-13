@@ -38,3 +38,12 @@ ACLOCAL_AMFLAGS = -I m4
 nobase_pkginclude_HEADERS = config.h
 
 SUBDIRS = messages src conf init.d man
+
+install-data-local: ltfs.pc
+	if [ ! -d $(DESTDIR)$(libdir)/pkgconfig ]; then \
+		mkdir -p $(DESTDIR)$(libdir)/pkgconfig; \
+	fi
+	cp ./ltfs.pc $(DESTDIR)$(libdir)/pkgconfig/
+
+clean-local:
+	rm -f ltfs.pc

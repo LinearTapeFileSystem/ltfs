@@ -383,6 +383,7 @@ dnl
 AM_CONDITIONAL([PLATFORM_LINUX], [test "x${host_linux}" = "xyes"])
 AM_CONDITIONAL([ENABLE_LIN_TAPE], [test "x${lintape}" = "xyes"])
 AM_CONDITIONAL([PLATFORM_MAC], [test "x${host_mac}" = "xyes"])
+AM_CONDITIONAL([OSS], [true])
 
 AC_SUBST(CFLAGS)
 AC_SUBST(CRC_OPTIMIZE)
@@ -410,6 +411,7 @@ AC_CONFIG_FILES([
 	src/iosched/Makefile
 	src/kmi/Makefile
 	src/utils/Makefile
+	ltfs.pc:ltfs.pc.in
 ])
 
 AC_OUTPUT

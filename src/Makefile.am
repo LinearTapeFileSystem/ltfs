@@ -33,12 +33,14 @@
 #  OO_Copyright_END
 #
 
+if OSS
 bin_PROGRAMS = ltfs
 
 ltfs_SOURCES = main.c ltfs_fuse.c
 ltfs_DEPENDENCIES = libltfs/libltfs.la ../messages/bin_ltfs_dat.o
 ltfs_CPPFLAGS = @AM_CPPFLAGS@ -I ../ltfs-sde/src
 ltfs_LDADD = libltfs/libltfs.la ../messages/bin_ltfs_dat.o
+endif
 
 PLAT_DRV =
 
@@ -54,6 +56,58 @@ if ENABLE_LIN_TAPE
 PLAT_DRV += tape_drivers/linux/lin_tape
 endif
 
-generic_drivers = tape_drivers/generic/file tape_drivers/generic/itdtimg
-platform_drivers = $(PLAT_DRV)
-SUBDIRS = $(generic_drivers) $(platform_drivers) iosched kmi libltfs utils
+GEN_DRV = tape_drivers/generic/file
+SUB = iosched libltfs utils
+
+if OSS
+GEN_DRV += tape_drivers/generic/itdtimg
+SUB += kmi
+endif
+
+SUBDIRS = $(GEN_DRV) $(PLAT_DRV) $(SUB) iosched libltfs utils
+
+noinst_HEADERS = \
+	libltfs/base64.h \
+	libltfs/config_file.h \
+	libltfs/dcache.h \
+	libltfs/fs.h \
+	libltfs/index_criteria.h \
+	libltfs/iosched.h \
+	libltfs/kmi.h \
+	libltfs/label.h \
+	libltfs/ltfs_endian.h \
+	libltfs/ltfs_fsops_raw.h \
+	libltfs/ltfs_fuse_version.h \
+	libltfs/ltfs_internal.h \
+	libltfs/ltfssnmp.h \
+	libltfs/pathname.h \
+	libltfs/periodic_sync.h \
+	libltfs/xattr.h \
+	libltfs/xml.h \
+	libltfs/xml_libltfs.h \
+	libltfs/arch/errormap.h \
+	libltfs/arch/filename_handling.h \
+	libltfs/arch/uuid_internal.h \
+	libltfs/arch/version.h
+
+nobase_pkginclude_HEADERS = \
+	libltfs/dcache_ops.h \
+	libltfs/iosched_ops.h \
+	libltfs/kmi_ops.h \
+	libltfs/ltfs_fsops.h \
+	libltfs/tape_ops.h \
+	libltfs/ltfs_error.h \
+	libltfs/ltfs.h \
+	libltfs/ltfslogging.h \
+	libltfs/ltfstrace.h \
+	libltfs/ltfs_types.h \
+	libltfs/ltfs_thread.h \
+	libltfs/ltfs_locking.h \
+	libltfs/queue.h \
+	libltfs/uthash.h \
+	libltfs/uthash_ext.h \
+	libltfs/plugin.h \
+	libltfs/tape.h \
+	libltfs/arch/signal_internal.h \
+	libltfs/arch/arch_info.h \
+	libltfs/arch/time_internal.h
