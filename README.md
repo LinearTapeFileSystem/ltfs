@@ -37,7 +37,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ## Installing
 
-### Buid and install on Linux
+### Build and install on Linux
 
 ```
 ./autogen.sh
