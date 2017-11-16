@@ -47,11 +47,13 @@
 *************************************************************************************
 */
 
+#ifndef mingw_PLATFORM
 #include <netdb.h>
 #include <ifaddrs.h>
 #include <unistd.h>
 
 #define LOOP_BACK_DEVICE "lo"
+#endif
 
 #include "tape_drivers/ibm_tape.h"
 
@@ -1188,6 +1190,11 @@ int ibmtape_is_supported_tape(unsigned char type, unsigned char density, bool *i
  */
 int ibmtape_genkey(unsigned char *key)
 {
+#ifdef mingw_PLATFORM
+	memset(key, 0x00, KEYLEN);
+	*key = KEY_PREFIX_HOST;
+	strncpy(key + 1, "WINLTFS", KEYLEN - 1);
+#else
 	unsigned char host[KEYLEN];
 
 	struct ifaddrs *ifaddr, *ifa;
@@ -1256,6 +1263,7 @@ int ibmtape_genkey(unsigned char *key)
 	/* Return host name based key */
 	*key = KEY_PREFIX_HOST;
 	memcpy(key + 1, host, KEYLEN -1);
+#endif
 
 	return 0;
 }
