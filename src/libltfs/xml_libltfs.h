@@ -75,11 +75,10 @@
 
 /* Functions for writing XML files. See xml_writer_libltfs.c */
 xmlBufferPtr xml_make_label(const char *creator, tape_partition_t partition,
-	const struct ltfs_label *label);
-int xml_label_to_file(const char *filename, const char *creator, const struct ltfs_label *label);
+							const struct ltfs_label *label);
 xmlBufferPtr xml_make_schema(const char *creator, const struct ltfs_index *idx);
-int xml_schema_to_file(const char *filename, const char *creator
-					   , const char *reason, const struct ltfs_index *idx);
+int xml_schema_to_file(const char *filename, const char *creator,
+					   const char *reason, const struct ltfs_index *idx);
 int xml_schema_to_tape(char *reason, struct ltfs_volume *vol);
 
 /* Functions for reading XML files. See xml_reader_libltfs.c */
