@@ -1,5 +1,3 @@
-# Summary: Include summary of this issue here
-
 # Description
 
 Include detail description about this issue. It is helpful if current behavior and expected behavior is written.
