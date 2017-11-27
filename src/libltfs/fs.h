@@ -77,6 +77,8 @@ struct name_list* fs_add_key_to_hash_table(struct name_list *list, struct dentry
 struct name_list* fs_find_key_from_hash_table(struct name_list *list, const char *name, int *rc);
 void fs_gc_dentry(struct dentry *d);
 bool fs_is_percent_encode_required(const char *name);
+void fs_set_nametype(struct ltfs_name *name, char *str);
+void fs_clear_nametype(struct ltfs_name *name);
 
 /**
  * Decrement a dentry's reference count, freeing it if the reference count becomes 0.

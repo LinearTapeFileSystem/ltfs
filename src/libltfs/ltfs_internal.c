@@ -153,8 +153,8 @@ void _ltfs_index_free(bool force, struct ltfs_index **index)
 		index_criteria_free(&((*index)->index_criteria));
 		if ((*index)->commit_message)
 			free((*index)->commit_message);
-		if ((*index)->volume_name)
-			free((*index)->volume_name);
+		if ((*index)->volume_name.name)
+			free((*index)->volume_name.name);
 		if ((*index)->creator)
 			free((*index)->creator);
 		if ((*index)->symerr_count > 0)
@@ -1337,7 +1337,7 @@ int ltfs_split_symlink( struct ltfs_volume *vol )
 		} else if ( ret != -LTFS_NO_DENTRY )
 			goto err_out_func;
 
-		ret = ltfs_fsops_symlink_path( (const char*)d->target, (const char*)path, &id, vol );
+		ret = ltfs_fsops_symlink_path( (const char*)d->target.name, (const char*)path, &id, vol );
 		if (ret<0)
 			goto err_out_func;
 
@@ -1361,7 +1361,7 @@ int ltfs_split_symlink( struct ltfs_volume *vol )
 		}
 
 		d->isslink = false;
-		free(d->target);
+		free(d->target.name);
 		free(name);
 		strcpy(path,lfdir);
 		basedir=true;

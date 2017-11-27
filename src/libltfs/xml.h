@@ -124,8 +124,8 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 	int i, type, empty;
 
 #define declare_parser_vars_symlinknode(toptag) \
-	const char *name, *value, *parent_tag = (toptag); \
-	int type, empty;
+	const char *name, *parent_tag = (toptag); \
+	int type;
 
 #define declare_parser_vars_symlink(toptag) \
 	const char *name, *parent_tag = (toptag); \
@@ -273,6 +273,7 @@ int xml_reader_read(xmlTextReaderPtr reader);
 /* Value parsers */
 int xml_parse_uuid(char *out_val, const char *val);
 int xml_parse_filename(char **out_val, const char *value);
+int xml_parse_target(char **out_val, const char *value);
 int xml_parse_ll(long long *out_val, const char *val);
 int xml_parse_ull(unsigned long long *out_val, const char *val);
 int xml_parse_xll(unsigned long long *out_val, const char *val);

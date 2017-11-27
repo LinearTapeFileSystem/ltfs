@@ -236,6 +236,7 @@ int pathname_normalize(const char *name, char **new_name)
 
 /**
  * Validate a file name.
+ * @param name Name to validate
  * @return 0 on success or a negative value on error.
  */
 int pathname_validate_file(const char *name)
@@ -251,6 +252,27 @@ int pathname_validate_file(const char *name)
 		return -LTFS_NAMETOOLONG;
 	}
 	ret = _pathname_validate(name, false);
+	return ret;
+}
+
+/**
+ * Validate a symlink target.
+ * @param name symlink target name to validate
+ * @return 0 on success or a negative value on error.
+ */
+int pathname_validate_target(const char *name)
+{
+	int namelen, ret;
+
+	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
+
+	namelen = pathname_strlen(name);
+	if (namelen < 0)
+		return namelen;
+	if (namelen > LTFS_FILENAME_MAX) {
+		return -LTFS_NAMETOOLONG;
+	}
+	ret = _pathname_validate(name, true);
 	return ret;
 }
 

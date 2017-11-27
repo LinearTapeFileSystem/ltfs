@@ -314,8 +314,35 @@ int xml_parse_filename(char **out_val, const char *value)
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, "17030E", value);
 		return ret;
+	} else if (pathname_validate_file(*out_val) < 0) {
+		ltfsmsg(LTFS_ERR, "17031E", value);
+		free(*out_val);
+		*out_val = NULL;
+		return -1;
 	}
-	else if (pathname_validate_file(*out_val) < 0) {
+
+	return 0;
+}
+
+/**
+ * Parse a symlink target. The name is normalized to NFC and checked for
+ * length and invalid characters.
+ * @param out_val On success, points to a newly allocated buffer holding the normalized name.
+ * @param value Name to process.
+ * @return 0 on success or a negative value on error.
+ */
+int xml_parse_target(char **out_val, const char *value)
+{
+	int ret;
+
+	CHECK_ARG_NULL(out_val, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(value, -LTFS_NULL_ARG);
+
+	ret = pathname_normalize(value, out_val);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, "17030E", value);
+		return ret;
+	} else if (pathname_validate_target(*out_val) < 0) {
 		ltfsmsg(LTFS_ERR, "17031E", value);
 		free(*out_val);
 		*out_val = NULL;

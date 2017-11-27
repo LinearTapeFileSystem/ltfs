@@ -232,16 +232,26 @@ struct extent_info {
 };
 
 /**
+ * Structure to handle nametype in the LTFS format spec
+ */
+struct ltfs_name {
+	bool percent_encode; /**< True if name shall be percent encoded at index writing */
+	char *name;          /**< Name which is percent decoded if required */
+};
+
+/**
  * Extended attributes
  */
 struct xattr_info {
 	TAILQ_ENTRY(xattr_info) list;
-	char  *key;
-	char  *value;
-	size_t size;
-	bool  encoded;
+	struct ltfs_name key;
+	char             *value;
+	size_t           size;
 };
 
+/**
+ * Hash table structure to child node in a directory
+ */
 struct name_list {
 	struct dentry   *d;
 	char            *name;
@@ -259,33 +269,33 @@ struct dentry {
 	ltfs_mutex_t iosched_lock;                      /**< Lock for use by the I/O scheduler */
 
 	/* Immutable fields. No locks are needed to access these. */
-	ino_t ino;               /**< Per-session inode number, unique across all LTFS volumes in this process */
-	uint64_t uid;            /**< Persistent unique id. In single drive mode, this id is also used as inode number. */
-	bool isdir;              /**< True if this is a directory, false if it's a file */
-	bool isslink;            /**< True if this is a symlink, false if it's a file or directory */
-	char *target;            /**< Target name of symbolic link */
-	bool out_of_sync;        /**< This object was failed to sync */
-	TAILQ_ENTRY(dentry) list; /**< To be tail q entry to manage out of sync dentry list */
-	struct ltfs_volume *vol; /**< Volume to which this dentry belongs */
-	size_t tag_count;        /**< Number of unknown tags */
-	unsigned char **preserved_tags; /**< Unknown tags to be preserved on tape */
+	ino_t               ino;         /**< Per-session inode number, unique across all LTFS volumes in this process */
+	uint64_t            uid;         /**< Persistent unique id. In single drive mode, this id is also used as inode number. */
+	bool                isdir;       /**< True if this is a directory, false if it's a file */
+	bool                isslink;     /**< True if this is a symlink, false if it's a file or directory */
+	struct ltfs_name    target;      /**< Target name of symbolic link */
+	bool                out_of_sync; /**< This object was failed to sync */
+	TAILQ_ENTRY(dentry) list;        /**< To be tail q entry to manage out of sync dentry list */
+	struct ltfs_volume  *vol;        /**< Volume to which this dentry belongs */
+	size_t              tag_count;   /**< Number of unknown tags */
+	unsigned char       **preserved_tags; /**< Unknown tags to be preserved on tape */
 
 	/* Take the contents_lock before accessing these fields. */
 	TAILQ_HEAD(extent_struct, extent_info) extentlist; /**< List of extents (file only) */
 
 	/* Take the contents_lock and the meta_lock before writing to these fields. Take either of
 	 * those locks before reading these fields. */
-	uint64_t realsize;             /**< Size, not counting sparse tail */
-	uint64_t size;                 /**< File size (logical EOF position) */
-	bool     extents_dirty;        /**< Dirty flag of extents */
-	uint64_t used_blocks;          /**< number of used block on tape */
-	bool     dirty;                /**< Dirty flag of the file will clear when this dentry written to sync file list */
+	uint64_t realsize;      /**< Size, not counting sparse tail */
+	uint64_t size;          /**< File size (logical EOF position) */
+	bool     extents_dirty; /**< Dirty flag of extents */
+	uint64_t used_blocks;   /**< number of used block on tape */
+	bool     dirty;         /**< Dirty flag of the file will clear when this dentry written to sync file list */
 
 	/* Take the meta_lock and parent's contents_lock before writing to these fields.
 	 * Take either of those locks before reading these fields. */
-	char    *name;                 /**< File or directory name */
-	char    *platform_safe_name;   /**< File or directory name after file name mangling */
-	struct dentry *parent;         /**< Pointer to parent dentry */
+	struct ltfs_name name;                /**< File or directory name */
+	char             *platform_safe_name; /**< File or directory name after file name mangling */
+	struct dentry    *parent;             /**< Pointer to parent dentry */
 
 	/* Take the meta_lock before accessing these fields. */
 	TAILQ_HEAD(xattr_struct, xattr_info) xattrlist;  /**< List of extended attributes */
@@ -303,7 +313,6 @@ struct dentry {
 	bool need_update_time;         /**< True if write api has come from Windows side */
 	bool is_immutable;             /**< True if dentry is set to Immutable */
 	bool is_appendonly;            /**< True if dentry is set to Append Only */
-	bool percent_encode;           /**< True if name is percent encoded */
 
 	/* Take the iosched_lock before accessing iosched_priv. */
 	void *iosched_priv;            /**< I/O scheduler private data. */
@@ -455,16 +464,16 @@ struct ltfs_label {
  * in this case is to store indices.
  */
 struct index_criteria {
-	bool have_criteria;                 /**< Does this struct actually specify criteria? */
-	uint64_t max_filesize_criteria;     /**< Maximum file size that goes into the index partition */
-	char **glob_patterns;               /**< NULL-terminated list of file name criteria */
-	UChar **glob_cache;                 /**< Cache of glob patterns in comparison-ready form */
+	bool             have_criteria;         /**< Does this struct actually specify criteria? */
+	uint64_t         max_filesize_criteria; /**< Maximum file size that goes into the index partition */
+	struct ltfs_name *glob_patterns;       /**< NULL-terminated list of file name criteria */
+	UChar            **glob_cache;          /**< Cache of glob patterns in comparison-ready form */
 };
 
 struct ltfs_index {
 	char *creator;                      /**< Program that wrote this index */
 	char vol_uuid[37];                  /**< LTFS volume UUID */
-	char *volume_name;                  /**< human-readable volume name */
+	struct ltfs_name volume_name;       /**< human-readable volume name */
 	unsigned int generation;            /**< last generation number written to tape */
 	struct ltfs_timespec mod_time;      /**< time of last modification */
 	struct tape_offset selfptr;         /**< self-pointer (where this index was recovered from tape) */

@@ -205,7 +205,7 @@ int ltfs_fsops_close(struct dentry *d, bool dirty, bool open_write, bool use_ios
 
 	if (ret == 0 && vol->file_open_count > 0)
 		vol->file_open_count --;
-	
+
 	return ret;
 }
 
@@ -845,14 +845,14 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 
 	/* Update fromdentry */
 	fromdentry->parent = todir;
-	if (fromdentry->name)
-		free(fromdentry->name);
+	if (fromdentry->name.name)
+		free(fromdentry->name.name);
 	if (fromdentry->platform_safe_name)
 		free(fromdentry->platform_safe_name);
-	fromdentry->name = to_filename_copy;
+	fromdentry->name.name = to_filename_copy;
+	fromdentry->name.percent_encode = fs_is_percent_encode_required(fromdentry->name.name);
 	fromdentry->platform_safe_name = to_filename_copy2;
 	fromdentry->matches_name_criteria = index_criteria_match(fromdentry, vol);
-	fromdentry->percent_encode = fs_is_percent_encode_required(fromdentry->name);
 
 	/* Add fromdentry to new directory */
 	todir->child_list = fs_add_key_to_hash_table(todir->child_list, fromdentry, &ret);
@@ -939,7 +939,7 @@ int ltfs_fsops_getattr(struct dentry *d, struct dentry_attr *attr, struct ltfs_v
 	acquireread_mrsw(&d->meta_lock);
 
 	if(d->isslink)
-		attr->size = strlen(d->target);
+		attr->size = strlen(d->target.name);
 	else
 		attr->size = d->size;
 
@@ -1466,7 +1466,7 @@ int _ltfs_fsops_read_direntry(struct dentry *d, struct ltfs_direntry *dirent,
 			dirent->realsize      = target->realsize;
 			dirent->size          = target->size;
 			if (! dirent->platform_safe_name ) {
-				dirent->name          = target->name;
+				dirent->name          = target->name.name;
 				dirent->platform_safe_name = target->platform_safe_name;
 			}
 			releaseread_mrsw(&target->meta_lock);
@@ -1509,7 +1509,7 @@ int _ltfs_fsops_read_direntry(struct dentry *d, struct ltfs_direntry *dirent,
 		dirent->realsize      = target->realsize;
 		dirent->size          = target->size;
 		if (! dirent->platform_safe_name ) {
-			dirent->name          = target->name;
+			dirent->name          = target->name.name;
 			dirent->platform_safe_name = target->platform_safe_name;
 		}
 		releaseread_mrsw(&target->meta_lock);
@@ -1907,7 +1907,8 @@ int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, 
 
 	id->uid = d->uid;
 	id->ino = d->ino;
-	d->target = strdup(to);
+	d->target.name = strdup(to);
+	d->target.percent_encode = fs_is_percent_encode_required(to);
 	d->isslink = true;
 
 	/* Set mount point length in EA (LiveLink support mode only) */
@@ -1955,10 +1956,10 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 	id->uid = d->uid;
 	id->ino = d->ino;
 
-	if ( size < strlen(d->target)+1 ) {
+	if ( size < strlen(d->target.name) + 1 ) {
 		return -LTFS_SMALL_BUFFER;
 	}
-	strncpy(buf, d->target, size);
+	strncpy(buf, d->target.name, size);
 
 	if ( vol->livelink ) {
 		memset( value, 0, sizeof(value));
@@ -1969,12 +1970,12 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 			if ( ( ret == 1 ) && ( num1 != 0 ) ){
 				memset( buf, 0, size);
 #ifndef mingw_PLATFORM
-				if ( size < strlen(d->target)-num1+vol->mountpoint_len+1 ){
+				if ( size < strlen(d->target.name) - num1 + vol->mountpoint_len + 1 ){
 					return -LTFS_SMALL_BUFFER;
 				}
 				strcpy(buf, vol->mountpoint);
 #endif
-				strcat(buf, d->target+num1 );
+				strcat(buf, d->target.name + num1);
 				ltfsmsg(LTFS_DEBUG, "11324D", d->target, buf);
 			}
 		}

@@ -2849,16 +2849,16 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 
 	/* USER MEDIUM LABEL set */
 	memset(t_attr->medium_label, '\0', TC_MAM_USER_MEDIUM_LABEL_SIZE + 1);
-	if ( vol->index->volume_name ) {
-		len_volname = strlen(vol->index->volume_name);
+	if ( vol->index->volume_name.name ) {
+		len_volname = strlen(vol->index->volume_name.name);
 		if ( len_volname > TC_MAM_USER_MEDIUM_LABEL_SIZE - 1) {
 			ltfsmsg(LTFS_DEBUG, "17229D", "USER MEDIUM TEXT LABEL",
-					vol->index->volume_name, TC_MAM_USER_MEDIUM_LABEL_SIZE - 1);
-			len_volname = u_get_truncate_size(vol->index->volume_name, len_volname, TC_MAM_USER_MEDIUM_LABEL_SIZE);
+					vol->index->volume_name.name, TC_MAM_USER_MEDIUM_LABEL_SIZE - 1);
+			len_volname = u_get_truncate_size(vol->index->volume_name.name, len_volname, TC_MAM_USER_MEDIUM_LABEL_SIZE);
 			if (len_volname == -LTFS_ICU_ERROR)
 				len_volname = TC_MAM_USER_MEDIUM_LABEL_SIZE - 1;
 		}
-		strncpy(t_attr->medium_label, vol->index->volume_name, len_volname);
+		strncpy(t_attr->medium_label, vol->index->volume_name.name, len_volname);
 	}
 
 	/* TEXT LOCALIZATION IDENTIFIER set */
@@ -3249,8 +3249,8 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 	if ( type == TC_MAM_USER_MEDIUM_LABEL ) {
 		if ( size > TC_MAM_USER_MEDIUM_LABEL_SIZE - 1) {
 			ltfsmsg(LTFS_DEBUG, "17229D", "USER MEDIUM TEXT LABEL",
-					vol->index->volume_name, TC_MAM_USER_MEDIUM_LABEL_SIZE - 1);
-			size = u_get_truncate_size(vol->index->volume_name, size, TC_MAM_USER_MEDIUM_LABEL_SIZE);
+					vol->index->volume_name.name, TC_MAM_USER_MEDIUM_LABEL_SIZE - 1);
+			size = u_get_truncate_size(vol->index->volume_name.name, size, TC_MAM_USER_MEDIUM_LABEL_SIZE);
 			if (size == -LTFS_ICU_ERROR)
 				size = TC_MAM_USER_MEDIUM_LABEL_SIZE - 1;
 		}

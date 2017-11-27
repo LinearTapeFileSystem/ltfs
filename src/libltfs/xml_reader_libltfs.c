@@ -50,7 +50,7 @@
 **
 **                  Atsushi Abe
 **                  IBM Tokyo Lab., Japan
-**               	piste@jp.ibm.com
+**                  piste@jp.ibm.com
 **
 *************************************************************************************
 */
@@ -125,6 +125,55 @@ static int decode_entry_name(char **new_name, const char *name)
 	free(tmp_name);
 
 	return 0;
+}
+
+/**
+ * Parse a nametype element on LTFS format spec
+ */
+static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, bool target)
+{
+	const char name[] = "nametype", *value;
+	char *decoded_name, *encoded_name, *encode;
+	int empty, ret = -1;
+
+	encode = (char *)xmlTextReaderGetAttribute(reader, BAD_CAST "percentencoded");
+	if (encode && !strcmp(encode, "true")) {
+		n->percent_encode = true;
+	} else {
+		n->percent_encode = false;
+	}
+
+	get_tag_text();
+
+	encoded_name = strdup(value);
+	if (!encoded_name) {
+		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		return -1;
+	}
+
+	if (n->percent_encode) {
+		decode_entry_name(&decoded_name, encoded_name);
+		free(encoded_name);
+	} else {
+		decoded_name = encoded_name;
+	}
+
+	if (target)
+		ret = xml_parse_target(&n->name, decoded_name);
+	else
+		ret = xml_parse_filename(&n->name, decoded_name);
+
+	if (ret < 0) {
+		if (n->name) {
+			free(n->name);
+			n->name = NULL;
+		}
+		ret = -1;
+	}
+
+	free(decoded_name);
+
+	return ret;
 }
 
 /**
@@ -383,9 +432,7 @@ static int _xml_parse_label(xmlTextReaderPtr reader, struct ltfs_label *label)
  */
 static int _xml_parse_ip_criteria(xmlTextReaderPtr reader, struct ltfs_index *idx)
 {
-	int ret;
 	unsigned long long value_int;
-	char *glob_norm;
 	int num_patterns = 0;
 	declare_parser_vars("indexpartitioncriteria");
 	declare_tracking_arrays(1, 0);
@@ -411,29 +458,19 @@ static int _xml_parse_ip_criteria(xmlTextReaderPtr reader, struct ltfs_index *id
 			check_tag_end("size");
 
 		} else if (! strcmp(name, "name")) {
-			get_tag_text();
-
-			if (pathname_validate_file(value) < 0) {
-				ltfsmsg(LTFS_ERR, "17098E", value);
-				return -1;
-			}
 
 			++num_patterns;
 			/* quite inefficient, but the number of patterns should be small. */
 			idx->original_criteria.glob_patterns = realloc(idx->original_criteria.glob_patterns,
-														   (num_patterns + 1) * sizeof(char *));
-			if (! idx->original_criteria.glob_patterns) {
-				ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
-				return -1;
-			}
-			idx->original_criteria.glob_patterns[num_patterns] = NULL;
+														   (num_patterns + 1) * sizeof(struct ltfs_name));
 
-			ret = pathname_normalize(value, &glob_norm);
-			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "17025E", ret);
-				return ret;
+			if (_xml_parse_nametype(reader,
+									&idx->original_criteria.glob_patterns[num_patterns - 1],
+									false) < 0) {
+				--num_patterns;
 			}
-			idx->original_criteria.glob_patterns[num_patterns - 1] = glob_norm;
+
+			idx->original_criteria.glob_patterns[num_patterns].name = NULL;
 
 			check_tag_end("name");
 
@@ -631,7 +668,6 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 	struct xattr_info *xattr;
 	declare_parser_vars("xattr");
 	declare_tracking_arrays(2, 0);
-	char *encode;
 
 	xattr = calloc(1, sizeof(struct xattr_info));
 	if (! xattr) {
@@ -644,23 +680,10 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 
 		if (! strcmp(name, "key")) {
 			check_required_tag(0);
-			encode = (char *)xmlTextReaderGetAttribute(reader, BAD_CAST "percentencoded");
-			if (encode && !strcmp(encode, "true")) {
-				xattr->encoded = true;
-			}
 
-			get_tag_text();
-			if (xml_parse_filename(&xattr->key, value) < 0) {
+			/* Allow slash in xattr key */
+			if (_xml_parse_nametype(reader, &xattr->key, true) < 0)
 				free(xattr);
-				return -1;
-			}
-
-			if (xattr->encoded) {
-				char *new_key;
-				decode_entry_name(&new_key, xattr->key);
-				strcpy(xattr->key, new_key);
-                free(new_key);
-			}
 
 			check_tag_end("key");
 
@@ -677,7 +700,7 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 			check_empty();
 			if (empty == 0) {
 				if (xml_scan_text(reader, &value) < 0) {
-					free(xattr->key);
+					free(xattr->key.name);
 					free(xattr);
 					return -1;
 				}
@@ -685,7 +708,7 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 					xattr->value = strdup(value);
 					if (! xattr->value) {
 						ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
-						free(xattr->key);
+						free(xattr->key.name);
 						free(xattr);
 						return -1;
 					}
@@ -697,7 +720,7 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 						(unsigned char **)(&xattr->value));
 					if (xattr->size == 0) {
 						ltfsmsg(LTFS_ERR, "17028E");
-						free(xattr->key);
+						free(xattr->key.name);
 						free(xattr);
 						return -1;
 					}
@@ -717,10 +740,10 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 	check_required_tags();
 	TAILQ_INSERT_TAIL(&d->xattrlist, xattr, list);
 
-	if (!strcmp(xattr->key, "ltfs.vendor.IBM.immutable") && !strcmp(xattr->value, "1") ) {
+	if (!strcmp(xattr->key.name, "ltfs.vendor.IBM.immutable") && !strcmp(xattr->value, "1") ) {
 		d->is_immutable = true;
 	}
-	if (!strcmp(xattr->key, "ltfs.vendor.IBM.appendonly") && !strcmp(xattr->value, "1") ) {
+	if (!strcmp(xattr->key.name, "ltfs.vendor.IBM.appendonly") && !strcmp(xattr->value, "1") ) {
 		d->is_appendonly = true;
 	}
 
@@ -826,7 +849,6 @@ static int _xml_parse_file(xmlTextReaderPtr reader, struct ltfs_index *idx, stru
 	declare_parser_vars("file");
 	declare_tracking_arrays(9, 4);
 	bool symlink_flag=false, extent_flag=false, openforwrite=false;
-	char *encode;
 
 	file = fs_allocate_dentry(dir, NULL, NULL, false, false, false, idx);
 	if (! file) {
@@ -839,23 +861,13 @@ static int _xml_parse_file(xmlTextReaderPtr reader, struct ltfs_index *idx, stru
 
 		if (! strcmp(name, "name")) {
 			check_required_tag(0);
-			encode = (char *)xmlTextReaderGetAttribute(reader, BAD_CAST "percentencoded");
-			if (encode && !strcmp(encode, "true")) {
-				file->percent_encode = true;
-			}
 
-			get_tag_text();
-			if (xml_parse_filename(&file->name, value) < 0)
+			if (_xml_parse_nametype(reader, &file->name, false) < 0) {
+				free(file);
 				return -1;
-
-			if (file->percent_encode) {
-				char *new_name;
-				decode_entry_name(&new_name, file->name);
-				strcpy(file->name, new_name);
-                free(new_name);
 			}
 
-			filename->name = file->name;
+			filename->name = file->name.name;
 			filename->d = file;
 			check_tag_end("name");
 
@@ -930,8 +942,12 @@ static int _xml_parse_file(xmlTextReaderPtr reader, struct ltfs_index *idx, stru
 
         } else if (!strcmp(name, "symlink")) {
 			check_optional_tag(2);
-			get_tag_text();
-			file->target = strdup(value);
+
+			if (_xml_parse_nametype(reader, &file->target, true) < 0) {
+				free(file);
+				return -1;
+			}
+
 			file->isslink = true;
 			symlink_flag = true;
 
@@ -1116,7 +1132,7 @@ static int _xml_parse_dirtree(xmlTextReaderPtr reader, struct dentry *parent,
 	int ret;
 	unsigned long long value_int;
 	struct dentry *dir;
-	char *encode;
+
 	declare_parser_vars("directory");
 	declare_tracking_arrays(9, 1);
 
@@ -1142,57 +1158,30 @@ static int _xml_parse_dirtree(xmlTextReaderPtr reader, struct dentry *parent,
 		if (!strcmp(name, "name")) {
 			check_required_tag(0);
 
-			encode = (char *)xmlTextReaderGetAttribute(reader, BAD_CAST "percentencoded");
-
 			if (parent) {
-				if (encode && !strcmp(encode, "true")) {
-					dir->percent_encode = true;
-				}
-
-				get_tag_text();
-				if (xml_parse_filename(&dir->name, value) < 0)
+				if (_xml_parse_nametype(reader, &dir->name, false) < 0) {
+					free(dir);
 					return -1;
-
-				if (dir->percent_encode) {
-					char *new_name;
-					decode_entry_name(&new_name, dir->name);
-					strcpy(dir->name, new_name);
-					free(new_name);
 				}
-
-				dirname->name = dir->name;
+				dirname->name = dir->name.name;
 				dirname->d = dir;
+
 				check_tag_end("name");
+
 			} else {
 				/* this is the root directory, so set the volume name */
 				check_empty();
+
 				if (empty > 0) {
-					value = NULL;
+					idx->volume_name.percent_encode = false;
+					idx->volume_name.name = NULL;
 				} else {
-					if (xml_scan_text(reader, &value) < 0)
+					if (_xml_parse_nametype(reader, &idx->volume_name, false) < 0)
 						return -1;
-				}
-
-				if (value && strlen(value) > 0) {
-					if (xml_parse_filename(&idx->volume_name, value) < 0)
-						return -1;
-					/* if the value is the empty string, then xml_scan_text consumed the "name"
-					 * element end */
-
-					if (encode && !strcmp(encode, "true")) {
-						char *new_name;
-						decode_entry_name(&new_name, idx->volume_name);
-						strcpy(idx->volume_name, new_name);
-						free(new_name);
-					}
 
 					check_tag_end("name");
-				} else
-					idx->volume_name = NULL;
+				}
 			}
-
-			if (encode)
-				free(encode);
 
 		} else if (!strcmp(name, "readonly")) {
 			check_required_tag(1);
@@ -1510,9 +1499,9 @@ static int _xml_parse_symlink_target(xmlTextReaderPtr reader, int idx_version, s
 		get_next_tag();
 
 		if (! strcmp(name, "target")) {
-			get_tag_text();
 			d->isslink = true;
-			d->target = strdup(value);
+			if (_xml_parse_nametype(reader, &d->target, true) < 0)
+				return -1;
 		} else
 			ignore_unrecognized_tag();
 	}
