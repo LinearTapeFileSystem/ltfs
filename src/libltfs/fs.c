@@ -183,11 +183,14 @@ int fs_init_inode(void)
 	return ret;
 }
 
+/**
+ * Check given string requires percent encoded or not in XML
+ */
 bool fs_is_percent_encode_required(const char *name)
 {
 	int len, i;
 	bool need_encode = false;
-	
+
 	if (name) {
 		len = strlen(name);
 
@@ -199,8 +202,32 @@ bool fs_is_percent_encode_required(const char *name)
 			}
 		}
 	}
-	
+
 	return need_encode;
+}
+
+/**
+ * Clear name type structure
+ */
+void fs_clear_nametype(struct ltfs_name *name)
+{
+	if (name->name)
+		free(name->name);
+
+	name->percent_encode = false;
+	name->name = NULL;
+}
+
+/**
+ * Set name type structure
+ */
+void fs_set_nametype(struct ltfs_name *name, char *str)
+{
+	if (name) {
+		fs_clear_nametype(name);
+		name->name = str;
+		name->percent_encode = fs_is_percent_encode_required(str);
+	}
 }
 
 /**
@@ -232,27 +259,27 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 	memset(d, 0, sizeof(struct dentry));
 	d->parent = parent;
 	if (!name && !platform_safe_name) {
-		d->name = NULL;
+		d->name.name = NULL;
 		d->platform_safe_name = NULL;
 	} else if (name && !platform_safe_name) {
-		d->name = strdup(name);
+		d->name.name = strdup(name);
 		update_platform_safe_name(d, FALSE, idx);
-		if (! d->name || ! d->platform_safe_name) {
+		if (! d->name.name || ! d->platform_safe_name) {
 			ltfsmsg(LTFS_ERR, "10001E", "fs_allocate_dentry: name");
-			if (d->name)
-				free(d->name);
+			if (d->name.name)
+				free(d->name.name);
 			if (d->platform_safe_name)
 				free(d->platform_safe_name);
 			free(d);
 			return NULL;
 		}
 	} else if(!name && platform_safe_name) {
-		d->name = strdup(platform_safe_name);
+		d->name.name = strdup(platform_safe_name);
 		d->platform_safe_name = strdup(platform_safe_name);
-		if (! d->name || ! d->platform_safe_name) {
+		if (! d->name.name || ! d->platform_safe_name) {
 			ltfsmsg(LTFS_ERR, "10001E", "fs_allocate_dentry: name");
-			if (d->name)
-				free(d->name);
+			if (d->name.name)
+				free(d->name.name);
 			if (d->platform_safe_name)
 				free(d->platform_safe_name);
 			free(d);
@@ -261,12 +288,12 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 	} else {
 		/* Currently, it can be assumed that one of these names should
 		   be NULL. The codes below are just in case. */
-		d->name = strdup(name);
+		d->name.name = strdup(name);
 		d->platform_safe_name = strdup(platform_safe_name);
-		if (! d->name || ! d->platform_safe_name) {
+		if (! d->name.name || ! d->platform_safe_name) {
 			ltfsmsg(LTFS_ERR, "10001E", "fs_allocate_dentry: name");
-			if (d->name)
-				free(d->name);
+			if (d->name.name)
+				free(d->name.name);
 			if (d->platform_safe_name)
 				free(d->platform_safe_name);
 			free(d);
@@ -277,8 +304,8 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 	d->readonly = readonly;
 	d->numhandles = 1;
 	d->link_count = 0;
-	d->percent_encode = fs_is_percent_encode_required(d->name);
-	
+	d->name.percent_encode = fs_is_percent_encode_required(d->name.name);
+
 	if (isdir)
 		++d->link_count;
 	ltfs_mutex_lock(&inode_mutex);
@@ -290,8 +317,8 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 		d->uid = 1; /* When allocating root directory, use default UID */
 	if (d->uid == 0) {
 		/* UID allocation failed because the UID space overflowed. Refuse to create a new file. */
-		if (d->name)
-			free(d->name);
+		if (d->name.name)
+			free(d->name.name);
 		if (d->platform_safe_name)
 			free(d->platform_safe_name);
 		free(d);
@@ -300,8 +327,8 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 	ret = init_mrsw(&d->contents_lock);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, "10002E", ret);
-		if (d->name)
-			free(d->name);
+		if (d->name.name)
+			free(d->name.name);
 		if (d->platform_safe_name)
 			free(d->platform_safe_name);
 		free(d);
@@ -311,8 +338,8 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, "10002E", ret);
 		destroy_mrsw(&d->contents_lock);
-		if (d->name)
-			free(d->name);
+		if (d->name.name)
+			free(d->name.name);
 		if (d->platform_safe_name)
 			free(d->platform_safe_name);
 		free(d);
@@ -327,8 +354,8 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 		ltfsmsg(LTFS_ERR, "10002E", ret);
 		destroy_mrsw(&d->contents_lock);
 		destroy_mrsw(&d->meta_lock);
-		if (d->name)
-			free(d->name);
+		if (d->name.name)
+			free(d->name.name);
 		if (d->platform_safe_name)
 			free(d->platform_safe_name);
 		free(d);
@@ -347,8 +374,8 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 				ltfsmsg(LTFS_ERR, "11319E", "fs_allocate_dentry", ret);
 				releasewrite_mrsw(&parent->meta_lock);
 				releasewrite_mrsw(&parent->contents_lock);
-				if (d->name)
-					free(d->name);
+				if (d->name.name)
+					free(d->name.name);
 				if (d->platform_safe_name)
 					free(d->platform_safe_name);
 				free(d);
@@ -690,7 +717,7 @@ void _fs_dispose_dentry_contents(struct dentry *dentry, bool unlock, bool gc)
 	}
 	if (! TAILQ_EMPTY(&dentry->xattrlist)) {
 		TAILQ_FOREACH_SAFE(xattr_entry, &dentry->xattrlist, list, xattr_aux) {
-			free(xattr_entry->key);
+			free(xattr_entry->key.name);
 			if (xattr_entry->value)
 				free(xattr_entry->value);
 			free(xattr_entry);
@@ -708,9 +735,9 @@ void _fs_dispose_dentry_contents(struct dentry *dentry, bool unlock, bool gc)
 		}
 		dentry->parent = NULL;
 	}
-	if (dentry->name) {
-		free(dentry->name);
-		dentry->name = NULL;
+	if (dentry->name.name) {
+		free(dentry->name.name);
+		dentry->name.name = NULL;
 	}
 	if (dentry->platform_safe_name) {
 		free(dentry->platform_safe_name);
@@ -722,9 +749,9 @@ void _fs_dispose_dentry_contents(struct dentry *dentry, bool unlock, bool gc)
 	destroy_mrsw(&dentry->meta_lock);
 	ltfs_mutex_destroy(&dentry->iosched_lock);
 	HASH_CLEAR(hh, dentry->child_list);
-	if (dentry->target) {
-		free(dentry->target);
-		dentry->target = NULL;
+	if (dentry->target.name) {
+		free(dentry->target.name);
+		dentry->target.name = NULL;
 	}
 	free(dentry);
 }
@@ -892,14 +919,14 @@ void _fs_dump_dentry(struct dentry *ptr, int spaces)
 
 	/* Dentry data */
 	printf("%s%s [%d] {size=%llu, realsize=%llu, readonly=%d, creation=%lld, change=%lld, modify=%lld, access=%lld%s}\n",
-			ptr->name, ptr->isdir?"/":"", ptr->numhandles,
+			ptr->name.name, ptr->isdir?"/":"", ptr->numhandles,
 			(unsigned long long)ptr->size, (unsigned long long)ptr->realsize,
 			ptr->readonly, (long long int) ptr->creation_time.tv_sec, (long long int) ptr->change_time.tv_sec,
 			(long long int) ptr->modify_time.tv_sec, (long long int) ptr->access_time.tv_sec,
 			ptr->deleted ? " (deleted)" : "");
 	/* Extent data */
 	TAILQ_FOREACH(extent, &ptr->extentlist, list) {
-		int tab = spaces + strlen(ptr->name) + (ptr->isdir ? 1 : 0);
+		int tab = spaces + strlen(ptr->name.name) + (ptr->isdir ? 1 : 0);
 		for (i=0; i<tab+5; ++i)
 			printf(" ");
 		printf("{extent %d: partition=%d, startblock=%"PRIu64", blockoffset=%u, length=%"PRIu64", fileoffset=%"PRIu64"}\n",
@@ -908,11 +935,11 @@ void _fs_dump_dentry(struct dentry *ptr, int spaces)
 	}
 	/* Extended attributes data */
 	TAILQ_FOREACH(xattr, &ptr->xattrlist, list) {
-		int tab = spaces + strlen(ptr->name) + (ptr->isdir ? 1 : 0);
+		int tab = spaces + strlen(ptr->name.name) + (ptr->isdir ? 1 : 0);
 		for (i=0; i<tab+5; ++i)
 			printf(" ");
-		printf("{xattr key=%s, value=%.*s, size=%zu}\n", xattr->key, (int)xattr->size,
-				xattr->value, xattr->size);
+		printf("{xattr key=%s, value=%.*s, size=%zu}\n",
+			   xattr->key.name, (int)xattr->size, xattr->value, xattr->size);
 	}
 }
 
@@ -950,18 +977,17 @@ void fs_dump_tree(struct dentry *root)
 
 	/* Dentry data */
 	printf("%s [%d] {size=%"PRIu64", readonly=%d, creation=%lld, change=%lld, modify=%lld, access=%lld}\n",
-			root->name, root->numhandles,
-			root->size, root->readonly,
+			root->name.name, root->numhandles, root->size, root->readonly,
 			(long long int) root->creation_time.tv_sec, (long long int) root->change_time.tv_sec,
 			(long long int) root->modify_time.tv_sec, (long long int) root->access_time.tv_sec);
 
 	/* Extended attributes data */
 	TAILQ_FOREACH(xattr, &root->xattrlist, list) {
-		int tab = strlen(root->name) + (root->isdir ? 1 : 0);
+		int tab = strlen(root->name.name) + (root->isdir ? 1 : 0);
 		for (i=0; i<tab+5; ++i)
 			printf(" ");
-		printf("{xattr key=%s, value=%.*s, size=%zu}\n", xattr->key, (int)xattr->size,
-			xattr->value, xattr->size);
+		printf("{xattr key=%s, value=%.*s, size=%zu}\n",
+			   xattr->key.name, (int)xattr->size, xattr->value, xattr->size);
 	}
 
 	return _fs_dump_tree(root, 3);

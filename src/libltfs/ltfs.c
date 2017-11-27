@@ -1291,8 +1291,8 @@ int ltfs_get_volume_name(char **msg, struct ltfs_volume *vol)
 	err = ltfs_get_volume_lock(false, vol);
 	if (err < 0)
 		return err;
-	if (vol->index->volume_name) {
-		ret = strdup(vol->index->volume_name);
+	if (vol->index->volume_name.name) {
+		ret = strdup(vol->index->volume_name.name);
 		if (! ret) {
 			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
 			releaseread_mrsw(&vol->lock);
@@ -2571,9 +2571,9 @@ int ltfs_set_volume_name(const char *volname, struct ltfs_volume *vol)
 		return ret;
 	}
 	ltfs_mutex_lock(&vol->index->dirty_lock);
-	if (vol->index->volume_name)
-		free(vol->index->volume_name);
-	vol->index->volume_name = name_dup;
+
+	fs_set_nametype(&vol->index->volume_name, name_dup);
+
 	ltfs_set_index_dirty(false, false, vol->index);
 	ltfs_mutex_unlock(&vol->index->dirty_lock);
 	releaseread_mrsw(&vol->lock);

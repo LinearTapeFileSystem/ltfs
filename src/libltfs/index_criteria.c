@@ -62,6 +62,7 @@
 
 #include "ltfs.h"
 #include "libltfs/ltfslogging.h"
+#include "libltfs/fs.h"
 #include "index_criteria.h"
 #include "pathname.h"
 
@@ -247,8 +248,8 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 int index_criteria_parse_name(const char *criteria, size_t len, struct index_criteria *ic)
 {
 	char *delim, *rule, rulebuf[len+1];
-	char **rule_ptr;
-	int ret = 0, i = 0, num_names = 0;
+	struct ltfs_name *rule_ptr;
+	int ret = 0, num_names = 0;
 
 	num_names = 1;
 	snprintf(rulebuf, len, "%s", criteria);
@@ -269,37 +270,48 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 		}
 	}
 
-	ic->glob_patterns = calloc(num_names+1, sizeof(char*));
+	ic->glob_patterns = calloc(num_names+1, sizeof(struct ltfs_name));
 	if (! ic->glob_patterns) {
 		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
+	rule_ptr = ic->glob_patterns;
 
 	/* Assign rules to the glob_patterns[] array */
 	rule = rule+5;
-	for (i=0, delim=rule; *delim; delim++) {
+	for (delim = rule; *delim; delim++) {
 		if (*delim == ':') {
 			*delim = '\0';
-			ic->glob_patterns[i++] = strdup(rule);
+			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
+			rule_ptr->name = strdup(rule);
+			rule_ptr++;
 			rule = delim+1;
 		} else if (*delim == '/') {
 			*delim = '\0';
-			ic->glob_patterns[i++] = strdup(rule);
-		} else if (*(delim+1) == '\0')
-			ic->glob_patterns[i++] = strdup(rule);
+			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
+			rule_ptr->name = strdup(rule);
+			rule_ptr++;
+		} else if (*(delim+1) == '\0') {
+			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
+			rule_ptr->name = strdup(rule);
+			rule_ptr++;
+		}
 	}
-	if (i == 0)
-		ic->glob_patterns[i++] = strdup(rule);
+
+	if (ic->glob_patterns == rule_ptr) {
+		rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
+		rule_ptr->name = strdup(rule);
+	}
 
 	/* Validate rules */
 	if (ret == 0) {
 		rule_ptr = ic->glob_patterns;
-		while (*rule_ptr && ret == 0) {
-			ret = pathname_validate_file(*rule_ptr);
+		while (rule_ptr && rule_ptr->name && ret == 0) {
+			ret = pathname_validate_file(rule_ptr->name);
 			if (ret == -LTFS_INVALID_PATH)
-				ltfsmsg(LTFS_ERR, "11302E", *rule_ptr);
+				ltfsmsg(LTFS_ERR, "11302E", rule_ptr->name);
 			else if (ret == -LTFS_NAMETOOLONG)
-				ltfsmsg(LTFS_ERR, "11303E", *rule_ptr);
+				ltfsmsg(LTFS_ERR, "11303E", rule_ptr->name);
 			else if (ret < 0)
 				ltfsmsg(LTFS_ERR, "11304E", ret);
 			++rule_ptr;
@@ -395,6 +407,7 @@ int index_criteria_set_allow_update(bool allow, struct ltfs_volume *vol)
 int index_criteria_dup_rules(struct index_criteria *dest_ic, struct index_criteria *src_ic)
 {
 	int i, counter = 0;
+	struct ltfs_name *src_gp = NULL, *dst_gp = NULL;
 
 	CHECK_ARG_NULL(dest_ic, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(src_ic, -LTFS_NULL_ARG);
@@ -404,22 +417,32 @@ int index_criteria_dup_rules(struct index_criteria *dest_ic, struct index_criter
 	memcpy(dest_ic, src_ic, sizeof(*src_ic));
 	dest_ic->glob_cache = NULL; /* regenerate glob cache lazily */
 	if (src_ic->have_criteria && src_ic->glob_patterns) {
-		while (src_ic->glob_patterns[counter])
+		while (src_ic->glob_patterns[counter].name)
 			counter++;
-		dest_ic->glob_patterns = calloc(counter+1, sizeof(char *));
+
+		dest_ic->glob_patterns = calloc(counter+1, sizeof(struct ltfs_name));
 		if (! dest_ic->glob_patterns) {
 			ltfsmsg(LTFS_ERR, "10001E", "index_criteria_dup_rules: glob pattern array");
 			return -LTFS_NO_MEMORY;
 		}
-		for (i=0; i<counter; ++i) {
-			dest_ic->glob_patterns[i] = strdup(src_ic->glob_patterns[i]);
-			if (! dest_ic->glob_patterns[i]) {
+
+		src_gp = src_ic->glob_patterns;
+		dst_gp = dest_ic->glob_patterns;
+
+		for (i = 0; i < counter; ++i) {
+			dst_gp->percent_encode = src_gp->percent_encode;
+			dst_gp->name = strdup(src_gp->name);
+			if (! dst_gp->name) {
 				ltfsmsg(LTFS_ERR, "10001E", "index_criteria_dup_rules: glob pattern");
-				while (--i >= 0)
-					free(dest_ic->glob_patterns[i]);
+				while (--i >= 0) {
+					--dst_gp;
+					free(dst_gp->name);
+				}
 				free(dest_ic->glob_patterns);
 				return -LTFS_NO_MEMORY;
 			}
+			src_gp++;
+			dst_gp++;
 		}
 	}
 
@@ -439,9 +462,9 @@ void index_criteria_free(struct index_criteria *ic)
 		return;
 
 	if (ic->glob_patterns) {
-		char **globptr = ic->glob_patterns;
-		while (*globptr && **globptr) {
-			free(*globptr);
+		struct ltfs_name *globptr = ic->glob_patterns;
+		while (globptr && globptr->name) {
+			free(globptr->name);
 			++globptr;
 		}
 		free(ic->glob_patterns);
@@ -538,7 +561,7 @@ bool index_criteria_match(struct dentry *d, struct ltfs_volume *vol)
 	glob_cache = ic->glob_cache;
 
 	/* Prepare the dentry's name for caseless matching. */
-	ret = pathname_prepare_caseless(d->name, &dname, false);
+	ret = pathname_prepare_caseless(d->name.name, &dname, false);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, "11159E", ret);
 		return ret;
@@ -578,7 +601,7 @@ int _prepare_glob_cache(struct index_criteria *ic)
 	}
 
 	num_patterns = 0;
-	while (ic->glob_patterns[num_patterns])
+	while (ic->glob_patterns[num_patterns].name)
 		++num_patterns;
 
 	ic->glob_cache = calloc(num_patterns + 1, sizeof(UChar *));
@@ -586,8 +609,8 @@ int _prepare_glob_cache(struct index_criteria *ic)
 		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
-	for (i=0; ic->glob_patterns[i]; ++i) {
-		ret = pathname_prepare_caseless(ic->glob_patterns[i], &ic->glob_cache[i], false);
+	for (i=0; ic->glob_patterns[i].name; ++i) {
+		ret = pathname_prepare_caseless(ic->glob_patterns[i].name, &ic->glob_cache[i], false);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, "11160E", ret);
 			return ret;

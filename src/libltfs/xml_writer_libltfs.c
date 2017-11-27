@@ -77,7 +77,12 @@ static int encode_entry_name(char **new_name, const char *name)
 {
 	int len;
 	UChar32 c;
-	static char invalid_chars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-." ;
+	/* Printable character set
+	 * !\"#$%&`'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+	 *
+	 * In this encoding rule only `:` is removed from the printable character set
+	 */
+	static char invalid_chars[] = "!\"#$%&`'()*+,-./0123456789;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 	char *tmp_name;
 	char buf_encode[3];
 	int i=0, count=0, prev=0, j=0;
@@ -121,6 +126,31 @@ static int encode_entry_name(char **new_name, const char *name)
 
 	*new_name = strdup(tmp_name);
 	free(tmp_name);
+
+	return 0;
+}
+
+/**
+ * Write nametype(in LTFS format spec) into an XML stream.
+ * @param write output pointer
+ * @param tag tag name to print
+ * @param n pointer to ltfs_name structure
+ * @return 0 on success or a negative value on error.
+ */
+static int _xml_write_nametype(xmlTextWriterPtr writer, const char *tag, struct ltfs_name *n)
+{
+	char *encoded_name = NULL;
+
+	if (n->percent_encode) {
+		encode_entry_name(&encoded_name, n->name);
+		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST tag), -1);
+		xml_mktag(xmlTextWriterWriteAttribute(writer, BAD_CAST "percentencoded", BAD_CAST "true"), -1);
+		xml_mktag(xmlTextWriterWriteString(writer, BAD_CAST encoded_name), -1);
+		xml_mktag(xmlTextWriterEndElement(writer), -1);
+		free(encoded_name);
+	} else {
+		xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST tag, BAD_CAST n->name), -1);
+	}
 
 	return 0;
 }
@@ -195,18 +225,7 @@ static int _xml_write_xattr(xmlTextWriterPtr writer, const struct dentry *file)
 		TAILQ_FOREACH(xattr, &file->xattrlist, list) {
 			xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "xattr"), -1);
 
-			if (xattr->encoded) {
-				char *encoded_key;
-				encode_entry_name(&encoded_key, xattr->key);
-				xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "key"), -1);
-				xml_mktag(xmlTextWriterWriteAttribute(writer, BAD_CAST "percentencoded", BAD_CAST "true"), -1);
-				xml_mktag(xmlTextWriterWriteString(writer, BAD_CAST encoded_key), -1);
-				xml_mktag(xmlTextWriterEndElement(writer), -1);
-				free(encoded_key);
-			}
-			else {
-				xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "key", BAD_CAST xattr->key), -1);
-			}
+			xml_mktag(_xml_write_nametype(writer, "key", &xattr->key), -1);
 
 			if (xattr->value) {
 				ret = pathname_validate_xattr_value(xattr->value, xattr->size);
@@ -256,18 +275,7 @@ static int _xml_write_file(xmlTextWriterPtr writer, struct dentry *file, struct 
 	/* write standard attributes */
 	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "file"), -1);
 
-	if (file->percent_encode) {
-		char *encoded_name;
-		encode_entry_name(&encoded_name, file->name);
-		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "name"), -1);
-		xml_mktag(xmlTextWriterWriteAttribute(writer, BAD_CAST "percentencoded", BAD_CAST "true"), -1);
-		xml_mktag(xmlTextWriterWriteString(writer, BAD_CAST encoded_name), -1);
-		xml_mktag(xmlTextWriterEndElement(writer), -1);
-		free(encoded_name);
-	}
-	else {
-		xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "name", BAD_CAST file->name), -1);
-	}
+	xml_mktag(_xml_write_nametype(writer, "name", &file->name), -1);
 
 	xml_mktag(xmlTextWriterWriteFormatElement(
 		writer, BAD_CAST "length", "%"PRIu64, file->size), -1);
@@ -282,13 +290,13 @@ static int _xml_write_file(xmlTextWriterPtr writer, struct dentry *file, struct 
 
 	/* write extents */
     if (file->isslink) {
-        xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "symlink", BAD_CAST file->target), -1);
+		xml_mktag(_xml_write_nametype(writer, "symlink", &file->target), -1);
     } else if (! TAILQ_EMPTY(&file->extentlist)) {
 		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "extentinfo"), -1);
 		TAILQ_FOREACH(extent, &file->extentlist, list) {
 			/* Write file offset cache */
 			if (offset_c->fp && ! write_offset) {
-				fprintf(offset_c->fp, "%s,%"PRIu64"\n", file->name, extent->start.block);
+				fprintf(offset_c->fp, "%s,%"PRIu64"\n", file->name.name, extent->start.block);
 				write_offset = true;
 				offset_c->count++;
 			}
@@ -309,7 +317,7 @@ static int _xml_write_file(xmlTextWriterPtr writer, struct dentry *file, struct 
 	} else {
 		/* Write file offset cache */
 		if (offset_c->fp) {
-			fprintf(offset_c->fp, "%s,%"PRIu64"\n", file->name, (uint64_t)0);
+			fprintf(offset_c->fp, "%s,%"PRIu64"\n", file->name.name, (uint64_t)0);
 			offset_c->count++;
 		}
 	}
@@ -328,7 +336,7 @@ static int _xml_write_file(xmlTextWriterPtr writer, struct dentry *file, struct 
 
 	/* Write dirty file list */
 	if (sync_list->fp && file->dirty) {
-		fprintf(sync_list->fp, "%s,%"PRIu64"\n", file->name, file->size);
+		fprintf(sync_list->fp, "%s,%"PRIu64"\n", file->name.name, file->size);
 		file->dirty = false;
 		sync_list->count++;
 	}
@@ -360,33 +368,14 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 	/* write standard attributes */
 	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "directory"), -1);
 	if (dir == idx->root) {
-		if (idx->volume_name) {
-			if (fs_is_percent_encode_required(idx->volume_name)) {
-				char *encoded_name;
-				encode_entry_name(&encoded_name, idx->volume_name);
-				xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "name"), -1);
-				xml_mktag(xmlTextWriterWriteAttribute(writer, BAD_CAST "percentencoded", BAD_CAST "true"), -1);
-				xml_mktag(xmlTextWriterWriteString(writer, BAD_CAST encoded_name), -1);
-				xml_mktag(xmlTextWriterEndElement(writer), -1);
-				free(encoded_name);
-			}
-			else
-				xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "name", BAD_CAST idx->volume_name), -1);
+		if (idx->volume_name.name) {
+			xml_mktag(_xml_write_nametype(writer, "name", (struct ltfs_name*)(&idx->volume_name)), -1);
 		} else {
 			xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "name"), -1);
 			xml_mktag(xmlTextWriterEndElement(writer), -1);
 		}
-	} else if (dir->percent_encode) {
-		char *encoded_name;
-		encode_entry_name(&encoded_name, dir->name);
-		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "name"), -1);
-		xml_mktag(xmlTextWriterWriteAttribute(writer, BAD_CAST "percentencoded", BAD_CAST "true"), -1);
-		xml_mktag(xmlTextWriterWriteString(writer, BAD_CAST encoded_name), -1);
-		xml_mktag(xmlTextWriterEndElement(writer), -1);
-		free(encoded_name);
-	} else {
-		xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "name", BAD_CAST dir->name), -1);
-	}
+	} else
+		xml_mktag(_xml_write_nametype(writer, "name", &dir->name), -1);
 
 	xml_mktag(xmlTextWriterWriteElement(
 		writer, BAD_CAST "readonly", BAD_CAST (dir->readonly ? "true" : "false")), -1);
@@ -405,7 +394,7 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 	HASH_ITER(hh, dir->child_list, list_ptr, list_tmp) {
 		if (list_ptr->d->isdir) {
 
-			if (list_ptr->d->vol->index_cache_path && !strcmp(list_ptr->d->name, ".LTFSEE_DATA")) {
+			if (list_ptr->d->vol->index_cache_path && !strcmp(list_ptr->d->name.name, ".LTFSEE_DATA")) {
 				ret = asprintf(&offset_name, "%s.%s", list_ptr->d->vol->index_cache_path, "offsetcache");
 				if (ret > 0) {
 					offset->fp = fopen(offset_name, "w");
@@ -475,7 +464,8 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 {
 	int ret;
 	size_t i;
-	char *update_time, **name_criteria;
+	char *update_time;
+	struct ltfs_name *name_criteria;
 	char *offset_name = NULL, *sync_name = NULL;
 	struct ltfsee_cache offset = {NULL, 0};  /* Cache structure for file offset cache */
 	struct ltfsee_cache list = {NULL, 0};    /* Cache structure for sync list */
@@ -537,9 +527,8 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 			idx->original_criteria.max_filesize_criteria), -1);
 		if (idx->original_criteria.glob_patterns) {
 			name_criteria = idx->original_criteria.glob_patterns;
-			while (*name_criteria && **name_criteria) {
-				xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "name",
-					BAD_CAST (*name_criteria)), -1);
+			while (name_criteria && name_criteria->name) {
+				xml_mktag(_xml_write_nametype(writer, "name", name_criteria), -1);
 				++name_criteria;
 			}
 		}

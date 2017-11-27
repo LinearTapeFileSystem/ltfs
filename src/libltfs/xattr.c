@@ -115,13 +115,13 @@ int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t s
 			ltfsmsg(LTFS_ERR, "10001E", "xattr_do_set: xattr");
 			return -LTFS_NO_MEMORY;
 		}
-		xattr->key = strdup(name);
-		if (! xattr->key) {
+		xattr->key.name = strdup(name);
+		if (! xattr->key.name) {
 			ltfsmsg(LTFS_ERR, "10001E", "xattr_do_set: xattr key");
 			ret = -LTFS_NO_MEMORY;
 			goto out_free;
 		}
-		xattr->encoded = fs_is_percent_encode_required(xattr->key);
+		xattr->key.percent_encode = fs_is_percent_encode_required(xattr->key.name);
 		TAILQ_INSERT_HEAD(&d->xattrlist, xattr, list);
 	}
 
@@ -141,8 +141,8 @@ int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t s
 out_remove:
 	TAILQ_REMOVE(&d->xattrlist, xattr, list);
 out_free:
-	if (xattr->key)
-		free(xattr->key);
+	if (xattr->key.name)
+		free(xattr->key.name);
 	free(xattr);
 	return ret;
 }
@@ -467,7 +467,7 @@ int xattr_do_remove(struct dentry *d, const char *name, bool force, struct ltfs_
 	get_current_timespec(&d->change_time);
 	releasewrite_mrsw(&d->meta_lock);
 
-	free(xattr->key);
+	free(xattr->key.name);
 	if (xattr->value)
 		free(xattr->value);
 	free(xattr);
@@ -588,7 +588,7 @@ int _xattr_seek(struct xattr_info **out, struct dentry *d, const char *name)
 
 	*out = NULL;
 	TAILQ_FOREACH(entry, &d->xattrlist, list) {
-		if (! strcmp(entry->key, name)) {
+		if (! strcmp(entry->key.name, name)) {
 			*out = entry;
 			break;
 		}
@@ -682,7 +682,7 @@ int _xattr_list_physicals(struct dentry *d, char *list, size_t size)
 #endif /* (!defined (__APPLE__)) && (!defined (mingw_PLATFORM)) */
 
 	TAILQ_FOREACH(entry, &d->xattrlist, list) {
-		ret = pathname_unformat(entry->key, &new_name);
+		ret = pathname_unformat(entry->key.name, &new_name);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, "11142E", ret);
 			goto out;
@@ -888,7 +888,7 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 		ret = _xattr_get_string(vol->label->vol_uuid, &val, name);
 	} else if (! strcmp(name, "ltfs.volumeName")) {
 		ltfs_mutex_lock(&vol->index->dirty_lock);
-		ret = _xattr_get_string(vol->index->volume_name, &val, name);
+		ret = _xattr_get_string(vol->index->volume_name.name, &val, name);
 		ltfs_mutex_unlock(&vol->index->dirty_lock);
 	} else if (! strcmp(name, "ltfs.softwareVersion")) {
 		ret = _xattr_get_string(PACKAGE_VERSION, &val, name);
@@ -1214,11 +1214,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 
 		ltfs_mutex_lock(&vol->index->dirty_lock);
 		if (! value || ! size) {
-			/* Clear the current volume name field */
-			if (vol->index->volume_name) {
-				free(vol->index->volume_name);
-				vol->index->volume_name = NULL;
-			}
+			fs_clear_nametype(&vol->index->volume_name);
 			/* Clear tape attribute(TC_MAM_USER_MEDIUM_LABEL) */
 			ret =  update_tape_attribute (vol, NULL, TC_MAM_USER_MEDIUM_LABEL, 0);
 			if ( ret < 0 ) {
@@ -1243,9 +1239,8 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 			ret = 0;
 
 			/* Update the volume name in the index */
-			if (vol->index->volume_name)
-				free(vol->index->volume_name);
-			vol->index->volume_name = new_value;
+			fs_clear_nametype(&vol->index->volume_name);
+			fs_set_nametype(&vol->index->volume_name, new_value);
 
 			/* Update tape attribute(TC_MAM_USER_MEDIUM_LABEL) */
 			ret =  update_tape_attribute (vol, new_value, TC_MAM_USER_MEDIUM_LABEL, size);
@@ -1517,9 +1512,8 @@ int _xattr_remove_virtual(struct dentry *d, const char *name, struct ltfs_volume
 		ltfs_mutex_unlock(&vol->index->dirty_lock);
 	} else if (! strcmp(name, "ltfs.volumeName") && d == vol->index->root) {
 		ltfs_mutex_lock(&vol->index->dirty_lock);
-		if (vol->index->volume_name) {
-			free(vol->index->volume_name);
-			vol->index->volume_name = NULL;
+		if (vol->index->volume_name.name) {
+			fs_clear_nametype(&vol->index->volume_name);
 			ltfs_set_index_dirty(false, false, vol->index);
 		}
 		/* Clear tape attribute(TC_MAM_USER_MEDIUM_LABEL) */

@@ -919,9 +919,9 @@ void _print_index(struct ltfs_volume *vol, struct index_info *list, struct other
 			if(list->criteria->glob_patterns) {
 				i = 0;
 				while(1) {
-					if(list->criteria->glob_patterns[i] == NULL)
+					if(list->criteria->glob_patterns[i].name == NULL)
 						break;
-					printf("%s ", list->criteria->glob_patterns[i]);
+					printf("%s ", list->criteria->glob_patterns[i].name);
 					i++;
 				}
 			}
@@ -1016,9 +1016,9 @@ void print_criteria_info(struct ltfs_volume *vol)
 		if(ic->glob_patterns) {
 			i = 0;
 			while(1) {
-				if(ic->glob_patterns[i] == NULL)
+				if(ic->glob_patterns[i].name == NULL)
 					break;
-				ltfsmsg(LTFS_INFO, "16033I", ic->glob_patterns[i]);
+				ltfsmsg(LTFS_INFO, "16033I", ic->glob_patterns[i].name);
 				i++;
 			}
 		}
