@@ -69,6 +69,9 @@
 #include "ibm_tape.h"
 
 /* iokit functions */
+#ifdef VERSION
+#undef VERSION // Undef VERSION because it is conflicted into the header in IOKit
+#endif
 #include "iokit_service.h"
 #include "iokit_scsi.h"
 
