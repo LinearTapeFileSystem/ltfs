@@ -77,12 +77,13 @@ static int encode_entry_name(char **new_name, const char *name)
 {
 	int len;
 	UChar32 c;
-	/* Printable character set
-	 * !\"#$%&`'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+
+	/* Printable ASCII characters
+	 * !\"#$%&`'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 	 *
-	 * In this encoding rule only `:` is removed from the printable character set
+	 * In this encoding, only `:` is encoded in this printable character set
 	 */
-	static char invalid_chars[] = "!\"#$%&`'()*+,-./0123456789;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+	static char plain_chars[] = "!\"#$%&`'()*+,-./0123456789;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 	char *tmp_name;
 	char buf_encode[3];
 	int i=0, count=0, prev=0, j=0;
@@ -105,7 +106,7 @@ static int encode_entry_name(char **new_name, const char *name)
 			return -LTFS_ICU_ERROR;
 		}
 
-        if (strchr(invalid_chars, name[prev])) {
+        if (strchr(plain_chars, name[prev])) {
 			// encode is not needed.
 			tmp_name[j] = name[prev];
 			j++;
