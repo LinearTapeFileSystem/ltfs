@@ -1164,8 +1164,8 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	/*
 	 *  Set the volume name (logical) when LTFS runs on OS X
 	 */
-	if (priv->data->index->volume_name) {
-		ret = asprintf(&opt_volname, "-ovolname=%s(%s)", priv->data->index->volume_name, "ltfs");
+	if (priv->data->index->volume_name.name) {
+		ret = asprintf(&opt_volname, "-ovolname=%s(%s)", priv->data->index->volume_name.name, "ltfs");
 		if (ret < 0) {
 			/* Memory allocation failed */
 			ltfsmsg(LTFS_ERR, "10001E", "option string for volume name");
