@@ -154,7 +154,7 @@ struct device_data;
 
 #ifdef __APPLE_MAKEFILE__
 #define PACKAGE_NAME                  "LTFS"
-#define PACKAGE_VERSION               "2.4.0 (%SNAPSHOT%)"
+#define PACKAGE_VERSION               "2.4.0.0"
 #else
 #include "config.h"
 #endif

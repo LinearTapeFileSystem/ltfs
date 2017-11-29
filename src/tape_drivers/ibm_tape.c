@@ -226,46 +226,46 @@ int num_supported_cart              = sizeof(supported_cart)/sizeof(supported_ca
 int num_supported_density           = sizeof(supported_density)/sizeof(supported_density[0]);
 
 struct supported_device *ibm_supported_drives[] = {
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-TD5",  DRIVE_LTO5,    " [ULTRIUM-TD5] " ), /* IBM Ultrium Gen 5 */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD5",  DRIVE_LTO5,    " [ULT3580-TD5] " ), /* IBM Ultrium Gen 5 */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH5",  DRIVE_LTO5_HH, " [ULTRIUM-HH5] " ), /* IBM Ultrium Gen 5 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH5",  DRIVE_LTO5_HH, " [ULT3580-HH5] " ), /* IBM Ultrium Gen 5 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "HH LTO Gen 5", DRIVE_LTO5_HH, " [HH LTO Gen 5]" ), /* IBM Ultrium Gen 5 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-TD6",  DRIVE_LTO6,    " [ULTRIUM-TD6] " ), /* IBM Ultrium Gen 6 */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD6",  DRIVE_LTO6,    " [ULT3580-TD6] " ), /* IBM Ultrium Gen 6 */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH6",  DRIVE_LTO6_HH, " [ULTRIUM-HH6] " ), /* IBM Ultrium Gen 6 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH6",  DRIVE_LTO6_HH, " [ULT3580-HH6] " ), /* IBM Ultrium Gen 6 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "HH LTO Gen 6", DRIVE_LTO6_HH, " [HH LTO Gen 6]" ), /* IBM Ultrium Gen 6 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-TD7",  DRIVE_LTO7,    " [ULTRIUM-TD7] " ), /* IBM Ultrium Gen 7 */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD7",  DRIVE_LTO7,    " [ULT3580-TD7] " ), /* IBM Ultrium Gen 7 */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH7",  DRIVE_LTO7_HH, " [ULTRIUM-HH7] " ), /* IBM Ultrium Gen 7 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH7",  DRIVE_LTO7_HH, " [ULT3580-HH7] " ), /* IBM Ultrium Gen 7 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "HH LTO Gen 7", DRIVE_LTO7_HH, " [HH LTO Gen 7]" ), /* IBM Ultrium Gen 7 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-TD8",  DRIVE_LTO8,    " [ULTRIUM-TD8] " ), /* IBM Ultrium Gen 8 */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD8",  DRIVE_LTO8,    " [ULT3580-TD8] " ), /* IBM Ultrium Gen 8 */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH8",  DRIVE_LTO8_HH, " [ULTRIUM-HH8] " ), /* IBM Ultrium Gen 8 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH8",  DRIVE_LTO8_HH, " [ULT3580-HH8] " ), /* IBM Ultrium Gen 8 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "HH LTO Gen 8", DRIVE_LTO8_HH, " [HH LTO Gen 8]" ), /* IBM Ultrium Gen 8 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "03592E07",     DRIVE_TS1140,  " [03592E07]    " ), /* IBM TS1140 */
-		TAPEDRIVE( IBM_VENDOR_ID, "03592E08",     DRIVE_TS1150,  " [03592E08]    " ), /* IBM TS1150 */
-		TAPEDRIVE( IBM_VENDOR_ID, "0359255F",     DRIVE_TS1155,  " [0359255F]    " ), /* IBM TS1155 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-TD5",  DRIVE_LTO5,    "[ULTRIUM-TD5]" ),  /* IBM Ultrium Gen 5 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD5",  DRIVE_LTO5,    "[ULT3580-TD5]" ),  /* IBM Ultrium Gen 5 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH5",  DRIVE_LTO5_HH, "[ULTRIUM-HH5]" ),  /* IBM Ultrium Gen 5 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH5",  DRIVE_LTO5_HH, "[ULT3580-HH5]" ),  /* IBM Ultrium Gen 5 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "HH LTO Gen 5", DRIVE_LTO5_HH, "[HH LTO Gen 5]" ), /* IBM Ultrium Gen 5 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-TD6",  DRIVE_LTO6,    "[ULTRIUM-TD6]" ),  /* IBM Ultrium Gen 6 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD6",  DRIVE_LTO6,    "[ULT3580-TD6]" ),  /* IBM Ultrium Gen 6 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH6",  DRIVE_LTO6_HH, "[ULTRIUM-HH6]" ),  /* IBM Ultrium Gen 6 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH6",  DRIVE_LTO6_HH, "[ULT3580-HH6]" ),  /* IBM Ultrium Gen 6 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "HH LTO Gen 6", DRIVE_LTO6_HH, "[HH LTO Gen 6]" ), /* IBM Ultrium Gen 6 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-TD7",  DRIVE_LTO7,    "[ULTRIUM-TD7]" ),  /* IBM Ultrium Gen 7 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD7",  DRIVE_LTO7,    "[ULT3580-TD7]" ),  /* IBM Ultrium Gen 7 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH7",  DRIVE_LTO7_HH, "[ULTRIUM-HH7]" ),  /* IBM Ultrium Gen 7 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH7",  DRIVE_LTO7_HH, "[ULT3580-HH7]" ),  /* IBM Ultrium Gen 7 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "HH LTO Gen 7", DRIVE_LTO7_HH, "[HH LTO Gen 7]" ), /* IBM Ultrium Gen 7 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-TD8",  DRIVE_LTO8,    "[ULTRIUM-TD8]" ),  /* IBM Ultrium Gen 8 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD8",  DRIVE_LTO8,    "[ULT3580-TD8]" ),  /* IBM Ultrium Gen 8 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH8",  DRIVE_LTO8_HH, "[ULTRIUM-HH8]" ),  /* IBM Ultrium Gen 8 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH8",  DRIVE_LTO8_HH, "[ULT3580-HH8]" ),  /* IBM Ultrium Gen 8 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "HH LTO Gen 8", DRIVE_LTO8_HH, "[HH LTO Gen 8]" ), /* IBM Ultrium Gen 8 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "03592E07",     DRIVE_TS1140,  "[03592E07]" ),     /* IBM TS1140 */
+		TAPEDRIVE( IBM_VENDOR_ID, "03592E08",     DRIVE_TS1150,  "[03592E08]" ),     /* IBM TS1150 */
+		TAPEDRIVE( IBM_VENDOR_ID, "0359255F",     DRIVE_TS1155,  "[0359255F]" ),     /* IBM TS1155 */
 		/* End of supported_devices */
 		NULL
 };
 
 struct supported_device *usb_supported_drives[] = {
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD5",  DRIVE_LTO5,    " [ULT3580-TD5] " ), /* IBM Ultrium Gen 5 */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH5",  DRIVE_LTO5_HH, " [ULTRIUM-HH5] " ), /* IBM Ultrium Gen 5 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH5",  DRIVE_LTO5_HH, " [ULT3580-HH5] " ), /* IBM Ultrium Gen 5 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD6",  DRIVE_LTO6,    " [ULT3580-TD6] " ), /* IBM Ultrium Gen 6 */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH6",  DRIVE_LTO6_HH, " [ULTRIUM-HH6] " ), /* IBM Ultrium Gen 6 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH6",  DRIVE_LTO6_HH, " [ULT3580-HH6] " ), /* IBM Ultrium Gen 6 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD7",  DRIVE_LTO7,    " [ULT3580-TD7] " ), /* IBM Ultrium Gen 7 */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH7",  DRIVE_LTO7_HH, " [ULTRIUM-HH7] " ), /* IBM Ultrium Gen 7 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH7",  DRIVE_LTO7_HH, " [ULT3580-HH7] " ), /* IBM Ultrium Gen 7 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD8",  DRIVE_LTO8,    " [ULT3580-TD8] " ), /* IBM Ultrium Gen 8 */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH8",  DRIVE_LTO8_HH, " [ULTRIUM-HH8] " ), /* IBM Ultrium Gen 8 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH8",  DRIVE_LTO8_HH, " [ULT3580-HH8] " ), /* IBM Ultrium Gen 8 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD5",  DRIVE_LTO5,    "[ULT3580-TD5]" ), /* IBM Ultrium Gen 5 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH5",  DRIVE_LTO5_HH, "[ULTRIUM-HH5]" ), /* IBM Ultrium Gen 5 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH5",  DRIVE_LTO5_HH, "[ULT3580-HH5]" ), /* IBM Ultrium Gen 5 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD6",  DRIVE_LTO6,    "[ULT3580-TD6]" ), /* IBM Ultrium Gen 6 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH6",  DRIVE_LTO6_HH, "[ULTRIUM-HH6]" ), /* IBM Ultrium Gen 6 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH6",  DRIVE_LTO6_HH, "[ULT3580-HH6]" ), /* IBM Ultrium Gen 6 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD7",  DRIVE_LTO7,    "[ULT3580-TD7]" ), /* IBM Ultrium Gen 7 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH7",  DRIVE_LTO7_HH, "[ULTRIUM-HH7]" ), /* IBM Ultrium Gen 7 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH7",  DRIVE_LTO7_HH, "[ULT3580-HH7]" ), /* IBM Ultrium Gen 7 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD8",  DRIVE_LTO8,    "[ULT3580-TD8]" ), /* IBM Ultrium Gen 8 */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH8",  DRIVE_LTO8_HH, "[ULTRIUM-HH8]" ), /* IBM Ultrium Gen 8 Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH8",  DRIVE_LTO8_HH, "[ULT3580-HH8]" ), /* IBM Ultrium Gen 8 Half-High */
 		/* End of supported_devices */
 		NULL
 };
