@@ -84,7 +84,13 @@ static struct fuse_opt kmi_simple_options[] = {
  */
 void *simple_init(struct ltfs_volume *vol)
 {
-	return key_format_ltfs_init(vol, "15500D");
+	void* km;
+
+	km = key_format_ltfs_init(vol);
+	if (km)
+		ltfsmsg(LTFS_DEBUG, 15500D);
+
+	return km;
 }
 
 /**
@@ -94,7 +100,12 @@ void *simple_init(struct ltfs_volume *vol)
  */
 int simple_destroy(void * const kmi_handle)
 {
-	return key_format_ltfs_destroy(kmi_handle, "15501D");
+	int ret;
+
+	ret = key_format_ltfs_destroy(kmi_handle);
+	ltfsmsg(LTFS_DEBUG, 15501D);
+
+	return ret;
 }
 
 /**
@@ -114,7 +125,7 @@ int simple_get_key(unsigned char **keyalias, unsigned char **key, void * const k
  */
 int simple_help_message(void)
 {
-	ltfsresult("15608I");
+	ltfsresult(15508I);
 
 	return 0;
 }
@@ -152,18 +163,18 @@ int simple_parse_opts(void *opt_args)
 	/* fuse_opt_parse can handle a NULL device parameter just fine */
 	ret = fuse_opt_parse(args, &priv, kmi_simple_options, null_parser);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "15604E", ret);
+		ltfsmsg(LTFS_ERR, 15504E, ret);
 		return ret;
 	}
 
 	if (((priv.dk != NULL) ^ (priv.dki != NULL)) || (priv.dk_for_format != NULL && priv.dki_for_format == NULL)) {
-		ltfsmsg(LTFS_ERR, "15604E", 0);
+		ltfsmsg(LTFS_ERR, 15504E, 0);
 		return -1;
 	}
 
 	if (priv.dk != NULL && priv.dki != NULL && priv.dk_for_format != NULL && priv.dki_for_format != NULL) {
 		if ((strcmp((char *) priv.dk, (char *) priv.dk_for_format) == 0) ^ (strcmp((char *) priv.dki, (char *) priv.dki_for_format) == 0)) {
-			ltfsmsg(LTFS_ERR, "15604E", 1);
+			ltfsmsg(LTFS_ERR, 15504E, 1);
 			return -1;
 		}
 	}
@@ -186,7 +197,7 @@ int simple_parse_opts(void *opt_args)
 		else
 			priv.dk_list = calloc(dk_list_len, sizeof(unsigned char));
 		if (priv.dk_list == NULL) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 		*(priv.dk_list + original_dk_list_len) = '\0';

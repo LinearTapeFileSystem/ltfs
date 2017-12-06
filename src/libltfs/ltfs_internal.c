@@ -80,27 +80,27 @@ int ltfs_index_alloc(struct ltfs_index **index, struct ltfs_volume *vol)
 
 	newindex = calloc(1, sizeof(struct ltfs_index));
 	if (!newindex) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	ret = ltfs_mutex_init(&newindex->dirty_lock);
 	if (ret) {
-		ltfsmsg(LTFS_ERR, "11166E", ret);
+		ltfsmsg(LTFS_ERR, 11166E, ret);
 		ltfs_index_free(&newindex);
 		return -ret;
 	}
 
 	ret = ltfs_mutex_init(&newindex->refcount_lock);
 	if (ret) {
-		ltfsmsg(LTFS_ERR, "11166E", ret);
+		ltfsmsg(LTFS_ERR, 11166E, ret);
 		ltfs_index_free(&newindex);
 		return -ret;
 	}
 
 	ret = ltfs_mutex_init(&newindex->rename_lock);
 	if (ret) {
-		ltfsmsg(LTFS_ERR, "11166E", ret);
+		ltfsmsg(LTFS_ERR, 11166E, ret);
 		ltfs_index_free(&newindex);
 		return -ret;
 	}
@@ -112,7 +112,7 @@ int ltfs_index_alloc(struct ltfs_index **index, struct ltfs_volume *vol)
 
 	newindex->root = fs_allocate_dentry(NULL, "/", NULL, true, false, false, newindex);
 	if (! newindex->root) {
-		ltfsmsg(LTFS_ERR, "11168E");
+		ltfsmsg(LTFS_ERR, 11168E);
 		ltfs_index_free(&newindex);
 		return -LTFS_NO_MEMORY;
 	}
@@ -179,25 +179,25 @@ int ltfs_read_labels(bool trial, struct ltfs_volume *vol)
 
 	ret = label_alloc(&label0);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11169E", ret);
+		ltfsmsg(LTFS_ERR, 11169E, ret);
 		goto out_free;
 	}
 	ret = label_alloc(&label1);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11169E", ret);
+		ltfsmsg(LTFS_ERR, 11169E, ret);
 		goto out_free;
 	}
 
 	ret = ltfs_read_one_label(0, label0, vol);
 	if (ret < 0) {
 		if (! trial || ret != -LTFS_LABEL_INVALID)
-			ltfsmsg(LTFS_ERR, "11170E", ret);
+			ltfsmsg(LTFS_ERR, 11170E, ret);
 		goto out_free;
 	}
 	ret = ltfs_read_one_label(1, label1, vol);
 	if (ret < 0) {
 		if (! trial || ret != -LTFS_LABEL_INVALID)
-			ltfsmsg(LTFS_ERR, "11171E", ret);
+			ltfsmsg(LTFS_ERR, 11171E, ret);
 		goto out_free;
 	}
 
@@ -205,7 +205,7 @@ int ltfs_read_labels(bool trial, struct ltfs_volume *vol)
 	ret = label_compare(label0, label1);
 	if (ret < 0) {
 		if (! trial || ret != -LTFS_LABEL_MISMATCH)
-			ltfsmsg(LTFS_ERR, "11172E", ret);
+			ltfsmsg(LTFS_ERR, 11172E, ret);
 		goto out_free;
 	}
 
@@ -257,19 +257,19 @@ int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
 
 	ret = tape_get_max_blocksize(vol->device, &bufsize);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17195E", "read label", ret);
+		ltfsmsg(LTFS_ERR, 17195E, "read label", ret);
 		return ret;
 	}
 
 	if (bufsize < LTFS_LABEL_MAX) {
-		ltfsmsg(LTFS_ERR, "17185E", bufsize);
+		ltfsmsg(LTFS_ERR, 17185E, bufsize);
 		return -LTFS_SMALL_BLOCKSIZE;
 	} else
 		bufsize = LTFS_LABEL_MAX;
 
 	buf = calloc(1, bufsize + LTFS_CRC_SIZE);
 	if (!buf) {
-		ltfsmsg(LTFS_ERR, "10001E", "ltfs_read_one_label: buffer");
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs_read_one_label: buffer");
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -278,7 +278,7 @@ int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
 	seekpos.block = 0;
 	ret = tape_seek(vol->device, &seekpos);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11173E", ret, (unsigned long)partition);
+		ltfsmsg(LTFS_ERR, 11173E, ret, (unsigned long)partition);
 		/* Simple heuristic to detect an unpartitioned tape: seeking to partition 1 fails.
 		 * Note that the seek may fail for other reasons, which can't currently be distinguished
 		 * by looking at the backend return codes. */
@@ -291,18 +291,18 @@ int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
 	memset(buf, 0, 81);
 	nread = tape_read(vol->device, buf, (size_t)bufsize, true, vol->kmi_handle);
 	if (nread < 0) {
-		ltfsmsg(LTFS_ERR, "11174E", (int)nread);
+		ltfsmsg(LTFS_ERR, 11174E, (int)nread);
 		if (nread == -EDEV_EOD_DETECTED || nread == -EDEV_RECORD_NOT_FOUND)
 			ret = -LTFS_LABEL_INVALID;
 		else
 			ret = nread;
 		goto out_free;
 	} else if (nread < 80) {
-		ltfsmsg(LTFS_ERR, "11175E", (int)nread);
+		ltfsmsg(LTFS_ERR, 11175E, (int)nread);
 		ret = -LTFS_LABEL_INVALID;
 		goto out_free;
 	} else if (nread > 80) {
-		ltfsmsg(LTFS_ERR, "11177E", (int)nread);
+		ltfsmsg(LTFS_ERR, 11177E, (int)nread);
 		too_long = true;
 	}
 
@@ -313,7 +313,7 @@ int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
 	memcpy(ansi_sig, buf+24, 4);
 	ansi_sig[4] = '\0';
 	if (strcmp(ansi_sig, "LTFS")) {
-		ltfsmsg(LTFS_ERR, "11176E");
+		ltfsmsg(LTFS_ERR, 11176E);
 		ret = -LTFS_LABEL_INVALID;
 		goto out_free;
 	}
@@ -322,7 +322,7 @@ int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
 	/* Check for file mark after ANSI label */
 	nread = tape_read(vol->device, buf, (size_t)bufsize, true, vol->kmi_handle);
 	if (nread < 0) {
-		ltfsmsg(LTFS_ERR, "11295E", (int)nread);
+		ltfsmsg(LTFS_ERR, 11295E, (int)nread);
 		if (nread == -EDEV_EOD_DETECTED)
 			ret = -LTFS_LABEL_INVALID;
 		else
@@ -330,7 +330,7 @@ int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
 		goto out_free;
 	} else if (nread > 0) {
 		/* no file mark after ANSI label */
-		ltfsmsg(LTFS_ERR, "11296E");
+		ltfsmsg(LTFS_ERR, 11296E);
 		ret = -LTFS_LABEL_INVALID;
 		goto out_free;
 	}
@@ -338,7 +338,7 @@ int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
 	/* Read XML label */
 	nread = tape_read(vol->device, buf, (size_t)bufsize, true, vol->kmi_handle);
 	if (nread < 0) {
-		ltfsmsg(LTFS_ERR, "11178E", (int)nread);
+		ltfsmsg(LTFS_ERR, 11178E, (int)nread);
 		if (nread == -EDEV_EOD_DETECTED)
 			ret = -LTFS_LABEL_INVALID;
 		else
@@ -347,14 +347,14 @@ int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
 	}
 	ret = xml_label_from_mem(buf, nread, label);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11179E", ret);
+		ltfsmsg(LTFS_ERR, 11179E, ret);
 		goto out_free;
 	}
 
 	/* check for trailing file mark */
 	nread = tape_read(vol->device, buf, (size_t)bufsize, true, vol->kmi_handle);
 	if (nread < 0) {
-		ltfsmsg(LTFS_ERR, "11180E", (int)nread);
+		ltfsmsg(LTFS_ERR, 11180E, (int)nread);
 		if (nread == -EDEV_EOD_DETECTED)
 			ret = -LTFS_LABEL_INVALID;
 		else
@@ -362,7 +362,7 @@ int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
 		goto out_free;
 	} else if (nread > 0) {
 		/* no file mark after XML label */
-		ltfsmsg(LTFS_ERR, "11181E");
+		ltfsmsg(LTFS_ERR, 11181E);
 		ret = -LTFS_LABEL_INVALID;
 		goto out_free;
 	}
@@ -398,14 +398,14 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *
 
 	ret = tape_get_position(vol->device, &pos);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11193E", ret);
+		ltfsmsg(LTFS_ERR, 11193E, ret);
 		return ret;
 	}
 
 	ltfs_index_free(&vol->index);
 	ret = ltfs_index_alloc(&vol->index, vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11297E", ret);
+		ltfsmsg(LTFS_ERR, 11297E, ret);
 		return ret;
 	}
 
@@ -420,44 +420,44 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *
 		}
 		else
 		{
-			ltfsmsg(LTFS_ERR, "11321E");
+			ltfsmsg(LTFS_ERR, 11321E);
 		}
 		free( vol->index->symlink_conflict );
 		vol->index->symerr_count=0;
 	}
 
 	if (ret < 0) {
-		ltfsmsg(LTFS_WARN, "11194W", ret);
+		ltfsmsg(LTFS_WARN, 11194W, ret);
 		return ret;
 	} else if (ret == 1)
 		end_fm = false;
 
 	/* check volume UUID */
 	if (strncmp(vol->index->vol_uuid, vol->label->vol_uuid, 36)) {
-		ltfsmsg(LTFS_WARN, "11195W");
+		ltfsmsg(LTFS_WARN, 11195W);
 		return -LTFS_INDEX_INVALID;
 	}
 
 	/* check self pointer */
 	if (vol->index->selfptr.partition != vol->label->part_num2id[pos.partition] ||
 		vol->index->selfptr.block != pos.block) {
-		ltfsmsg(LTFS_WARN, "11196W");
+		ltfsmsg(LTFS_WARN, 11196W);
 		return -LTFS_INDEX_INVALID;
 	}
 
 	/* basic back pointer checks */
 	if (vol->index->backptr.partition != 0 &&
 		vol->index->backptr.partition != vol->label->partid_dp) {
-		ltfsmsg(LTFS_ERR, "11197E");
+		ltfsmsg(LTFS_ERR, 11197E);
 		return -LTFS_INDEX_INVALID;
 	} else if (vol->index->backptr.partition == vol->index->selfptr.partition &&
 		vol->index->selfptr.block != 5 &&
 		vol->index->backptr.block != vol->index->selfptr.block &&
 		vol->index->backptr.block >= vol->index->selfptr.block - 2 ) {
-		ltfsmsg(LTFS_ERR, "11197E");
+		ltfsmsg(LTFS_ERR, 11197E);
 		return -LTFS_INDEX_INVALID;
 	} else if (vol->index->backptr.partition != 0 && vol->index->backptr.block < 5) {
-		ltfsmsg(LTFS_ERR, "11197E");
+		ltfsmsg(LTFS_ERR, 11197E);
 		return -LTFS_INDEX_INVALID;
 	}
 
@@ -465,7 +465,7 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *
 	if (end_fm) {
 		ret = tape_spacefm(vol->device, 1);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "11198E", ret);
+			ltfsmsg(LTFS_ERR, 11198E, ret);
 			return ret;
 		}
 	}
@@ -485,7 +485,7 @@ bool ltfs_is_valid_partid(char id)
 	do { \
 		ret = (cmd); \
 		if (ret < 0) { \
-			ltfsmsg(LTFS_ERR, (msgid), ret); \
+			ltfsmsg(LTFS_ERR, msgid, ret); \
 			goto label; \
 		} \
 	} while (0)
@@ -516,51 +516,51 @@ int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_e
 	CHECK_ARG_NULL(blocks_after, -LTFS_NULL_ARG);
 
 	/* find EOD */
-	check_err(tape_seek_eod(vol->device, ltfs_part_id2num(partition, vol)), "11199E", out);
-	check_err(tape_get_position(vol->device, &eod), "11200E", out);
+	check_err(tape_seek_eod(vol->device, ltfs_part_id2num(partition, vol)), 11199E, out);
+	check_err(tape_get_position(vol->device, &eod), 11200E, out);
 	*eod_pos = eod.block;
 	if (eod.block <= 4) { /* nothing on the partition except the label */
 		return 1;
 	}
 
 	/* space back to the first candidate index file location */
-	check_err(tape_spacefm(vol->device, -1), "11201E", out);
-	check_err(tape_get_position(vol->device, &pos), "11200E", out);
+	check_err(tape_spacefm(vol->device, -1), 11201E, out);
+	check_err(tape_get_position(vol->device, &pos), 11200E, out);
 	if (pos.block == 3) { /* is this the end of the label? */
 		return 1;
 	} else if (pos.block == eod.block - 1)
-		check_err(tape_spacefm(vol->device, -1), "11201E", out);
+		check_err(tape_spacefm(vol->device, -1), 11201E, out);
 
 	have_index = false;
 	while (! have_index) {
 		/* did we reach the end of the partition label? */
-		check_err(tape_get_position(vol->device, &pos), "11200E", out);
+		check_err(tape_get_position(vol->device, &pos), 11200E, out);
 		if (pos.block == 3) {
 			return 1;
 		}
 
 		/* try to read an index file */
-		check_err(tape_spacefm(vol->device, 1), "11202E", out);
+		check_err(tape_spacefm(vol->device, 1), 11202E, out);
 		ret = ltfs_read_index(*eod_pos, recover_symlink, vol);
 
 		if (ret == 0 || ret == 1) { /* found an index file */
 			have_index = true;
 			*fm_after = (ret == 0);
-			check_err(tape_get_position(vol->device, &pos), "11200E", out);
+			check_err(tape_get_position(vol->device, &pos), 11200E, out);
 			*index_end_pos = pos.block;
 			*blocks_after = ! (pos.block == eod.block);
 		} else { /* no index file found: go back 2 file marks and try again */
-			ltfsmsg(LTFS_DEBUG, "11204D");
+			ltfsmsg(LTFS_DEBUG, 11204D);
 			if (!vol->ignore_wrong_version && ret == -LTFS_UNSUPPORTED_INDEX_VERSION)
 				goto out;
 			else
-				check_err(tape_spacefm(vol->device, -2), "11203E", out);
+				check_err(tape_spacefm(vol->device, -2), 11203E, out);
 		}
 	}
 
 	/* Check that partition searched is correct */
 	if (partition != vol->index->selfptr.partition) {
-		ltfsmsg(LTFS_ERR, "11328E", partition, vol->index->selfptr.partition);
+		ltfsmsg(LTFS_ERR, 11328E, partition, vol->index->selfptr.partition);
 		return -LTFS_INDEX_INVALID;
 	}
 
@@ -648,7 +648,7 @@ int _ltfs_check_pointers(struct ltfs_index *ip_index, struct ltfs_index *dp_inde
 	if (! dp_index) {
 		if (ip_index->backptr.partition != 0) {
 			/* IP backpointer to nonexistent DP index file */
-			ltfsmsg(LTFS_ERR, "11205E");
+			ltfsmsg(LTFS_ERR, 11205E);
 			return -LTFS_INDEX_INVALID;
 		} else {
 			/* IP index file is newer */
@@ -664,7 +664,7 @@ int _ltfs_check_pointers(struct ltfs_index *ip_index, struct ltfs_index *dp_inde
 			return 0;
 		} else if (ip_index->generation > dp_index->generation) {
 			/* IP backpointer doesn't match DP index file */
-			ltfsmsg(LTFS_ERR, "11206E");
+			ltfsmsg(LTFS_ERR, 11206E);
 			return -LTFS_INDEX_INVALID;
 		} else if (ip_index->generation == dp_index->generation &&
 				   ip_index->backptr.partition == 0) {
@@ -687,7 +687,7 @@ int _ltfs_check_pointers(struct ltfs_index *ip_index, struct ltfs_index *dp_inde
 				if (ip_index->backptr.partition == 0 &&
 					vol->index->generation < ip_index->generation) {
 					/* IP index file is missing its back pointer */
-					ltfsmsg(LTFS_ERR, "11207E");
+					ltfsmsg(LTFS_ERR, 11207E);
 					ltfs_index_free(&vol->index);
 					return -LTFS_INDEX_INVALID;
 				}
@@ -773,7 +773,7 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 			lf_dir = fs_allocate_dentry(vol->index->root, LTFS_LOSTANDFOUND_DIR, NULL, true, false, true,
 					vol->index);
 			if (! lf_dir) {
-				ltfsmsg(LTFS_ERR, "11209E");
+				ltfsmsg(LTFS_ERR, 11209E);
 				return -LTFS_NO_MEMORY;
 			}
 			++lf_dir->numhandles;
@@ -793,7 +793,7 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 
 	buf = malloc(vol->label->blocksize + LTFS_CRC_SIZE);
 	if (! buf) {
-		ltfsmsg(LTFS_ERR, "10001E", "_ltfs_populate_lost_found: buffer");
+		ltfsmsg(LTFS_ERR, 10001E, "_ltfs_populate_lost_found: buffer");
 		if (dcache_enabled)
 			dcache_close(lf_dir, true, lfdir_descend, vol);
 		else
@@ -804,7 +804,7 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 	/* Seek to first unreferenced block */
 	seekpos.partition = ltfs_part_id2num(partition, vol);
 	seekpos.block = (part_lastref > 4) ? part_lastref : 4;
-	check_err(tape_seek(vol->device, &seekpos), "11212E", out_free);
+	check_err(tape_seek(vol->device, &seekpos), 11212E, out_free);
 
 	/* Populate lost and found directory with index partition extents */
 	ret = 0;
@@ -816,13 +816,13 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 			 * to skip this block and continue on */
 			break;
 		} else if (nr == 0) {
-			ltfsmsg(LTFS_WARN, "11210W", (unsigned long)seekpos.partition);
+			ltfsmsg(LTFS_WARN, 11210W, (unsigned long)seekpos.partition);
 		} else {
 			/* generate a descriptive-but-probably-not-helpful filename */
 			ret = asprintf(&fname_path, "/%s/partition%"PRIu32"_block%"PRIu64"_%zdbytes",
 				LTFS_LOSTANDFOUND_DIR, seekpos.partition, seekpos.block, nr);
 			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "10001E", "_ltfs_populate_lost_found: file name");
+				ltfsmsg(LTFS_ERR, 10001E, "_ltfs_populate_lost_found: file name");
 				ret = -LTFS_NO_MEMORY;
 				goto out_free;
 			}
@@ -845,7 +845,7 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 					free(fname_path);
 					if (ret < 0) {
 						/* Cannot populate lost and found directory: failed to allocate file data */
-						ltfsmsg(LTFS_ERR, "11211E");
+						ltfsmsg(LTFS_ERR, 11211E);
 						goto out_free;
 					}
 				} else {
@@ -853,7 +853,7 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 					free(fname_path);
 					if (! file) {
 						/* Cannot populate lost and found directory: failed to allocate file data */
-						ltfsmsg(LTFS_ERR, "11211E");
+						ltfsmsg(LTFS_ERR, 11211E);
 						ret = -LTFS_NO_MEMORY;
 						goto out_free;
 					}
@@ -861,7 +861,7 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 
 				ext = calloc(1, sizeof(struct extent_info));
 				if (! ext) {
-					ltfsmsg(LTFS_ERR, "10001E", "_ltfs_populate_lost_found: extent");
+					ltfsmsg(LTFS_ERR, 10001E, "_ltfs_populate_lost_found: extent");
 					ret = -LTFS_NO_MEMORY;
 					goto out_free;
 				}
@@ -999,7 +999,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 
 	/* look for index files */
 	check_err(ltfs_seek_index(vol->label->partid_ip, &ip_eod, &ip_endofidx, &ip_fm_after,
-		&ip_blocks_after, recover_symlink, vol), "11214E", out_unlock);
+		&ip_blocks_after, recover_symlink, vol), 11214E, out_unlock);
 	ip_have_index = (ret == 0);
 	if (ip_have_index) {
 		ip_index = vol->index;
@@ -1007,7 +1007,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 	}
 
 	check_err(ltfs_seek_index(vol->label->partid_dp, &dp_eod, &dp_endofidx, &dp_fm_after,
-		&dp_blocks_after, recover_symlink, vol), "11213E", out_unlock);
+		&dp_blocks_after, recover_symlink, vol), 11213E, out_unlock);
 	dp_have_index = (ret == 0);
 	if (dp_have_index) {
 		dp_index = vol->index;
@@ -1016,28 +1016,28 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 
 	/* TODO: print more detailed diagnostic data here */
 	if (! ip_have_index && ! dp_have_index) {
-		ltfsmsg(LTFS_ERR, "11253E");
+		ltfsmsg(LTFS_ERR, 11253E);
 		ret = -LTFS_NO_INDEX;
 		goto out_unlock;
 	}
 
 	if (! ip_have_index)
-		ltfsmsg(LTFS_INFO, "11257I");
+		ltfsmsg(LTFS_INFO, 11257I);
 	if (! dp_have_index)
-		ltfsmsg(LTFS_INFO, "11258I");
+		ltfsmsg(LTFS_INFO, 11258I);
 
 	/* fill in missing file marks if necessary */
 	if (dp_have_index && ! dp_blocks_after && ! dp_fm_after) {
-		ltfsmsg(LTFS_INFO, "11255I");
-		check_err(tape_seek_eod(vol->device, dp_num), "11215E", out_unlock);
-		check_err(tape_write_filemark(vol->device, 1, true, true, false), "11217E", out_unlock);
+		ltfsmsg(LTFS_INFO, 11255I);
+		check_err(tape_seek_eod(vol->device, dp_num), 11215E, out_unlock);
+		check_err(tape_write_filemark(vol->device, 1, true, true, false), 11217E, out_unlock);
 		dp_fm_after = true;
 		++dp_eod;
 	}
 	if (ip_have_index && ! ip_blocks_after && ! ip_fm_after) {
-		ltfsmsg(LTFS_INFO, "11256I");
-		check_err(tape_seek_eod(vol->device, ip_num), "11216E", out_unlock);
-		check_err(tape_write_filemark(vol->device, 1, true, true, false), "11218E", out_unlock);
+		ltfsmsg(LTFS_INFO, 11256I);
+		check_err(tape_seek_eod(vol->device, ip_num), 11216E, out_unlock);
+		check_err(tape_write_filemark(vol->device, 1, true, true, false), 11218E, out_unlock);
 		ip_fm_after = true;
 		++ip_eod;
 	}
@@ -1047,19 +1047,19 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 		(ip_have_index && ip_blocks_after) || (! ip_have_index && ip_eod != 4);
 
 	if (! deep && extra_blocks) {
-		ltfsmsg(LTFS_ERR, "11220E");
+		ltfsmsg(LTFS_ERR, 11220E);
 		ret = -LTFS_INCONSISTENT;
 		goto out_unlock;
 	}
 
 	/* Verify sanity of back/self pointers and Decide which index file to use. */
-	check_err(_ltfs_check_pointers(ip_index, dp_index, vol), "11219E", out_unlock);
+	check_err(_ltfs_check_pointers(ip_index, dp_index, vol), 11219E, out_unlock);
 
 	if (! dp_have_index && ! ip_have_index) {
 		/* no index file on the tape. set up an empty index. */
 		ltfs_index_free(&dp_index);
 		ltfs_index_free(&ip_index);
-		check_err(ltfs_index_alloc(&vol->index, vol), "11225E", out_unlock);
+		check_err(ltfs_index_alloc(&vol->index, vol), 11225E, out_unlock);
 		strcpy(vol->index->vol_uuid, vol->label->vol_uuid);
 		vol->index->mod_time = vol->label->format_time;
 		vol->index->root->creation_time = vol->index->mod_time;
@@ -1083,7 +1083,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 				vol->index = ip_index;
 			ltfs_set_index_dirty(true, false, vol->index);
 		} else
-			ltfsmsg(LTFS_ERR, "11221E");
+			ltfsmsg(LTFS_ERR, 11221E);
 
 	} else {
 		/* we have index files on both partitions. return the newer index file. */
@@ -1101,16 +1101,16 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 	/* Set append position for index partition. */
 	if (ip_have_index && ! ip_blocks_after) {
 		check_err(tape_set_append_position(vol->device, ip_num, ip_index->selfptr.block - 1),
-			"11222E", out_unlock);
+			11222E, out_unlock);
 	}
 
 	/* Recover extra blocks or schedule them to be erased. */
 	if (deep && extra_blocks) {
 		if (recover_extra) {
-			ltfsmsg(LTFS_INFO, "11223I");
+			ltfsmsg(LTFS_INFO, 11223I);
 			ret = _ltfs_make_lost_found(ip_eod, dp_eod, ip_endofidx, dp_endofidx, vol);
 			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "11224E", ret);
+				ltfsmsg(LTFS_ERR, 11224E, ret);
 				goto out_unlock;
 			}
 		} else {
@@ -1119,33 +1119,33 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 			/* Set index partition append position. */
 			if (ip_have_index && ip_blocks_after) {
 				if (lastblock_i >= ip_endofidx && lastblock_i < ip_eod) {
-					ltfsmsg(LTFS_INFO, "11226I");
+					ltfsmsg(LTFS_INFO, 11226I);
 					check_err(tape_set_append_position(vol->device, ip_num, lastblock_i),
-						"11229E", out_unlock);
+						11229E, out_unlock);
 				} else if (lastblock_i < ip_endofidx) {
-					ltfsmsg(LTFS_INFO, "11226I");
+					ltfsmsg(LTFS_INFO, 11226I);
 					check_err(tape_set_append_position(vol->device, ip_num,
-						ip_index->selfptr.block - 1), "11229E", out_unlock);
+						ip_index->selfptr.block - 1), 11229E, out_unlock);
 				}
 			} else if (! ip_have_index && ip_eod > 4) {
-				ltfsmsg(LTFS_INFO, "11226I");
-				check_err(tape_set_append_position(vol->device, ip_num, 4), "11229E",out_unlock);
+				ltfsmsg(LTFS_INFO, 11226I);
+				check_err(tape_set_append_position(vol->device, ip_num, 4), 11229E,out_unlock);
 			}
 
 			/* Set data partition append position. */
 			if (dp_have_index && dp_blocks_after) {
 				if (lastblock_d >= dp_endofidx && lastblock_d < dp_eod) {
-					ltfsmsg(LTFS_INFO, "11227I");
+					ltfsmsg(LTFS_INFO, 11227I);
 					check_err(tape_set_append_position(vol->device, dp_num, lastblock_d),
-						"11228E", out_unlock);
+						11228E, out_unlock);
 				} else if (lastblock_d < dp_endofidx) {
-					ltfsmsg(LTFS_INFO, "11227I");
+					ltfsmsg(LTFS_INFO, 11227I);
 					check_err(tape_set_append_position(vol->device, dp_num, dp_endofidx),
-						"11228E", out_unlock);
+						11228E, out_unlock);
 				}
 			} else if (! dp_have_index && dp_eod > 4) {
-				ltfsmsg(LTFS_INFO, "11227I");
-				check_err(tape_set_append_position(vol->device, dp_num, 4), "11228E",out_unlock);
+				ltfsmsg(LTFS_INFO, 11227I);
+				check_err(tape_set_append_position(vol->device, dp_num, 4), 11228E,out_unlock);
 			}
 		}
 
@@ -1160,7 +1160,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 	/* If necessary, restore consistency by writing index files. */
 	if (vol->index->dirty) {
 		if (fix) {
-			ltfsmsg(LTFS_INFO, "11230I");
+			ltfsmsg(LTFS_INFO, 11230I);
 			/* Check index position written in Date Partition */
 			/* The index position must be higher than position located by index */
 			lastblock_d = 0;
@@ -1168,7 +1168,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 			_ltfs_last_ref(vol->index->root, &lastblock_d, &lastblock_i, vol);
 			if (vol->device->append_pos[dp_num] != 0) {
 				if (lastblock_d > vol->device->append_pos[dp_num]) {
-					ltfsmsg(LTFS_ERR, "11329E", lastblock_d, vol->device->append_pos[dp_num], dp_num);
+					ltfsmsg(LTFS_ERR, 11329E, (unsigned long long)lastblock_d, (unsigned long long)vol->device->append_pos[dp_num], dp_num);
 					ret = -LTFS_INDEX_INVALID;
 					goto out_unlock;
 				}
@@ -1179,13 +1179,13 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 			if (!ret)
 				ltfs_write_index(vol->label->partid_ip, SYNC_RECOVERY, vol);
 		} else {
-			ltfsmsg(LTFS_ERR, "11231E");
-			ltfsmsg(LTFS_ERR, "11232E");
+			ltfsmsg(LTFS_ERR, 11231E);
+			ltfsmsg(LTFS_ERR, 11232E);
 			ret = -LTFS_INCONSISTENT;
 		}
 
 	} else {
-		ltfsmsg(LTFS_INFO, "11233I");
+		ltfsmsg(LTFS_INFO, 11233I);
 		ltfs_update_cart_coherency(vol);
 	}
 

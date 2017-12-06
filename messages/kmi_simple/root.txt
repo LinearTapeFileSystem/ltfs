@@ -40,22 +40,17 @@
 root:table {
 	messages:table {
 		start_id:int { 15500 }
-		end_id:int { 15999 }
+		end_id:int { 15549 }
 
 		15500D:string { "Simple plug-in initialized." }
 		15501D:string { "Simple plug-in uninitialized." }
-
-		// Message IDs 15510-15529 are reserved for the cropto flatfile plugins.
-		// DO NOT add messages with those IDs to this file.
-
-		// for LTFS specific format
-		15600E:string { "Encryption key format violation (%s): %s." }
-		15603E:string { "Cannot find data key." }
-		15604E:string { "Option parsing for the key manager interface backend failed (%d)." }
-		15605E:string { "Invalid sequence error (%d,%d): %s." }
-		15606E:string { "Failed to parse data key and/or data key identifier." }
-		15607E:string { "Cannot find data key of the data key identifier." }
-		15608I:string { "Key manager interface simple plug-in options:\n"
+		15502E:string { "Encryption key format violation (%s): %s." }
+		15503E:string { "Cannot find data key." }
+		15504E:string { "Option parsing for the key manager interface backend failed (%d)." }
+		15505E:string { "Invalid sequence error (%d,%d): %s." }
+		15506E:string { "Failed to parse data key and/or data key identifier." }
+		15507E:string { "Cannot find data key of the data key identifier." }
+		15508I:string { "Key manager interface simple plug-in options:\n"
 			"    -o kmi_dk=<DK>\n"
 			"                              Data key\n"
 			"    -o kmi_dki=<DKi>\n"
@@ -68,4 +63,3 @@ root:table {
 			"                              Data key and data key identifier pairs' list\n\n." }
 	}
 }
-

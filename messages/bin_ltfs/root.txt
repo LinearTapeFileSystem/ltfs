@@ -194,10 +194,7 @@ root:table {
 		14424I:string { "    -o fulltrace              Enable full call tracing (same as verbose=4)" }
 		14425I:string { "    -o eject                  Eject the cartridge after unmount" }
 		// Reserved 14426I
-		14427I:string { "    -o sync_type=<type>       Specify sync type (default: time@5)\n"
-				        "                              <type> should be specified as follows:\n"
-						"                              time@min:  LTFS attempts to write an index each 'min' minutes.\n"
-						"                                         min should be a decimal number from 1 to %ld\n"
+		14427I:string { "    -o sync_type=<type>       Specify sync type (default: time@5)\n                              <type> should be specified as follows:\n                              time@min:  LTFS attempts to write an index each 'min' minutes.\n                                         min should be a decimal number from 1 to %ld\n"
 						"                                         It is equivalent to \"-o sync_type=unmount\" when 0 is specified\n"
 						"                                         (default: min=5)\n"
 						"                              close:     LTFS attempts to write an index when a file is closed\n"

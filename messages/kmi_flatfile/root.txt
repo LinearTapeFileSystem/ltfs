@@ -39,30 +39,29 @@
 // ID is allocated here.
 root:table {
 	messages:table {
-		start_id:int { 15500 }
-		end_id:int { 15999 }
+		start_id:int { 15550 }
+		end_id:int { 15599 }
 
-		// Message IDs 15500-15009 are reserved for the cropto direct plugins.
+		// Message IDs 15500-15009 are reserved for the crypto direct plugins.
 		// DO NOT add messages with those IDs to this file.
 
-		15510D:string { "Flat File plug-in initialized." }
-		15511D:string { "Flat File plug-in uninitialized." }
-		15512E:string { "Flat File plug-in failed to parse options." }
-		15513E:string { "Flat File plug-in failed to open the file (%d,%d)." }
-		15514E:string { "Flat File plug-in detected key format violation." }
+		15550D:string { "Flat File plug-in initialized." }
+		15551D:string { "Flat File plug-in uninitialized." }
+		15552E:string { "Flat File plug-in failed to parse options." }
+		15553E:string { "Flat File plug-in failed to open the file (%s, %d)." }
+		15554E:string { "Flat File plug-in detected key format violation." }
 
 		// for LTFS specific format
-		15600E:string { "Encryption key format violation (%s): %s." }
-		15603E:string { "Cannot find data key." }
-		15604E:string { "Option parsing for the key manager interface backend failed (%d)." }
-		15605E:string { "Invalid sequence error (%d,%d): %s." }
-		15606E:string { "Failed to parse data key and/or data key identifier." }
-		15607E:string { "Cannot find data key of the data key identifier." }
-		15608I:string { "Key manager interface flatfile plug-in options:\n"
+		15562E:string { "Encryption key format violation (%s): %s." }
+		15563E:string { "Cannot find data key." }
+		15564E:string { "Option parsing for the key manager interface backend failed (%d)." }
+		15565E:string { "Invalid sequence error (%d,%d): %s." }
+		15566E:string { "Failed to parse data key and/or data key identifier." }
+		15567E:string { "Cannot find data key of the data key identifier." }
+		15568I:string { "Key manager interface flatfile plug-in options:\n"
 						"    -o kmi_dki_for_format=<DKi>\n"
 						"                              Data key identifier to format a cartridge\n"
 						"    -o kmi_dk_list=FILE\n"
 						"                              Data key and data key identifier pairs' list file\n\n." }
 	}
 }
-

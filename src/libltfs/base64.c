@@ -79,7 +79,7 @@ size_t base64_decode(const unsigned char *enc, size_t nbytes_in, unsigned char *
 
 	/* check for empty input */
 	if (nbytes_in == 0) {
-		ltfsmsg(LTFS_ERR, "11111E");
+		ltfsmsg(LTFS_ERR, 11111E);
 		return 0;
 	}
 
@@ -100,14 +100,14 @@ size_t base64_decode(const unsigned char *enc, size_t nbytes_in, unsigned char *
 		} else if (enc[i] == '\r' || enc[i] == '\n' || enc[i] == ' ' || enc[i] == '\t') {
 			--nbytes_real;
 		} else if (base64_dec[enc[i]] == UCHAR_MAX) {
-			ltfsmsg(LTFS_ERR, "11112E");
+			ltfsmsg(LTFS_ERR, 11112E);
 			return 0;
 		}
 	}
 
 	/* check for bad input length */
 	if (nbytes_real % 4) {
-		ltfsmsg(LTFS_ERR, "11113E");
+		ltfsmsg(LTFS_ERR, 11113E);
 		return 0;
 	}
 
@@ -115,7 +115,7 @@ size_t base64_decode(const unsigned char *enc, size_t nbytes_in, unsigned char *
 	nout = 3 * (nbytes_real / 4) - nequal;
 	*dec = (unsigned char *)malloc(nout);
 	if (!(*dec)) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return 0;
 	}
 

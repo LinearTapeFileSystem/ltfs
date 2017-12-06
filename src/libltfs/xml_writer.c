@@ -82,13 +82,13 @@ int xml_format_time(struct ltfs_timespec t, char** out)
 
 	gmt = ltfs_gmtime(&sec, &tm);
 	if (! gmt) {
-		ltfsmsg(LTFS_ERR, "17056E");
+		ltfsmsg(LTFS_ERR, 17056E);
 		return -1;
 	}
 
 	timebuf = calloc(31, sizeof(char));
 	if (!timebuf) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -1;
 	}
 	sprintf(timebuf, "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ", tm.tm_year+1900, tm.tm_mon+1,
@@ -121,14 +121,14 @@ int xml_output_tape_write_callback(void *context, const char *buffer, int len)
 			memcpy(ctx->buf + ctx->buf_used, buffer + (len - bytes_remaining), copy_count);
 			ret = tape_write(ctx->device, ctx->buf, ctx->buf_size, true, true);
 			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "17060E", (int)ret);
+				ltfsmsg(LTFS_ERR, 17060E, (int)ret);
 				return -1;
 			}
 
 			if (ctx->fd > 0) {
 				ret = write(ctx->fd, ctx->buf, ctx->buf_size);
 				if (ret < 0) {
-					ltfsmsg(LTFS_ERR, "17244E", (int)errno);
+					ltfsmsg(LTFS_ERR, 17244E, (int)errno);
 					return -1;
 				}
 			}
@@ -168,7 +168,7 @@ int xml_output_tape_close_callback(void *context)
 		xml_release_file_lock(ctx->fd);
 		ctx->fd = -1;
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "17206E", "tape write callback (fsync)", errno, ctx->buf_used);
+			ltfsmsg(LTFS_ERR, 17206E, "tape write callback (fsync)", errno, (unsigned long)ctx->buf_used);
 			return -1;
 		}
 	}
@@ -178,9 +178,9 @@ int xml_output_tape_close_callback(void *context)
 	}
 
 	if (ret_t < 0)
-		ltfsmsg(LTFS_ERR, "17061E", (int)ret_t);
+		ltfsmsg(LTFS_ERR, 17061E, (int)ret_t);
 	if (ret_d < 0)
-		ltfsmsg(LTFS_ERR, "17245E", (int)errno);
+		ltfsmsg(LTFS_ERR, 17245E, (int)errno);
 
 	free(ctx->buf);
 	free(ctx);
@@ -198,13 +198,13 @@ int xml_output_fd_write_callback(void *context, const char *buffer, int len)
 	if (len > 0) {
 		ret = write(ctx->fd, buffer, len);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "17206E", "write callback (write)", errno, len);
+			ltfsmsg(LTFS_ERR, 17206E, "write callback (write)", errno, (unsigned long)len);
 			return -1;
 		}
 
 		ret = fsync(ctx->fd);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "17206E", "write callback (fsync)", errno, len);
+			ltfsmsg(LTFS_ERR, 17206E, "write callback (fsync)", errno, (unsigned long)len);
 			return -1;
 		}
 	}
@@ -246,7 +246,7 @@ int xml_acquire_file_lock(const char *file, bool is_write)
 	if (fd < 0) {
 		/* Failed to open the advisory lock '%s' (%d) */
 		errno_save = errno;
-		ltfsmsg(LTFS_WARN, "17241W", file, errno);
+		ltfsmsg(LTFS_WARN, 17241W, file, errno);
 		goto out;
 	}
 
@@ -261,7 +261,7 @@ int xml_acquire_file_lock(const char *file, bool is_write)
 	if (ret < 0) {
 		/* Failed to acquire the advisory lock '%s' (%d) */
 		errno_save = errno;
-		ltfsmsg(LTFS_WARN, "17242W", file, errno);
+		ltfsmsg(LTFS_WARN, 17242W, file, errno);
 		close(fd);
 		fd = -1;
 		goto out;
@@ -270,7 +270,7 @@ int xml_acquire_file_lock(const char *file, bool is_write)
 
 	ret = lseek(fd, 0, SEEK_SET);
 	if (ret < 0){
-		ltfsmsg(LTFS_ERR, "17246E", "seek", errno);
+		ltfsmsg(LTFS_ERR, 17246E, "seek", errno);
 		errno_save = errno;
 		close(fd);
 		fd = -1;
@@ -279,7 +279,7 @@ int xml_acquire_file_lock(const char *file, bool is_write)
 
 	ret = ftruncate(fd, 0);
 	if (ret < 0){
-		ltfsmsg(LTFS_ERR, "17246E", "seek", errno);
+		ltfsmsg(LTFS_ERR, 17246E, "seek", errno);
 		errno_save = errno;
 		close(fd);
 		fd = -1;
@@ -314,7 +314,7 @@ int xml_release_file_lock(int fd)
 	if (ret < 0) {
 		/* Failed to release the advisory lock (%d) */
 		errno_save = errno;
-		ltfsmsg(LTFS_WARN, "17243W", errno);
+		ltfsmsg(LTFS_WARN, 17243W, errno);
 	}
 #endif
 

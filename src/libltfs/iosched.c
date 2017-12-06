@@ -78,7 +78,7 @@ int iosched_init(struct libltfs_plugin *plugin, struct ltfs_volume *vol)
 
 	priv = calloc(1, sizeof(struct iosched_priv));
 	if (! priv) {
-		ltfsmsg(LTFS_ERR, "10001E", "iosched_init: private data");
+		ltfsmsg(LTFS_ERR, 10001E, "iosched_init: private data");
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -88,7 +88,7 @@ int iosched_init(struct libltfs_plugin *plugin, struct ltfs_volume *vol)
 	/* Verify that backend implements all required operations */
 	for (i=0; i<sizeof(struct iosched_ops)/sizeof(void *); ++i) {
 		if (((void **)(priv->ops))[i] == NULL) {
-			ltfsmsg(LTFS_ERR, "13003E");
+			ltfsmsg(LTFS_ERR, 13003E);
 			free(priv);
 			return -LTFS_PLUGIN_INCOMPLETE;
 		}

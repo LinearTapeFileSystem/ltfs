@@ -207,7 +207,7 @@ int itdtimage_parse_opts(void *vstate, void *opt_args)
 
 void itdtimage_help_message(void)
 {
-	ltfsresult("31199I");
+	ltfsresult(31199I);
 }
 
 int itdtimage_open(const char *name, void **handle)
@@ -221,14 +221,14 @@ int itdtimage_open(const char *name, void **handle)
 	int currentPartition = 0, i, j;
 	long bytes_read;
 
-	ltfsmsg(LTFS_INFO, "31000I", name);
+	ltfsmsg(LTFS_INFO, 31000I, name);
 
 	CHECK_ARG_NULL(handle, -LTFS_NULL_ARG);
 	*handle = NULL;
 
 	state = (struct itdtimage_data *)calloc(1,sizeof(struct itdtimage_data));
 	if (!state) {
-		ltfsmsg(LTFS_ERR, "10001E", "itdtimage_open: private data");
+		ltfsmsg(LTFS_ERR, 10001E, "itdtimage_open: private data");
 		return -EDEV_NO_MEMORY;
 	}
 
@@ -239,13 +239,13 @@ int itdtimage_open(const char *name, void **handle)
 	 */
 	state->img_file = fopen(name, "r");
 	if ( !state->img_file ) {
-		ltfsmsg(LTFS_ERR, "31001E", name, "fopen", errno);
+		ltfsmsg(LTFS_ERR, 31001E, name, "fopen", (unsigned long long)errno);
 		_itdtimage_free(state);
 		return -EDEV_DEVICE_UNOPENABLE;
 	}
 	state->filename = strdup(name);
 	if ( !state->filename ) {
-		ltfsmsg(LTFS_ERR, "10001E", "itdtimage_open: filename");
+		ltfsmsg(LTFS_ERR, 10001E, "itdtimage_open: filename");
 		_itdtimage_free(state);
 		return -EDEV_NO_MEMORY;
 	}
@@ -255,7 +255,7 @@ int itdtimage_open(const char *name, void **handle)
 	if ( length < XML_MIN_DATA_SIZE)
 		read_length = length;
 	if (_seek_file(state->img_file, length-read_length)!=0){
-		ltfsmsg(LTFS_ERR, "31002E", (long long)length-read_length, state->filename, errno);
+		ltfsmsg(LTFS_ERR, 31002E, (long long)length-read_length, state->filename, (unsigned long long)errno);
 		_itdtimage_free(state);
 		return -EDEV_HARDWARE_ERROR;
 	}
@@ -290,19 +290,19 @@ int itdtimage_open(const char *name, void **handle)
 	state->density_code   = _read_XML_tag_value(buffer,bytes_read, "densityCode");
 
 	if ( ! state->rll_count ){
-		ltfsmsg(LTFS_ERR, "31001E", state->filename, "Meta Info [rll_count] is not valid", state->rll_count);
+		ltfsmsg(LTFS_ERR, 31001E, state->filename, "Meta Info [rll_count] is not valid", (unsigned long long)state->rll_count);
 		_itdtimage_free(state);
 		free(buffer);
 		return -EDEV_DEVICE_UNOPENABLE;
 	}
 	if ( state->version < 2 ){
-		ltfsmsg(LTFS_ERR, "31001E", state->filename, "Unsupported ITDT Image file version", state->version);
+		ltfsmsg(LTFS_ERR, 31001E, state->filename, "Unsupported ITDT Image file version", (unsigned long long)state->version);
 		_itdtimage_free(state);
 		free(buffer);
 		return -EDEV_DEVICE_UNOPENABLE;
 	}
 	if ( ! state->byte_count ){
-		ltfsmsg(LTFS_ERR, "31001E", state->filename, "Meta Info [byte_count] is not valid", state->byte_count);
+		ltfsmsg(LTFS_ERR, 31001E, state->filename, "Meta Info [byte_count] is not valid", state->byte_count);
 		_itdtimage_free(state);
 		free(buffer);
 		return -EDEV_DEVICE_UNOPENABLE;
@@ -329,7 +329,7 @@ int itdtimage_open(const char *name, void **handle)
 		}
 	}
 	if (state->attr_count==0){
-		ltfsmsg(LTFS_ERR, "31001E", state->filename, "Meta Info [attr_] is not valid", state->attr_count);
+		ltfsmsg(LTFS_ERR, 31001E, state->filename, "Meta Info [attr_] is not valid", (unsigned long long)state->attr_count);
 		_itdtimage_free(state);
 		free(buffer);
 		return -EDEV_DEVICE_UNOPENABLE;
@@ -363,7 +363,7 @@ int itdtimage_open(const char *name, void **handle)
 
 	/* fill rllList with data from image file */
 	if ( _seek_file(state->img_file, state->byte_count) ) {
-		ltfsmsg(LTFS_ERR, "31002E", (long long)state->byte_count, state->filename, errno);
+		ltfsmsg(LTFS_ERR, 31002E, (long long)state->byte_count, state->filename, (unsigned long long)errno);
 		_itdtimage_free(state);
 		free(buffer);
 		return -EDEV_HARDWARE_ERROR;
@@ -420,7 +420,7 @@ int itdtimage_reopen(const char *name, void *vstate)
 int itdtimage_close(void *vstate)
 {
 	struct itdtimage_data *state = (struct itdtimage_data *)vstate;
-	ltfsmsg(LTFS_INFO, "31003I", state->filename);
+	ltfsmsg(LTFS_INFO, 31003I, state->filename);
 	_itdtimage_free(state);
 	return 0;
 }
@@ -479,12 +479,12 @@ int itdtimage_read(void *vstate, char *buf, size_t count, struct tc_position *po
 	long long offset;
 	size_t length_rec;
 
-	ltfsmsg(LTFS_DEBUG, "31004D", count, state->current_position.partition,
+	ltfsmsg(LTFS_DEBUG, 31004D, (unsigned long long)count, state->current_position.partition,
 			(unsigned long long)state->current_position.block,
 			(unsigned long long)state->current_position.filemarks);
 
 	if (!state->ready) {
-		ltfsmsg(LTFS_ERR, "31005E");
+		ltfsmsg(LTFS_ERR, 31005E);
 		return -EDEV_NOT_READY;
 	}
 
@@ -502,7 +502,7 @@ int itdtimage_read(void *vstate, char *buf, size_t count, struct tc_position *po
 	if (count < length_rec)
 		length_rec=count;
 	if ( _seek_file(state->img_file, offset) ){
-	 	ltfsmsg(LTFS_ERR, "31002E" , (long long)length_rec, state->filename, (long long)offset);
+	 	ltfsmsg(LTFS_ERR, 31002E , (long long)length_rec, state->filename, offset);
 		return -EDEV_HARDWARE_ERROR;
 	}
 
@@ -526,7 +526,7 @@ int itdtimage_rewind(void *vstate, struct tc_position *pos)
 {
 	struct itdtimage_data *state = (struct itdtimage_data *)vstate;
 	if (!state->ready) {
-		ltfsmsg(LTFS_ERR, "31006E");
+		ltfsmsg(LTFS_ERR, 31006E);
 		return -EDEV_NOT_READY;
 	}
 	/* Does rewinding reset the partition? */
@@ -547,16 +547,16 @@ int itdtimage_locate(void *vstate, struct tc_position dest, struct tc_position *
 	tape_filemarks_t count_fm = 0;
 	int i;
 
-	ltfsmsg(LTFS_DEBUG, "31197D", "locate", (unsigned long long)dest.partition,
+	ltfsmsg(LTFS_DEBUG, 31197D, "locate", (unsigned long long)dest.partition,
 			(unsigned long long)dest.block);
 
 	if (!state->ready) {
-		ltfsmsg(LTFS_ERR, "31007E");
+		ltfsmsg(LTFS_ERR, 31007E);
 		rc = -EDEV_NOT_READY;
 		return rc;
 	}
 	if (dest.partition >= MAX_PARTITIONS) {
-		ltfsmsg(LTFS_ERR, "31008E", (unsigned long)dest.partition);
+		ltfsmsg(LTFS_ERR, 31008E, (unsigned long)dest.partition);
 		rc = -EDEV_INVALID_ARG;
 		return rc;
 	}
@@ -590,14 +590,14 @@ int itdtimage_space(void *vstate, size_t count, TC_SPACE_TYPE type, struct tc_po
 	struct itdtimage_data *state = (struct itdtimage_data *)vstate;
 	tape_filemarks_t count_fm = 0;
 	if (!state->ready) {
-		ltfsmsg(LTFS_ERR, "31009E");
+		ltfsmsg(LTFS_ERR, 31009E);
 		rc = -EDEV_NOT_READY;
 		return rc;
 	}
 
 	switch(type) {
 	case TC_SPACE_EOD:
-		ltfsmsg(LTFS_DEBUG, "31195D", "space to EOD");
+		ltfsmsg(LTFS_DEBUG, 31195D, "space to EOD");
 		state->current_position.block = state->eod[state->current_position.partition];
 		if(state->current_position.block == MISSING_EOD) {
 			rc = -EDEV_RW_PERM;
@@ -606,7 +606,7 @@ int itdtimage_space(void *vstate, size_t count, TC_SPACE_TYPE type, struct tc_po
 			rc = 0;
 		break;
 	case TC_SPACE_FM_F:
-		ltfsmsg(LTFS_DEBUG, "31196D", "space forward file marks", (unsigned long long)count);
+		ltfsmsg(LTFS_DEBUG, 31196D, "space forward file marks", (unsigned long long)count);
 		if(state->current_position.block == MISSING_EOD) {
 			rc = -EDEV_RW_PERM;
 			return rc;
@@ -614,7 +614,7 @@ int itdtimage_space(void *vstate, size_t count, TC_SPACE_TYPE type, struct tc_po
 			rc = _itdtimage_space_fm(state, count, false);
 		break;
 	case TC_SPACE_FM_B:
-		ltfsmsg(LTFS_DEBUG, "31196D", "space back file marks", (unsigned long long)count);
+		ltfsmsg(LTFS_DEBUG, 31196D, "space back file marks", (unsigned long long)count);
 		if(state->current_position.block == MISSING_EOD) {
 			rc = -EDEV_RW_PERM;
 			return rc;
@@ -622,7 +622,7 @@ int itdtimage_space(void *vstate, size_t count, TC_SPACE_TYPE type, struct tc_po
 			rc = _itdtimage_space_fm(state, count, true);
 		break;
 	case TC_SPACE_F:
-		ltfsmsg(LTFS_DEBUG, "31196D", "space forward records", (unsigned long long)count);
+		ltfsmsg(LTFS_DEBUG, 31196D, "space forward records", (unsigned long long)count);
 		if(state->current_position.block == MISSING_EOD) {
 			rc = -EDEV_RW_PERM;
 			return rc;
@@ -630,7 +630,7 @@ int itdtimage_space(void *vstate, size_t count, TC_SPACE_TYPE type, struct tc_po
 			rc = _itdtimage_space_rec(state, count, false);
 		break;
 	case TC_SPACE_B:
-		ltfsmsg(LTFS_DEBUG, "31196D", "space back records", (unsigned long long)count);
+		ltfsmsg(LTFS_DEBUG, 31196D, "space back records", (unsigned long long)count);
 		if(state->current_position.block == MISSING_EOD) {
 			rc = -EDEV_RW_PERM;
 			return rc;
@@ -638,7 +638,7 @@ int itdtimage_space(void *vstate, size_t count, TC_SPACE_TYPE type, struct tc_po
 			rc = _itdtimage_space_rec(state, count, true);
 		break;
 	default:
-		ltfsmsg(LTFS_ERR, "31010E");
+		ltfsmsg(LTFS_ERR, 31010E);
 		rc = -EDEV_INVALID_ARG;
 		return rc;
 	}
@@ -653,7 +653,13 @@ int itdtimage_space(void *vstate, size_t count, TC_SPACE_TYPE type, struct tc_po
 
 	state->current_position.filemarks = count_fm;
 	pos->filemarks = state->current_position.filemarks;
-	ltfsmsg(LTFS_DEBUG, "31011D" , state->current_position.partition,state->current_position.block,state->current_position.filemarks,(int)state->device_reserved,(int)state->medium_locked,(int)state->ready);
+	ltfsmsg(LTFS_DEBUG, 31011D,
+			(unsigned long long)state->current_position.partition,
+			(unsigned long long)state->current_position.block,
+			(unsigned long long)state->current_position.filemarks,
+			(int)state->device_reserved,
+			(int)state->medium_locked,
+			(int)state->ready);
 
 	return rc;
 }
@@ -669,11 +675,11 @@ int itdtimage_erase(void *vstate, struct tc_position *pos, bool long_erase)
 	struct itdtimage_data *state = (struct itdtimage_data *)vstate;
 
 	if (!state->ready) {
-		ltfsmsg(LTFS_ERR, "31021E");
+		ltfsmsg(LTFS_ERR, 31021E);
 		return -EDEV_NOT_READY;
 	}
 
-	ltfsmsg(LTFS_DEBUG, "31022D", (unsigned long)state->current_position.partition);
+	ltfsmsg(LTFS_DEBUG, 31022D, (unsigned long)state->current_position.partition);
 	pos->block	 = state->current_position.block;
 	pos->filemarks = state->current_position.filemarks;
 
@@ -718,7 +724,7 @@ int itdtimage_readpos(void *vstate, struct tc_position *pos)
 	struct itdtimage_data *state = (struct itdtimage_data *)vstate;
 
 	if (!state->ready) {
-		ltfsmsg(LTFS_ERR, "31012E");
+		ltfsmsg(LTFS_ERR, 31012E);
 		return -EDEV_NOT_READY;
 	}
 
@@ -726,7 +732,7 @@ int itdtimage_readpos(void *vstate, struct tc_position *pos)
 	pos->block = state->current_position.block;
 	pos->filemarks = state->current_position.filemarks;
 
-	ltfsmsg(LTFS_DEBUG, "31198D", "readpos", (unsigned long long)state->current_position.partition,
+	ltfsmsg(LTFS_DEBUG, 31198D, "readpos", (unsigned long long)state->current_position.partition,
 			(unsigned long long)state->current_position.block,
 			(unsigned long long)state->current_position.filemarks);
 	return DEVICE_GOOD;
@@ -740,7 +746,7 @@ int itdtimage_setcap(void *vstate, uint16_t proportion)
 	if(state->current_position.partition != 0 ||
 	   state->current_position.block != 0)
 	{
-		ltfsmsg(LTFS_ERR, "31013E");
+		ltfsmsg(LTFS_ERR, 31013E);
 		return -EDEV_ILLEGAL_REQUEST;
 	}
 
@@ -765,7 +771,7 @@ int itdtimage_format(void *vstate, TC_FORMAT_TYPE format)
 	if(state->current_position.partition != 0 ||
 	   state->current_position.block != 0)
 	{
-		ltfsmsg(LTFS_ERR, "31014E");
+		ltfsmsg(LTFS_ERR, 31014E);
 		return -EDEV_ILLEGAL_REQUEST;
 	}
 
@@ -778,7 +784,7 @@ int itdtimage_format(void *vstate, TC_FORMAT_TYPE format)
 		state->partitions = 2;
 		break;
 	default:
-		ltfsmsg(LTFS_ERR, "31015E");
+		ltfsmsg(LTFS_ERR, 31015E);
 		return -EDEV_INVALID_ARG;
 	}
 
@@ -796,7 +802,7 @@ int itdtimage_remaining_capacity(void *vstate, struct tc_remaining_cap *cap)
 {
 	struct itdtimage_data *state = (struct itdtimage_data *)vstate;
 	if (!state->ready) {
-		ltfsmsg(LTFS_ERR, "31016E");
+		ltfsmsg(LTFS_ERR, 31016E);
 		return DEVICE_GOOD;
 	}
 	cap->remaining_p0 = 6UL * (GB / MB);
@@ -853,7 +859,7 @@ int itdtimage_set_xattr(void *device, const char *name, const char *buf, size_t 
 
 int itdtimage_logsense(void *device, const uint8_t page, unsigned char *buf, const size_t size)
 {
-	ltfsmsg(LTFS_ERR, "10007E", __FUNCTION__);
+	ltfsmsg(LTFS_ERR, 10007E, __FUNCTION__);
 	return -EDEV_UNSUPPORTED_FUNCTION;
 }
 
@@ -874,7 +880,7 @@ int itdtimage_reserve_unit(void *vstate)
 {
 	struct itdtimage_data *state = (struct itdtimage_data *)vstate;
 	if (state->device_reserved) {
-		ltfsmsg(LTFS_ERR, "31017E");
+		ltfsmsg(LTFS_ERR, 31017E);
 		return -EDEV_ILLEGAL_REQUEST;
 	}
 	state->device_reserved = true;
@@ -892,7 +898,7 @@ int itdtimage_prevent_medium_removal(void *vstate)
 {
 	struct itdtimage_data *state = (struct itdtimage_data *)vstate;
 	if (!state->ready) {
-		ltfsmsg(LTFS_ERR, "31018E");
+		ltfsmsg(LTFS_ERR, 31018E);
 		return -EDEV_NOT_READY;
 	}
 	state->medium_locked = true; /* TODO: fail if medium is already locked? */
@@ -902,9 +908,15 @@ int itdtimage_prevent_medium_removal(void *vstate)
 int itdtimage_allow_medium_removal(void *vstate)
 {
 	struct itdtimage_data *state = (struct itdtimage_data *)vstate;
-	ltfsmsg(LTFS_DEBUG, "31011D" , state->current_position.partition,state->current_position.block,state->current_position.filemarks,(int)state->device_reserved,(int)state->medium_locked,(int)state->ready);
+	ltfsmsg(LTFS_DEBUG, 31011D,
+			(unsigned long long)state->current_position.partition,
+			(unsigned long long)state->current_position.block,
+			(unsigned long long)state->current_position.filemarks,
+			(int)state->device_reserved,
+			(int)state->medium_locked,
+			(int)state->ready);
 	if (!state->ready) {
-		ltfsmsg(LTFS_ERR, "31019E");
+		ltfsmsg(LTFS_ERR, 31019E);
 		return -EDEV_NOT_READY;
 	}
 	state->medium_locked = false;
@@ -919,7 +931,7 @@ int itdtimage_read_attribute(void *vstate, const tape_partition_t part, const ui
 	size_t data2ReadFromFile = size;
 	size_t attrLength=_itdtimage_getattr_len(state,part,id);
 
-	ltfsmsg(LTFS_DEBUG, "31020D" , part , id );
+	ltfsmsg(LTFS_DEBUG, 31020D , part , id );
 
 	/* Open attribute record */
 	if (offset == -1){
@@ -931,7 +943,7 @@ int itdtimage_read_attribute(void *vstate, const tape_partition_t part, const ui
 	}
 
 	if (_seek_file(state->img_file, offset)!=0){
-		ltfsmsg(LTFS_ERR, "31002E", (long long)attrLength, state->filename, (long long)offset);
+		ltfsmsg(LTFS_ERR, 31002E, (long long)attrLength, state->filename, offset);
 		return -EDEV_HARDWARE_ERROR;
 	}
 
@@ -963,7 +975,7 @@ int itdtimage_set_compression(void *vstate, bool enable_compression, struct tc_p
 {
 	struct itdtimage_data *state = (struct itdtimage_data *)vstate;
 	if (!state->ready) {
-		ltfsmsg(LTFS_ERR, "31024E");
+		ltfsmsg(LTFS_ERR, 31024E);
 		return -EDEV_NOT_READY;
 	}
 	pos->block = state->current_position.block;
@@ -1120,7 +1132,7 @@ int _itdtimage_space_fm(struct itdtimage_data *state, uint64_t count, bool back)
 	long cur = -1;
 	uint64_t filemarkCount = 0;
 
-	ltfsmsg(LTFS_DEBUG, "31004D", count, state->current_position.partition,
+	ltfsmsg(LTFS_DEBUG, 31004D, (unsigned long long)count, state->current_position.partition,
 			(unsigned long long)state->current_position.block,
 			(unsigned long long)state->current_position.filemarks);
 
@@ -1189,7 +1201,7 @@ int _itdtimage_space_fm(struct itdtimage_data *state, uint64_t count, bool back)
 			}
 			cur++;
 		}
-		ltfsmsg(LTFS_ERR, "31025E", "fimemarks");
+		ltfsmsg(LTFS_ERR, 31025E, "fimemarks");
 		return -EDEV_EOD_DETECTED;
 	}
 }
@@ -1289,7 +1301,7 @@ int _itdtimage_space_rec(struct itdtimage_data *state, uint64_t count, bool back
 			}
 			cur++;
 		}
-		ltfsmsg(LTFS_ERR, "31025E", "records");
+		ltfsmsg(LTFS_ERR, 31025E, "records");
 		return -EDEV_EOD_DETECTED;
 	}
 }
@@ -1311,13 +1323,13 @@ int itdtimage_get_device_list(struct tc_drive_info *buf, int count)
 	/* Create a file to indicate current directory of drive link (for tape file backend) */
 	asprintf(&filename, "%s/ltfs%ld", DRIVE_LIST_DIR, (long)getpid());
 	if (!filename) {
-		ltfsmsg(LTFS_ERR, "10001E", "filechanger_data drive file name");
+		ltfsmsg(LTFS_ERR, 10001E, "filechanger_data drive file name");
 		return -LTFS_NO_MEMORY;
 	}
-	ltfsmsg(LTFS_INFO, "31026I", filename);
+	ltfsmsg(LTFS_INFO, 31026I, filename);
 	infile = fopen(filename, "r");
 	if (!infile) {
-		ltfsmsg(LTFS_INFO, "31027I", filename);
+		ltfsmsg(LTFS_INFO, 31027I, filename);
 		return 0;
 	} else {
 		devdir = fgets(line, sizeof(line), infile);
@@ -1327,10 +1339,10 @@ int itdtimage_get_device_list(struct tc_drive_info *buf, int count)
 		free(filename);
 	}
 
-	ltfsmsg(LTFS_INFO, "31028I", devdir);
+	ltfsmsg(LTFS_INFO, 31028I, devdir);
 	dp = opendir(devdir);
 	if (! dp) {
-		ltfsmsg(LTFS_ERR, "31029E", devdir);
+		ltfsmsg(LTFS_ERR, 31029E, devdir);
 		return 0;
 	}
 	while ((entry = readdir(dp))) {
@@ -1342,7 +1354,7 @@ int itdtimage_get_device_list(struct tc_drive_info *buf, int count)
 			snprintf(buf[deventries].vendor, TAPE_VENDOR_NAME_LEN_MAX, "DUMMY");
 			snprintf(buf[deventries].model, TAPE_MODEL_NAME_LEN_MAX, "DUMMYDEV");
 			snprintf(buf[deventries].serial_number, TAPE_SERIAL_LEN_MAX, "%s", &(entry->d_name[strlen(DRIVE_FILE_PREFIX)]));
-			ltfsmsg(LTFS_DEBUG, "31030D", buf[deventries].name, buf[deventries].vendor,
+			ltfsmsg(LTFS_DEBUG, 31030D, buf[deventries].name, buf[deventries].vendor,
 					buf[deventries].model, buf[deventries].serial_number);
 		}
 

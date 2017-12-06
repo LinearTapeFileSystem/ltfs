@@ -112,7 +112,7 @@ int config_file_load(const char *path, struct config_file **config)
 
 	*config = calloc(1, sizeof(struct config_file));
 	if (! (*config)) {
-		ltfsmsg(LTFS_ERR, "10001E", "config_file_load: config structure");
+		ltfsmsg(LTFS_ERR, 10001E, "config_file_load: config structure");
 		return -LTFS_NO_MEMORY;
 	}
 	TAILQ_INIT(&(*config)->plugins);
@@ -188,7 +188,7 @@ const char *config_file_get_lib(const char *type, const char *name, struct confi
 			return entry->library;
 	}
 
-	ltfsmsg(LTFS_ERR, "11267E", type, name);
+	ltfsmsg(LTFS_ERR, 11267E, type, name);
 
 	return NULL;
 }
@@ -205,7 +205,7 @@ char **config_file_get_plugins(const char *type, struct config_file *config)
 
 	list = calloc(count + 1, sizeof(char *));
 	if (! list) {
-		ltfsmsg(LTFS_ERR, "10001E", "config_file_get_plugins: pointer list");
+		ltfsmsg(LTFS_ERR, 10001E, "config_file_get_plugins: pointer list");
 		return NULL;
 	}
 
@@ -213,7 +213,7 @@ char **config_file_get_plugins(const char *type, struct config_file *config)
 		if (! strcmp(entry->type, type)) {
 			list[pos] = strdup(entry->name);
 			if (! list[pos]) {
-				ltfsmsg(LTFS_ERR, "10001E", "config_file_get_plugins: list entry");
+				ltfsmsg(LTFS_ERR, 10001E, "config_file_get_plugins: list entry");
 				for (count=0; count<pos; ++count)
 					free(list[pos]);
 				free(list);
@@ -238,7 +238,7 @@ char **config_file_get_options(const char *type, struct config_file *config)
 
 	list = calloc(count + 1, sizeof(char *));
 	if (! list) {
-		ltfsmsg(LTFS_ERR, "10001E", "config_file_get_options: pointer list");
+		ltfsmsg(LTFS_ERR, 10001E, "config_file_get_options: pointer list");
 		return NULL;
 	}
 
@@ -246,7 +246,7 @@ char **config_file_get_options(const char *type, struct config_file *config)
 		if (! strcmp(entry->type, type)) {
 			list[pos] = strdup(entry->option);
 			if (! list[pos]) {
-				ltfsmsg(LTFS_ERR, "10001E", "config_file_get_options: list entry");
+				ltfsmsg(LTFS_ERR, 10001E, "config_file_get_options: list entry");
 				goto out_free;
 			}
 			++pos;
@@ -281,7 +281,7 @@ int _config_file_parse(const char *path, bool ignore_error, struct config_file *
 	if (! conf_file) {
 		if (!ignore_error) {
 			ret = -errno;
-			ltfsmsg(LTFS_ERR, "11268E", path, ret);
+			ltfsmsg(LTFS_ERR, 11268E, path, ret);
 			return ret;
 		} else
 			return 0;
@@ -290,7 +290,7 @@ int _config_file_parse(const char *path, bool ignore_error, struct config_file *
 	/* Parse the config file */
 	while (fgets(line, 65536, conf_file)) {
 		if (strlen(line) == 65535) {
-			ltfsmsg(LTFS_ERR, "11269E");
+			ltfsmsg(LTFS_ERR, 11269E);
 			ret = -LTFS_CONFIG_INVALID;
 			goto out;
 		}
@@ -307,7 +307,7 @@ int _config_file_parse(const char *path, bool ignore_error, struct config_file *
 
 		saveline = strdup(line);
 		if (! saveline) {
-			ltfsmsg(LTFS_ERR, "10001E", "_config_file_parse: saveline");
+			ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse: saveline");
 			ret = -LTFS_NO_MEMORY;
 			goto out;
 		}
@@ -361,7 +361,7 @@ int _config_file_parse(const char *path, bool ignore_error, struct config_file *
 					goto out;
 
 			} else
-				ltfsmsg(LTFS_WARN, "11276W", tok);
+				ltfsmsg(LTFS_WARN, 11276W, tok);
 		}
 
 		free(saveline);
@@ -397,7 +397,7 @@ int _config_file_validate(struct config_file *config)
 				found = true;
 		}
 		if (! found && strcmp(de->name, "none")) {
-			ltfsmsg(LTFS_ERR, "11280E", de->type, de->name);
+			ltfsmsg(LTFS_ERR, 11280E, de->type, de->name);
 			return -LTFS_CONFIG_INVALID;
 		}
 	}
@@ -405,7 +405,7 @@ int _config_file_validate(struct config_file *config)
 	/* Emit a warning if plugin library does not exist. */
 	TAILQ_FOREACH(pe, &config->plugins, list) {
 		if (stat(pe->library, &st) < 0)
-			ltfsmsg(LTFS_WARN, "11277W", pe->type, pe->name, pe->library);
+			ltfsmsg(LTFS_WARN, 11277W, pe->type, pe->name, pe->library);
 	}
 
 	return 0;
@@ -436,18 +436,18 @@ int _config_file_parse_name(const char *directive, const char *name_desc, char *
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 #endif
 	if (! tok) {
-		ltfsmsg(LTFS_ERR, "11273E", directive, name_desc);
+		ltfsmsg(LTFS_ERR, 11273E, directive, name_desc);
 		return -LTFS_CONFIG_INVALID;
 	}
 	*out = strdup(tok);
 	if (! (*out)) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 	if (tok) {
-		ltfsmsg(LTFS_ERR, "11273E", directive, name_desc);
+		ltfsmsg(LTFS_ERR, 11273E, directive, name_desc);
 		return -LTFS_CONFIG_INVALID;
 	}
 
@@ -472,27 +472,27 @@ int _config_file_parse_default(char *saveptr, struct config_file *config)
 	/* Read the plugin type */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 	if (! tok) {
-		ltfsmsg(LTFS_ERR, "11265E");
+		ltfsmsg(LTFS_ERR, 11265E);
 		return -LTFS_CONFIG_INVALID;
 	}
 
 	type = strdup(tok);
 	if (! type) {
-		ltfsmsg(LTFS_ERR, "10001E", "_config_file_parse_default: plugin type");
+		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_default: plugin type");
 		return -LTFS_NO_MEMORY;
 	}
 
 	/* Read the plugin name */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 	if (! tok) {
-		ltfsmsg(LTFS_ERR, "11265E");
+		ltfsmsg(LTFS_ERR, 11265E);
 		free(type);
 		return -LTFS_CONFIG_INVALID;
 	}
 
 	name = strdup(tok);
 	if (! name) {
-		ltfsmsg(LTFS_ERR, "10001E", "_config_file_parse_default: plugin name");
+		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_default: plugin name");
 		free(type);
 		return -LTFS_NO_MEMORY;
 	}
@@ -500,7 +500,7 @@ int _config_file_parse_default(char *saveptr, struct config_file *config)
 	/* Make sure there's no end of line garbage */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 	if (tok) {
-		ltfsmsg(LTFS_ERR, "11265E");
+		ltfsmsg(LTFS_ERR, 11265E);
 		free(name);
 		free(type);
 		return -LTFS_CONFIG_INVALID;
@@ -519,7 +519,7 @@ int _config_file_parse_default(char *saveptr, struct config_file *config)
 	if (!found) {
 		entry = calloc(1, sizeof(struct plugin_entry));
 		if (! entry) {
-			ltfsmsg(LTFS_ERR, "10001E", "_config_file_parse_default: plugin entry");
+			ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_default: plugin entry");
 			free(name);
 			free(type);
 			return -LTFS_NO_MEMORY;
@@ -548,20 +548,20 @@ int _config_file_remove_default(char *saveptr, struct config_file *config)
 	/* Read the plugin type */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 	if (! tok) {
-		ltfsmsg(LTFS_ERR, "11270E");
+		ltfsmsg(LTFS_ERR, 11270E);
 		return -LTFS_CONFIG_INVALID;
 	}
 
 	type = strdup(tok);
 	if (! type) {
-		ltfsmsg(LTFS_ERR, "10001E", "_config_file_remove_default: plugin type");
+		ltfsmsg(LTFS_ERR, 10001E, "_config_file_remove_default: plugin type");
 		return -LTFS_NO_MEMORY;
 	}
 
 	/* Make sure there's no end of line garbage */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 	if (tok) {
-		ltfsmsg(LTFS_ERR, "11270E");
+		ltfsmsg(LTFS_ERR, 11270E);
 		free(type);
 		return -LTFS_CONFIG_INVALID;
 	}
@@ -578,7 +578,7 @@ int _config_file_remove_default(char *saveptr, struct config_file *config)
 	}
 
 	if (!found) {
-		ltfsmsg(LTFS_ERR, "11271E", type);
+		ltfsmsg(LTFS_ERR, 11271E, type);
 		free(type);
 		return -LTFS_CONFIG_INVALID;
 	}
@@ -603,14 +603,14 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config)
 	/* Get the plugin type */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 	if (! tok) {
-		ltfsmsg(LTFS_ERR, "11275E");
+		ltfsmsg(LTFS_ERR, 11275E);
 		ret = -LTFS_CONFIG_INVALID;
 		goto out_free;
 	}
 
 	type = strdup(tok);
 	if (! type) {
-		ltfsmsg(LTFS_ERR, "10001E", "_config_file_parse_plugin: plugin type");
+		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin type");
 		ret = -LTFS_NO_MEMORY;
 		goto out_free;
 	}
@@ -618,14 +618,14 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config)
 	/* Get the driver name */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 	if (! tok) {
-		ltfsmsg(LTFS_ERR, "11275E");
+		ltfsmsg(LTFS_ERR, 11275E);
 		ret = -LTFS_CONFIG_INVALID;
 		goto out_free;
 	}
 
 	name = strdup(tok);
 	if (! name) {
-		ltfsmsg(LTFS_ERR, "10001E", "_config_file_parse_plugin: plugin name");
+		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin name");
 		ret = -LTFS_NO_MEMORY;
 		goto out_free;
 	}
@@ -633,14 +633,14 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config)
 	/* Get the driver path */
 	tok = strtok_r(NULL, "\r\n", &saveptr);
 	if (! tok) {
-		ltfsmsg(LTFS_ERR, "11275E");
+		ltfsmsg(LTFS_ERR, 11275E);
 		ret = -LTFS_CONFIG_INVALID;
 		goto out_free;
 	}
 
 	library = strdup(tok);
 	if (! library) {
-		ltfsmsg(LTFS_ERR, "10001E", "_config_file_parse_plugin: plugin path");
+		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin path");
 		ret = -LTFS_NO_MEMORY;
 		goto out_free;
 	}
@@ -657,7 +657,7 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config)
 	if (!found) {
 		entry = calloc(1, sizeof(struct plugin_entry));
 		if (! entry) {
-			ltfsmsg(LTFS_ERR, "10001E", "_config_file_parse_plugin: plugin entry");
+			ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin entry");
 			ret = -LTFS_NO_MEMORY;
 			goto out_free;
 		}
@@ -695,27 +695,27 @@ int _config_file_remove_plugin(char *saveptr, struct config_file *config)
 	/* Read the plugin type */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 	if (! tok) {
-		ltfsmsg(LTFS_ERR, "11309E");
+		ltfsmsg(LTFS_ERR, 11309E);
 		return -LTFS_CONFIG_INVALID;
 	}
 
 	type = strdup(tok);
 	if (! type) {
-		ltfsmsg(LTFS_ERR, "10001E", "_config_file_remove_plugin: plugin type");
+		ltfsmsg(LTFS_ERR, 10001E, "_config_file_remove_plugin: plugin type");
 		return -LTFS_NO_MEMORY;
 	}
 
 	/* Read the plugin name */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 	if (! tok) {
-		ltfsmsg(LTFS_ERR, "11309E");
+		ltfsmsg(LTFS_ERR, 11309E);
 		free(type);
 		return -LTFS_CONFIG_INVALID;
 	}
 
 	name = strdup(tok);
 	if (! name) {
-		ltfsmsg(LTFS_ERR, "10001E", "_config_file_remove_plugin: plugin name");
+		ltfsmsg(LTFS_ERR, 10001E, "_config_file_remove_plugin: plugin name");
 		free(type);
 		return -LTFS_NO_MEMORY;
 	}
@@ -723,7 +723,7 @@ int _config_file_remove_plugin(char *saveptr, struct config_file *config)
 	/* Make sure there's no end of line garbage */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 	if (tok) {
-		ltfsmsg(LTFS_ERR, "11309E");
+		ltfsmsg(LTFS_ERR, 11309E);
 		free(type);
 		free(name);
 		return -LTFS_CONFIG_INVALID;
@@ -769,14 +769,14 @@ int _config_file_parse_option(const char *line, char *saveptr, struct option_ent
 	if (! tok) {
 		/* Cannot parse configuration file: \'option\' directive must be followed
 		 * by a option type and LTFS mount option */
-		ltfsmsg(LTFS_ERR, "11272E");
+		ltfsmsg(LTFS_ERR, 11272E);
 		return -LTFS_CONFIG_INVALID;
 	}
 	start = tok;
 
 	type = strdup(tok);
 	if (! type) {
-		ltfsmsg(LTFS_ERR, "10001E", "_config_file_parse_mount_option: option");
+		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_mount_option: option");
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -794,7 +794,7 @@ int _config_file_parse_option(const char *line, char *saveptr, struct option_ent
 	if (! tok) {
 		/* Cannot parse configuration file: \'option\' directive must be followed
 		 * by a LTFS mount option */
-		ltfsmsg(LTFS_ERR, "11272E");
+		ltfsmsg(LTFS_ERR, 11272E);
 		free(type);
 		return -LTFS_CONFIG_INVALID;
 	}
@@ -804,14 +804,14 @@ int _config_file_parse_option(const char *line, char *saveptr, struct option_ent
 	else
 		ret = asprintf(&option, "-o%s", &line[tok-start]);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10001E", "_config_file_parse_mount_option: option");
+		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_mount_option: option");
 		free(type);
 		return -LTFS_NO_MEMORY;
 	}
 
 	*out = calloc(1, sizeof(struct option_entry));
 	if (! (*out)) {
-		ltfsmsg(LTFS_ERR, "10001E", "_config_file_parse_plugin: plugin structure");
+		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin structure");
 		free(type);
 		free(option);
 		return -LTFS_NO_MEMORY;

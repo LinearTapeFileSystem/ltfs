@@ -64,10 +64,20 @@ RESOURCES = \
 	internal_error_dat.o
 
 .PHONY: all $(RESOURCES) clean-local
+if CHK_MESSAGE
+all: $(RESOURCES) ../src/ltfsmsg.h
+else
 all: $(RESOURCES)
+endif
 
 $(RESOURCES):
 	@./make_message_src.sh $@
 
+if CHK_MESSAGE
+../src/ltfsmsg.h: $(RESOURCES)
+	./print_error_messages.py > ../src/ltfsmsg.h
+endif
+
 clean-local:
 	rm -rf $(RESOURCES) */work
+	rm -f ../src/ltfsmsg.h

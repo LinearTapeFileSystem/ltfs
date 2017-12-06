@@ -86,10 +86,10 @@ ltfs_time_t ltfs_timegm(struct tm *t)
 
 	if (sizeof(time_t) == 4) {
 		if (rel > LONG_MAX)
-			ltfsmsg(LTFS_WARN, "17172W", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday
+			ltfsmsg(LTFS_WARN, 17172W, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday
 					, t->tm_hour, t->tm_min, t->tm_sec);
 		if (rel < LONG_MIN)
-			ltfsmsg(LTFS_WARN, "17173W", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday
+			ltfsmsg(LTFS_WARN, 17173W, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday
 					, t->tm_hour, t->tm_min, t->tm_sec);
 	}
 
@@ -142,7 +142,7 @@ int get_osx_current_timespec(struct ltfs_timespec* now) {
 		ret = -1;
 	}
 	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "11110E", ret);
+		ltfsmsg(LTFS_ERR, 11110E, ret);
 	return ret;
 }
 #elif defined(mingw_PLATFORM)

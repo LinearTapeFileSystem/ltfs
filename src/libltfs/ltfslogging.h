@@ -64,27 +64,49 @@ extern bool ltfs_print_thread_id;
 
 /* Wrapper for ltfsmsg_internal. It only invokes the message print function if the requested
  * log level is not too verbose. */
+#ifdef MSG_CHECK
+#include "ltfsmsg.h"
+#define ltfsmsg(level, id, ...)					\
+	do {										\
+		printf(LTFS ## id, ##__VA_ARGS__);		\
+	} while(0)
+#else
 #define ltfsmsg(level, id, ...) \
 	do { \
 		if (level <= ltfs_log_level) \
-			ltfsmsg_internal(true, level, NULL, id, ##__VA_ARGS__);	\
+			ltfsmsg_internal(true, level, NULL, #id, ##__VA_ARGS__);	\
 	} while (0)
+#endif
 
 /* Wrapper for ltfsmsg_internal. It only invokes the message print function if the requested
  * log level is not too verbose. */
+#ifdef MSG_CHECK
+#define ltfsmsg_buffer(level, id, ...)			\
+	do {										\
+		printf(LTFS ## id, ##__VA_ARGS__);		\
+	} while(0)
+#else
 #define ltfsmsg_buffer(level, id, buffer, ...)	\
 	do { \
 		*buffer = NULL; \
 		if (level <= ltfs_log_level) \
-			ltfsmsg_internal(true, level, buffer, id, ##__VA_ARGS__);	\
+			ltfsmsg_internal(true, level, buffer, #id, ##__VA_ARGS__);	\
 	} while (0)
+#endif
 
 /* Wrapper for ltfsmsg_internal that prints a message without the LTFSnnnnn prefix. It
  * always invokes the message print function, regardless of the message level. */
-#define ltfsresult(id, ...) \
-	do { \
-		ltfsmsg_internal(false, LTFS_TRACE + 1, NULL, id, ##__VA_ARGS__); \
+#ifdef MSG_CHECK
+#define ltfsresult(id, ...)						\
+	do {										\
+		printf(LTFS ## id, ##__VA_ARGS__);		\
+	} while(0)
+#else
+#define ltfsresult(id, ...)						\
+	do {																\
+		ltfsmsg_internal(false, LTFS_TRACE + 1, NULL, #id, ##__VA_ARGS__); \
 	} while (0)
+#endif
 
 /* Shortcut for asserting that a function argument is not NULL. It generates an error-level
  * message if the given argument is NULL. Functions for which a NULL argument is a warning
@@ -92,7 +114,7 @@ extern bool ltfs_print_thread_id;
 #define CHECK_ARG_NULL(var, ret) \
 	do { \
 		if (! (var)) { \
-			ltfsmsg(LTFS_ERR, "10005E", #var, __FUNCTION__); \
+			ltfsmsg(LTFS_ERR, 10005E, #var, __FUNCTION__); \
 			return ret; \
 		} \
 	} while (0)

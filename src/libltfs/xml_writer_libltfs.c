@@ -101,7 +101,7 @@ static int encode_entry_name(char **new_name, const char *name)
 
 		U8_NEXT(name, i, len, c);
 		if (c < 0) {
-			ltfsmsg(LTFS_ERR, "11235E");
+			ltfsmsg(LTFS_ERR, 11235E);
 			free(tmp_name);
 			return -LTFS_ICU_ERROR;
 		}
@@ -171,7 +171,7 @@ static int _xml_write_dentry_times(xmlTextWriterPtr writer, const struct dentry 
 	if (!mtime)
 		return -1;
 	else if (ret == LTFS_TIME_OUT_OF_RANGE)
-		ltfsmsg(LTFS_WARN, "17225W", "creationtime", d->creation_time.tv_sec);
+		ltfsmsg(LTFS_WARN, 17225W, "creationtime", (unsigned long long)d->creation_time.tv_sec);
 	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "creationtime", BAD_CAST mtime), -1);
 	free(mtime);
 
@@ -179,7 +179,7 @@ static int _xml_write_dentry_times(xmlTextWriterPtr writer, const struct dentry 
 	if (!mtime)
 		return -1;
 	else if (ret == LTFS_TIME_OUT_OF_RANGE)
-		ltfsmsg(LTFS_WARN, "17225W", "changetime", d->change_time.tv_sec);
+		ltfsmsg(LTFS_WARN, 17225W, "changetime", (unsigned long long)d->change_time.tv_sec);
 	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "changetime", BAD_CAST mtime), -1);
 	free(mtime);
 
@@ -187,7 +187,7 @@ static int _xml_write_dentry_times(xmlTextWriterPtr writer, const struct dentry 
 	if (!mtime)
 		return -1;
 	else if (ret == LTFS_TIME_OUT_OF_RANGE)
-		ltfsmsg(LTFS_WARN, "17225W", "modifytime", d->modify_time.tv_sec);
+		ltfsmsg(LTFS_WARN, 17225W, "modifytime", (unsigned long long)d->modify_time.tv_sec);
 	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "modifytime", BAD_CAST mtime), -1);
 	free(mtime);
 
@@ -195,7 +195,7 @@ static int _xml_write_dentry_times(xmlTextWriterPtr writer, const struct dentry 
 	if (!mtime)
 		return -1;
 	else if (ret == LTFS_TIME_OUT_OF_RANGE)
-		ltfsmsg(LTFS_WARN, "17225W", "accesstime", d->access_time.tv_sec);
+		ltfsmsg(LTFS_WARN, 17225W, "accesstime", (unsigned long long)d->access_time.tv_sec);
 	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "accesstime", BAD_CAST mtime), -1);
 	free(mtime);
 
@@ -203,7 +203,7 @@ static int _xml_write_dentry_times(xmlTextWriterPtr writer, const struct dentry 
 	if (!mtime)
 		return -1;
 	else if (ret == LTFS_TIME_OUT_OF_RANGE)
-		ltfsmsg(LTFS_WARN, "17225W", "backuptime", d->backup_time.tv_sec);
+		ltfsmsg(LTFS_WARN, 17225W, "backuptime", (unsigned long long)d->backup_time.tv_sec);
 	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "backuptime", BAD_CAST mtime), -1);
 	free(mtime);
 
@@ -231,7 +231,7 @@ static int _xml_write_xattr(xmlTextWriterPtr writer, const struct dentry *file)
 			if (xattr->value) {
 				ret = pathname_validate_xattr_value(xattr->value, xattr->size);
 				if (ret < 0) {
-					ltfsmsg(LTFS_ERR, "17059E", ret);
+					ltfsmsg(LTFS_ERR, 17059E, ret);
 					return -1;
 				} else if (ret > 0) {
 					xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "value"), -1);
@@ -269,7 +269,7 @@ static int _xml_write_file(xmlTextWriterPtr writer, struct dentry *file, struct 
 	size_t i;
 
 	if (file->isdir) {
-		ltfsmsg(LTFS_ERR, "17062E");
+		ltfsmsg(LTFS_ERR, 17062E);
 		return -1;
 	}
 
@@ -327,7 +327,7 @@ static int _xml_write_file(xmlTextWriterPtr writer, struct dentry *file, struct 
 	if (file->tag_count > 0) {
 		for (i=0; i<file->tag_count; ++i) {
 			if (xmlTextWriterWriteRaw(writer, file->preserved_tags[i]) < 0) {
-				ltfsmsg(LTFS_ERR, "17092E", __FUNCTION__);
+				ltfsmsg(LTFS_ERR, 17092E, __FUNCTION__);
 				return -1;
 			}
 		}
@@ -401,18 +401,18 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 					offset->fp = fopen(offset_name, "w");
 					free(offset_name);
 					if (!offset->fp)
-						ltfsmsg(LTFS_WARN, "17248W", "offset cache", list_ptr->d->vol->index_cache_path);
+						ltfsmsg(LTFS_WARN, 17248W, "offset cache", list_ptr->d->vol->index_cache_path);
 				} else
-					ltfsmsg(LTFS_WARN, "17247W", "offset cache", list_ptr->d->vol->index_cache_path);
+					ltfsmsg(LTFS_WARN, 17247W, "offset cache", list_ptr->d->vol->index_cache_path);
 
 				ret = asprintf(&sync_name, "%s.%s", list_ptr->d->vol->index_cache_path, "synclist");
 				if (ret > 0) {
 					sync->fp = fopen(sync_name, "w");
 					free(sync_name);
 					if (!sync->fp)
-						ltfsmsg(LTFS_WARN, "17248W", "sync list", list_ptr->d->vol->index_cache_path);
+						ltfsmsg(LTFS_WARN, 17248W, "sync list", list_ptr->d->vol->index_cache_path);
 				} else
-					ltfsmsg(LTFS_WARN, "17247W", "sync list", list_ptr->d->vol->index_cache_path);
+					ltfsmsg(LTFS_WARN, 17247W, "sync list", list_ptr->d->vol->index_cache_path);
 			}
 
 			xml_mktag(_xml_write_dirtree(writer, list_ptr->d, idx, offset, sync), -1);
@@ -440,7 +440,7 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 	if (dir->tag_count > 0) {
 		for (i=0; i<dir->tag_count; ++i) {
 			if (xmlTextWriterWriteRaw(writer, dir->preserved_tags[i]) < 0) {
-				ltfsmsg(LTFS_ERR, "17092E", __FUNCTION__);
+				ltfsmsg(LTFS_ERR, 17092E, __FUNCTION__);
 				return -1;
 			}
 		}
@@ -475,11 +475,11 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 	if (!update_time)
 		return -1;
 	else if (ret == LTFS_TIME_OUT_OF_RANGE)
-		ltfsmsg(LTFS_WARN, "17224W", "modifytime", idx->mod_time.tv_sec);
+		ltfsmsg(LTFS_WARN, 17224W, "modifytime", (unsigned long long)idx->mod_time.tv_sec);
 
 	ret = xmlTextWriterStartDocument(writer, NULL, "UTF-8", NULL);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17057E", ret);
+		ltfsmsg(LTFS_ERR, 17057E, ret);
 		return -1;
 	}
 
@@ -575,15 +575,15 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 
 	xml_mktag(_xml_write_dirtree(writer, idx->root, idx, &offset, &list), -1);
 	if (offset.count)
-		ltfsmsg(LTFS_INFO, "17249I", offset.count);
+		ltfsmsg(LTFS_INFO, 17249I, (unsigned long long)offset.count);
 	if (list.count)
-		ltfsmsg(LTFS_INFO, "17250I", list.count);
+		ltfsmsg(LTFS_INFO, 17250I, (unsigned long long)list.count);
 
 	/* Save unrecognized tags */
 	if (idx->tag_count > 0) {
 		for (i=0; i<idx->tag_count; ++i) {
 			if (xmlTextWriterWriteRaw(writer, idx->preserved_tags[i]) < 0) {
-				ltfsmsg(LTFS_ERR, "17092E", __FUNCTION__);
+				ltfsmsg(LTFS_ERR, 17092E, __FUNCTION__);
 				return -1;
 			}
 		}
@@ -592,7 +592,7 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 	xml_mktag(xmlTextWriterEndElement(writer), -1);
 	ret = xmlTextWriterEndDocument(writer);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17058E", ret);
+		ltfsmsg(LTFS_ERR, 17058E, ret);
 		return -1;
 	}
 
@@ -623,19 +623,19 @@ xmlBufferPtr xml_make_label(const char *creator, tape_partition_t partition,
 
 	buf = xmlBufferCreate();
 	if (!buf) {
-		ltfsmsg(LTFS_ERR, "17047E");
+		ltfsmsg(LTFS_ERR, 17047E);
 		return NULL;
 	}
 
 	writer = xmlNewTextWriterMemory(buf, 0);
 	if (!writer) {
-		ltfsmsg(LTFS_ERR, "17043E");
+		ltfsmsg(LTFS_ERR, 17043E);
 		return NULL;
 	}
 
 	ret = xmlTextWriterStartDocument(writer, NULL, "UTF-8", NULL);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17044E", ret);
+		ltfsmsg(LTFS_ERR, 17044E, ret);
 		return NULL;
 	}
 
@@ -650,10 +650,10 @@ xmlBufferPtr xml_make_label(const char *creator, tape_partition_t partition,
 
 	ret = xml_format_time(label->format_time, &fmt_time);
 	if (!fmt_time) {
-		ltfsmsg(LTFS_ERR, "17045E");
+		ltfsmsg(LTFS_ERR, 17045E);
 		return NULL;
 	} else if (ret == LTFS_TIME_OUT_OF_RANGE)
-		ltfsmsg(LTFS_WARN, "17223W", "formattime", label->format_time.tv_sec);
+		ltfsmsg(LTFS_WARN, 17223W, "formattime", (unsigned long long)label->format_time.tv_sec);
 
 	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "formattime", BAD_CAST fmt_time), NULL);
 	free(fmt_time);
@@ -678,7 +678,7 @@ xmlBufferPtr xml_make_label(const char *creator, tape_partition_t partition,
 
 	ret = xmlTextWriterEndDocument(writer);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17046E", ret);
+		ltfsmsg(LTFS_ERR, 17046E, ret);
 		return NULL;
 	}
 
@@ -701,18 +701,18 @@ xmlBufferPtr xml_make_schema(const char *creator, const struct ltfs_index *idx)
 
 	buf = xmlBufferCreate();
 	if (!buf) {
-		ltfsmsg(LTFS_ERR, "17048E");
+		ltfsmsg(LTFS_ERR, 17048E);
 		return NULL;
 	}
 
 	writer = xmlNewTextWriterMemory(buf, 0);
 	if (!writer) {
-		ltfsmsg(LTFS_ERR, "17049E");
+		ltfsmsg(LTFS_ERR, 17049E);
 		return NULL;
 	}
 
 	if (_xml_write_schema(writer, creator, idx) < 0) {
-		ltfsmsg(LTFS_ERR, "17050E");
+		ltfsmsg(LTFS_ERR, 17050E);
 		xmlBufferFree(buf);
 		buf = NULL;
 	}
@@ -739,7 +739,7 @@ int xml_schema_to_file(const char *filename, const char *creator
 
 	writer = xmlNewTextWriterFilename(filename, 0);
 	if (! writer) {
-		ltfsmsg(LTFS_ERR, "17051E", filename);
+		ltfsmsg(LTFS_ERR, 17051E, filename);
 		return -1;
 	}
 
@@ -751,11 +751,11 @@ int xml_schema_to_file(const char *filename, const char *creator
 	if (alt_creator) {
 		ret = _xml_write_schema(writer, alt_creator, idx);
 		if (ret < 0)
-			ltfsmsg(LTFS_ERR, "17052E", ret, filename);
+			ltfsmsg(LTFS_ERR, 17052E, ret, filename);
 		xmlFreeTextWriter(writer);
 		free(alt_creator);
 	} else {
-		ltfsmsg(LTFS_ERR, "10001E", "xml_schema_to_file: alt creator string");
+		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_file: alt creator string");
 		return -1;
 	}
 
@@ -782,12 +782,12 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 	/* Create output callback context data structure. */
 	out_ctx = calloc(1, sizeof(struct xml_output_tape));
 	if (! out_ctx) {
-		ltfsmsg(LTFS_ERR, "10001E", "xml_schema_to_tape: output context");
+		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_tape: output context");
 		return -LTFS_NO_MEMORY;
 	}
 	out_ctx->buf = malloc(vol->label->blocksize + LTFS_CRC_SIZE);
 	if (! out_ctx->buf) {
-		ltfsmsg(LTFS_ERR, "10001E", "xml_schema_to_tape: output buffer");
+		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_tape: output buffer");
 		free(out_ctx);
 		return -LTFS_NO_MEMORY;
 	}
@@ -806,7 +806,7 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 										xml_output_tape_close_callback,
 										out_ctx, NULL);
 	if (! write_buf) {
-		ltfsmsg(LTFS_ERR, "17053E");
+		ltfsmsg(LTFS_ERR, 17053E);
 		if (out_ctx->fd >= 0)
 			xml_release_file_lock(out_ctx->fd);
 		free(out_ctx->buf);
@@ -817,7 +817,7 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 	/* Create XML writer. */
 	writer = xmlNewTextWriter(write_buf);
 	if (! writer) {
-		ltfsmsg(LTFS_ERR, "17054E");
+		ltfsmsg(LTFS_ERR, 17054E);
 		if (out_ctx->fd >= 0)
 			xml_release_file_lock(out_ctx->fd);
 		xmlOutputBufferClose(write_buf);
@@ -829,7 +829,7 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 	if (creator) {
 		ret = _xml_write_schema(writer, creator, vol->index);
 		if (ret < 0)
-			ltfsmsg(LTFS_ERR, "17055E", ret);
+			ltfsmsg(LTFS_ERR, 17055E, ret);
 
 		xmlFreeTextWriter(writer);
 		free(creator);
@@ -840,12 +840,12 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 				free(vol->index->creator);
 			vol->index->creator = strdup(vol->creator);
 			if (! vol->index->creator) {
-				ltfsmsg(LTFS_ERR, "10001E", "xml_schema_to_tape: new creator string");
+				ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_tape: new creator string");
 				ret = -1;
 			}
 		}
 	} else {
-		ltfsmsg(LTFS_ERR, "10001E", "xml_schema_to_tape: creator string");
+		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_tape: creator string");
 		xmlFreeTextWriter(writer);
 		ret = -1;
 	}

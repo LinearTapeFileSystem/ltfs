@@ -42,10 +42,10 @@ root:table {
 		end_id:int { 31199 }
 
 		31000I:string { "Opening a device through generic itdtimage driver (%s)." }
-		31001E:string { "Failed to open %s: %s (%d)." }
-		31002E:string { "Failed to seek to %lld (%s, %d)." }
+		31001E:string { "Failed to open %s: %s (%llu)." }
+		31002E:string { "Failed to seek to %lld (%s, %lld)." }
 		31003I:string { "Closing device through generic itdtimage driver (%s)." }
-		31004D:string { "Backend read: %u bytes (from position=(%u, %llu), FMs %llu)." }
+		31004D:string { "Backend read: %llu bytes (from position=(%u, %llu), FMs %llu)." }
 		31005E:string { "Cannot read: unit not ready." }
 		31006E:string { "Cannot rewind: unit not ready." }
 		31007E:string { "Cannot locate: unit not ready." }

@@ -127,7 +127,7 @@ void *memcpy_rs_gf256_enc(void *dest, const void *src, size_t n)
 
 	/* Inject CRC value to the end of the destination buffer */
 	ltfs_u32tobe(dest_cur, reg);
-	ltfsmsg(LTFS_DEBUG, "39804D", "encode", n, reg);
+	ltfsmsg(LTFS_DEBUG, 39804D, "encode", (int)n, reg);
 
 	return dest;
 }
@@ -147,7 +147,7 @@ void rs_gf256_enc(void *buf, size_t n)
 
 	/* Inject CRC value */
 	ltfs_u32tobe(reg_cur, reg);
-	ltfsmsg(LTFS_DEBUG, "39804D", "encode", n, reg);
+	ltfsmsg(LTFS_DEBUG, 39804D, "encode", (int)n, reg);
 
 	return;
 }
@@ -173,10 +173,10 @@ int memcpy_rs_gf256_check(void *dest, const void *src, size_t n)
 	/* Check CRC value in the end of the source buffer */
 	crc = ltfs_betou32(src_cur);
 	if(crc != reg) {
-		ltfsmsg(LTFS_ERR, "39803E", n, reg, crc);
+		ltfsmsg(LTFS_ERR, 39803E, (int)n, reg, crc);
 		return -1;
 	}
-	ltfsmsg(LTFS_DEBUG, "39804D", "check", n, crc);
+	ltfsmsg(LTFS_DEBUG, 39804D, "check", (int)n, crc);
 
 	return n;
 }
@@ -196,10 +196,10 @@ int rs_gf256_check(void *buf, size_t n)
 	/* Check CRC value in the end of the buffer */
 	crc = ltfs_betou32(buf_cur);
 	if(crc != reg) {
-		ltfsmsg(LTFS_ERR, "39803E", n, reg, crc);
+		ltfsmsg(LTFS_ERR, 39803E, (int)n, reg, crc);
 		return -1;
 	}
-	ltfsmsg(LTFS_DEBUG, "39804D", "check", n, crc);
+	ltfsmsg(LTFS_DEBUG, 39804D, "check", (int)n, crc);
 
 	return n;
 }

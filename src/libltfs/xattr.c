@@ -112,12 +112,12 @@ int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t s
 	} else {
 		xattr = (struct xattr_info *) calloc(1, sizeof(struct xattr_info));
 		if (! xattr) {
-			ltfsmsg(LTFS_ERR, "10001E", "xattr_do_set: xattr");
+			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr");
 			return -LTFS_NO_MEMORY;
 		}
 		xattr->key.name = strdup(name);
 		if (! xattr->key.name) {
-			ltfsmsg(LTFS_ERR, "10001E", "xattr_do_set: xattr key");
+			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr key");
 			ret = -LTFS_NO_MEMORY;
 			goto out_free;
 		}
@@ -130,7 +130,7 @@ int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t s
 	if (size > 0) {
 		xattr->value = (char *)malloc(size);
 		if (! xattr->value) {
-			ltfsmsg(LTFS_ERR, "10001E", "xattr_do_set: xattr value");
+			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr value");
 			ret = -LTFS_NO_MEMORY;
 			goto out_remove;
 		}
@@ -184,7 +184,7 @@ int xattr_set(struct dentry *d, const char *name, const char *value, size_t size
 
 	ret = tape_get_worm_status(vol->device, &is_worm_cart);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17237E", "set xattr: cart stat");
+		ltfsmsg(LTFS_ERR, 17237E, "set xattr: cart stat");
 		ret = -LTFS_XATTR_ERR;
 		goto out_unlock;
 	}
@@ -192,7 +192,7 @@ int xattr_set(struct dentry *d, const char *name, const char *value, size_t size
 	if ((is_worm_cart && (d->is_immutable || (d->is_appendonly && strcmp(name, "ltfs.vendor.IBM.immutable"))))
 		|| (!is_worm_cart && (d->is_immutable || d->is_appendonly) && !_xattr_is_worm_ea(name))) {
 		/* EA cannot be set in case of immutable/appendonly */
-		ltfsmsg(LTFS_ERR, "17237E", "set xattr: WORM entry");
+		ltfsmsg(LTFS_ERR, 17237E, "set xattr: WORM entry");
 		ret = -LTFS_RDONLY_XATTR;
 		goto out_unlock;
 	}
@@ -218,7 +218,7 @@ int xattr_set(struct dentry *d, const char *name, const char *value, size_t size
 	/* Search for existing xattr with this name. */
 	ret = _xattr_seek(&xattr, d, name);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11122E", ret);
+		ltfsmsg(LTFS_ERR, 11122E, ret);
 		releasewrite_mrsw(&d->meta_lock);
 		goto out_unlock;
 	}
@@ -235,7 +235,7 @@ int xattr_set(struct dentry *d, const char *name, const char *value, size_t size
 		disable_worm_ea = (strncmp(value, "0", size) == 0);
 
 		if (is_worm_cart && disable_worm_ea) {
-			ltfsmsg(LTFS_ERR, "17237E", "set xattr: clear WORM");
+			ltfsmsg(LTFS_ERR, 17237E, "set xattr: clear WORM");
 			releasewrite_mrsw(&d->meta_lock);
 			ret = -LTFS_XATTR_ERR;
 			goto out_unlock;
@@ -266,11 +266,11 @@ int xattr_set(struct dentry *d, const char *name, const char *value, size_t size
 	/* update metadata */
 	if (!strcmp(name, "ltfs.vendor.IBM.immutable")) {
 		d->is_immutable = !disable_worm_ea;
-		ltfsmsg(LTFS_INFO, "17238I", "immutable", d->is_immutable, d->name);
+		ltfsmsg(LTFS_INFO, 17238I, "immutable", d->is_immutable, d->name.name);
 	}
 	else if (!strcmp(name, "ltfs.vendor.IBM.appendonly")) {
 		d->is_appendonly = !disable_worm_ea;
-		ltfsmsg(LTFS_INFO, "17238I", "appendonly", d->is_appendonly, d->name);
+		ltfsmsg(LTFS_INFO, 17238I, "appendonly", d->is_appendonly, d->name.name);
 	}
 
 	get_current_timespec(&d->change_time);
@@ -310,7 +310,7 @@ int xattr_get(struct dentry *d, const char *name, char *value, size_t size,
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	if (size > 0 && ! value) {
-		ltfsmsg(LTFS_ERR, "11123E");
+		ltfsmsg(LTFS_ERR, 11123E);
 		return -LTFS_BAD_ARG;
 	}
 
@@ -336,7 +336,7 @@ int xattr_get(struct dentry *d, const char *name, char *value, size_t size,
 		}else if (ret != -LTFS_NO_XATTR) {
 			/* if ltfs.sync is specified, don't print any message */
 			if (ret < 0 && ret != -LTFS_RDONLY_XATTR)
-				ltfsmsg(LTFS_ERR, "11128E", ret);
+				ltfsmsg(LTFS_ERR, 11128E, ret);
 			goto out_unlock;
 		}
 	}
@@ -346,7 +346,7 @@ int xattr_get(struct dentry *d, const char *name, char *value, size_t size,
 	/* Look for a real xattr. */
 	ret = _xattr_seek(&xattr, d, name);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11129E", ret);
+		ltfsmsg(LTFS_ERR, 11129E, ret);
 		releaseread_mrsw(&d->meta_lock);
 		goto out_unlock;
 	}
@@ -390,7 +390,7 @@ int xattr_list(struct dentry *d, char *list, size_t size, struct ltfs_volume *vo
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	if (size > 0 && ! list) {
-		ltfsmsg(LTFS_ERR, "11130E");
+		ltfsmsg(LTFS_ERR, 11130E);
 		return -LTFS_BAD_ARG;
 	}
 
@@ -402,7 +402,7 @@ int xattr_list(struct dentry *d, char *list, size_t size, struct ltfs_volume *vo
 
 	ret = _xattr_list_physicals(d, list, size);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11133E", ret);
+		ltfsmsg(LTFS_ERR, 11133E, ret);
 		goto out;
 	}
 	nbytes += ret;
@@ -444,7 +444,7 @@ int xattr_do_remove(struct dentry *d, const char *name, bool force, struct ltfs_
 	/* Look for a real extended attribute. */
 	ret = _xattr_seek(&xattr, d, name);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11140E", ret);
+		ltfsmsg(LTFS_ERR, 11140E, ret);
 		releasewrite_mrsw(&d->meta_lock);
 		return ret;
 	} else if (! xattr) {
@@ -497,7 +497,7 @@ int xattr_remove(struct dentry *d, const char *name, struct ltfs_volume *vol)
 
 	ret = tape_get_worm_status(vol->device, &is_worm_cart);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17237E", "remove xattr: cart stat");
+		ltfsmsg(LTFS_ERR, 17237E, "remove xattr: cart stat");
 		ret = -LTFS_XATTR_ERR;
 		goto out_dunlk;
 	}
@@ -505,7 +505,7 @@ int xattr_remove(struct dentry *d, const char *name, struct ltfs_volume *vol)
 	if ((d->is_immutable || d->is_appendonly)
 		&& (is_worm_cart || !_xattr_is_worm_ea(name))) {
 		/* EA cannot be removed in case of immutable/appendonly */
-		ltfsmsg(LTFS_ERR, "17237E", "remove xattr: WORM entry");
+		ltfsmsg(LTFS_ERR, 17237E, "remove xattr: WORM entry");
 		ret = -LTFS_RDONLY_XATTR;
 		goto out_dunlk;
 	}
@@ -524,11 +524,11 @@ int xattr_remove(struct dentry *d, const char *name, struct ltfs_volume *vol)
 
 	if (!strcmp(name, "ltfs.vendor.IBM.immutable")) {
 		d->is_immutable = false;
-		ltfsmsg(LTFS_INFO, "17238I", "immutable", d->is_immutable, d->name);
+		ltfsmsg(LTFS_INFO, 17238I, "immutable", d->is_immutable, d->name.name);
 	}
 	else if (!strcmp(name, "ltfs.vendor.IBM.appendonly")) {
 		d->is_appendonly = false;
-		ltfsmsg(LTFS_INFO, "17238I", "appendonly", d->is_appendonly, d->name);
+		ltfsmsg(LTFS_INFO, 17238I, "appendonly", d->is_appendonly, d->name.name);
 	}
 
 	d->dirty = true;
@@ -561,7 +561,7 @@ int xattr_set_mountpoint_length(struct dentry *d, const char* value, size_t size
 	acquireread_mrsw(&d->meta_lock);
 	ret = _xattr_seek(&xattr, d, LTFS_LIVELINK_EA_NAME);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11129E", ret);
+		ltfsmsg(LTFS_ERR, 11129E, ret);
 		releaseread_mrsw(&d->meta_lock);
 		goto out_set;
 	}
@@ -675,7 +675,7 @@ int _xattr_list_physicals(struct dentry *d, char *list, size_t size)
 #if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
 	ret = pathname_unformat("user.", &prefix);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11141E", ret);
+		ltfsmsg(LTFS_ERR, 11141E, ret);
 		return ret;
 	}
 	prefixlen = strlen(prefix);
@@ -684,7 +684,7 @@ int _xattr_list_physicals(struct dentry *d, char *list, size_t size)
 	TAILQ_FOREACH(entry, &d->xattrlist, list) {
 		ret = pathname_unformat(entry->key.name, &new_name);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "11142E", ret);
+			ltfsmsg(LTFS_ERR, 11142E, ret);
 			goto out;
 		}
 
@@ -853,31 +853,31 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 	if (! strcmp(name, "ltfs.createTime")) {
 		ret = _xattr_get_dentry_time(d, &d->creation_time, &val, name);
 		if (ret == LTFS_TIME_OUT_OF_RANGE) {
-			ltfsmsg(LTFS_WARN, "17222W", name, d->name, d->uid, d->creation_time);
+			ltfsmsg(LTFS_WARN, 17222W, name, d->name.name, (unsigned long long)d->uid, (long long)d->creation_time.tv_sec);
 			ret = 0;
 		}
 	} else if (! strcmp(name, "ltfs.modifyTime")) {
 		ret = _xattr_get_dentry_time(d, &d->modify_time, &val, name);
 		if (ret == LTFS_TIME_OUT_OF_RANGE) {
-			ltfsmsg(LTFS_WARN, "17222W", name, d->name, d->uid, d->modify_time);
+			ltfsmsg(LTFS_WARN, 17222W, name, d->name.name, (unsigned long long)d->uid, (long long)d->modify_time.tv_sec);
 			ret = 0;
 		}
 	} else if (! strcmp(name, "ltfs.accessTime")) {
 		ret = _xattr_get_dentry_time(d, &d->access_time, &val, name);
 		if (ret == LTFS_TIME_OUT_OF_RANGE) {
-			ltfsmsg(LTFS_WARN, "17222W", name, d->name, d->uid, d->access_time);
+			ltfsmsg(LTFS_WARN, 17222W, name, d->name.name, (unsigned long long)d->uid, (long long)d->access_time.tv_sec);
 			ret = 0;
 		}
 	} else if (! strcmp(name, "ltfs.changeTime")) {
 		ret = _xattr_get_dentry_time(d, &d->change_time, &val, name);
 		if (ret == LTFS_TIME_OUT_OF_RANGE) {
-			ltfsmsg(LTFS_WARN, "17222W", name, d->name, d->uid, d->change_time);
+			ltfsmsg(LTFS_WARN, 17222W, name, d->name.name, (unsigned long long)d->uid, (long long)d->change_time.tv_sec);
 			ret = 0;
 		}
 	} else if (! strcmp(name, "ltfs.backupTime")) {
 		ret = _xattr_get_dentry_time(d, &d->backup_time, &val, name);
 		if (ret == LTFS_TIME_OUT_OF_RANGE) {
-			ltfsmsg(LTFS_WARN, "17222W", name, d->name, d->uid, d->backup_time);
+			ltfsmsg(LTFS_WARN, 17222W, name, d->name.name, (unsigned long long)d->uid, (long long)d->backup_time.tv_sec);
 			ret = 0;
 		}
 	} else if (! strcmp(name, "ltfs.driveCaptureDump")) {
@@ -906,46 +906,46 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 	} else if (! strcmp(name, "ltfs.vendor.IBM.logLevel")) {
 		ret = asprintf(&val, "%d", ltfs_log_level);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "10001E", name);
+			ltfsmsg(LTFS_ERR, 10001E, name);
 			val = NULL;
 			ret = -LTFS_NO_MEMORY;
 		}
 	} else if (! strcmp(name, "ltfs.vendor.IBM.syslogLevel")) {
 		ret = asprintf(&val, "%d", ltfs_syslog_level);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "10001E", name);
+			ltfsmsg(LTFS_ERR, 10001E, name);
 			val = NULL;
 			ret = -LTFS_NO_MEMORY;
 		}
 	} else if (! strcmp(name, "ltfs.vendor.IBM.profiler")) {
 		ret = ltfs_trace_get_offset(&val);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "10001E", name);
+			ltfsmsg(LTFS_ERR, 10001E, name);
 			val = NULL;
 			ret = -LTFS_NO_MEMORY;
 		}
 	} else if (! strcmp(name, "ltfs.mamBarcode")) {
 		ret = read_tape_attribute (vol, &val, name);
 		if (ret < 0) {
-			ltfsmsg(LTFS_DEBUG, "17198D", TC_MAM_BARCODE, "_xattr_get_virtual");
+			ltfsmsg(LTFS_DEBUG, 17198D, TC_MAM_BARCODE, "_xattr_get_virtual");
 			val = NULL;
 		}
 	} else if (! strcmp(name, "ltfs.mamApplicationVendor")) {
 		ret = read_tape_attribute (vol, &val, name);
 		if (ret < 0) {
-			ltfsmsg(LTFS_DEBUG, "17198D", TC_MAM_APP_VENDER, "_xattr_get_virtual");
+			ltfsmsg(LTFS_DEBUG, 17198D, TC_MAM_APP_VENDER, "_xattr_get_virtual");
 			val = NULL;
 		}
 	} else if (! strcmp(name, "ltfs.mamApplicationVersion")) {
 		ret = read_tape_attribute (vol, &val, name);
 		if (ret < 0) {
-			ltfsmsg(LTFS_DEBUG, "17198D", TC_MAM_APP_VERSION, "_xattr_get_virtual");
+			ltfsmsg(LTFS_DEBUG, 17198D, TC_MAM_APP_VERSION, "_xattr_get_virtual");
 			val = NULL;
 		}
 	} else if (! strcmp(name, "ltfs.mamApplicationFormatVersion")) {
 		ret = read_tape_attribute (vol, &val, name);
 		if (ret < 0) {
-			ltfsmsg(LTFS_DEBUG, "17198D", TC_MAM_APP_FORMAT_VERSION, "_xattr_get_virtual");
+			ltfsmsg(LTFS_DEBUG, 17198D, TC_MAM_APP_FORMAT_VERSION, "_xattr_get_virtual");
 			val = NULL;
 		}
 	} else if (! strcmp(name, "ltfs.volumeLockState")) {
@@ -990,7 +990,7 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 			ret = 0;
 			val = malloc(2 * sizeof(char));
 			if (! val) {
-				ltfsmsg(LTFS_ERR, "10001E", name);
+				ltfsmsg(LTFS_ERR, 10001E, name);
 				ret = -LTFS_NO_MEMORY;
 			} else {
 				val[0] = TAILQ_FIRST(&d->extentlist)->start.partition;
@@ -1012,7 +1012,7 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 		} else if (! strcmp(name, "ltfs.volumeFormatTime")) {
 			ret = _xattr_get_time(&vol->label->format_time, &val, name);
 			if (ret == LTFS_TIME_OUT_OF_RANGE) {
-				ltfsmsg(LTFS_WARN, "17222W", name, "root", 0, vol->label->format_time.tv_sec);
+				ltfsmsg(LTFS_WARN, 17222W, name, "root", (unsigned long long)0, (unsigned long long)vol->label->format_time.tv_sec);
 				ret = 0;
 			}
 		} else if (! strcmp(name, "ltfs.volumeBlocksize")) {
@@ -1022,7 +1022,7 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 		} else if (! strcmp(name, "ltfs.indexTime")) {
 			ret = _xattr_get_time(&vol->index->mod_time, &val, name);
 			if (ret == LTFS_TIME_OUT_OF_RANGE) {
-				ltfsmsg(LTFS_WARN, "17222W", name, "root", 0, vol->label->format_time.tv_sec);
+				ltfsmsg(LTFS_WARN, 17222W, name, "root", (unsigned long long)0, (unsigned long long)vol->label->format_time.tv_sec);
 				ret = 0;
 			}
 		} else if (! strcmp(name, "ltfs.policyExists")) {
@@ -1085,7 +1085,7 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 			else {
 				ret = asprintf(&val, "0x%016"PRIx64, tape_alert);
 				if (ret < 0) {
-					ltfsmsg(LTFS_ERR, "10001E", name);
+					ltfsmsg(LTFS_ERR, 10001E, name);
 					val = NULL;
 					ret = -LTFS_NO_MEMORY;
 				}
@@ -1122,7 +1122,7 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 		} else if (! strcmp(name, "ltfs.vendor.IBM.cartridgeMountNode")) {
 			ret = asprintf(&val, "localhost");
 			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "10001E", name);
+				ltfsmsg(LTFS_ERR, 10001E, name);
 				val = NULL;
 				ret = -LTFS_NO_MEMORY;
 			}
@@ -1171,7 +1171,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 		char *value_null_terminated, *new_value;
 
 		if (size > INDEX_MAX_COMMENT_LEN) {
-			ltfsmsg(LTFS_ERR, "11308E");
+			ltfsmsg(LTFS_ERR, 11308E);
 			ret = -LTFS_LARGE_XATTR;
 		}
 
@@ -1185,7 +1185,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 		} else {
 			value_null_terminated = malloc(size + 1);
 			if (! value_null_terminated) {
-				ltfsmsg(LTFS_ERR, "10001E", "_xattr_set_virtual: commit_message");
+				ltfsmsg(LTFS_ERR, 10001E, "_xattr_set_virtual: commit_message");
 				ltfs_mutex_unlock(&vol->index->dirty_lock);
 				return -LTFS_NO_MEMORY;
 			}
@@ -1218,12 +1218,12 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 			/* Clear tape attribute(TC_MAM_USER_MEDIUM_LABEL) */
 			ret =  update_tape_attribute (vol, NULL, TC_MAM_USER_MEDIUM_LABEL, 0);
 			if ( ret < 0 ) {
-				ltfsmsg(LTFS_WARN, "17199W", TC_MAM_USER_MEDIUM_LABEL, "_xattr_set_virtual");
+				ltfsmsg(LTFS_WARN, 17199W, TC_MAM_USER_MEDIUM_LABEL, "_xattr_set_virtual");
 			}
 		} else {
 			value_null_terminated = malloc(size + 1);
 			if (! value_null_terminated) {
-				ltfsmsg(LTFS_ERR, "10001E", "_xattr_set_virtual: volume name");
+				ltfsmsg(LTFS_ERR, 10001E, "_xattr_set_virtual: volume name");
 				ltfs_mutex_unlock(&vol->index->dirty_lock);
 				return -LTFS_NO_MEMORY;
 			}
@@ -1245,7 +1245,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 			/* Update tape attribute(TC_MAM_USER_MEDIUM_LABEL) */
 			ret =  update_tape_attribute (vol, new_value, TC_MAM_USER_MEDIUM_LABEL, size);
 			if ( ret < 0 ) {
-				ltfsmsg(LTFS_WARN, "17199W", TC_MAM_USER_MEDIUM_LABEL, "_xattr_set_virtual");
+				ltfsmsg(LTFS_WARN, 17199W, TC_MAM_USER_MEDIUM_LABEL, "_xattr_set_virtual");
 				return ret;
 			}
 		}
@@ -1256,32 +1256,32 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 	} else if (! strcmp(name, "ltfs.createTime")) {
 		ret = _xattr_set_time(d, &d->creation_time, value, size, name, vol);
 		if (ret == LTFS_TIME_OUT_OF_RANGE) {
-			ltfsmsg(LTFS_WARN, "17221W", name, d->name, d->uid, value);
+			ltfsmsg(LTFS_WARN, 17221W, name, d->name.name, (unsigned long long)d->uid, value);
 			ret = 0;
 		}
 	} else if (! strcmp(name, "ltfs.modifyTime")) {
 		get_current_timespec(&d->change_time);
 		ret = _xattr_set_time(d, &d->modify_time, value, size, name, vol);
 		if (ret == LTFS_TIME_OUT_OF_RANGE) {
-			ltfsmsg(LTFS_WARN, "17221W", name, d->name, d->uid, value);
+			ltfsmsg(LTFS_WARN, 17221W, name, d->name.name, (unsigned long long)d->uid, value);
 			ret = 0;
 		}
 	} else if (! strcmp(name, "ltfs.changeTime")) {
 		ret = _xattr_set_time(d, &d->change_time, value, size, name, vol);
 		if (ret == LTFS_TIME_OUT_OF_RANGE) {
-			ltfsmsg(LTFS_WARN, "17221W", name, d->name, d->uid, value);
+			ltfsmsg(LTFS_WARN, 17221W, name, d->name.name, (unsigned long long)d->uid, value);
 			ret = 0;
 		}
 	} else if (! strcmp(name, "ltfs.accessTime")) {
 		ret = _xattr_set_time(d, &d->access_time, value, size, name, vol);
 		if (ret == LTFS_TIME_OUT_OF_RANGE) {
-			ltfsmsg(LTFS_WARN, "17221W", name, d->name, d->uid, value);
+			ltfsmsg(LTFS_WARN, 17221W, name, d->name.name, (unsigned long long)d->uid, value);
 			ret = 0;
 		}
 	} else if (! strcmp(name, "ltfs.backupTime")) {
 		ret = _xattr_set_time(d, &d->backup_time, value, size, name, vol);
 		if (ret == LTFS_TIME_OUT_OF_RANGE) {
-			ltfsmsg(LTFS_WARN, "17221W", name, d->name, d->uid, value);
+			ltfsmsg(LTFS_WARN, 17221W, name, d->name.name, (unsigned long long)d->uid, value);
 			ret = 0;
 		}
 	} else if (! strcmp(name, "ltfs.driveCaptureDump")) {
@@ -1292,7 +1292,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 
 		v = strndup(value, size);
 		if (! v) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -1309,7 +1309,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 
 		v = strndup(value, size);
 		if (! v) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -1327,7 +1327,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 
 		v = strndup(value, size);
 		if (! v) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -1344,7 +1344,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 
 		v = strndup(value, size);
 		if (! v) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -1355,7 +1355,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 
 		v = strndup(value, size);
 		if (! v) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -1366,7 +1366,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 
 		v = strndup(value, size);
 		if (! v) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -1378,7 +1378,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 
 		v = strndup(value, size);
 		if (! v) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -1401,7 +1401,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 	} else if (! strcmp(name, "ltfs.mamBarcode")) {
 		ret =  update_tape_attribute (vol, value, TC_MAM_BARCODE, size);
 		if ( ret < 0 ) {
-			ltfsmsg(LTFS_WARN, "17199W", TC_MAM_USER_MEDIUM_LABEL, "_xattr_set_virtual");
+			ltfsmsg(LTFS_WARN, 17199W, TC_MAM_USER_MEDIUM_LABEL, "_xattr_set_virtual");
 			return ret;
 		}
 	} else if (! strcmp(name, "ltfs.volumeLockState")) {
@@ -1410,7 +1410,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 
 		v = strndup(value, size);
 		if (! v) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -1450,7 +1450,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 				new = VOLUME_UNLOCKED;
 
 			if (vol->file_open_count != 0) {
-				ltfsmsg(LTFS_DEBUG, "10021D", "_xattr_set_virtual", "file open", vol->file_open_count, 0);
+				ltfsmsg(LTFS_DEBUG, 10021D, "_xattr_set_virtual", "file open", vol->file_open_count, 0);
 				return -LTFS_XATTR_ERR;
 			}
 
@@ -1460,7 +1460,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 			/* update MAM attribute */
 			ret =  update_tape_attribute(vol, status_mam, TC_MAM_VOLUME_LOCKED, TC_MAM_VOLUME_LOCKED_SIZE);
 			if ( ret < 0 ) {
-				ltfsmsg(LTFS_WARN, "17199W", TC_MAM_VOLUME_LOCKED, "_xattr_set_virtual");
+				ltfsmsg(LTFS_WARN, 17199W, TC_MAM_VOLUME_LOCKED, "_xattr_set_virtual");
 				return ret;
 			}
 
@@ -1472,7 +1472,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 			ret = ltfs_sync_index(SYNC_ADV_LOCK, false, vol);
 			ret = tape_device_lock(vol->device);
 			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "12010E", __FUNCTION__);
+				ltfsmsg(LTFS_ERR, 12010E, __FUNCTION__);
 				return ret;
 			}
 			ret = ltfs_write_index(ltfs_ip_id(vol), SYNC_EA, vol);
@@ -1519,7 +1519,7 @@ int _xattr_remove_virtual(struct dentry *d, const char *name, struct ltfs_volume
 		/* Clear tape attribute(TC_MAM_USER_MEDIUM_LABEL) */
 		ret =  update_tape_attribute (vol, NULL, TC_MAM_USER_MEDIUM_LABEL, 0);
 		if ( ret < 0 ) {
-			ltfsmsg(LTFS_WARN, "17199W", TC_MAM_USER_MEDIUM_LABEL, "_xattr_set_virtual");
+			ltfsmsg(LTFS_WARN, 17199W, TC_MAM_USER_MEDIUM_LABEL, "_xattr_set_virtual");
 		}
 		ltfs_mutex_unlock(&vol->index->dirty_lock);
 	} else
@@ -1535,7 +1535,7 @@ int _xattr_get_cartridge_health(cartridge_health_info *h, int64_t *val, char **o
 	if (ret == 0) {
 		ret = asprintf(outval, "%"PRId64, *val);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "10001E", msg);
+			ltfsmsg(LTFS_ERR, 10001E, msg);
 			*outval = NULL;
 			return -LTFS_NO_MEMORY;
 		}
@@ -1551,14 +1551,14 @@ int _xattr_get_cartridge_health_u64(cartridge_health_info *h, uint64_t *val, cha
 	if (ret == 0 && (int64_t)(*val) != UNSUPPORTED_CARTRIDGE_HEALTH) {
 		ret = asprintf(outval, "%"PRIu64, *val);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "10001E", msg);
+			ltfsmsg(LTFS_ERR, 10001E, msg);
 			*outval = NULL;
 			ret = -LTFS_NO_MEMORY;
 		}
 	} else if (ret == 0) {
 		ret = asprintf(outval, "%"PRId64, UNSUPPORTED_CARTRIDGE_HEALTH);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "10001E", msg);
+			ltfsmsg(LTFS_ERR, 10001E, msg);
 			*outval = NULL;
 			ret = -LTFS_NO_MEMORY;
 		}
@@ -1575,7 +1575,7 @@ int _xattr_get_cartridge_capacity(struct device_capacity *cap, unsigned long *va
 	if (ret == 0) {
 		ret = asprintf(outval, "%lu", (unsigned long)((*val) * scale));
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "10001E", msg);
+			ltfsmsg(LTFS_ERR, 10001E, msg);
 			*outval = NULL;
 			return -LTFS_NO_MEMORY;
 		}
@@ -1590,7 +1590,7 @@ int _xattr_get_time(struct ltfs_timespec *val, char **outval, const char *msg)
 
 	ret = xml_format_time(*val, outval);
 	if (! (*outval)) {
-		ltfsmsg(LTFS_ERR, "11145E", msg);
+		ltfsmsg(LTFS_ERR, 11145E, msg);
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -1613,7 +1613,7 @@ int _xattr_get_string(const char *val, char **outval, const char *msg)
 		return 0;
 	*outval = strdup(val);
 	if (! (*outval)) {
-		ltfsmsg(LTFS_ERR, "10001E", msg);
+		ltfsmsg(LTFS_ERR, 10001E, msg);
 		return -LTFS_NO_MEMORY;
 	}
 	return 0;
@@ -1623,7 +1623,7 @@ int _xattr_get_u64(uint64_t val, char **outval, const char *msg)
 {
 	int ret = asprintf(outval, "%"PRIu64, val);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10001E", msg);
+		ltfsmsg(LTFS_ERR, 10001E, msg);
 		*outval = NULL;
 		ret = -LTFS_NO_MEMORY;
 	}
@@ -1634,7 +1634,7 @@ int _xattr_get_tapepos(struct tape_offset *val, char **outval, const char *msg)
 {
 	int ret = asprintf(outval, "%c:%"PRIu64, val->partition, val->block);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10001E", msg);
+		ltfsmsg(LTFS_ERR, 10001E, msg);
 		return -LTFS_NO_MEMORY;
 	}
 	return 0;
@@ -1644,7 +1644,7 @@ int _xattr_get_partmap(struct ltfs_label *label, char **outval, const char *msg)
 {
 	int ret = asprintf(outval, "I:%c,D:%c", label->partid_ip, label->partid_dp);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10001E", msg);
+		ltfsmsg(LTFS_ERR, 10001E, msg);
 		return -LTFS_NO_MEMORY;
 	}
 	return 0;
@@ -1656,13 +1656,13 @@ int _xattr_get_version(int version, char **outval, const char *msg)
 	if (version == 10000) {
 		*outval = strdup("1.0");
 		if (! (*outval)) {
-			ltfsmsg(LTFS_ERR, "10001E", msg);
+			ltfsmsg(LTFS_ERR, 10001E, msg);
 			return -LTFS_NO_MEMORY;
 		}
 	} else {
 		ret = asprintf(outval, "%d.%d.%d", version/10000, (version % 10000)/100, version % 100);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "10001E", msg);
+			ltfsmsg(LTFS_ERR, 10001E, msg);
 			return -LTFS_NO_MEMORY;
 		}
 	}
@@ -1678,7 +1678,7 @@ int _xattr_set_time(struct dentry *d, struct ltfs_timespec *out, const char *val
 
 	value_null_terminated = malloc(size + 1);
 	if (! value_null_terminated) {
-		ltfsmsg(LTFS_ERR, "10001E", msg);
+		ltfsmsg(LTFS_ERR, 10001E, msg);
 		return -LTFS_NO_MEMORY;
 	}
 	memcpy(value_null_terminated, value, size);

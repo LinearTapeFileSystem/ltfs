@@ -116,8 +116,7 @@ root:table {
 		30396D:string { "Backend %s: %llu %s." }
 		30397D:string { "Backend %s: (%llu, %llu) %s." }
 		30398D:string { "Backend %s: (%llu, %llu) FM = %llu %s." }
-		30399I:string { "sg tape backend for IBM tape options:\n"
-						"    -o devname=<dev>           tape device (default=%s)\n"
+		30399I:string { "sg tape backend for IBM tape options:\n    -o devname=<dev>           tape device (default=%s)\n"
 						"    -o autodump                enable autodump (default)\n"
 						"    -o noautodump              disable autodump\n"
 						"    -o scsi_lbprotect=<on|off> enable drive logical block protection (default=off)\n." }

@@ -85,7 +85,7 @@ int ltfs_fsops_open(const char *path, bool open_write, bool use_iosched, struct 
 	if (ret == -LTFS_INVALID_PATH)
 		return -LTFS_INVALID_SRC_PATH;
 	else if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11039E", ret);
+		ltfsmsg(LTFS_ERR, 11039E, ret);
 		return ret;
 	}
 
@@ -131,7 +131,7 @@ int ltfs_fsops_open_combo(const char *path, bool open_write, bool use_iosched,
 	if (ret == -LTFS_INVALID_PATH)
 		return -LTFS_INVALID_SRC_PATH;
 	else if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11039E", ret);
+		ltfsmsg(LTFS_ERR, 11039E, ret);
 		return ret;
 	}
 
@@ -248,7 +248,7 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 		return ret;
 	ret = ltfs_test_unit_ready(vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11047E");
+		ltfsmsg(LTFS_ERR, 11047E);
 		return ret;
 	}
 
@@ -256,7 +256,7 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 	ret = pathname_format(path, &path_norm, true, true);
 	if (ret < 0) {
 		if (ret != -LTFS_INVALID_PATH)
-			ltfsmsg(LTFS_ERR, "11048E", ret);
+			ltfsmsg(LTFS_ERR, 11048E, ret);
 		return ret;
 	}
 
@@ -271,7 +271,7 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 	if (dcache_initialized(vol)) {
 		ret = asprintf(&dentry_path, "%s/%s", path_norm, filename);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "10001E", "ltfs_fsops_create: dentry_path");
+			ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_create: dentry_path");
 			goto out_dispose;
 		}
 	}
@@ -280,17 +280,17 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 	ret = fs_path_lookup(path_norm, LOCK_DENTRY_CONTENTS_W, &parent, vol->index);
 	if (ret < 0) {
 		if (ret != -LTFS_NO_DENTRY && ret != -LTFS_NAMETOOLONG)
-			ltfsmsg(LTFS_ERR, "11049E", ret);
+			ltfsmsg(LTFS_ERR, 11049E, ret);
 		goto out_free;
 	}
 
 	if (parent->is_immutable) {
-		ltfsmsg(LTFS_ERR, "17237E", "create: parent is immutable");
+		ltfsmsg(LTFS_ERR, 17237E, "create: parent is immutable");
 		ret = -LTFS_WORM_ENABLED;
 		goto out_dispose;
 	}
     if (parent->is_appendonly && overwrite) {
-		ltfsmsg(LTFS_ERR, "17237E", "create: overwrite under appendonly dir");
+		ltfsmsg(LTFS_ERR, 17237E, "create: overwrite under appendonly dir");
 		ret = -LTFS_WORM_ENABLED;
 		goto out_dispose;
 	}
@@ -300,7 +300,7 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 
 	if (ret < 0) {
 		if (ret != -LTFS_NAMETOOLONG)
-			ltfsmsg(LTFS_ERR, "11049E", ret);
+			ltfsmsg(LTFS_ERR, 11049E, ret);
 		goto out_dispose;
 	} else if (d) {
 		releasewrite_mrsw(&parent->contents_lock);
@@ -316,7 +316,7 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 	/* Allocate and set up the dentry */
 	d = fs_allocate_dentry(NULL, NULL, filename, isdir, readonly, true, vol->index);
 	if (! d) {
-		ltfsmsg(LTFS_ERR, "11167E");
+		ltfsmsg(LTFS_ERR, 11167E);
 		ret = -LTFS_NO_MEMORY;
 		goto out_dispose;
 	}
@@ -350,7 +350,7 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 	d->child_list=NULL;
 	d->parent->child_list = fs_add_key_to_hash_table(d->parent->child_list, d, &ret);
 	if (ret != 0) {
-		ltfsmsg(LTFS_ERR, "11319E", "ltfs_fsops_create", ret);
+		ltfsmsg(LTFS_ERR, 11319E, "ltfs_fsops_create", ret);
 		releasewrite_mrsw(&d->meta_lock);
 		releasewrite_mrsw(&parent->meta_lock);
 		goto out_dispose;
@@ -385,7 +385,7 @@ out_dispose:
 		ltfs_file_id id;
 		ret = ltfs_fsops_setxattr(path, "user.ltfs.vendor.IBM.appendonly", "1", 1, 0, &id, vol);
 		if (ret != 0) {
-			ltfsmsg(LTFS_ERR, "17237E", "create: failed to set appendonly");
+			ltfsmsg(LTFS_ERR, 17237E, "create: failed to set appendonly");
 			dcache_unlink(dentry_path, d, vol);
 			fs_release_dentry(d);
 		}
@@ -420,7 +420,7 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
 		return ret;
 	ret = ltfs_test_unit_ready(vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11050E");
+		ltfsmsg(LTFS_ERR, 11050E);
 		return ret;
 	}
 
@@ -429,7 +429,7 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
 	if (ret == -LTFS_INVALID_PATH)
 		return -LTFS_INVALID_SRC_PATH;
 	else if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11051E", ret);
+		ltfsmsg(LTFS_ERR, 11051E, ret);
 		return ret;
 	}
 
@@ -449,7 +449,7 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
 	ret = fs_path_lookup(path_norm, LOCK_PARENT_CONTENTS_W, &d, vol->index);
 	if (ret < 0) {
 		if (ret != -LTFS_NO_DENTRY && ret != -LTFS_NAMETOOLONG)
-			ltfsmsg(LTFS_ERR, "11052E", ret);
+			ltfsmsg(LTFS_ERR, 11052E, ret);
 		releaseread_mrsw(&vol->lock);
 		free(path_norm);
 		return ret;
@@ -457,12 +457,12 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
 	parent = d->parent;
 
 	if (parent->is_immutable || parent->is_appendonly) {
-		ltfsmsg(LTFS_ERR, "17237E", "unlink: parent is WORM");
+		ltfsmsg(LTFS_ERR, 17237E, "unlink: parent is WORM");
 		ret = -LTFS_WORM_ENABLED;
 		goto out;
 	}
 	if (d->is_immutable || d->is_appendonly) {
-		ltfsmsg(LTFS_ERR, "17237E", "unlink: WORM ently");
+		ltfsmsg(LTFS_ERR, 17237E, "unlink: WORM ently");
 		ret = -LTFS_WORM_ENABLED;
 		goto out;
 	}
@@ -503,7 +503,7 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
 		free(namelist);
 	}
 	else {
-		ltfsmsg(LTFS_ERR, "11320E", "ltfs_fsops_unlink", ret);
+		ltfsmsg(LTFS_ERR, 11320E, "ltfs_fsops_unlink", ret);
 		releasewrite_mrsw(&d->meta_lock);
 		goto out;
 	}
@@ -564,7 +564,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		return ret;
 	ret = ltfs_test_unit_ready(vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11053E");
+		ltfsmsg(LTFS_ERR, 11053E);
 		return ret;
 	}
 
@@ -573,13 +573,13 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	if (ret == -LTFS_INVALID_PATH)
 		return -LTFS_INVALID_SRC_PATH;
 	else if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11054E", ret);
+		ltfsmsg(LTFS_ERR, 11054E, ret);
 		return ret;
 	}
 	ret = pathname_format(to, &to_norm, true, true);
 	if (ret < 0) {
 		if (ret != -LTFS_INVALID_PATH)
-			ltfsmsg(LTFS_ERR, "11055E", ret);
+			ltfsmsg(LTFS_ERR, 11055E, ret);
 		goto out_free;
 	}
 
@@ -587,7 +587,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		from_norm_copy = strdup(from_norm);
 		to_norm_copy = strdup(to_norm);
 		if (! from_norm_copy || ! to_norm_copy) {
-			ltfsmsg(LTFS_ERR, "10001E", "ltfs_fsops_rename: file name copy");
+			ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_rename: file name copy");
 			ret = -LTFS_NO_MEMORY;
 			goto out_free;
 		}
@@ -601,7 +601,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	to_filename_copy = strdup(to_filename);
 	to_filename_copy2 = strdup(to_filename);
 	if (! to_filename_copy || ! to_filename_copy2) {
-		ltfsmsg(LTFS_ERR, "10001E", "ltfs_fsops_rename: file name copy");
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_rename: file name copy");
 		ret = -LTFS_NO_MEMORY;
 		goto out_free;
 	}
@@ -623,27 +623,27 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	ret = fs_path_lookup(from_norm, 0, &fromdir, vol->index);
 	if (ret < 0) {
 		if (ret != -LTFS_NO_DENTRY && ret != -LTFS_NAMETOOLONG)
-			ltfsmsg(LTFS_ERR, "11056E", ret);
+			ltfsmsg(LTFS_ERR, 11056E, ret);
 		goto out_release;
 	}
 
 	ret = fs_path_lookup(to_norm, 0, &todir, vol->index);
 	if (ret < 0) {
 		if (ret != -LTFS_NO_DENTRY && ret != -LTFS_NAMETOOLONG)
-			ltfsmsg(LTFS_ERR, "11057E", ret);
+			ltfsmsg(LTFS_ERR, 11057E, ret);
 		/* fromdir meta_lock is needed because the exit code calls fs_release_dentry_unlocked */
 		acquirewrite_mrsw(&fromdir->meta_lock);
 		goto out_release;
 	}
 
 	if (fromdir->is_appendonly || fromdir->is_immutable ) {
-		ltfsmsg(LTFS_ERR, "17237E", "rename: parent is WORM");
+		ltfsmsg(LTFS_ERR, 17237E, "rename: parent is WORM");
 		ret = -LTFS_WORM_ENABLED;
 		acquirewrite_mrsw(&fromdir->meta_lock);
 		goto out_release;
 	}
 	if (todir->is_immutable || todir->is_appendonly) {
-		ltfsmsg(LTFS_ERR, "17237E", "rename: target dir is WORM");
+		ltfsmsg(LTFS_ERR, 17237E, "rename: target dir is WORM");
 		ret = -LTFS_WORM_ENABLED;
 		acquirewrite_mrsw(&fromdir->meta_lock);
 		goto out_release;
@@ -661,14 +661,14 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		}
 		if (ret < 0) {
 			if (ret != -LTFS_NAMETOOLONG)
-				ltfsmsg(LTFS_ERR, "11057E", ret);
+				ltfsmsg(LTFS_ERR, 11057E, ret);
 			goto out_unlock;
 		}
 
 		ret = fs_directory_lookup(fromdir, from_filename, &fromdentry);
 		if (ret < 0 || ! fromdentry) {
 			if (ret < 0 && ret != -LTFS_NAMETOOLONG)
-				ltfsmsg(LTFS_ERR, "11056E", ret);
+				ltfsmsg(LTFS_ERR, 11056E, ret);
 			if (! fromdentry)
 				ret = -LTFS_NO_DENTRY;
 			if (todentry) {
@@ -688,7 +688,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		acquirewrite_mrsw(&todir->meta_lock);
 		if (ret < 0) {
 			if (ret != -LTFS_NAMETOOLONG)
-				ltfsmsg(LTFS_ERR, "11056E", ret);
+				ltfsmsg(LTFS_ERR, 11056E, ret);
 			goto out_unlock;
 		} else if (! fromdentry) {
 			ret = -LTFS_NO_DENTRY;
@@ -698,7 +698,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		ret = fs_directory_lookup(todir, to_filename, &todentry);
 		if (ret < 0) {
 			if (ret != -LTFS_NAMETOOLONG)
-				ltfsmsg(LTFS_ERR, "11057E", ret);
+				ltfsmsg(LTFS_ERR, 11057E, ret);
 			if (fromdentry) { /* BEAM: constant condition - fromdentry has always non-zero value here. */
 				if (fromdentry == todir)
 					--fromdentry->numhandles;
@@ -747,7 +747,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	 * causes an unexpected move.
 	 */
 	if (fromdentry->isdir && fromdir != todir) {
-		ltfsmsg(LTFS_INFO, "11259I");
+		ltfsmsg(LTFS_INFO, 11259I);
 		ret = -LTFS_DIRMOVE;
 		if (todentry && fromdentry != todentry)
 			fs_release_dentry(todentry);
@@ -757,13 +757,13 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 #endif
 
 	if (fromdentry->is_immutable || fromdentry->is_appendonly) {
-		ltfsmsg(LTFS_ERR, "17237E", "rename: src entry is WORM");
+		ltfsmsg(LTFS_ERR, 17237E, "rename: src entry is WORM");
 		ret = -LTFS_WORM_ENABLED;
 		fs_release_dentry(fromdentry);
 		goto out_unlock;
 	}
 	else if (todentry && (todentry->is_immutable || todentry->is_appendonly)) {
-		ltfsmsg(LTFS_ERR, "17237E", "rename: target entry is WORM");
+		ltfsmsg(LTFS_ERR, 17237E, "rename: target entry is WORM");
 		ret = -LTFS_WORM_ENABLED;
 		fs_release_dentry(fromdentry);  // fromdentry != todentry befause fromdentry is not immutable/appendonly
 		fs_release_dentry(todentry);
@@ -800,7 +800,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 			free(namelist);
 		}
 		else {
-			ltfsmsg(LTFS_ERR, "11320E", "ltfs_fsops_rename", ret);
+			ltfsmsg(LTFS_ERR, 11320E, "ltfs_fsops_rename", ret);
 			releasewrite_mrsw(&todentry->meta_lock);
 			goto out_unlock;
 		}
@@ -824,7 +824,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		free(namelist);
 	}
 	else {
-		ltfsmsg(LTFS_ERR, "11320E", "ltfs_fsops_rename", ret);
+		ltfsmsg(LTFS_ERR, 11320E, "ltfs_fsops_rename", ret);
 		releasewrite_mrsw(&fromdentry->meta_lock);
 		goto out_unlock;
 	}
@@ -857,7 +857,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	/* Add fromdentry to new directory */
 	todir->child_list = fs_add_key_to_hash_table(todir->child_list, fromdentry, &ret);
 	if (ret != 0) {
-		ltfsmsg(LTFS_ERR, "11319E", "ltfs_fsops_rename", ret);
+		ltfsmsg(LTFS_ERR, 11319E, "ltfs_fsops_rename", ret);
 		releasewrite_mrsw(&fromdentry->meta_lock);
 		goto out_unlock;
 	}
@@ -1016,7 +1016,7 @@ int ltfs_fsops_setxattr(const char *path, const char *name, const char *value, s
 	ret = ltfs_test_unit_ready(vol);
 	if (ret < 0) {
 		/* Cannot set extended attribute: device is not ready */
-		ltfsmsg(LTFS_ERR, "11117E");
+		ltfsmsg(LTFS_ERR, 11117E);
 		return ret;
 	}
 
@@ -1027,13 +1027,13 @@ int ltfs_fsops_setxattr(const char *path, const char *name, const char *value, s
 	else if (ret == -LTFS_NAMETOOLONG)
 		return ret;
 	else if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11118E", ret);
+		ltfsmsg(LTFS_ERR, 11118E, ret);
 		return ret;
 	}
 	ret = pathname_format(name, &new_name, true, false);
 	if (ret < 0) {
 		if (ret != -LTFS_INVALID_PATH && ret != -LTFS_NAMETOOLONG)
-			ltfsmsg(LTFS_ERR, "11119E", ret);
+			ltfsmsg(LTFS_ERR, 11119E, ret);
 		goto out_free;
 	}
 
@@ -1046,7 +1046,7 @@ int ltfs_fsops_setxattr(const char *path, const char *name, const char *value, s
 	ret = pathname_validate_xattr_name(new_name_strip);
 	if (ret < 0) {
 		if (ret != -LTFS_INVALID_PATH && ret != -LTFS_NAMETOOLONG) /* normal errors */
-			ltfsmsg(LTFS_ERR, "11120E", ret);
+			ltfsmsg(LTFS_ERR, 11120E, ret);
 		goto out_free;
 	}
 
@@ -1056,7 +1056,7 @@ start:
 	if (! strcmp(new_name_strip, "ltfs.sync") && ! strcmp(path, "/")) {
 		ret = ltfs_fsops_flush(NULL, false, vol);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "11325E", ret);
+			ltfsmsg(LTFS_ERR, 11325E, ret);
 			goto out_free;
 		}
 		ret = ltfs_get_volume_lock(true, vol);
@@ -1074,7 +1074,7 @@ start:
 		ret = fs_path_lookup(new_path, 0, &d, vol->index);
 	if (ret < 0) {
 		if (ret != -LTFS_NO_DENTRY && ret != -LTFS_NAMETOOLONG) /* normal errors */
-			ltfsmsg(LTFS_ERR, "11121E", ret);
+			ltfsmsg(LTFS_ERR, 11121E, ret);
 		release_mrsw(&vol->lock);
 		goto out_free;
 	}
@@ -1132,7 +1132,7 @@ int ltfs_fsops_getxattr(const char *path, const char *name, char *value, size_t 
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	if (size > 0 && ! value) {
-		ltfsmsg(LTFS_ERR, "11123E");
+		ltfsmsg(LTFS_ERR, 11123E);
 		return -LTFS_BAD_ARG;
 	}
 
@@ -1143,13 +1143,13 @@ int ltfs_fsops_getxattr(const char *path, const char *name, char *value, size_t 
 	else if (ret == -LTFS_NAMETOOLONG)
 		return ret;
 	else if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11124E", ret);
+		ltfsmsg(LTFS_ERR, 11124E, ret);
 		return ret;
 	}
 	ret = pathname_format(name, &new_name, true, false);
 	if (ret < 0) {
 		if (ret != -LTFS_INVALID_PATH && ret != -LTFS_NAMETOOLONG)
-			ltfsmsg(LTFS_ERR, "11125E", ret);
+			ltfsmsg(LTFS_ERR, 11125E, ret);
 		goto out_free;
 	}
 	new_name_strip = _xattr_strip_name(new_name);
@@ -1161,7 +1161,7 @@ int ltfs_fsops_getxattr(const char *path, const char *name, char *value, size_t 
 	ret = pathname_validate_xattr_name(new_name_strip);
 	if (ret < 0) {
 		if (ret != -LTFS_INVALID_PATH && ret != -LTFS_NAMETOOLONG) /* normal errors */
-			ltfsmsg(LTFS_ERR, "11126E", ret);
+			ltfsmsg(LTFS_ERR, 11126E, ret);
 		goto out_free;
 	}
 
@@ -1177,7 +1177,7 @@ start:
 		ret = fs_path_lookup(new_path, 0, &d, vol->index);
 	if (ret < 0) {
 		if (ret != -LTFS_NO_DENTRY && ret != -LTFS_NAMETOOLONG) /* normal errors */
-			ltfsmsg(LTFS_ERR, "11127E", ret);
+			ltfsmsg(LTFS_ERR, 11127E, ret);
 		releaseread_mrsw(&vol->lock);
 		goto out_free;
 	}
@@ -1216,7 +1216,7 @@ int ltfs_fsops_listxattr(const char *path, char *list, size_t size, ltfs_file_id
 	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	if (size > 0 && ! list) {
-		ltfsmsg(LTFS_ERR, "11130E");
+		ltfsmsg(LTFS_ERR, 11130E);
 		return -LTFS_BAD_ARG;
 	}
 
@@ -1226,7 +1226,7 @@ int ltfs_fsops_listxattr(const char *path, char *list, size_t size, ltfs_file_id
 	else if (ret == -LTFS_NAMETOOLONG)
 		return ret;
 	else if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11131E", ret);
+		ltfsmsg(LTFS_ERR, 11131E, ret);
 		return ret;
 	}
 
@@ -1242,7 +1242,7 @@ int ltfs_fsops_listxattr(const char *path, char *list, size_t size, ltfs_file_id
 		ret = fs_path_lookup(new_path, 0, &d, vol->index);
 	if (ret < 0) {
 		if (ret != -LTFS_NO_DENTRY && ret != -LTFS_NAMETOOLONG) /* normal errors */
-			ltfsmsg(LTFS_ERR, "11132E", ret);
+			ltfsmsg(LTFS_ERR, 11132E, ret);
 		free(new_path);
 		releaseread_mrsw(&vol->lock);
 		return ret;
@@ -1284,7 +1284,7 @@ int ltfs_fsops_removexattr(const char *path, const char *name, ltfs_file_id *id,
 	ret = ltfs_test_unit_ready(vol);
 	if (ret < 0) {
 		/* Cannot remove extended attribute: device is not ready */
-		ltfsmsg(LTFS_ERR, "11135E");
+		ltfsmsg(LTFS_ERR, 11135E);
 		return ret;
 	}
 
@@ -1295,13 +1295,13 @@ int ltfs_fsops_removexattr(const char *path, const char *name, ltfs_file_id *id,
 	else if (ret == -LTFS_NAMETOOLONG)
 		return ret;
 	else if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11136E", ret);
+		ltfsmsg(LTFS_ERR, 11136E, ret);
 		return ret;
 	}
 	ret = pathname_format(name, &new_name, true, false);
 	if (ret < 0) {
 		if (ret != -LTFS_INVALID_PATH && ret != -LTFS_NAMETOOLONG)
-			ltfsmsg(LTFS_ERR, "11137E", ret);
+			ltfsmsg(LTFS_ERR, 11137E, ret);
 		goto out_free;
 	}
 	new_name_strip = _xattr_strip_name(new_name);
@@ -1313,7 +1313,7 @@ int ltfs_fsops_removexattr(const char *path, const char *name, ltfs_file_id *id,
 	ret = pathname_validate_xattr_name(new_name_strip);
 	if (ret < 0) {
 		if (ret != -LTFS_INVALID_PATH && ret != -LTFS_NAMETOOLONG) /* normal errors */
-			ltfsmsg(LTFS_ERR, "11138E", ret);
+			ltfsmsg(LTFS_ERR, 11138E, ret);
 		goto out_free;
 	}
 
@@ -1328,7 +1328,7 @@ int ltfs_fsops_removexattr(const char *path, const char *name, ltfs_file_id *id,
 		ret = fs_path_lookup(new_path, 0, &d, vol->index);
 	if (ret < 0) {
 		if (ret != -LTFS_NO_DENTRY && ret != -LTFS_NAMETOOLONG)
-			ltfsmsg(LTFS_ERR, "11139E", ret);
+			ltfsmsg(LTFS_ERR, 11139E, ret);
 		releaseread_mrsw(&vol->lock);
 		goto out_free;
 	}
@@ -1543,7 +1543,7 @@ int ltfs_fsops_utimens(struct dentry *d, const struct ltfs_timespec ts[2], struc
 		return ret;
 	ret = ltfs_test_unit_ready(vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11045E");
+		ltfsmsg(LTFS_ERR, 11045E);
 		return ret;
 	}
 
@@ -1556,8 +1556,8 @@ int ltfs_fsops_utimens(struct dentry *d, const struct ltfs_timespec ts[2], struc
 		d->access_time = ts[0];
 		ret = normalize_ltfs_time(&d->access_time);
 		if (ret == LTFS_TIME_OUT_OF_RANGE)
-			ltfsmsg(LTFS_WARN, "17217W", "atime",
-					d->platform_safe_name, d->uid, ts[0].tv_sec);
+			ltfsmsg(LTFS_WARN, 17217W, "atime",
+					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[0].tv_sec);
 		get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, true, vol->index);
 		d->dirty = true;
@@ -1566,8 +1566,8 @@ int ltfs_fsops_utimens(struct dentry *d, const struct ltfs_timespec ts[2], struc
 		d->modify_time = ts[1];
 		ret = normalize_ltfs_time(&d->modify_time);
 		if (ret == LTFS_TIME_OUT_OF_RANGE)
-			ltfsmsg(LTFS_WARN, "17217W", "mtime",
-					d->platform_safe_name, d->uid, ts[1].tv_sec);
+			ltfsmsg(LTFS_WARN, 17217W, "mtime",
+					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[1].tv_sec);
 		get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, false, vol->index);
 		d->dirty = true;
@@ -1619,7 +1619,7 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 		return ret;
 	ret = ltfs_test_unit_ready(vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11045E");
+		ltfsmsg(LTFS_ERR, 11045E);
 		return ret;
 	}
 
@@ -1633,8 +1633,8 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 		d->change_time = ts[3];
 		ret = normalize_ltfs_time(&d->change_time);
 		if (ret == LTFS_TIME_OUT_OF_RANGE)
-			ltfsmsg(LTFS_WARN, "17217W", "ctime",
-					d->platform_safe_name, d->uid, ts[3].tv_sec);
+			ltfsmsg(LTFS_WARN, 17217W, "ctime",
+					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[3].tv_sec);
 		isctime=true;
 		ltfs_set_index_dirty(true, false, vol->index);
 		d->dirty = true;
@@ -1643,8 +1643,8 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 		d->access_time = ts[0];
 		ret = normalize_ltfs_time(&d->access_time);
 		if (ret == LTFS_TIME_OUT_OF_RANGE)
-			ltfsmsg(LTFS_WARN, "17217W", "atime",
-					d->platform_safe_name, d->uid, ts[0].tv_sec);
+			ltfsmsg(LTFS_WARN, 17217W, "atime",
+					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[0].tv_sec);
 		if(!isctime) get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, true, vol->index);
 		d->dirty = true;
@@ -1653,8 +1653,8 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 		d->modify_time = ts[1];
 		ret = normalize_ltfs_time(&d->modify_time);
 		if (ret == LTFS_TIME_OUT_OF_RANGE)
-			ltfsmsg(LTFS_WARN, "17217W", "mtime",
-					d->platform_safe_name, d->uid, ts[1].tv_sec);
+			ltfsmsg(LTFS_WARN, 17217W, "mtime",
+					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[1].tv_sec);
 		if(!isctime) get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, false, vol->index);
 		d->dirty = true;
@@ -1663,8 +1663,8 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 		d->creation_time = ts[2];
 		ret = normalize_ltfs_time(&d->creation_time);
 		if (ret == LTFS_TIME_OUT_OF_RANGE)
-			ltfsmsg(LTFS_WARN, "17217W", "creation_time",
-					d->platform_safe_name, d->uid, ts[2].tv_sec);
+			ltfsmsg(LTFS_WARN, 17217W, "creation_time",
+					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[2].tv_sec);
 		if(!isctime) get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, false, vol->index);
 		d->dirty = true;
@@ -1693,7 +1693,7 @@ int ltfs_fsops_set_readonly(struct dentry *d, bool readonly, struct ltfs_volume 
 		return ret;
 	ret = ltfs_test_unit_ready(vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11046E");
+		ltfsmsg(LTFS_ERR, 11046E);
 		return ret;
 	}
 
@@ -1730,7 +1730,7 @@ int ltfs_fsops_set_readonly_path(const char *path, bool readonly, ltfs_file_id *
 		return ret;
 
 	if (d->is_appendonly || d->is_immutable) {
-		ltfsmsg(LTFS_ERR, "17237E", "chmod");
+		ltfsmsg(LTFS_ERR, 17237E, "chmod");
 		return -LTFS_WORM_ENABLED;
 	}
 
@@ -1754,7 +1754,7 @@ int ltfs_fsops_write(struct dentry *d, const char *buf, size_t count, off_t offs
 		return -LTFS_ISDIRECTORY;
 
 	if (d->is_immutable || (d->is_appendonly && (uint64_t) offset != d->size)) {
-		ltfsmsg(LTFS_ERR, "17237E", "write");
+		ltfsmsg(LTFS_ERR, 17237E, "write");
 		return -LTFS_WORM_ENABLED;
 	}
 
@@ -1808,7 +1808,7 @@ int ltfs_fsops_truncate(struct dentry *d, off_t length, struct ltfs_volume *vol)
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	if (length < 0) {
-		ltfsmsg(LTFS_ERR, "11059E");
+		ltfsmsg(LTFS_ERR, 11059E);
 		return -LTFS_BAD_ARG;
 	} else if (d->isdir)
 		return -LTFS_ISDIRECTORY;
@@ -1818,13 +1818,13 @@ int ltfs_fsops_truncate(struct dentry *d, off_t length, struct ltfs_volume *vol)
 		return ret;
 
 	if (d->is_immutable || d->is_appendonly) {
-		ltfsmsg(LTFS_ERR, "17237E", "truncate");
+		ltfsmsg(LTFS_ERR, 17237E, "truncate");
 		return -LTFS_WORM_ENABLED;
 	}
 
 	ret = ltfs_test_unit_ready(vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11062E");
+		ltfsmsg(LTFS_ERR, 11062E);
 		return ret;
 	}
 
@@ -1898,7 +1898,7 @@ int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, 
 
 	if ( iosched_initialized(vol) ) use_iosche=true;
 
-	ltfsmsg(LTFS_DEBUG, "11322D", from, to);
+	ltfsmsg(LTFS_DEBUG, 11322D, from, to);
 
 	/* Create a node */
 	ret = ltfs_fsops_create(from, false, true, false, &d, vol);
@@ -1921,7 +1921,7 @@ int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, 
 		return -LTFS_NO_MEMORY;
 
 	size = strlen(value);
-	ltfsmsg(LTFS_DEBUG, "11323D", value);
+	ltfsmsg(LTFS_DEBUG, 11323D, value);
 	ret = xattr_set_mountpoint_length( d, value, size );
 	free(value);
 
@@ -1965,7 +1965,7 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 		memset( value, 0, sizeof(value));
 		ret = xattr_get(d, LTFS_LIVELINK_EA_NAME, value, sizeof(value), vol);
 		if ( ret > 0 ) {
-			ltfsmsg(LTFS_DEBUG, "11323D", value);
+			ltfsmsg(LTFS_DEBUG, 11323D, value);
 			ret = sscanf(value, "%d:%d", &num1, &num2);
 			if ( ( ret == 1 ) && ( num1 != 0 ) ){
 				memset( buf, 0, size);
@@ -1976,7 +1976,7 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 				strcpy(buf, vol->mountpoint);
 #endif
 				strcat(buf, d->target.name + num1);
-				ltfsmsg(LTFS_DEBUG, "11324D", d->target, buf);
+				ltfsmsg(LTFS_DEBUG, 11324D, d->target.name, buf);
 			}
 		}
 	}

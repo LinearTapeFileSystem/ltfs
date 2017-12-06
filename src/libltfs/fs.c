@@ -102,7 +102,7 @@ struct name_list* fs_add_key_to_hash_table(struct name_list *list, struct dentry
 
 	new_list = (struct name_list *) malloc(sizeof(struct name_list));
 	if (!new_list) {
-		ltfsmsg(LTFS_ERR, "10001E", "fs_add_key_to_hash_table: new list");
+		ltfsmsg(LTFS_ERR, 10001E, "fs_add_key_to_hash_table: new list");
 		*rc = -LTFS_NO_MEMORY;
 		return list;
 	}
@@ -115,7 +115,7 @@ struct name_list* fs_add_key_to_hash_table(struct name_list *list, struct dentry
 		new_list->uid = add_entry->uid;
 		HASH_ADD_KEYPTR(hh, list, new_list->name, strlen(new_list->name), new_list);
 		if (errno == ENOMEM) {
-			ltfsmsg(LTFS_ERR, "10001E", "fs_add_key_to_hash_table: add key");
+			ltfsmsg(LTFS_ERR, 10001E, "fs_add_key_to_hash_table: add key");
 			*rc = -LTFS_NO_MEMORY;
 		}
 	}
@@ -178,7 +178,7 @@ int fs_init_inode(void)
 
 	ret = ltfs_mutex_init(&inode_mutex);
 	if (ret)
-		ltfsmsg(LTFS_ERR, "10002E", ret);
+		ltfsmsg(LTFS_ERR, 10002E, ret);
 
 	return ret;
 }
@@ -252,7 +252,7 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 
 	d = (struct dentry *) malloc(sizeof(struct dentry));
 	if (! d) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return NULL;
 	}
 
@@ -265,7 +265,7 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 		d->name.name = strdup(name);
 		update_platform_safe_name(d, FALSE, idx);
 		if (! d->name.name || ! d->platform_safe_name) {
-			ltfsmsg(LTFS_ERR, "10001E", "fs_allocate_dentry: name");
+			ltfsmsg(LTFS_ERR, 10001E, "fs_allocate_dentry: name");
 			if (d->name.name)
 				free(d->name.name);
 			if (d->platform_safe_name)
@@ -277,7 +277,7 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 		d->name.name = strdup(platform_safe_name);
 		d->platform_safe_name = strdup(platform_safe_name);
 		if (! d->name.name || ! d->platform_safe_name) {
-			ltfsmsg(LTFS_ERR, "10001E", "fs_allocate_dentry: name");
+			ltfsmsg(LTFS_ERR, 10001E, "fs_allocate_dentry: name");
 			if (d->name.name)
 				free(d->name.name);
 			if (d->platform_safe_name)
@@ -291,7 +291,7 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 		d->name.name = strdup(name);
 		d->platform_safe_name = strdup(platform_safe_name);
 		if (! d->name.name || ! d->platform_safe_name) {
-			ltfsmsg(LTFS_ERR, "10001E", "fs_allocate_dentry: name");
+			ltfsmsg(LTFS_ERR, 10001E, "fs_allocate_dentry: name");
 			if (d->name.name)
 				free(d->name.name);
 			if (d->platform_safe_name)
@@ -326,7 +326,7 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 	}
 	ret = init_mrsw(&d->contents_lock);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10002E", ret);
+		ltfsmsg(LTFS_ERR, 10002E, ret);
 		if (d->name.name)
 			free(d->name.name);
 		if (d->platform_safe_name)
@@ -336,7 +336,7 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 	}
 	ret = init_mrsw(&d->meta_lock);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10002E", ret);
+		ltfsmsg(LTFS_ERR, 10002E, ret);
 		destroy_mrsw(&d->contents_lock);
 		if (d->name.name)
 			free(d->name.name);
@@ -351,7 +351,7 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 
 	ret = ltfs_mutex_init(&d->iosched_lock);
 	if (ret) {
-		ltfsmsg(LTFS_ERR, "10002E", ret);
+		ltfsmsg(LTFS_ERR, 10002E, ret);
 		destroy_mrsw(&d->contents_lock);
 		destroy_mrsw(&d->meta_lock);
 		if (d->name.name)
@@ -371,7 +371,7 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 		if (d->platform_safe_name != NULL) {
 			parent->child_list = fs_add_key_to_hash_table(parent->child_list, d, &ret);
 			if (ret != 0) {
-				ltfsmsg(LTFS_ERR, "11319E", "fs_allocate_dentry", ret);
+				ltfsmsg(LTFS_ERR, 11319E, "fs_allocate_dentry", ret);
 				releasewrite_mrsw(&parent->meta_lock);
 				releasewrite_mrsw(&parent->contents_lock);
 				if (d->name.name)
@@ -410,7 +410,7 @@ uint64_t fs_allocate_uid(struct ltfs_index *idx)
 	else {
 		uid = ++idx->uid_number;
 		if (uid == 0)
-			ltfsmsg(LTFS_WARN, "11307W", idx->vol_uuid);
+			ltfsmsg(LTFS_WARN, 11307W, idx->vol_uuid);
 	}
 	ltfs_mutex_unlock(&idx->dirty_lock);
 
@@ -435,7 +435,7 @@ int fs_dentry_lookup(struct dentry *dentry, char **name)
 
 	dentry_names = (char **) calloc(names+1, sizeof(char *));
 	if (! dentry_names)  {
-		ltfsmsg(LTFS_ERR, "10001E", "fs_dentry_lookup: dentry_names");
+		ltfsmsg(LTFS_ERR, 10001E, "fs_dentry_lookup: dentry_names");
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -455,7 +455,7 @@ int fs_dentry_lookup(struct dentry *dentry, char **name)
 		}
 		dentry_names[i] = strdup(lookup_name);
 		if (! dentry_names[i]) {
-			ltfsmsg(LTFS_ERR, "10001E", "fs_dentry_lookup: dentry_names member");
+			ltfsmsg(LTFS_ERR, 10001E, "fs_dentry_lookup: dentry_names member");
 			goto out;
 		}
 		namelen += strlen(lookup_name);
@@ -471,7 +471,7 @@ int fs_dentry_lookup(struct dentry *dentry, char **name)
 
 	tmp_name = calloc(namelen + names, sizeof(char));
 	if (! tmp_name) {
-		ltfsmsg(LTFS_ERR, "10001E", "fs_dentry_lookup: tmp_name");
+		ltfsmsg(LTFS_ERR, 10001E, "fs_dentry_lookup: tmp_name");
 		ret = -LTFS_NO_MEMORY;
 		goto out;
 	}
@@ -517,7 +517,7 @@ int fs_directory_lookup(struct dentry *basedir, const char *name, struct dentry 
 	namelist = fs_find_key_from_hash_table(basedir->child_list, name, &rc);
 	if (rc != 0) {
 		/* Can only happen in a case-insensitive environment (Windows) */
-        ltfsmsg(LTFS_ERR, "11320E", "fs_directory_lookup", rc);
+        ltfsmsg(LTFS_ERR, 11320E, "fs_directory_lookup", rc);
 		return rc;
 	}
 
@@ -545,7 +545,7 @@ int fs_path_lookup(const char *path, int flags, struct dentry **dentry, struct l
 
 	tmp_path = strdup(path);
 	if (! tmp_path) {
-		ltfsmsg(LTFS_ERR, "10001E", "fs_path_lookup: tmp_path");
+		ltfsmsg(LTFS_ERR, 10001E, "fs_path_lookup: tmp_path");
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -679,7 +679,7 @@ void _fs_dispose_dentry_contents(struct dentry *dentry, bool unlock, bool gc)
 				if (child->d->numhandles != 1) {
 					/* Unable to delete dentry '%s': it still has outstanding references */
 					name = child->d->platform_safe_name ? child->d->platform_safe_name : "(null)";
-					ltfsmsg(LTFS_WARN, "11998W", name);
+					ltfsmsg(LTFS_WARN, 11998W, name);
 				} else {
 					child->d->numhandles--;
 					_fs_dispose_dentry_contents(child->d, false, gc);
@@ -688,7 +688,7 @@ void _fs_dispose_dentry_contents(struct dentry *dentry, bool unlock, bool gc)
 				if (child->d->numhandles != 0) {
 					/* Unable to delete dentry '%s': it still has outstanding references */
 					name = child->d->platform_safe_name ? child->d->platform_safe_name : "(null)";
-					ltfsmsg(LTFS_WARN, "11998W", name);
+					ltfsmsg(LTFS_WARN, 11998W, name);
 				} else {
 					_fs_dispose_dentry_contents(child->d, false, gc);
 				}
@@ -726,7 +726,7 @@ void _fs_dispose_dentry_contents(struct dentry *dentry, bool unlock, bool gc)
 	if (dentry->parent) {
 		namelist = fs_find_key_from_hash_table(dentry->parent->child_list, dentry->platform_safe_name, &rc);
 		if (rc != 0) {
-            ltfsmsg(LTFS_ERR, "11320E", "_fs_dispose_dentry_contents", rc);
+            ltfsmsg(LTFS_ERR, 11320E, "_fs_dispose_dentry_contents", rc);
 		}
 		if (namelist) {
 			HASH_DEL(dentry->parent->child_list, namelist);
@@ -759,7 +759,7 @@ void _fs_dispose_dentry_contents(struct dentry *dentry, bool unlock, bool gc)
 void fs_release_dentry(struct dentry *d)
 {
 	if (! d) {
-		ltfsmsg(LTFS_WARN, "10006W", "dentry", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "dentry", __FUNCTION__);
 		return;
 	}
 
@@ -812,7 +812,7 @@ static struct name_list* fs_update_platform_safe_names_and_hash_table(struct den
 		if (!handle_dup_name) {
 			same_name = fs_find_key_from_hash_table(basedir->child_list, list_ptr->name, &rc);
 			if (rc != 0) {
-				ltfsmsg(LTFS_ERR, "11320E", "fs_update_platform_safe_names_and_hash_table", rc);
+				ltfsmsg(LTFS_ERR, 11320E, "fs_update_platform_safe_names_and_hash_table", rc);
 			}
 			if (same_name) {
 				/* same name file exists. skip the operation. */
@@ -830,7 +830,7 @@ static struct name_list* fs_update_platform_safe_names_and_hash_table(struct den
 		/* Add hash table whose key is upper case of platform safe name */
 		basedir->child_list = fs_add_key_to_hash_table(basedir->child_list, list_ptr->d, &rc);
 		if (rc != 0) {
-			ltfsmsg(LTFS_ERR, "11319E", "fs_update_platform_safe_names_and_hash_table", rc);
+			ltfsmsg(LTFS_ERR, 11319E, "fs_update_platform_safe_names_and_hash_table", rc);
 		} else {
 			/* delete the entry from the temporary list */
 			idx->valid_blocks += list_ptr->d->used_blocks;

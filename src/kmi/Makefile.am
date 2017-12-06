@@ -42,7 +42,7 @@ libkmi_simple_la_SOURCES = simple.c key_format_ltfs.c
 libkmi_simple_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@
 libkmi_simple_la_DEPENDENCIES = ../../messages/kmi_simple_dat.o
 libkmi_simple_la_LIBADD = ../../messages/kmi_simple_dat.o
-libkmi_simple_la_CPPFLAGS = @AM_CPPFLAGS@ -I ..
+libkmi_simple_la_CPPFLAGS = @AM_CPPFLAGS@ -I .. -DKMI_SIMPLE
 
 libkmi_flatfile_la_SOURCES = flatfile.c key_format_ltfs.c
 libkmi_flatfile_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@

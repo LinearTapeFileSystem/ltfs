@@ -151,7 +151,7 @@ int sg_issue_cdb_command(struct sg_tape *device, sg_io_hdr_t *req, char **msg)
 
 	ret = ioctl(device->fd, SG_IO, req);
 	if (ret < 0) {
-		ltfsmsg(LTFS_INFO, "30200I", *req->cmdp, errno);
+		ltfsmsg(LTFS_INFO, 30200I, *req->cmdp, errno);
 		return -EDEV_INTERNAL_ERROR;
 	}
 
@@ -162,28 +162,28 @@ int sg_issue_cdb_command(struct sg_tape *device, sg_io_hdr_t *req, char **msg)
 		case SCSI_CHECK_CONDITION:
 			if (req->sb_len_wr) {
 				ret = sg_sense2errno(req, &sense, msg);
-				ltfsmsg(LTFS_DEBUG, "30201D", sense, *msg);
+				ltfsmsg(LTFS_DEBUG, 30201D, sense, *msg);
 			} else {
 				ret = -EDEV_NO_SENSE;
-				ltfsmsg(LTFS_DEBUG, "30202D", "nosense");
+				ltfsmsg(LTFS_DEBUG, 30202D, "nosense");
 			}
 			break;
 		case SCSI_BUSY:
-			ltfsmsg(LTFS_DEBUG, "30202D", "busy");
+			ltfsmsg(LTFS_DEBUG, 30202D, "busy");
 			ret = -EDEV_DEVICE_BUSY;
 			if (msg) {
 				*msg = "Drive busy";
 			}
 			break;
 		case SCSI_RESERVATION_CONFLICT:
-			ltfsmsg(LTFS_DEBUG, "30202D", "reservation conflict");
+			ltfsmsg(LTFS_DEBUG, 30202D, "reservation conflict");
 			ret = -EDEV_RESERVATION_CONFLICT;
 			if (msg) {
 				*msg = "Drive reservation conflict";
 			}
 			break;
 		default:
-			ltfsmsg(LTFS_INFO, "30203I", req->masked_status, req->host_status, req->driver_status);
+			ltfsmsg(LTFS_INFO, 30203I, req->masked_status, req->host_status, req->driver_status);
 			if (req->host_status) {
 				ret = -EDEV_HOST_ERROR;
 				if (msg) {
@@ -205,9 +205,9 @@ int sg_issue_cdb_command(struct sg_tape *device, sg_io_hdr_t *req, char **msg)
 
 	if (ret != DEVICE_GOOD) {
 		if (is_expected_error(device, req->cmdp, ret)) {
-			ltfsmsg(LTFS_DEBUG, "30204D", (char *)req->usr_ptr, req->cmdp[0], ret);
+			ltfsmsg(LTFS_DEBUG, 30204D, (char *)req->usr_ptr, req->cmdp[0], ret);
 		} else {
-			ltfsmsg(LTFS_INFO, "30205I", (char *)req->usr_ptr, req->cmdp[0], ret);
+			ltfsmsg(LTFS_INFO, 30205I, (char *)req->usr_ptr, req->cmdp[0], ret);
 		}
 	}
 
@@ -265,7 +265,7 @@ int sg_get_drive_identifier(struct sg_tape *device, scsi_device_identifier *id_d
 
 	ret = _inquiry_low(device, 0, inquiry_buf, MAX_INQ_LEN);
 	if( ret < 0 ) {
-		ltfsmsg(LTFS_INFO, "30206I", ret);
+		ltfsmsg(LTFS_INFO, 30206I, ret);
 		return ret;
 	}
 
@@ -282,7 +282,7 @@ int sg_get_drive_identifier(struct sg_tape *device, scsi_device_identifier *id_d
 
 	ret = _inquiry_low(device, 0x80, inquiry_buf, MAX_INQ_LEN);
 	if( ret < 0 ) {
-		ltfsmsg(LTFS_INFO, "30206I", ret);
+		ltfsmsg(LTFS_INFO, 30206I, ret);
 		return ret;
 	}
 

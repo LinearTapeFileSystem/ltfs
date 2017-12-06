@@ -887,7 +887,7 @@ static int _create_table_tape(struct timeout_tape **result,
 	entry->timeout = base->timeout;
 	HASH_ADD_INT(*result, op_code, entry);
 	if (! *result) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -973,7 +973,7 @@ int ibm_tape_get_timeout(struct timeout_tape* table, int op_code)
 	struct timeout_tape *out = NULL;
 
 	if (!table) {
-		ltfsmsg(LTFS_WARN, "39802W", op_code);
+		ltfsmsg(LTFS_WARN, 39802W, op_code);
 		return DEFAULT_TIMEOUT;
 	}
 
@@ -981,14 +981,14 @@ int ibm_tape_get_timeout(struct timeout_tape* table, int op_code)
 
 	if (out) {
 		if (out->timeout == -1) {
-			ltfsmsg(LTFS_WARN, "39800W", op_code);
+			ltfsmsg(LTFS_WARN, 39800W, op_code);
 			return -1;
 		} else {
-			ltfsmsg(LTFS_DEBUG3, "39801D", op_code, out->timeout);
+			ltfsmsg(LTFS_DEBUG3, 39801D, op_code, out->timeout);
 			return out->timeout;
 		}
 	} else {
-		ltfsmsg(LTFS_WARN, "39805W", op_code);
+		ltfsmsg(LTFS_WARN, 39805W, op_code);
 		return DEFAULT_TIMEOUT;
 	}
 }
@@ -1083,7 +1083,7 @@ static inline int _is_mountable(const int drive_type,
 				num_table = num_lto_drive_density;
 			}
 		} else {
-			ltfsmsg(LTFS_INFO, "39808I", barcode);
+			ltfsmsg(LTFS_INFO, 39808I, barcode);
 			return MEDIUM_CANNOT_ACCESS;
 		}
 	} else {
@@ -1096,7 +1096,7 @@ static inline int _is_mountable(const int drive_type,
 				num_table = num_jaguar_drive_density;
 			}
 		} else {
-			ltfsmsg(LTFS_INFO, "39808I", barcode);
+			ltfsmsg(LTFS_INFO, 39808I, barcode);
 			return MEDIUM_CANNOT_ACCESS;
 		}
 	}
@@ -1140,13 +1140,13 @@ int ibmtape_is_mountable(const int drive_type,
 		switch (bc_len) {
 			case 6:
 				/* Always supported */
-				ltfsmsg(LTFS_DEBUG, "39806D", barcode);
+				ltfsmsg(LTFS_DEBUG, 39806D, barcode);
 				return MEDIUM_WRITABLE;
 			case 8:
 				break;
 			default:
 				// invalid bar code length
-				ltfsmsg(LTFS_ERR, "39807E", barcode);
+				ltfsmsg(LTFS_ERR, 39807E, barcode);
 				return MEDIUM_CANNOT_ACCESS;
 				break;
 		}
@@ -1165,7 +1165,7 @@ int ibmtape_is_supported_tape(unsigned char type, unsigned char density, bool *i
 		if(type == supported_cart[i]) {
 			if (type == TC_MP_JY || type == TC_MP_JZ) {
 				/* Detect WORM cartridge */
-				ltfsmsg(LTFS_DEBUG, "39809D");
+				ltfsmsg(LTFS_DEBUG, 39809D);
 				*is_worm = true;
 			}
 			ret = 0;
@@ -1257,9 +1257,9 @@ int ibmtape_genkey(unsigned char *key)
 			return 0;
 		}
 
-		ltfsmsg(LTFS_WARN, "39810W");
+		ltfsmsg(LTFS_WARN, 39810W);
 	} else
-		ltfsmsg(LTFS_WARN, "39811W", errno);
+		ltfsmsg(LTFS_WARN, 39811W, errno);
 
 	/* Return host name based key */
 	*key = KEY_PREFIX_HOST;
@@ -1310,21 +1310,21 @@ bool ibmtape_is_supported_firmware(int drive_type, const unsigned char * const r
 	case DRIVE_LTO5:
 	case DRIVE_LTO5_HH:
 		if (rev < ltfs_betou32(base_firmware_level_lto5)) {
-			ltfsmsg(LTFS_WARN, "39812W", base_firmware_level_lto5);
-			ltfsmsg(LTFS_WARN, "39813W");
+			ltfsmsg(LTFS_WARN, 39812W, base_firmware_level_lto5);
+			ltfsmsg(LTFS_WARN, 39813W);
 			supported = false;
 		}
 		break;
 	case DRIVE_LTO8:
 	case DRIVE_LTO8_HH:
 		if (rev < ltfs_betou32(base_firmware_level_lto8)) {
-			ltfsmsg(LTFS_WARN, "39812W", base_firmware_level_lto8);
+			ltfsmsg(LTFS_WARN, 39812W, base_firmware_level_lto8);
 			supported = false;
 		}
 		break;
 	case DRIVE_TS1140:
 		if (rev < ltfs_betou32(base_firmware_level_ts1140)) {
-			ltfsmsg(LTFS_WARN, "39812W", base_firmware_level_ts1140);
+			ltfsmsg(LTFS_WARN, 39812W, base_firmware_level_ts1140);
 			supported = false;
 		}
 		break;
