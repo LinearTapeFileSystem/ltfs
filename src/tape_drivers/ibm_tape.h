@@ -65,6 +65,10 @@
 extern "C" {
 #endif
 
+static const char base_firmware_level_lto5[] = "B170";
+static const char base_firmware_level_lto8[] = "HB81";
+static const char base_firmware_level_ts1140[] = "3694";
+
 extern struct error_table standard_tape_errors[];
 extern struct error_table ibm_tape_errors[];
 
@@ -268,6 +272,7 @@ struct reservation_info {
 
 int ibmtape_genkey(unsigned char *key);
 int ibmtape_parsekey(unsigned char *key, struct reservation_info *r);
+bool ibmtape_is_supported_firmware(int drive_type, const unsigned char * const revision);
 
 extern struct supported_device *ibm_supported_drives[];
 extern struct supported_device *usb_supported_drives[];

@@ -73,9 +73,6 @@
 #define MASK_WITH_SENSE_KEY    (0xFFFFFF)
 #define MASK_WITHOUT_SENSE_KEY (0x00FFFF)
 
-static const char base_firmware_level_lto5[] = "B170";
-static const char base_firmware_level_ts1140[] = "3694";
-
 typedef void  (*crc_enc)(void *buf, size_t n);
 typedef int   (*crc_check)(void *buf, size_t n);
 typedef void* (*memcpy_crc_enc)(void *dest, const void *src, size_t n);

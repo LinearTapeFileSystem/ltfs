@@ -63,8 +63,8 @@ root:table {
 		30418I:string { "Parsing log page: buffer too small, copying %zu bytes from %lx." }
 		30419I:string { "Option parsing for the ibmtape backend failed (%d)." }
 		30420E:string { "Invalid scsi_lbprotect option: %s." }
-		30421W:string { "Drive firmware must be updated. Upgrading to %s or later is recommended." }
-		30422W:string { "Drive firmware level does not correctly detect the EOD status." }
+		// Unused (Moved) 30421W:string { "Drive firmware must be updated. Upgrading to %s or later is recommended." }
+		// Unused (Moved) 30422W:string { "Drive firmware level does not correctly detect the EOD status." }
 		30423I:string { "Opening a device through ibmtape driver (%s)." }
 		30424E:string { "%s: medium is already mounted or in use." }
 		30425I:string { "Cannot open device \'%s\' (%d)." }

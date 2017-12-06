@@ -56,6 +56,7 @@
 #endif
 
 #include "tape_drivers/ibm_tape.h"
+#include "libltfs/ltfs_endian.h"
 
 DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density[] = {
 	/* TS1155 */
@@ -1298,4 +1299,43 @@ int ibmtape_parsekey(unsigned char *key, struct reservation_info *r)
 	memcpy(r->wwid, key + 32, sizeof(r->wwid));
 
 	return 0;
+}
+
+bool ibmtape_is_supported_firmware(int drive_type, const unsigned char * const revision)
+{
+	bool supported = true;
+	const uint32_t rev = ltfs_betou32(revision);
+
+	switch (drive_type) {
+	case DRIVE_LTO5:
+	case DRIVE_LTO5_HH:
+		if (rev < ltfs_betou32(base_firmware_level_lto5)) {
+			ltfsmsg(LTFS_WARN, "39812W", base_firmware_level_lto5);
+			ltfsmsg(LTFS_WARN, "39813W");
+			supported = false;
+		}
+		break;
+	case DRIVE_LTO8:
+	case DRIVE_LTO8_HH:
+		if (rev < ltfs_betou32(base_firmware_level_lto8)) {
+			ltfsmsg(LTFS_WARN, "39812W", base_firmware_level_lto8);
+			supported = false;
+		}
+		break;
+	case DRIVE_TS1140:
+		if (rev < ltfs_betou32(base_firmware_level_ts1140)) {
+			ltfsmsg(LTFS_WARN, "39812W", base_firmware_level_ts1140);
+			supported = false;
+		}
+		break;
+	case DRIVE_LTO6:
+	case DRIVE_LTO6_HH:
+	case DRIVE_LTO7:
+	case DRIVE_LTO7_HH:
+	case DRIVE_TS1150:
+	default:
+		break;
+	}
+
+	return supported;
 }
