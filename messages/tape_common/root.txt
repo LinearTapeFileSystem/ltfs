@@ -51,5 +51,7 @@ root:table {
 		39809D:string { "WORM cartridge is loaded." }
 		39810W:string { "No IP address was found. Use host name based reservation key." }
 		39811W:string { "Cannot fetch network I/F information. Use host name based reservation key. (%d)" }
+		39812W:string { "Drive firmware must be updated. Upgrading to %s or later is recommended." }
+		39813W:string { "Drive firmware level does not correctly detect the EOD status." }
 	}
 }

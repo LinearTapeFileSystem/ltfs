@@ -169,34 +169,6 @@ static int null_parser(void *priv, const char *arg, int key, struct fuse_args *o
 	return 1;
 }
 
-static bool is_supported_firmware(int drive_type, scsi_device_identifier *id_data)
-{
-	const uint32_t rev = ltfs_betou32(id_data->product_rev);
-
-	switch (drive_type) {
-		case DRIVE_LTO5:
-		case DRIVE_LTO5_HH:
-			if (rev < ltfs_betou32(base_firmware_level_lto5)) {
-				ltfsmsg(LTFS_WARN, "30851W", base_firmware_level_lto5);
-				ltfsmsg(LTFS_WARN, "30852W");
-			}
-			break;
-		case DRIVE_TS1140:
-			if (rev < ltfs_betou32(base_firmware_level_ts1140)) {
-				ltfsmsg(LTFS_WARN, "30851W", base_firmware_level_ts1140);
-				return false;
-			}
-			break;
-		case DRIVE_LTO6:
-		case DRIVE_LTO6_HH:
-		case DRIVE_TS1150:
-		default:
-			break;
-	}
-
-	return true;
-}
-
 #define LBP_DISABLE             (0x00)
 #define REED_SOLOMON_CRC        (0x01)
 #define CRC32C_CRC              (0x02)
@@ -807,7 +779,7 @@ int iokit_ibmtape_open(const char *devname, void **handle)
 	}
 
 	if(drive_type > 0) {
-		if (!is_supported_firmware(drive_type, &id_data)) {
+		if (!ibmtape_is_supported_firmware(drive_type, (unsigned char*)id_data.product_rev)) {
 			iokit_release_exclusive_access(&priv->dev);
 			ret = -EDEV_UNSUPPORTED_FIRMWARE;
 			goto free;
@@ -905,7 +877,7 @@ int iokit_ibmtape_reopen(const char *devname, void *device)
 	}
 
 	if(drive_type > 0) {
-		if (!is_supported_firmware(drive_type, &id_data)) {
+		if (!ibmtape_is_supported_firmware(drive_type, (unsigned char*)id_data.product_rev)) {
 			iokit_release_exclusive_access(&priv->dev);
 			ret = -EDEV_UNSUPPORTED_FIRMWARE;
 		} else

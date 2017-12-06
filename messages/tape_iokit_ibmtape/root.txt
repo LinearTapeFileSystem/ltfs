@@ -93,8 +93,8 @@ root:table {
 		//unused 30848
 		//unused 30849
 		//unused 30850
-		30851W:string { "Drive firmware must be upgraded to %s or later." }
-		30852W:string { "Drive firmware level does not correctly detect the EOD status." }
+		//unused (moved) 30851W:string { "Drive firmware must be upgraded to %s or later." }
+		//unused (moved) 30852W:string { "Drive firmware level does not correctly detect the EOD status." }
 		30853I:string { "Logical block protection is enabled." }
 		30854I:string { "Logical block protection is disabled." }
 		30855I:string { "Saving drive dump to %s." }

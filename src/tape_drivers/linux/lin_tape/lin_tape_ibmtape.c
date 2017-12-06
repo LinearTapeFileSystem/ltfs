@@ -877,35 +877,6 @@ int lin_tape_ibmtape_parse_opts(void *device, void *opt_args)
 	return 0;
 }
 
-static bool is_supported_firmware(int drive_type, const unsigned char * const revision)
-{
-	const uint32_t rev = ltfs_betou32(revision);
-	return true; /* temporary by nishida */
-
-	switch (drive_type) {
-	case DRIVE_LTO5:
-	case DRIVE_LTO5_HH:
-		if (rev < ltfs_betou32(base_firmware_level_lto5)) {
-			ltfsmsg(LTFS_WARN, "30421W", base_firmware_level_lto5);
-			ltfsmsg(LTFS_WARN, "30422W");
-		}
-		break;
-	case DRIVE_TS1140:
-		if (rev < ltfs_betou32(base_firmware_level_ts1140)) {
-			ltfsmsg(LTFS_WARN, "30421W", base_firmware_level_ts1140);
-			return false;
-		}
-		break;
-	case DRIVE_LTO6:
-	case DRIVE_LTO6_HH:
-	case DRIVE_TS1150:
-	default:
-		break;
-	}
-
-	return true;
-}
-
 /**
  * Get inquiry data from a specific page
  * @param device tape device
@@ -1094,7 +1065,7 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 	}
 
 	ltfsmsg(LTFS_INFO, "30432I", inq_data.revision);
-	if (! is_supported_firmware(priv->drive_type, inq_data.revision)) {
+	if (! ibmtape_is_supported_firmware(priv->drive_type, (unsigned char*)inq_data.revision)) {
 		ltfsmsg(LTFS_INFO, "30430I", "firmware");
 		close(priv->fd);
 		free(priv);
