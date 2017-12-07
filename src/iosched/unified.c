@@ -273,7 +273,7 @@ void *unified_init(struct ltfs_volume *vol)
 
 	priv = (struct unified_data *) calloc(1, sizeof(struct unified_data));
 	if (! priv) {
-		ltfsmsg(LTFS_ERR, "10001E", "unified_init: scheduler private data");
+		ltfsmsg(LTFS_ERR, 10001E, "unified_init: scheduler private data");
 		return NULL;
 	}
 
@@ -283,7 +283,7 @@ void *unified_init(struct ltfs_volume *vol)
 	priv->pool = cache_manager_init(cache_size, pool_size, max_pool_size);
 	if (! priv->pool) {
 		/* Cannot initialize scheduler: failed to initialize cache manager */
-		ltfsmsg(LTFS_ERR, "13005E");
+		ltfsmsg(LTFS_ERR, 13005E);
 		free(priv);
 		return NULL;
 	}
@@ -293,7 +293,7 @@ void *unified_init(struct ltfs_volume *vol)
 	ret = ltfs_thread_mutex_init(&priv->cache_lock);
 	if (ret) {
 		/* Cannot initialize scheduler: failed to initialize mutex %s (%d) */
-		ltfsmsg(LTFS_ERR, "13006E", "cache_lock", ret);
+		ltfsmsg(LTFS_ERR, 13006E, "cache_lock", ret);
 		cache_manager_destroy(priv->pool);
 		free(priv);
 		return NULL;
@@ -301,7 +301,7 @@ void *unified_init(struct ltfs_volume *vol)
 	ret = ltfs_thread_cond_init(&priv->cache_cond);
 	if (ret) {
 		/* Cannot initialize scheduler: failed to initialize condition variable %s (%d) */
-		ltfsmsg(LTFS_ERR, "13007E", "cache_cond", ret);
+		ltfsmsg(LTFS_ERR, 13007E, "cache_cond", ret);
 		ltfs_thread_mutex_destroy(&priv->cache_lock);
 		cache_manager_destroy(priv->pool);
 		free(priv);
@@ -310,7 +310,7 @@ void *unified_init(struct ltfs_volume *vol)
 	ret = ltfs_thread_mutex_init(&priv->queue_lock);
 	if (ret) {
 		/* Cannot initialize scheduler: failed to initialize mutex %s (%d) */
-		ltfsmsg(LTFS_ERR, "13006E", "queue_lock", ret);
+		ltfsmsg(LTFS_ERR, 13006E, "queue_lock", ret);
 		ltfs_thread_cond_destroy(&priv->cache_cond);
 		ltfs_thread_mutex_destroy(&priv->cache_lock);
 		cache_manager_destroy(priv->pool);
@@ -320,7 +320,7 @@ void *unified_init(struct ltfs_volume *vol)
 	ret = ltfs_thread_cond_init(&priv->queue_cond);
 	if (ret) {
 		/* Cannot initialize scheduler: failed to initialize condition variable %s (%d) */
-		ltfsmsg(LTFS_ERR, "13007E", "queue_cond", ret);
+		ltfsmsg(LTFS_ERR, 13007E, "queue_cond", ret);
 		ltfs_thread_mutex_destroy(&priv->queue_lock);
 		ltfs_thread_cond_destroy(&priv->cache_cond);
 		ltfs_thread_mutex_destroy(&priv->cache_lock);
@@ -331,7 +331,7 @@ void *unified_init(struct ltfs_volume *vol)
 
 	ret = init_mrsw(&priv->lock);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "13006E", "lock", ret);
+		ltfsmsg(LTFS_ERR, 13006E, "lock", ret);
 		ltfs_thread_cond_destroy(&priv->queue_cond);
 		ltfs_thread_mutex_destroy(&priv->queue_lock);
 		ltfs_thread_cond_destroy(&priv->cache_cond);
@@ -352,7 +352,7 @@ void *unified_init(struct ltfs_volume *vol)
 	ret = ltfs_thread_create(&priv->writer_thread, _unified_writer_thread, priv);
 	if (ret) {
 		/* Cannot initialize scheduler: failed to create thread */
-		ltfsmsg(LTFS_ERR, "13008E", "queue_cond", ret);
+		ltfsmsg(LTFS_ERR, 13008E, "queue_cond", ret);
 		ltfs_thread_cond_destroy(&priv->queue_cond);
 		ltfs_thread_mutex_destroy(&priv->queue_lock);
 		ltfs_thread_cond_destroy(&priv->cache_cond);
@@ -364,7 +364,7 @@ void *unified_init(struct ltfs_volume *vol)
 	}
 
 	/* Unified I/O scheduler initialized */
-	ltfsmsg(LTFS_DEBUG, "13015D");
+	ltfsmsg(LTFS_DEBUG, 13015D);
 	return priv;
 }
 
@@ -412,7 +412,7 @@ int unified_destroy(void *iosched_handle)
 	free(priv);
 
 	/* Unified I/O scheduler deinitialized */
-	ltfsmsg(LTFS_DEBUG, "13016D");
+	ltfsmsg(LTFS_DEBUG, 13016D);
 	return 0;
 }
 
@@ -543,7 +543,7 @@ ssize_t unified_read(struct dentry *d, char *buf, size_t size, off_t offset, voi
 			/* Queue up a tape read */
 			rreq = malloc(sizeof(struct read_request));
 			if (! rreq) {
-				ltfsmsg(LTFS_ERR, "10001E", "unified_read: read request");
+				ltfsmsg(LTFS_ERR, 10001E, "unified_read: read request");
 				ltfs_mutex_unlock(&d->iosched_lock);
 				ret = -LTFS_NO_MEMORY;
 				goto out;
@@ -697,7 +697,7 @@ write_start:
 	ret = _unified_get_dentry_priv(d, &dpr, priv);
 	if (ret < 0) {
 		/* Cannot write: failed to allocate scheduler private data (%d) */
-		ltfsmsg(LTFS_ERR, "13010E", ret);
+		ltfsmsg(LTFS_ERR, 13010E, (int)ret);
 		goto out;
 	}
 
@@ -1147,7 +1147,7 @@ ltfs_thread_return _unified_writer_thread(void *iosched_handle)
 void _unified_process_queue(enum request_state queue, struct unified_data *priv)
 {
 	if (! priv) {
-		ltfsmsg(LTFS_ERR, "10005E", "priv", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10005E, "priv", __FUNCTION__);
 		return;
 	}
 
@@ -1179,7 +1179,7 @@ void _unified_process_index_queue(struct unified_data *priv)
 				char *cache_obj = cache_manager_get_object_data(req->write_cache);
 				struct extent_info *extent = calloc(1, sizeof(struct extent_info));
 				if (! extent) {
-					ltfsmsg(LTFS_ERR, "10001E", "_unified_process_index_queue: extent");
+					ltfsmsg(LTFS_ERR, 10001E, "_unified_process_index_queue: extent");
 					_unified_handle_write_error(-ENOMEM, req, dentry_priv, priv);
 					break;
 				}
@@ -1188,7 +1188,7 @@ void _unified_process_index_queue(struct unified_data *priv)
 					&extent->start.block, priv->vol);
 				if (ret < 0) {
 					/* Index partition writer: failed to write data to the tape (%d) */
-					ltfsmsg(LTFS_WARN, "13013W", ret);
+					ltfsmsg(LTFS_WARN, 13013W, (int)ret);
 					if (IS_MEDIUM_ERROR(-ret)) {
 						ret = tape_set_cart_volume_lock_status(priv->vol, VOLUME_WRITE_PERM_IP);
 					}
@@ -1250,7 +1250,7 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 		if (! dentry) {
 			/* Invalid backpointer to the dentry in the dentry_priv structure */
 			/* Note: this can only happen if there is a bug elsewhere. */
-			ltfsmsg(LTFS_ERR, "13011E");
+			ltfsmsg(LTFS_ERR, 13011E);
 			continue;
 		}
 
@@ -1282,7 +1282,7 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 						partition_id, false, priv->vol);
 					if (ret < 0) {
 						/* Data partition writer: failed to write data to the tape (%d) */
-						ltfsmsg(LTFS_WARN, "13014W", ret);
+						ltfsmsg(LTFS_WARN, 13014W, (int)ret);
 						(void)_unified_write_index_after_perm(ret, priv);
 						_unified_handle_write_error(ret, req, dentry_priv, priv);
 						break;
@@ -1313,7 +1313,7 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 					partition_id, false, priv->vol);
 				if (ret < 0) {
 					/* Data partition writer: failed to write data to the tape (%d) */
-					ltfsmsg(LTFS_WARN, "13014W", ret);
+					ltfsmsg(LTFS_WARN, 13014W, (int)ret);
 					(void)_unified_write_index_after_perm(ret, priv);
 					break;
 				} else {
@@ -1373,7 +1373,7 @@ int _unified_get_dentry_priv(struct dentry *d, struct dentry_priv **dentry_priv,
 
 	dpr = calloc(1, sizeof(struct dentry_priv));
 	if (! dpr) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -1385,14 +1385,14 @@ int _unified_get_dentry_priv(struct dentry *d, struct dentry_priv **dentry_priv,
 	ret = ltfs_mutex_init(&dpr->io_lock);
 	if (ret) {
 		/* Failed to initialize mutex in scheduler private data (%d) */
-		ltfsmsg(LTFS_ERR, "13009E", ret);
+		ltfsmsg(LTFS_ERR, 13009E, ret);
 		free(dpr);
 		return -LTFS_MUTEX_INIT;
 	}
 	ret = ltfs_mutex_init(&dpr->write_error_lock);
 	if (ret) {
 		/* Failed to initialize mutex in scheduler private data (%d) */
-		ltfsmsg(LTFS_ERR, "13009E", ret);
+		ltfsmsg(LTFS_ERR, 13009E, ret);
 		ltfs_mutex_destroy(&dpr->io_lock);
 		free(dpr);
 		return -LTFS_MUTEX_INIT;
@@ -1523,7 +1523,7 @@ void _unified_clear_alt_extentlist(bool save, struct dentry_priv *dpr, struct un
 				TAILQ_REMOVE(&dpr->alt_extentlist, ext, list);
 				ret = ltfs_fsraw_add_extent(dpr->dentry, ext, false, priv->vol);
 				if (ret < 0)
-					ltfsmsg(LTFS_WARN, "13021W", ret);
+					ltfsmsg(LTFS_WARN, 13021W, ret);
 				free(ext);
 			}
 		} else {
@@ -1641,7 +1641,7 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
 
 		default:
 			/* Invalid request_state received when updating the queue membership (%d) */
-			ltfsmsg(LTFS_ERR, "13012E", queue);
+			ltfsmsg(LTFS_ERR, 13012E, queue);
 			ret = -LTFS_BAD_ARG;
 	};
 	ltfs_thread_mutex_unlock(&priv->queue_lock);
@@ -1748,7 +1748,7 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
 	if (! (*cache)) {
 		ret = _unified_cache_alloc(cache, d, priv);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "13017E", (int)ret);
+			ltfsmsg(LTFS_ERR, 13017E, (int)ret);
 			return ret;
 		}
 		if (ret == 1) {
@@ -1766,7 +1766,7 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
 	/* Store new write request */
 	new_req = calloc(1, sizeof(struct write_request));
 	if (! new_req) {
-		ltfsmsg(LTFS_ERR, "13018E");
+		ltfsmsg(LTFS_ERR, 13018E);
 		_unified_cache_free(*cache, 0, priv);
 		ltfs_mutex_unlock(&d->iosched_lock);
 		releaseread_mrsw(&priv->lock);
@@ -1960,7 +1960,7 @@ int _unified_flush_unlocked(struct dentry *d, struct unified_data *priv)
 			req_cache = cache_manager_get_object_data(req->write_cache);
 			ret = ltfs_fsraw_write(d, req_cache, req->count, req->offset, dp_id, false, priv->vol);
 			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "13019E", (int)ret);
+				ltfsmsg(LTFS_ERR, 13019E, (int)ret);
 				(void)_unified_write_index_after_perm(ret, priv);
 				_unified_handle_write_error(ret, req, dpr, priv);
 				break;
@@ -2000,7 +2000,7 @@ int _unified_flush_all(struct unified_data *priv)
 		TAILQ_FOREACH_SAFE(dpr, &priv->dp_queue, dp_queue, aux) {
 			ret = _unified_flush_unlocked(dpr->dentry, priv);
 			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "13020E", dpr->dentry->platform_safe_name, ret);
+				ltfsmsg(LTFS_ERR, 13020E, dpr->dentry->platform_safe_name, ret);
 				releasewrite_mrsw(&priv->lock);
 				return ret;
 			}
@@ -2011,7 +2011,7 @@ int _unified_flush_all(struct unified_data *priv)
 		TAILQ_FOREACH_SAFE(dpr, &priv->working_set, working_set, aux) {
 			ret = _unified_flush_unlocked(dpr->dentry, priv);
 			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "13020E", dpr->dentry->platform_safe_name, ret);
+				ltfsmsg(LTFS_ERR, 13020E, dpr->dentry->platform_safe_name, ret);
 				releasewrite_mrsw(&priv->lock);
 				return ret;
 			}
@@ -2074,7 +2074,7 @@ void _unified_free_dentry_priv(struct dentry *d, struct unified_data *priv)
 		return;
 
 	if (! TAILQ_EMPTY(&dpr->requests))
-		ltfsmsg(LTFS_WARN, "13022W");
+		ltfsmsg(LTFS_WARN, 13022W);
 
 	/* Wait for background thread to finish flushing requests */
 	ltfs_mutex_lock(&dpr->io_lock);
@@ -2257,33 +2257,33 @@ int _unified_write_index_after_perm(int write_ret, struct unified_data *priv)
 		return ret;
 	}
 
-	ltfsmsg(LTFS_INFO, "13024I", write_ret);
+	ltfsmsg(LTFS_INFO, 13024I, write_ret);
 
 	blocksize = ltfs_get_blocksize(priv->vol);
 	ret = tape_get_physical_block_position(priv->vol->device, &err_pos);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "13026E", "get error pos", ret);
+		ltfsmsg(LTFS_ERR, 13026E, "get error pos", ret);
 		return ret;
 	}
 
-	ltfsmsg(LTFS_INFO, "13025I", err_pos.block, blocksize);
+	ltfsmsg(LTFS_INFO, 13025I, (int)err_pos.block, (int)blocksize);
 
 	ret = ltfs_fsraw_cleanup_extent(priv->vol->index->root, err_pos, blocksize, priv->vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "13026E", "extent cleanup", ret);
+		ltfsmsg(LTFS_ERR, 13026E, "extent cleanup", ret);
 		return ret;
 	}
 
 	ret = ltfs_write_index(ltfs_ip_id(priv->vol), SYNC_WRITE_PERM, priv->vol) ;
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "13026E", "append index", ret);
+		ltfsmsg(LTFS_ERR, 13026E, "append index", ret);
 		ret = tape_set_cart_volume_lock_status(priv->vol, VOLUME_WRITE_PERM_BOTH);
 		return ret;
 	}
 
 	ret = tape_set_cart_volume_lock_status(priv->vol, VOLUME_WRITE_PERM_DP);
 	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "13026E", "update MAM", ret);
+		ltfsmsg(LTFS_ERR, 13026E, "update MAM", ret);
 
 	return ret;
 }
@@ -2313,7 +2313,7 @@ int unified_set_profiler(char *work_dir, bool enable, void *iosched_handle)
 		rc = asprintf(&path, "%s/%s%s%s", work_dir, IOSCHED_PROFILER_BASE,
 					  priv->vol->label->vol_uuid, PROFILER_EXTENSION);
 		if (rc < 0) {
-			ltfsmsg(LTFS_ERR, "10001E", __FILE__);
+			ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 			return -LTFS_NO_MEMORY;
 		}
 

@@ -105,7 +105,7 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 #define xml_mktag(val, retval) \
 	do { \
 		if ((val) < 0) { \
-			ltfsmsg(LTFS_ERR, "17042E", __FUNCTION__); \
+			ltfsmsg(LTFS_ERR, 17042E, __FUNCTION__); \
 			return (retval); \
 		} \
 	} while (0)
@@ -156,7 +156,7 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 #define check_required_tags() do { \
 	for (i=0; i<ntags_req; ++i) { \
 		if (! have_required_tags[i]) { \
-			ltfsmsg(LTFS_ERR, "17000E", parent_tag); \
+			ltfsmsg(LTFS_ERR, 17000E, parent_tag); \
 			return -1; \
 		} \
 	} \
@@ -165,7 +165,7 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 /* used for detecting missing and duplicated required tags during parsing */
 #define check_required_tag(i) do { \
 	if (have_required_tags[i]) { \
-		ltfsmsg(LTFS_ERR, "17001E", name); \
+		ltfsmsg(LTFS_ERR, 17001E, name); \
 		return -1; \
 	} \
 	have_required_tags[i] = true; \
@@ -174,7 +174,7 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 /* used for detecting missing and duplicated optional tags during parsing */
 #define check_optional_tag(i) do { \
 	if (have_optional_tags[i]) { \
-		ltfsmsg(LTFS_ERR, "17002E", name); \
+		ltfsmsg(LTFS_ERR, 17002E, name); \
 		return -1; \
 	} \
 	have_optional_tags[i] = true; \
@@ -184,10 +184,10 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 #define assert_not_empty() do { \
 	empty = xmlTextReaderIsEmptyElement(reader); \
 	if (empty < 0) { \
-		ltfsmsg(LTFS_ERR, "17003E"); \
+		ltfsmsg(LTFS_ERR, 17003E); \
 		return -1; \
 	} else if (empty > 0) { \
-		ltfsmsg(LTFS_ERR, "17004E", name); \
+		ltfsmsg(LTFS_ERR, 17004E, name); \
 		return -1; \
 	} \
 } while (0)
@@ -196,7 +196,7 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 #define check_empty() do { \
 	empty = xmlTextReaderIsEmptyElement(reader); \
 	if (empty < 0) { \
-		ltfsmsg(LTFS_ERR, "17003E"); \
+		ltfsmsg(LTFS_ERR, 17003E); \
 		return -1; \
 	} \
 } while (0)
@@ -204,7 +204,7 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 /* consume the end of a tag, failing if there's extra content */
 #define check_tag_end(tagname) do { \
 	if (xml_next_tag(reader, (tagname), &name, &type) < 0 || type != XML_ELEMENT_DECL) { \
-		ltfsmsg(LTFS_ERR, "17005E", (tagname)); \
+		ltfsmsg(LTFS_ERR, 17005E, (tagname)); \
 		return -1; \
 	} \
 } while (0)
@@ -217,7 +217,7 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 	if (xml_scan_text(reader, &value) < 0) \
 		return -1; \
 	if (strlen(value) == 0) { \
-		ltfsmsg(LTFS_ERR, "17004E", name); \
+		ltfsmsg(LTFS_ERR, 17004E, name); \
 		return -1; \
 	} \
 } while (0)
@@ -231,7 +231,7 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 
 /* issue a warning that the tag is unrecognized and will be ignored. */
 #define ignore_unrecognized_tag() do { \
-	ltfsmsg(LTFS_WARN, "17006W", name, parent_tag); \
+	ltfsmsg(LTFS_WARN, 17006W, name, parent_tag); \
 	if (xml_skip_tag(reader) < 0) \
 		return -1; \
 } while (0)

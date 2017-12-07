@@ -168,7 +168,7 @@ struct device_data;
 #define INTERRUPTED_GOTO(rc, label)				\
 	do{											\
 		if (ltfs_is_interrupted()) {			\
-			ltfsmsg(LTFS_INFO, "17159I");		\
+			ltfsmsg(LTFS_INFO, 17159I);		\
 			rc = -LTFS_INTERRUPTED;				\
 			goto label;							\
 		}										\
@@ -177,7 +177,7 @@ struct device_data;
 #define INTERRUPTED_RETURN()					\
 	do{											\
 		if (ltfs_is_interrupted()) {			\
-			ltfsmsg(LTFS_INFO, "17159I");		\
+			ltfsmsg(LTFS_INFO, 17159I);		\
 			return -LTFS_INTERRUPTED;			\
 		}										\
 	}while (0)

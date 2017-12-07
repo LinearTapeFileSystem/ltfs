@@ -65,8 +65,8 @@ struct key_format_ltfs {
 	struct key *dk_list;              /**< DK and DKi pairs' list */
 };
 
-void *key_format_ltfs_init(struct ltfs_volume *vol, const char *id);
-int key_format_ltfs_destroy(void * const kmi_handle, const char *id);
+void *key_format_ltfs_init(struct ltfs_volume *vol);
+int key_format_ltfs_destroy(void * const kmi_handle);
 int key_format_ltfs_get_key(unsigned char **keyalias, unsigned char **key, void * const kmi_handle,
 	unsigned char * const dk_list, unsigned char * const dki_for_format);
 

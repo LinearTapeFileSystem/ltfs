@@ -74,7 +74,7 @@ int kmi_init(struct libltfs_plugin * const plugin, struct ltfs_volume * const vo
 
 	priv = calloc(1, sizeof(struct kmi_priv));
 	if (! priv) {
-		ltfsmsg(LTFS_ERR, "10001E", "kmi_init: private data");
+		ltfsmsg(LTFS_ERR, 10001E, "kmi_init: private data");
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -84,7 +84,7 @@ int kmi_init(struct libltfs_plugin * const plugin, struct ltfs_volume * const vo
 	/* Verify that backend implements all required operations */
 	for (i=0; i<sizeof(struct kmi_ops)/sizeof(void *); ++i) {
 		if (((void **)(priv->ops))[i] == NULL) {
-			ltfsmsg(LTFS_ERR, "17174E");
+			ltfsmsg(LTFS_ERR, 17174E);
 			free(priv);
 			return -LTFS_PLUGIN_INCOMPLETE;
 		}
@@ -162,7 +162,7 @@ int kmi_print_help_message(const struct kmi_ops * const ops)
 	int ret = 0;
 
 	if (! ops) {
-		ltfsmsg(LTFS_WARN, "10006W", "ops", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "ops", __FUNCTION__);
 		return -LTFS_NULL_ARG;
 	}
 
@@ -185,7 +185,7 @@ int kmi_parse_opts(void * const kmi_handle, void *opt_args)
 	ret = priv->ops->parse_opts(opt_args);
 	if (ret < 0)
 		/* Cannot parse backend options: backend call failed (%d) */
-		ltfsmsg(LTFS_ERR, "12040E", ret);
+		ltfsmsg(LTFS_ERR, 12040E, ret);
 
 	return ret;
 }

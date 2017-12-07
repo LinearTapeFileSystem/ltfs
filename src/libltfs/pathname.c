@@ -314,7 +314,7 @@ int pathname_validate_xattr_value(const char *name, size_t size)
 	while (i < (ssize_t) size) {
 		U8_NEXT(name, i, (int32_t) size, c);
 		if (c < 0) {
-			ltfsmsg(LTFS_ERR, "11234E");
+			ltfsmsg(LTFS_ERR, 11234E);
 			return -LTFS_ICU_ERROR;
 		}
 
@@ -416,7 +416,7 @@ int _pathname_validate(const char *name, bool allow_slash)
 	while (i < len) {
 		U8_NEXT(name, i, len, c);
 		if (c < 0) {
-			ltfsmsg(LTFS_ERR, "11235E");
+			ltfsmsg(LTFS_ERR, 11235E);
 			return -LTFS_ICU_ERROR;
 		}
 
@@ -621,20 +621,20 @@ int _pathname_foldcase_icu(const UChar *src, UChar **dest)
 
 	destlen = u_strFoldCase(NULL, 0, src, -1, U_FOLD_CASE_DEFAULT, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
-		ltfsmsg(LTFS_ERR, "11236E", err);
+		ltfsmsg(LTFS_ERR, 11236E, err);
 		return -LTFS_ICU_ERROR;
 	}
 	err = U_ZERO_ERROR;
 
 	*dest = malloc((destlen + 1) * sizeof(UChar));
 	if (! *dest) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	u_strFoldCase(*dest, destlen + 1, src, -1, U_FOLD_CASE_DEFAULT, &err);
 	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11237E", err);
+		ltfsmsg(LTFS_ERR, 11237E, err);
 		free(*dest);
 		*dest = NULL;
 		return -LTFS_ICU_ERROR;
@@ -666,20 +666,20 @@ int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 
 	destlen = unorm_normalize(src, -1, UNORM_NFC, 0, NULL, 0, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
-		ltfsmsg(LTFS_ERR, "11238E", err);
+		ltfsmsg(LTFS_ERR, 11238E, err);
 		return -LTFS_ICU_ERROR;
 	}
 	err = U_ZERO_ERROR;
 
 	*dest = malloc((destlen + 1) * sizeof(UChar));
 	if (! *dest) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	unorm_normalize(src, -1, UNORM_NFC, 0, *dest, destlen + 1, &err);
 	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11239E", err);
+		ltfsmsg(LTFS_ERR, 11239E, err);
 		free(*dest);
 		*dest = NULL;
 		return -LTFS_ICU_ERROR;
@@ -708,20 +708,20 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 
 	destlen = unorm_normalize(src, -1, UNORM_NFD, 0, NULL, 0, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
-		ltfsmsg(LTFS_ERR, "11240E", err);
+		ltfsmsg(LTFS_ERR, 11240E, err);
 		return -LTFS_ICU_ERROR;
 	}
 	err = U_ZERO_ERROR;
 
 	*dest = malloc((destlen + 1) * sizeof(UChar));
 	if (! *dest) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	unorm_normalize(src, -1, UNORM_NFD, 0, *dest, destlen + 1, &err);
 	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11241E", err);
+		ltfsmsg(LTFS_ERR, 11241E, err);
 		free(*dest);
 		*dest = NULL;
 		return -LTFS_ICU_ERROR;
@@ -744,21 +744,21 @@ int _pathname_utf8_to_utf16_icu(const char *src, UChar **dest)
 	/* get required buffer size */
 	u_strFromUTF8(NULL, 0, &destlen, src, -1, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
-		ltfsmsg(LTFS_ERR, "11242E", err);
+		ltfsmsg(LTFS_ERR, 11242E, err);
 		return -LTFS_ICU_ERROR;
 	}
 	err = U_ZERO_ERROR;
 
 	*dest = malloc((destlen + 1) * sizeof(UChar));
 	if (! *dest) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	/* convert to ICU's UTF-16 representation */
 	u_strFromUTF8(*dest, destlen + 1, NULL, src, -1, &err);
 	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11243E", err);
+		ltfsmsg(LTFS_ERR, 11243E, err);
 		free(*dest);
 		*dest = NULL;
 		return -LTFS_ICU_ERROR;
@@ -781,20 +781,20 @@ int _pathname_utf16_to_utf8_icu(const UChar *src, char **dest)
 
 	u_strToUTF8(NULL, 0, &destlen, src, -1, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
-		ltfsmsg(LTFS_ERR, "11244E", err);
+		ltfsmsg(LTFS_ERR, 11244E, err);
 		return -LTFS_ICU_ERROR;
 	}
 	err = U_ZERO_ERROR;
 
 	*dest = malloc(destlen + 1);
 	if (! *dest) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	u_strToUTF8(*dest, destlen + 1, NULL, src, -1, &err);
 	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11245E", err);
+		ltfsmsg(LTFS_ERR, 11245E, err);
 		free(*dest);
 		*dest = NULL;
 		return -LTFS_ICU_ERROR;
@@ -819,13 +819,13 @@ int _pathname_system_to_utf16_icu(const char *src, UChar **dest)
 	/* open converter for the system locale */
 	syslocale = ucnv_open(NULL, &err);
 	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11246E", err);
+		ltfsmsg(LTFS_ERR, 11246E, err);
 		return -LTFS_ICU_ERROR;
 	}
 
 	ucnv_setToUCallBack(syslocale, UCNV_TO_U_CALLBACK_STOP, NULL, NULL, NULL, &err);
 	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11247E", err);
+		ltfsmsg(LTFS_ERR, 11247E, err);
 		ucnv_close(syslocale);
 		return -LTFS_ICU_ERROR;
 	}
@@ -833,7 +833,7 @@ int _pathname_system_to_utf16_icu(const char *src, UChar **dest)
 	/* perform the conversion */
 	destlen = ucnv_toUChars(syslocale, NULL, 0, src, -1, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
-		ltfsmsg(LTFS_ERR, "11248E", err, src);
+		ltfsmsg(LTFS_ERR, 11248E, err, src);
 		ucnv_close(syslocale);
 		return -LTFS_ICU_ERROR;
 	}
@@ -841,14 +841,14 @@ int _pathname_system_to_utf16_icu(const char *src, UChar **dest)
 
 	*dest = malloc((destlen + 1) * sizeof(UChar));
 	if (! *dest) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		ucnv_close(syslocale);
 		return -LTFS_NO_MEMORY;
 	}
 
 	ucnv_toUChars(syslocale, *dest, destlen + 1, src, -1, &err);
 	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11249E", err, src);
+		ltfsmsg(LTFS_ERR, 11249E, err, src);
 		ucnv_close(syslocale);
 		free(*dest);
 		*dest = NULL;
@@ -884,20 +884,20 @@ int _pathname_utf8_to_system_icu(const char *src, char **dest)
 	/* System locale doesn't match internal usage, so really do the conversion */
 	destlen = ucnv_convert(NULL, "UTF-8", NULL, 0, src, -1, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
-		ltfsmsg(LTFS_ERR, "11250E", err);
+		ltfsmsg(LTFS_ERR, 11250E, err);
 		return -LTFS_ICU_ERROR;
 	}
 	err = U_ZERO_ERROR;
 
 	*dest = malloc(destlen + 1);
 	if (! *dest) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	ucnv_convert(NULL, "UTF-8", *dest, destlen + 1, src, -1, &err);
 	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11251E", err);
+		ltfsmsg(LTFS_ERR, 11251E, err);
 		free(*dest);
 		*dest = NULL;
 		return -LTFS_ICU_ERROR;

@@ -99,7 +99,7 @@ bool index_criteria_contains_invalid_options(const char *str)
 	if (! str)
 		return !error;
 	else if (strlen(str) < 5) {
-		ltfsmsg(LTFS_ERR, "11146E", str);
+		ltfsmsg(LTFS_ERR, 11146E, str);
 		return error;
 	}
 
@@ -110,7 +110,7 @@ bool index_criteria_contains_invalid_options(const char *str)
 			break;
 		}
 	if (! valid_option) {
-		ltfsmsg(LTFS_ERR, "11146E", str);
+		ltfsmsg(LTFS_ERR, 11146E, str);
 		return error;
 	}
 
@@ -125,7 +125,7 @@ bool index_criteria_contains_invalid_options(const char *str)
 				break;
 			}
 		if (! valid_option) {
-			ltfsmsg(LTFS_ERR, "11146E", ptr+1);
+			ltfsmsg(LTFS_ERR, 11146E, ptr+1);
 			return error;
 		}
 	}
@@ -179,7 +179,7 @@ bool index_criteria_find_option(const char *str, const char *substr,
 	}
 
 	if (index_criteria_find_option(str_end, substr, &next_start, &next_end, &next_error) == true) {
-		ltfsmsg(LTFS_ERR, "11147E", substr);
+		ltfsmsg(LTFS_ERR, 11147E, substr);
 		*error = true;
 		return false;
 	}
@@ -206,7 +206,7 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 
 	for (ptr=&rule[0]; *ptr; ptr++) {
 		if (isalpha(*ptr) && *(ptr+1) && isalpha(*(ptr+1))) {
-			ltfsmsg(LTFS_ERR, "11148E");
+			ltfsmsg(LTFS_ERR, 11148E);
 			return -LTFS_POLICY_INVALID;
 		}
 	}
@@ -220,17 +220,17 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 		else if (last == 'g' || last == 'G')
 			multiplier = 1024 * 1024 * 1024;
 		else {
-			ltfsmsg(LTFS_ERR, "11149E", last);
+			ltfsmsg(LTFS_ERR, 11149E, last);
 			return -LTFS_POLICY_INVALID;
 		}
 		rule[strlen(rule)-1] = '\0';
 	}
 
 	if (strlen(rule) == 0) {
-		ltfsmsg(LTFS_ERR, "11150E");
+		ltfsmsg(LTFS_ERR, 11150E);
 		return -LTFS_POLICY_INVALID;
 	} else if (!isdigit(rule[0])) {
-		ltfsmsg(LTFS_ERR, "11151E");
+		ltfsmsg(LTFS_ERR, 11151E);
 		return -LTFS_POLICY_INVALID;
 	}
 	ic->max_filesize_criteria = strtoull(rule, NULL, 10) * multiplier;
@@ -257,13 +257,13 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 
 	/* Count the rules and check for empty ones */
 	if (rule[5] == ':') {
-		ltfsmsg(LTFS_ERR, "11305E", rule);
+		ltfsmsg(LTFS_ERR, 11305E, rule);
 		return -LTFS_POLICY_EMPTY_RULE;
 	}
 	for (delim=rule+6; *delim; delim++) {
 		if (*delim == ':') {
 			if (*(delim-1) == ':' || *(delim+1) == '\0') {
-				ltfsmsg(LTFS_ERR, "11305E", rule);
+				ltfsmsg(LTFS_ERR, 11305E, rule);
 				return -LTFS_POLICY_EMPTY_RULE;
 			}
 			++num_names;
@@ -272,7 +272,7 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 
 	ic->glob_patterns = calloc(num_names+1, sizeof(struct ltfs_name));
 	if (! ic->glob_patterns) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 	rule_ptr = ic->glob_patterns;
@@ -309,11 +309,11 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 		while (rule_ptr && rule_ptr->name && ret == 0) {
 			ret = pathname_validate_file(rule_ptr->name);
 			if (ret == -LTFS_INVALID_PATH)
-				ltfsmsg(LTFS_ERR, "11302E", rule_ptr->name);
+				ltfsmsg(LTFS_ERR, 11302E, rule_ptr->name);
 			else if (ret == -LTFS_NAMETOOLONG)
-				ltfsmsg(LTFS_ERR, "11303E", rule_ptr->name);
+				ltfsmsg(LTFS_ERR, 11303E, rule_ptr->name);
 			else if (ret < 0)
-				ltfsmsg(LTFS_ERR, "11304E", ret);
+				ltfsmsg(LTFS_ERR, 11304E, ret);
 			++rule_ptr;
 		}
 	}
@@ -347,7 +347,7 @@ int index_criteria_parse(const char *filterrules, struct ltfs_volume *vol)
 
 	/* Sanity checks */
 	if (index_criteria_contains_invalid_options(filterrules)) {
-		ltfsmsg(LTFS_ERR, "11152E");
+		ltfsmsg(LTFS_ERR, 11152E);
 		return -LTFS_POLICY_INVALID;
 	}
 
@@ -355,12 +355,12 @@ int index_criteria_parse(const char *filterrules, struct ltfs_volume *vol)
 	if (index_criteria_find_option(filterrules, "name=", &start, &end, &error)) {
 		ret = index_criteria_parse_name(start, end-start+1, ic);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "11153E", ret);
+			ltfsmsg(LTFS_ERR, 11153E, ret);
 			return ret;
 		}
 		has_name = true;
 	} else if (error) {
-		ltfsmsg(LTFS_ERR, "11154E");
+		ltfsmsg(LTFS_ERR, 11154E);
 		return -LTFS_POLICY_INVALID;
 	}
 
@@ -369,14 +369,14 @@ int index_criteria_parse(const char *filterrules, struct ltfs_volume *vol)
 	if (index_criteria_find_option(filterrules, "size=", &start, &end, &error)) {
 		ret = index_criteria_parse_size(start, end-start+1, ic);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "11155E", ret);
+			ltfsmsg(LTFS_ERR, 11155E, ret);
 			return ret;
 		}
 	} else if (error) {
-		ltfsmsg(LTFS_ERR, "11156E");
+		ltfsmsg(LTFS_ERR, 11156E);
 		return -LTFS_POLICY_INVALID;
 	} else if (has_name) {
-		ltfsmsg(LTFS_ERR, "11157E");
+		ltfsmsg(LTFS_ERR, 11157E);
 		return -LTFS_POLICY_INVALID;
 	}
 
@@ -422,7 +422,7 @@ int index_criteria_dup_rules(struct index_criteria *dest_ic, struct index_criter
 
 		dest_ic->glob_patterns = calloc(counter+1, sizeof(struct ltfs_name));
 		if (! dest_ic->glob_patterns) {
-			ltfsmsg(LTFS_ERR, "10001E", "index_criteria_dup_rules: glob pattern array");
+			ltfsmsg(LTFS_ERR, 10001E, "index_criteria_dup_rules: glob pattern array");
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -433,7 +433,7 @@ int index_criteria_dup_rules(struct index_criteria *dest_ic, struct index_criter
 			dst_gp->percent_encode = src_gp->percent_encode;
 			dst_gp->name = strdup(src_gp->name);
 			if (! dst_gp->name) {
-				ltfsmsg(LTFS_ERR, "10001E", "index_criteria_dup_rules: glob pattern");
+				ltfsmsg(LTFS_ERR, 10001E, "index_criteria_dup_rules: glob pattern");
 				while (--i >= 0) {
 					--dst_gp;
 					free(dst_gp->name);
@@ -456,7 +456,7 @@ int index_criteria_dup_rules(struct index_criteria *dest_ic, struct index_criter
 void index_criteria_free(struct index_criteria *ic)
 {
 	if (! ic) {
-		ltfsmsg(LTFS_WARN, "10006W", "ic", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "ic", __FUNCTION__);
 		return;
 	} else if (! ic->have_criteria)
 		return;
@@ -554,7 +554,7 @@ bool index_criteria_match(struct dentry *d, struct ltfs_volume *vol)
 	if (! ic->glob_cache) {
 		ret = _prepare_glob_cache(ic);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "11158E", ret);
+			ltfsmsg(LTFS_ERR, 11158E, ret);
 			return ret;
 		}
 	}
@@ -563,7 +563,7 @@ bool index_criteria_match(struct dentry *d, struct ltfs_volume *vol)
 	/* Prepare the dentry's name for caseless matching. */
 	ret = pathname_prepare_caseless(d->name.name, &dname, false);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11159E", ret);
+		ltfsmsg(LTFS_ERR, 11159E, ret);
 		return ret;
 	}
 	dname_len = u_strlen(dname);
@@ -575,7 +575,7 @@ bool index_criteria_match(struct dentry *d, struct ltfs_volume *vol)
 			free(dname);
 			return true;
 		} else if (match < 0) {
-			ltfsmsg(LTFS_ERR, "11161E", match);
+			ltfsmsg(LTFS_ERR, 11161E, match);
 		}
 	}
 
@@ -606,13 +606,13 @@ int _prepare_glob_cache(struct index_criteria *ic)
 
 	ic->glob_cache = calloc(num_patterns + 1, sizeof(UChar *));
 	if (! ic->glob_cache) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 	for (i=0; ic->glob_patterns[i].name; ++i) {
 		ret = pathname_prepare_caseless(ic->glob_patterns[i].name, &ic->glob_cache[i], false);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "11160E", ret);
+			ltfsmsg(LTFS_ERR, 11160E, ret);
 			return ret;
 		}
 	}
@@ -647,12 +647,12 @@ int _matches_name_criteria_caseless(const UChar *criteria, int32_t cr_len,
 	/* Open text boundary iterators. */
 	ub_criteria = ubrk_open(UBRK_CHARACTER, uloc_getDefault(), criteria, cr_len, &err);
 	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11162E", err);
+		ltfsmsg(LTFS_ERR, 11162E, err);
 		return -LTFS_ICU_ERROR;
 	}
 	ub_filename = ubrk_open(UBRK_CHARACTER, uloc_getDefault(), filename, fi_len, &err);
 	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11163E", err);
+		ltfsmsg(LTFS_ERR, 11163E, err);
 		ubrk_close(ub_criteria);
 		return -LTFS_ICU_ERROR;
 	}
@@ -692,7 +692,7 @@ int _matches_name_criteria_caseless(const UChar *criteria, int32_t cr_len,
 					/* Push this position onto the stack and consume the character. */
 					element = (filename_ustack_t *) calloc(1, sizeof(filename_ustack_t));
 					if (! element) {
-						ltfsmsg(LTFS_ERR, "10001E", "_matches_name_criteria_caseless: filename stack");
+						ltfsmsg(LTFS_ERR, 10001E, "_matches_name_criteria_caseless: filename stack");
 						match = 0;
 						goto out;
 					}
@@ -805,7 +805,7 @@ void _destroy_ustack(filename_ustack_t **stack)
 int _push_ustack(filename_ustack_t **stack, filename_ustack_t *element)
 {
 	if (! stack) {
-		ltfsmsg(LTFS_ERR, "11164E");
+		ltfsmsg(LTFS_ERR, 11164E);
 		return -1;
 	}
 	if (! *stack)
@@ -820,7 +820,7 @@ filename_ustack_t *_pop_ustack(filename_ustack_t **stack)
 {
 	filename_ustack_t *prev = NULL, *top;
 	if (! stack) {
-		ltfsmsg(LTFS_ERR, "11165E");
+		ltfsmsg(LTFS_ERR, 11165E);
 		return NULL;
 	}
 	for (top=*stack; top->next; top=top->next)

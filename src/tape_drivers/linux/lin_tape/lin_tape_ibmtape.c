@@ -269,7 +269,7 @@ static inline int _lin_tape_ibmtape_get_sense(void *device, struct sioc_pass_thr
 	}
 	else {
 		rc = -EDEV_INTERNAL_ERROR;
-		ltfsmsg(LTFS_INFO, "30412I", rc);
+		ltfsmsg(LTFS_INFO, 30412I, rc);
 	}
 
 	return rc;
@@ -289,14 +289,14 @@ static inline int _sioc_paththrough(void *device, struct sioc_pass_through *spt)
 
 	ret = _ioctl(fd, SIOC_PASS_THROUGH, spt);
 	if (ret == -1) {
-		ltfsmsg(LTFS_INFO, "30400I", errno, ((struct lin_tape_ibmtape *) device)->drive_serial);
+		ltfsmsg(LTFS_INFO, 30400I, errno, ((struct lin_tape_ibmtape *) device)->drive_serial);
 		ret = -3;
 	}
 
 	/* check returned status */
 	if (spt->target_status || spt->msg_status || spt->host_status || spt->driver_status) {
 		if (!spt->sense_length) {
-			ltfsmsg(LTFS_DEBUG, "30401D", spt->target_status,
+			ltfsmsg(LTFS_DEBUG, 30401D, spt->target_status,
 					spt->msg_status, spt->host_status, spt->driver_status,
 					((struct lin_tape_ibmtape *) device)->drive_serial);
 			if(spt->driver_status & (DRIVER_SENSE | SUGGEST_SENSE))
@@ -304,13 +304,13 @@ static inline int _sioc_paththrough(void *device, struct sioc_pass_through *spt)
 		}
 
 		if (spt->sense_length) {
-			ltfsmsg(LTFS_DEBUG, "30402D", spt->sense[2] & 0x0F, spt->sense[12], spt->sense[13]);
-			ltfsmsg(LTFS_DEBUG, "30403D", spt->sense[45], spt->sense[46], spt->sense[47], spt->sense[48],
+			ltfsmsg(LTFS_DEBUG, 30402D, spt->sense[2] & 0x0F, spt->sense[12], spt->sense[13]);
+			ltfsmsg(LTFS_DEBUG, 30403D, spt->sense[45], spt->sense[46], spt->sense[47], spt->sense[48],
 					((struct lin_tape_ibmtape *) device)->drive_serial);
 			ret = -1;
 		} else {
-			ltfsmsg(LTFS_INFO, "30404I");
-			ltfsmsg(LTFS_INFO, "30405I", spt->target_status, spt->msg_status,
+			ltfsmsg(LTFS_INFO, 30404I);
+			ltfsmsg(LTFS_INFO, 30405I, spt->target_status, spt->msg_status,
 					spt->host_status, spt->driver_status, ((struct lin_tape_ibmtape *) device)->drive_serial);
 			if(spt->target_status)
 				ret = EDEV_TARGET_ERROR;
@@ -323,7 +323,7 @@ static inline int _sioc_paththrough(void *device, struct sioc_pass_through *spt)
 		}
 	} else if(ret == -3 && errno == EIO &&
 			(spt->cdb[0] == 0x0A || spt->cdb[0] == 0x10)) { /* EIO against write and writefm command */
-		ltfsmsg(LTFS_DEBUG, "30401D", spt->target_status,
+		ltfsmsg(LTFS_DEBUG, 30401D, spt->target_status,
 				spt->msg_status, spt->host_status, spt->driver_status,
 				((struct lin_tape_ibmtape *) device)->drive_serial);
 
@@ -336,13 +336,13 @@ static inline int _sioc_paththrough(void *device, struct sioc_pass_through *spt)
 		_lin_tape_ibmtape_get_sense(device, spt);
 
 		if (spt->sense_length) {
-			ltfsmsg(LTFS_DEBUG, "30402D", spt->sense[2] & 0x0F, spt->sense[12], spt->sense[13]);
-			ltfsmsg(LTFS_DEBUG, "30403D", spt->sense[45], spt->sense[46], spt->sense[47], spt->sense[48],
+			ltfsmsg(LTFS_DEBUG, 30402D, spt->sense[2] & 0x0F, spt->sense[12], spt->sense[13]);
+			ltfsmsg(LTFS_DEBUG, 30403D, spt->sense[45], spt->sense[46], spt->sense[47], spt->sense[48],
 					((struct lin_tape_ibmtape *) device)->drive_serial);
 			ret = -1;
 		} else {
-			ltfsmsg(LTFS_INFO, "30404I");
-			ltfsmsg(LTFS_INFO, "30405I", spt->target_status, spt->msg_status,
+			ltfsmsg(LTFS_INFO, 30404I);
+			ltfsmsg(LTFS_INFO, 30405I, spt->target_status, spt->msg_status,
 					spt->host_status, spt->driver_status, ((struct lin_tape_ibmtape *) device)->drive_serial);
 			if(spt->target_status)
 				ret = EDEV_TARGET_ERROR;
@@ -432,15 +432,15 @@ static inline int lin_tape_ibmtape_ioctlrc2err(void *device, int fd, struct requ
 
 	if (rc_sense == 0) {
 		if (!sense_data->err_code) {
-			ltfsmsg(LTFS_DEBUG, "30409D");
+			ltfsmsg(LTFS_DEBUG, 30409D);
 
 			if (msg)
 				*msg = "Driver Error";
 			rc = -EDEV_DRIVER_ERROR;
 		}
 		else {
-			ltfsmsg(LTFS_DEBUG, "30406D", sense_data->key, sense_data->asc, sense_data->ascq);
-			ltfsmsg(LTFS_DEBUG, "30407D", sense_data->vendor[27], sense_data->vendor[28], sense_data->vendor[29], sense_data->vendor[30],
+			ltfsmsg(LTFS_DEBUG, 30406D, sense_data->key, sense_data->asc, sense_data->ascq);
+			ltfsmsg(LTFS_DEBUG, 30407D, sense_data->vendor[27], sense_data->vendor[28], sense_data->vendor[29], sense_data->vendor[30],
 										((struct lin_tape_ibmtape *) device)->drive_serial);
 
 			sense += (uint32_t) sense_data->key << 16;
@@ -455,7 +455,7 @@ static inline int lin_tape_ibmtape_ioctlrc2err(void *device, int fd, struct requ
 		}
 	}
 	else {
-		ltfsmsg(LTFS_INFO, "30412I", rc_sense);
+		ltfsmsg(LTFS_INFO, 30412I, rc_sense);
 		if (msg)
 			*msg = "Cannot get sense information";
 
@@ -501,15 +501,15 @@ start:
 		rc = lin_tape_ibmtape_ioctlrc2err(device, fd, &sense_data, msg);
 
 		if (rc == -EDEV_TIME_STAMP_CHANGED) {
-			ltfsmsg(LTFS_DEBUG, "30411D", cmd_name, cmd, rc);
+			ltfsmsg(LTFS_DEBUG, 30411D, cmd_name, cmd, rc);
 			goto start;
 		}
 
 		if (is_expected_error(cmd, param, rc)) {
-			ltfsmsg(LTFS_DEBUG, "30410D", cmd_name, cmd, rc);
+			ltfsmsg(LTFS_DEBUG, 30410D, cmd_name, cmd, rc);
 		}
 		else {
-			ltfsmsg(LTFS_INFO, "30408I", cmd_name, cmd, rc, errno, ((struct lin_tape_ibmtape *) device)->drive_serial);
+			ltfsmsg(LTFS_INFO, 30408I, cmd_name, cmd, rc, errno, ((struct lin_tape_ibmtape *) device)->drive_serial);
 		}
 	}
 	else {
@@ -556,9 +556,9 @@ static inline void lin_tape_ibmtape_process_errors(void *device, int rc, char *m
 	bool nonforced_dump = false;
 
 	if(msg != NULL)
-		ltfsmsg(LTFS_INFO, "30413I", cmd, msg, rc, priv->drive_serial);
+		ltfsmsg(LTFS_INFO, 30413I, cmd, msg, rc, priv->drive_serial);
 	else
-		ltfsmsg(LTFS_ERR, "30414E", cmd, rc, priv->drive_serial);
+		ltfsmsg(LTFS_ERR, 30414E, cmd, rc, priv->drive_serial);
 
 	if (device) {
 		priv = (struct lin_tape_ibmtape *) device;
@@ -585,12 +585,12 @@ int lin_tape_ibmtape_check_lin_tape_version(void)
 	fd_version = open("/sys/module/lin_tape/version", O_RDONLY);
 
 	if (fd_version == -1) {
-		ltfsmsg(LTFS_WARN, "30415W");
+		ltfsmsg(LTFS_WARN, 30415W);
 	} else {
 		read(fd_version, lin_tape_version, sizeof(lin_tape_version));
 		if ((tmp = strchr(lin_tape_version, '\n')) != NULL)
 			*tmp = '\0';
-		ltfsmsg(LTFS_INFO, "30416I", lin_tape_version);
+		ltfsmsg(LTFS_INFO, 30416I, lin_tape_version);
 		close(fd_version);
 	}
 
@@ -601,7 +601,7 @@ int lin_tape_ibmtape_check_lin_tape_version(void)
 		|| (version_num[0] < version_base[0])
 		|| (version_num[0] == version_base[0] && version_num[1] < version_base[1])
 		|| (version_num[0] == version_base[0] && version_num[1] == version_base[1] && version_num[2] < version_base[2])) {
-		ltfsmsg(LTFS_ERR, "30417E");
+		ltfsmsg(LTFS_ERR, 30417E);
 		return -EDEV_DRIVER_ERROR;
 	}
 
@@ -622,7 +622,7 @@ int lin_tape_ibmtape_test_unit_ready(void *device)
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_TUR));
-	ltfsmsg(LTFS_DEBUG3, "30592D", "test unit ready",
+	ltfsmsg(LTFS_DEBUG3, 30592D, "test unit ready",
 			((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	rc = _sioc_stioc_command(device, SIOC_TEST_UNIT_READY, "TEST UNIT READY", NULL, &msg);
@@ -666,7 +666,7 @@ int lin_tape_ibmtape_reserve_unit(void *device)
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RESERVEUNIT));
-	ltfsmsg(LTFS_DEBUG, "30592D", "reserve unit (6)", ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30592D, "reserve unit (6)", ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	rc = _sioc_stioc_command(device, SIOC_RESERVE, "RESERVE", NULL, &msg);
 
@@ -691,7 +691,7 @@ int lin_tape_ibmtape_release_unit(void *device)
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RELEASEUNIT));
-	ltfsmsg(LTFS_DEBUG, "30592D", "release unit (6)", ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30592D, "release unit (6)", ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	/* Invoke _ioctl to Release Unit */
 	rc = _sioc_stioc_command(device, SIOC_RELEASE, "RELEASE", NULL, &msg);
@@ -729,7 +729,7 @@ int lin_tape_ibmtape_get_serialnumber(void *device, char **result)
 
 	*result = strdup((const char *) priv->drive_serial);
 	if (! *result) {
-		ltfsmsg(LTFS_ERR, "10001E", "lin_tape_ibmtape_get_serialnumber: result");
+		ltfsmsg(LTFS_ERR, 10001E, "lin_tape_ibmtape_get_serialnumber: result");
 		ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_EXIT(REQ_TC_GETSER));
 		return -EDEV_NO_MEMORY;
 	}
@@ -763,7 +763,7 @@ int lin_tape_ibmtape_set_profiler(void *device, char *work_dir, bool enable)
 		rc = asprintf(&path, "%s/%s%s%s", work_dir, DRIVER_PROFILER_BASE,
 					   priv->drive_serial, PROFILER_EXTENSION);
 		if (rc < 0) {
-			ltfsmsg(LTFS_ERR, "10001E", __FILE__);
+			ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -813,7 +813,7 @@ int parse_logPage(const unsigned char *logdata, const uint16_t param, int *param
 		if (param_code == param) {
 			*param_size = param_len;
 			if (bufsize < param_len) {
-				ltfsmsg(LTFS_INFO, "30418I", bufsize, i + LOG_PAGE_PARAM_OFFSET);
+				ltfsmsg(LTFS_INFO, 30418I, bufsize, i + LOG_PAGE_PARAM_OFFSET);
 				memcpy(buf, &logdata[i + LOG_PAGE_PARAM_OFFSET], bufsize);
 				return -2;
 			}
@@ -857,7 +857,7 @@ int lin_tape_ibmtape_parse_opts(void *device, void *opt_args)
 	/* fuse_opt_parse can handle a NULL device parameter just fine */
 	ret = fuse_opt_parse(args, &global_data, lin_tape_ibmtape_global_opts, null_parser);
 	if (ret < 0) {
-		ltfsmsg(LTFS_INFO, "30419I", ret);
+		ltfsmsg(LTFS_INFO, 30419I, ret);
 		return ret;
 	}
 
@@ -868,7 +868,7 @@ int lin_tape_ibmtape_parse_opts(void *device, void *opt_args)
 		else if (strcasecmp(global_data.str_crc_checking, "off") == 0)
 			global_data.crc_checking = 0;
 		else {
-			ltfsmsg(LTFS_ERR, "30420E", global_data.str_crc_checking);
+			ltfsmsg(LTFS_ERR, 30420E, global_data.str_crc_checking);
 			return -EINVAL;
 		}
 	} else
@@ -893,7 +893,7 @@ int _lin_tape_ibmtape_inquiry_page(void *device, unsigned char page, struct tc_i
 	if (!inq)
 		return -EDEV_INVALID_ARG;
 
-	ltfsmsg(LTFS_DEBUG, "30593D", "inquiry", page, ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30593D, "inquiry", page, ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	/* init value */
 	memset(inq_page.data, 0, sizeof(inq_page.data));
@@ -984,11 +984,11 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 		return ret;
 	}
 
-	ltfsmsg(LTFS_INFO, "30423I", devname);
+	ltfsmsg(LTFS_INFO, 30423I, devname);
 
 	priv = calloc(1, sizeof(struct lin_tape_ibmtape));
 	if (! priv) {
-		ltfsmsg(LTFS_ERR, "10001E", "lin_tape_ibmtape_open: device private data");
+		ltfsmsg(LTFS_ERR, 10001E, "lin_tape_ibmtape_open: device private data");
 		return -EDEV_NO_MEMORY;
 	}
 
@@ -997,27 +997,27 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 		priv->fd = open(devname, O_RDONLY | O_NDELAY);
 		if (priv->fd < 0) {
 			if (errno == EAGAIN) {
-				ltfsmsg(LTFS_ERR, "30424E", devname);
+				ltfsmsg(LTFS_ERR, 30424E, devname);
 				ret = -EDEV_DEVICE_BUSY;
 			} else {
-				ltfsmsg(LTFS_INFO, "30425I", devname, errno);
+				ltfsmsg(LTFS_INFO, 30425I, devname, errno);
 				ret = -EDEV_DEVICE_UNOPENABLE;
 			}
 			free(priv);
 			return ret;
 		}
-		ltfsmsg(LTFS_WARN, "30426W", devname);
+		ltfsmsg(LTFS_WARN, 30426W, devname);
 	}
 
 	ret = lin_tape_ibmtape_inquiry(priv, &inq_data);
 	if (ret) {
-		ltfsmsg(LTFS_INFO, "30427I", ret);
+		ltfsmsg(LTFS_INFO, 30427I, ret);
 		close(priv->fd);
 		free(priv);
 		return ret;
 	} else {
-		ltfsmsg(LTFS_INFO, "30428I", inq_data.pid);
-		ltfsmsg(LTFS_INFO, "30429I", inq_data.vid);
+		ltfsmsg(LTFS_INFO, 30428I, inq_data.pid);
+		ltfsmsg(LTFS_INFO, 30429I, inq_data.vid);
 
 		/* Check the drive is supportable */
 		struct supported_device **cur = ibm_supported_drives;
@@ -1040,7 +1040,7 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 			/* Set specific timeout value based on drive type */
 			ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
 		} else {
-			ltfsmsg(LTFS_INFO, "30430I", inq_data.pid);
+			ltfsmsg(LTFS_INFO, 30430I, inq_data.pid);
 			close(priv->fd);
 			free(priv);
 			return -EDEV_DEVICE_UNSUPPORTABLE;
@@ -1050,7 +1050,7 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 	memset(&inq_page_data, 0, sizeof(struct tc_inq_page));
 	ret = lin_tape_ibmtape_inquiry_page(priv, TC_INQ_PAGE_DRVSERIAL, &inq_page_data);
 	if (ret) {
-		ltfsmsg(LTFS_INFO, "30431I", TC_INQ_PAGE_DRVSERIAL, ret);
+		ltfsmsg(LTFS_INFO, 30431I, TC_INQ_PAGE_DRVSERIAL, ret);
 		close(priv->fd);
 		free(priv);
 		return ret;
@@ -1064,15 +1064,15 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 		priv->drive_serial[i - 4] = inq_page_data.data[i];
 	}
 
-	ltfsmsg(LTFS_INFO, "30432I", inq_data.revision);
+	ltfsmsg(LTFS_INFO, 30432I, inq_data.revision);
 	if (! ibmtape_is_supported_firmware(priv->drive_type, (unsigned char*)inq_data.revision)) {
-		ltfsmsg(LTFS_INFO, "30430I", "firmware");
+		ltfsmsg(LTFS_INFO, 30430I, "firmware");
 		close(priv->fd);
 		free(priv);
 		return -EDEV_UNSUPPORTED_FIRMWARE;
 	}
 
-	ltfsmsg(LTFS_INFO, "30433I", priv->drive_serial);
+	ltfsmsg(LTFS_INFO, 30433I, priv->drive_serial);
 
 	priv->loaded = false; /* Assume tape is not loaded until a successful load call. */
 	priv->devname = strdup(devname);
@@ -1181,10 +1181,10 @@ start:
 	if (rc != 0) {
 		rc = lin_tape_ibmtape_ioctlrc2err(device, fd, &sense_data, msg);
 		if (rc == -EDEV_TIME_STAMP_CHANGED) {
-			ltfsmsg(LTFS_DEBUG, "30411D", cmd_name, cmd, rc);
+			ltfsmsg(LTFS_DEBUG, 30411D, cmd_name, cmd, rc);
 			goto start;
 		}
-		ltfsmsg(LTFS_INFO, "30408I", cmd_name, cmd, rc, errno, ((struct lin_tape_ibmtape *) device)->drive_serial);
+		ltfsmsg(LTFS_INFO, 30408I, cmd_name, cmd, rc, errno, ((struct lin_tape_ibmtape *) device)->drive_serial);
 	}
 	else {
 		*msg = "Command succeeded";
@@ -1207,10 +1207,10 @@ start:
 	if (rc != 0) {
 		rc = lin_tape_ibmtape_ioctlrc2err(device, fd, &sense_data, msg);
 		if (rc == -EDEV_TIME_STAMP_CHANGED) {
-			ltfsmsg(LTFS_DEBUG, "30411D", cmd_name, cmd, rc);
+			ltfsmsg(LTFS_DEBUG, 30411D, cmd_name, cmd, rc);
 			goto start;
 		}
-		ltfsmsg(LTFS_INFO, "30408I", cmd_name, cmd, rc, errno, ((struct lin_tape_ibmtape *) device)->drive_serial);
+		ltfsmsg(LTFS_INFO, 30408I, cmd_name, cmd, rc, errno, ((struct lin_tape_ibmtape *) device)->drive_serial);
 	}
 	else {
 		*msg = "Command succeeded";
@@ -1247,12 +1247,12 @@ int lin_tape_ibmtape_read(void *device, char *buf, size_t count, struct tc_posit
 	 */
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READ));
-	ltfsmsg(LTFS_DEBUG3, "30595D", "read", count, ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG3, 30595D, "read", count, ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	if (priv->force_readperm) {
 		priv->read_counter++;
 		if (priv->read_counter > priv->force_readperm) {
-			ltfsmsg(LTFS_INFO, "30434I", "read");
+			ltfsmsg(LTFS_INFO, 30434I, "read");
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READ));
 			if (priv->force_errortype)
 				return -EDEV_NO_SENSE;
@@ -1278,7 +1278,7 @@ int lin_tape_ibmtape_read(void *device, char *buf, size_t count, struct tc_posit
 		case -EDEV_NO_SENSE:
 			if (sense_data.fm) {
 				/* Filemark Detected */
-				ltfsmsg(LTFS_DEBUG, "30436D");
+				ltfsmsg(LTFS_DEBUG, 30436D);
 				rc = DEVICE_GOOD;
 				pos->block++;
 				pos->filemarks++;
@@ -1291,29 +1291,29 @@ int lin_tape_ibmtape_read(void *device, char *buf, size_t count, struct tc_posit
 				diff_len = (int32_t)sense_data.info;
 
 				if (diff_len < 0) {
-					ltfsmsg(LTFS_INFO, "30437I", diff_len, count - diff_len); // "Detect overrun condition"
+					ltfsmsg(LTFS_INFO, 30437I, diff_len, (int)count - diff_len); // "Detect overrun condition"
 					rc = -EDEV_OVERRUN;
 				}
 				else {
-					ltfsmsg(LTFS_DEBUG, "30438D", diff_len, count - diff_len); // "Detect underrun condition"
+					ltfsmsg(LTFS_DEBUG, 30438D, diff_len, (int)count - diff_len); // "Detect underrun condition"
 					len = count - diff_len;
 					rc = DEVICE_GOOD;
 					pos->block++;
 				}
 			}
 			else if (errno == EOVERFLOW) {
-				ltfsmsg(LTFS_INFO, "30437I", count - read_len, read_len); // "Detect overrun condition"
+				ltfsmsg(LTFS_INFO, 30437I, (int)(count - read_len), (int)read_len); // "Detect overrun condition"
 				rc = -EDEV_OVERRUN;
 			}
 			else if ((size_t)read_len < count) {
-				ltfsmsg(LTFS_DEBUG, "30438D", count - read_len, read_len); // "Detect underrun condition"
+				ltfsmsg(LTFS_DEBUG, 30438D, (int)(count - read_len), (int)read_len); // "Detect underrun condition"
 				len = read_len;
 				rc = DEVICE_GOOD;
 				pos->block++;
 			}
 			break;
 		case -EDEV_FILEMARK_DETECTED:
-			ltfsmsg(LTFS_DEBUG, "30436D");
+			ltfsmsg(LTFS_DEBUG, 30436D);
 			rc = DEVICE_GOOD;
 			pos->block++;
 			pos->filemarks++;
@@ -1323,7 +1323,7 @@ int lin_tape_ibmtape_read(void *device, char *buf, size_t count, struct tc_posit
 
 		if (rc != DEVICE_GOOD) {
 			if ((rc != -EDEV_CRYPTO_ERROR && rc != -EDEV_KEY_REQUIRED) || ((struct lin_tape_ibmtape *) device)->is_data_key_set) {
-				ltfsmsg(LTFS_INFO, "30408I", "READ", count, rc, errno, ((struct lin_tape_ibmtape *) device)->drive_serial);
+				ltfsmsg(LTFS_INFO, 30408I, "READ", (int)count, rc, errno, ((struct lin_tape_ibmtape *) device)->drive_serial);
 				lin_tape_ibmtape_process_errors(device, rc, msg, "read", true);
 			}
 			len = rc;
@@ -1338,7 +1338,7 @@ int lin_tape_ibmtape_read(void *device, char *buf, size_t count, struct tc_posit
 		if (priv->f_crc_check)
 			len = priv->f_crc_check(buf, len - 4);
 		if (len < 0) {
-			ltfsmsg(LTFS_ERR, "30439E");
+			ltfsmsg(LTFS_ERR, 30439E);
 			len = -EDEV_LBP_READ_ERROR;
 		}
 	}
@@ -1355,33 +1355,33 @@ static inline int _handle_block_allocation_failure(void *device, struct tc_posit
     struct tc_position tmp_pos = {0, 0};
 
     /* Sleep 3 secs to wait garbage correction in kernel side and retry */
-    ltfsmsg(LTFS_WARN, "30440W", ++(*retry));
+    ltfsmsg(LTFS_WARN, 30440W, ++(*retry));
     sleep(3);
 
     ret = lin_tape_ibmtape_readpos(device, &tmp_pos);
     if (ret == DEVICE_GOOD && pos->partition == tmp_pos.partition) {
         if (pos->block == tmp_pos.block) {
             /* No record was written on the tape */
-            ltfsmsg(LTFS_INFO, "30441I", (unsigned long) tmp_pos.partition, (unsigned long long)tmp_pos.block);
+            ltfsmsg(LTFS_INFO, 30441I, (unsigned int)tmp_pos.partition, (unsigned long long)tmp_pos.block);
             ret = WRITE_RETRY;
         } else if (pos->block == tmp_pos.block - 1) {
             /* The record was written on the tape */
-            ltfsmsg(LTFS_INFO, "30442I",
-                    (unsigned long)pos->partition, (unsigned long long)pos->block,
-                    (unsigned long)tmp_pos.partition, (unsigned long long)tmp_pos.block);
+            ltfsmsg(LTFS_INFO, 30442I,
+                    (unsigned int)pos->partition, (unsigned long long)pos->block,
+                    (unsigned int)tmp_pos.partition, (unsigned long long)tmp_pos.block);
             ret = DEVICE_GOOD;
             pos->block++;
         } else {
             /* Unexpected position */
-            ltfsmsg(LTFS_WARN, "30443W", ret,
-                    (unsigned long)pos->partition, (unsigned long long)pos->block,
-                    (unsigned long)tmp_pos.partition, (unsigned long long)tmp_pos.block);
+            ltfsmsg(LTFS_WARN, 30443W, ret,
+                    (unsigned int)pos->partition, (unsigned long long)pos->block,
+                    (unsigned int)tmp_pos.partition, (unsigned long long)tmp_pos.block);
             ret = -EDEV_NO_MEMORY;
         }
     } else
-        ltfsmsg(LTFS_WARN, "30444W", ret,
-                (unsigned long)pos->partition, (unsigned long long)pos->block,
-                (unsigned long)tmp_pos.partition, (unsigned long long)tmp_pos.block);
+        ltfsmsg(LTFS_WARN, 30444W, ret,
+                (unsigned int)pos->partition, (unsigned long long)pos->block,
+                (unsigned int)tmp_pos.partition, (unsigned long long)tmp_pos.block);
 
     return ret;
 }
@@ -1415,19 +1415,19 @@ int lin_tape_ibmtape_write(void *device, const char *buf, size_t count, struct t
 	 */
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITE));
-	ltfsmsg(LTFS_DEBUG3, "30595D", "write", count, ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG3, 30595D, "write", count, ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	if ( priv->force_writeperm ) {
 		priv->write_counter++;
 		if ( priv->write_counter > priv->force_writeperm ) {
-			ltfsmsg(LTFS_INFO, "30434I", "write");
+			ltfsmsg(LTFS_INFO, 30434I, "write");
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
 			if (priv->force_errortype)
 				return -EDEV_NO_SENSE;
 			else
 				return -EDEV_WRITE_PERM;
 		} else if ( priv->write_counter > (priv->force_writeperm - THREASHOLD_FORCE_WRITE_NO_WRITE) ) {
-			ltfsmsg(LTFS_INFO, "30435I");
+			ltfsmsg(LTFS_INFO, 30435I);
 			pos->block++;
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
 			return DEVICE_GOOD;
@@ -1445,15 +1445,15 @@ int lin_tape_ibmtape_write(void *device, const char *buf, size_t count, struct t
 write_start:
 	written = write(fd, buf, datacount);
 	if ((size_t)written != datacount || errno == ENOSPC) {
-		ltfsmsg(LTFS_INFO, "30408I", "WRITE", count, written, errno, ((struct lin_tape_ibmtape *) device)->drive_serial);
+		ltfsmsg(LTFS_INFO, 30408I, "WRITE", (int)count, (int)written, errno, ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 		if (errno == ENOSPC) {
 			lin_tape_ibmtape_readpos(device, pos);
 			if (pos->early_warning) {
-				ltfsmsg(LTFS_WARN, "30445W", "write");
+				ltfsmsg(LTFS_WARN, 30445W, "write");
 				rc = DEVICE_GOOD;
 			} else if (pos->programmable_early_warning) {
-				ltfsmsg(LTFS_WARN, "30446W", "write");
+				ltfsmsg(LTFS_WARN, 30446W, "write");
 				rc = DEVICE_GOOD;
 			}
 		} else if (errno == ENOMEM && retry < MAX_WRITE_RETRY) {
@@ -1468,13 +1468,13 @@ write_start:
 
 			switch (rc) {
 			case -EDEV_EARLY_WARNING:
-				ltfsmsg(LTFS_WARN, "30445W", "write");
+				ltfsmsg(LTFS_WARN, 30445W, "write");
 				rc = DEVICE_GOOD;
 				lin_tape_ibmtape_readpos(device, pos);
 				pos->early_warning = true;
 				break;
 			case -EDEV_PROG_EARLY_WARNING:
-				ltfsmsg(LTFS_WARN, "30446W", "write");
+				ltfsmsg(LTFS_WARN, 30446W, "write");
 				rc = DEVICE_GOOD;
 				lin_tape_ibmtape_readpos(device, pos);
 				pos->programmable_early_warning = true;
@@ -1495,7 +1495,7 @@ write_start:
 			lin_tape_ibmtape_process_errors(device, rc, msg, "write", true);
 
 		if (rc == -EDEV_LBP_WRITE_ERROR)
-			ltfsmsg(LTFS_ERR, "30447E");
+			ltfsmsg(LTFS_ERR, 30447E);
 	} else {
 		rc = DEVICE_GOOD;
 		pos->block++;
@@ -1524,7 +1524,7 @@ int lin_tape_ibmtape_writefm(void *device, size_t count, struct tc_position *pos
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITEFM));
-	ltfsmsg(LTFS_DEBUG, "30596D", "writefm", count, ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30596D, "writefm", count, ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 start_wfm:
 	errno = 0;
@@ -1534,12 +1534,12 @@ start_wfm:
 	if (rc != DEVICE_GOOD) {
 		switch (rc) {
 		case -EDEV_EARLY_WARNING:
-			ltfsmsg(LTFS_WARN, "30445W", "writefm");
+			ltfsmsg(LTFS_WARN, 30445W, "writefm");
 			rc = DEVICE_GOOD;
 			pos->early_warning = true;
 			break;
 		case -EDEV_PROG_EARLY_WARNING:
-			ltfsmsg(LTFS_WARN, "30446W", "writefm");
+			ltfsmsg(LTFS_WARN, 30446W, "writefm");
 			rc = DEVICE_GOOD;
 			pos->programmable_early_warning = true;
 			break;
@@ -1556,11 +1556,11 @@ start_wfm:
 			break;
 		default:
 			if (pos->early_warning) {
-				ltfsmsg(LTFS_WARN, "30445W", "writefm");
+				ltfsmsg(LTFS_WARN, 30445W, "writefm");
 				rc = DEVICE_GOOD;
 			}
 			if (pos->programmable_early_warning) {
-				ltfsmsg(LTFS_WARN, "30446W", "writefm");
+				ltfsmsg(LTFS_WARN, 30446W, "writefm");
 				rc = DEVICE_GOOD;
 			}
 			break;
@@ -1571,11 +1571,11 @@ start_wfm:
 		}
 	} else {
 		if (pos->early_warning) {
-			ltfsmsg(LTFS_WARN, "30445W", "writefm");
+			ltfsmsg(LTFS_WARN, 30445W, "writefm");
 			rc = DEVICE_GOOD;
 		}
 		if (pos->programmable_early_warning) {
-			ltfsmsg(LTFS_WARN, "30446W", "writefm");
+			ltfsmsg(LTFS_WARN, 30446W, "writefm");
 			rc = DEVICE_GOOD;
 		}
 	}
@@ -1597,7 +1597,7 @@ int lin_tape_ibmtape_rewind(void *device, struct tc_position *pos)
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REWIND));
-	ltfsmsg(LTFS_DEBUG, "30592D", "rewind", ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30592D, "rewind", ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	rc = _mt_command(device, MTREW, "REWIND", 0, &msg);
 	lin_tape_ibmtape_readpos(device, pos);
@@ -1631,7 +1631,7 @@ int lin_tape_ibmtape_locate(void *device, struct tc_position dest, struct tc_pos
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOCATE));
-	ltfsmsg(LTFS_DEBUG, "30597D", "locate", (unsigned long long)dest.partition,
+	ltfsmsg(LTFS_DEBUG, 30597D, "locate", (unsigned long long)dest.partition,
 		(unsigned long long)dest.block, ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	if (pos->partition != dest.partition) {
@@ -1656,7 +1656,7 @@ int lin_tape_ibmtape_locate(void *device, struct tc_position dest, struct tc_pos
 
 	if (rc != DEVICE_GOOD) {
 		if ((unsigned long long)dest.block == TAPE_BLOCK_MAX && rc == -EDEV_EOD_DETECTED) {
-			ltfsmsg(LTFS_DEBUG, "30448D", "Locate");
+			ltfsmsg(LTFS_DEBUG, 30448D, "Locate");
 			rc = DEVICE_GOOD;
 		}
 
@@ -1688,40 +1688,40 @@ int lin_tape_ibmtape_space(void *device, size_t count, TC_SPACE_TYPE type, struc
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SPACE));
 	switch (type) {
 		case TC_SPACE_EOD:
-			ltfsmsg(LTFS_DEBUG, "30592D", "space to EOD", ((struct lin_tape_ibmtape *) device)->drive_serial);
+			ltfsmsg(LTFS_DEBUG, 30592D, "space to EOD", ((struct lin_tape_ibmtape *) device)->drive_serial);
 			cmd = MTEOM;
 			count = 0;
 			break;
 		case TC_SPACE_FM_F:
-			ltfsmsg(LTFS_DEBUG, "30594D", "space forward file marks", (unsigned long long)count,
+			ltfsmsg(LTFS_DEBUG, 30594D, "space forward file marks", (unsigned long long)count,
 					((struct lin_tape_ibmtape *) device)->drive_serial);
 			cmd = MTFSF;
 			break;
 		case TC_SPACE_FM_B:
-			ltfsmsg(LTFS_DEBUG, "30594D", "space back file marks", (unsigned long long)count,
+			ltfsmsg(LTFS_DEBUG, 30594D, "space back file marks", (unsigned long long)count,
 					((struct lin_tape_ibmtape *) device)->drive_serial);
 			cmd = MTBSF;
 			break;
 		case TC_SPACE_F:
-			ltfsmsg(LTFS_DEBUG, "30594D", "space forward records", (unsigned long long)count,
+			ltfsmsg(LTFS_DEBUG, 30594D, "space forward records", (unsigned long long)count,
 					((struct lin_tape_ibmtape *) device)->drive_serial);
 			cmd = MTFSR;
 			break;
 		case TC_SPACE_B:
-			ltfsmsg(LTFS_DEBUG, "30594D", "space back records", (unsigned long long)count,
+			ltfsmsg(LTFS_DEBUG, 30594D, "space back records", (unsigned long long)count,
 					((struct lin_tape_ibmtape *) device)->drive_serial);
 			cmd = MTBSR;
 			break;
 		default:
 			/* unexpected space type */
-			ltfsmsg(LTFS_INFO, "30449I");
+			ltfsmsg(LTFS_INFO, 30449I);
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SPACE));
 			return EDEV_INVALID_ARG;
 	}
 
 	if ((unsigned long long)count > 0xFFFFFF) {
 		/* count is too large for SPACE 6 command */
-		ltfsmsg(LTFS_INFO, "30450I", count);
+		ltfsmsg(LTFS_INFO, 30450I, (int)count);
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SPACE));
 		return EDEV_INVALID_ARG;
 	}
@@ -1796,12 +1796,12 @@ int lin_tape_ibmtape_erase(void *device, struct tc_position *pos, bool long_eras
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ERASE));
 	if (long_erase) {
-		ltfsmsg(LTFS_DEBUG, "30592D", "long erase", ((struct lin_tape_ibmtape *) device)->drive_serial);
+		ltfsmsg(LTFS_DEBUG, 30592D, "long erase", ((struct lin_tape_ibmtape *) device)->drive_serial);
 		get_current_timespec(&ts_start);
 
 		rc = lin_tape_ibmtape_long_erase(device);
 		if (rc == -EDEV_TIME_STAMP_CHANGED) {
-			ltfsmsg(LTFS_DEBUG, "30411D", "erase", -1, rc);
+			ltfsmsg(LTFS_DEBUG, 30411D, "erase", -1, rc);
 			rc = lin_tape_ibmtape_long_erase(device);
 		}
 
@@ -1817,19 +1817,19 @@ int lin_tape_ibmtape_erase(void *device, struct tc_position *pos, bool long_eras
 
 			if (IS_ENTERPRISE(priv->drive_type)) {
 				get_current_timespec(&ts_now);
-				ltfsmsg(LTFS_INFO, "30451I", (ts_now.tv_sec - ts_start.tv_sec)/60);
+				ltfsmsg(LTFS_INFO, 30451I, (int)(ts_now.tv_sec - ts_start.tv_sec)/60);
 			}
 			else {
 				progress = (int)(sense_data.field[0] & 0xFF)<<8;
 				progress += (int)(sense_data.field[1] & 0xFF);
-				ltfsmsg(LTFS_INFO, "30452I", progress*100/0xFFFF);
+				ltfsmsg(LTFS_INFO, 30452I, progress*100/0xFFFF);
 			}
 			sleep(60);
 		}
 
 	}
 	else {
-		ltfsmsg(LTFS_DEBUG, "30592D", "erase", ((struct lin_tape_ibmtape *) device)->drive_serial);
+		ltfsmsg(LTFS_DEBUG, 30592D, "erase", ((struct lin_tape_ibmtape *) device)->drive_serial);
 		rc = _st_command(device, STERASE, "ERASE", 1, &msg);	// param=1 means invoking short erase.
 	}
 
@@ -1907,7 +1907,7 @@ int lin_tape_ibmtape_load(void *device, struct tc_position *pos)
 	struct lin_tape_ibmtape *priv = ((struct lin_tape_ibmtape *) device);
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOAD));
-	ltfsmsg(LTFS_DEBUG, "30592D", "load", priv->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30592D, "load", priv->drive_serial);
 
 	memset(buf, 0, sizeof(buf));
 
@@ -1935,14 +1935,14 @@ int lin_tape_ibmtape_load(void *device, struct tc_position *pos)
 	priv->density_code = buf[8];
 
 	if (priv->cart_type == 0x00) {
-		ltfsmsg(LTFS_WARN, "30453W");
+		ltfsmsg(LTFS_WARN, 30453W);
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOAD));
 		return 0;
 	}
 
 	rc = ibmtape_is_supported_tape(priv->cart_type, priv->density_code, &(priv->is_worm));
 	if(rc == -LTFS_UNSUPPORTED_MEDIUM)
-		ltfsmsg(LTFS_INFO, "30455I", priv->cart_type, priv->density_code);
+		ltfsmsg(LTFS_INFO, 30455I, priv->cart_type, priv->density_code);
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOAD));
 	return rc;
@@ -1960,7 +1960,7 @@ int lin_tape_ibmtape_unload(void *device, struct tc_position *pos)
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_UNLOAD));
-	ltfsmsg(LTFS_DEBUG, "30592D", "unload", ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30592D, "unload", ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	rc = _lin_tape_ibmtape_load_unload(device, false, pos);
 
@@ -2032,7 +2032,7 @@ int lin_tape_ibmtape_readpos(void *device, struct tc_position *pos)
 		pos->block = ltfs_betou64(rp.rp_data.rp_long.logical_obj_number);
 		pos->filemarks = ltfs_betou64(rp.rp_data.rp_long.logical_file_id);
 
-		ltfsmsg(LTFS_DEBUG, "30598D", "readpos", (unsigned long long)pos->partition,
+		ltfsmsg(LTFS_DEBUG, 30598D, "readpos", (unsigned long long)pos->partition,
 				(unsigned long long)pos->block, (unsigned long long)pos->filemarks,
 				((struct lin_tape_ibmtape *) device)->drive_serial);
 	}
@@ -2061,10 +2061,10 @@ int lin_tape_ibmtape_format(void *device, TC_FORMAT_TYPE format)
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_FORMAT));
-	ltfsmsg(LTFS_DEBUG, "30592D", "format", ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30592D, "format", ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	if ((unsigned char) format >= (unsigned char) TC_FORMAT_MAX) {
-		ltfsmsg(LTFS_INFO, "30456I", format);
+		ltfsmsg(LTFS_INFO, 30456I, format);
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_FORMAT));
 		return -1;
 	}
@@ -2125,7 +2125,7 @@ int lin_tape_ibmtape_logsense_page(void *device, const uint8_t page, const uint8
 	char *msg;
 	struct log_sense10_page log_page;
 
-	ltfsmsg(LTFS_DEBUG3, "30597D", "logsense", (unsigned long long)page, (unsigned long long)subpage,
+	ltfsmsg(LTFS_DEBUG3, 30597D, "logsense", (unsigned long long)page, (unsigned long long)subpage,
 			((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	log_page.page_code = page;
@@ -2181,7 +2181,7 @@ int lin_tape_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *c
 		/* Issue LogPage 0x31 */
 		rc = lin_tape_ibmtape_logsense(device, LOG_TAPECAPACITY, logdata, LOGSENSEPAGE);
 		if (rc) {
-			ltfsmsg(LTFS_INFO, "30457I", LOG_TAPECAPACITY, rc);
+			ltfsmsg(LTFS_INFO, 30457I, LOG_TAPECAPACITY, rc);
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
 			return rc;
 		}
@@ -2189,7 +2189,7 @@ int lin_tape_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *c
 		for(i = TAPECAP_REMAIN_0; i < TAPECAP_SIZE; i++) {
 			if (parse_logPage(logdata, (uint16_t) i, &param_size, buf, sizeof(buf))
 				|| param_size != sizeof(uint32_t)) {
-				ltfsmsg(LTFS_INFO, "30458I");
+				ltfsmsg(LTFS_INFO, 30458I);
 				ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
 				return -EDEV_NO_MEMORY;
 			}
@@ -2210,7 +2210,7 @@ int lin_tape_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *c
 				cap->max_p1 = logcap;
 				break;
 			default:
-				ltfsmsg(LTFS_INFO, "30459I", i);
+				ltfsmsg(LTFS_INFO, 30459I, i);
 				ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
 				return -EDEV_INVALID_ARG;
 				break;
@@ -2221,14 +2221,14 @@ int lin_tape_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *c
 		/* Issue LogPage 0x17 */
 		rc = lin_tape_ibmtape_logsense(device, LOG_VOLUMESTATS, logdata, LOGSENSEPAGE);
 		if (rc) {
-			ltfsmsg(LTFS_INFO, "30457I", LOG_VOLUMESTATS, rc);
+			ltfsmsg(LTFS_INFO, 30457I, LOG_VOLUMESTATS, rc);
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
 			return rc;
 		}
 
 		/* parse param 0x202 - nominal capacity of the partitions */
 		if (parse_logPage(logdata, (uint16_t)VOLSTATS_PARTITION_CAP, &param_size, buf, sizeof(buf))) {
-			ltfsmsg(LTFS_INFO, "30458I");
+			ltfsmsg(LTFS_INFO, 30458I);
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
 			return -EDEV_NO_MEMORY;
 		}
@@ -2245,7 +2245,7 @@ int lin_tape_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *c
 
 		/* parse param 0x204 - remaining capacity of the partitions */
 		if (parse_logPage(logdata, (uint16_t)VOLSTATS_PART_REMAIN_CAP, &param_size, buf, sizeof(buf))) {
-			ltfsmsg(LTFS_INFO, "30458I");
+			ltfsmsg(LTFS_INFO, 30458I);
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
 			return -EDEV_NO_MEMORY;
 		}
@@ -2265,9 +2265,9 @@ int lin_tape_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *c
 		cap->remaining_p1 = (cap->remaining_p1 * 1000 * 1000) >> 20;
 	}
 
-	ltfsmsg(LTFS_DEBUG3, "30597D", "capacity part0", (unsigned long long)cap->remaining_p0,
+	ltfsmsg(LTFS_DEBUG3, 30597D, "capacity part0", (unsigned long long)cap->remaining_p0,
 			(unsigned long long)cap->max_p0, ((struct lin_tape_ibmtape *) device)->drive_serial);
-	ltfsmsg(LTFS_DEBUG3, "30597D", "capacity part1", (unsigned long long)cap->remaining_p1,
+	ltfsmsg(LTFS_DEBUG3, 30597D, "capacity part1", (unsigned long long)cap->remaining_p1,
 		(unsigned long long)cap->max_p1, ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
@@ -2295,7 +2295,7 @@ int lin_tape_ibmtape_modesense(void *device, const uint8_t page, const TC_MP_PC_
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_MODESENSE));
-	ltfsmsg(LTFS_DEBUG3, "30593D", "modesense", page, ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG3, 30593D, "modesense", page, ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	memset(&spt, 0, sizeof(spt));
 	memset(cdb, 0, sizeof(cdb));
@@ -2351,7 +2351,7 @@ int lin_tape_ibmtape_modeselect(void *device, unsigned char *buf, const size_t s
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_MODESELECT));
-	ltfsmsg(LTFS_DEBUG3, "30592D", "modeselect", ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG3, 30592D, "modeselect", ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	memset(&spt, 0, sizeof(spt));
 	memset(cdb, 0, sizeof(cdb));
@@ -2402,7 +2402,7 @@ int lin_tape_ibmtape_prevent_medium_removal(void *device)
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_PREVENTM));
-	ltfsmsg(LTFS_DEBUG, "30592D", "prevent medium removal", ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30592D, "prevent medium removal", ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	rc = _sioc_stioc_command(device, STIOC_PREVENT_MEDIUM_REMOVAL, "PREVENT MED REMOVAL", NULL, &msg);
 
@@ -2426,7 +2426,7 @@ int lin_tape_ibmtape_allow_medium_removal(void *device)
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ALLOWMREM));
-	ltfsmsg(LTFS_DEBUG, "30592D", "allow medium removal", ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30592D, "allow medium removal", ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	rc = _sioc_stioc_command(device, STIOC_ALLOW_MEDIUM_REMOVAL, "ALLOW MED REMOVAL", NULL, &msg);
 
@@ -2459,7 +2459,7 @@ int lin_tape_ibmtape_read_attribute(void *device, const tape_partition_t part, c
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READATTR));
-	ltfsmsg(LTFS_DEBUG3, "30597D", "readattr", (unsigned long long)part,
+	ltfsmsg(LTFS_DEBUG3, 30597D, "readattr", (unsigned long long)part,
 			(unsigned long long)id, ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	memset(&spt, 0, sizeof(spt));
@@ -2470,7 +2470,7 @@ int lin_tape_ibmtape_read_attribute(void *device, const tape_partition_t part, c
 	spt.buffer_length = size + 4;
 	spt.buffer = calloc(1, spt.buffer_length);
 	if (spt.buffer == NULL) {
-		ltfsmsg(LTFS_ERR, "10001E", "lin_tape_ibmtape_read_attribute: data buffer");
+		ltfsmsg(LTFS_ERR, 10001E, "lin_tape_ibmtape_read_attribute: data buffer");
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READATTR));
 		return -EDEV_NO_MEMORY;
 	}
@@ -2510,7 +2510,7 @@ int lin_tape_ibmtape_read_attribute(void *device, const tape_partition_t part, c
 			id != TC_MAM_TEXT_LOCALIZATION_IDENTIFIER &&
 			id != TC_MAM_BARCODE &&
 			id != TC_MAM_APP_FORMAT_VERSION)
-			ltfsmsg(LTFS_INFO, "30460I", rc);
+			ltfsmsg(LTFS_INFO, 30460I, rc);
 	} else {
 		memcpy(buf, (spt.buffer + 4), size);
 		free(spt.buffer);
@@ -2541,7 +2541,7 @@ int lin_tape_ibmtape_write_attribute(void *device, const tape_partition_t part, 
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITEATTR));
-	ltfsmsg(LTFS_DEBUG3, "30594D", "writeattr", (unsigned long long)part,
+	ltfsmsg(LTFS_DEBUG3, 30594D, "writeattr", (unsigned long long)part,
 			((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	memset(&spt, 0, sizeof(spt));
@@ -2552,7 +2552,7 @@ int lin_tape_ibmtape_write_attribute(void *device, const tape_partition_t part, 
 	spt.buffer_length = size + 4;
 	spt.buffer = calloc(1, spt.buffer_length);
 	if (spt.buffer == NULL) {
-		ltfsmsg(LTFS_ERR, "10001E", "lin_tape_ibmtape_write_attribute: data buffer");
+		ltfsmsg(LTFS_ERR, 10001E, "lin_tape_ibmtape_write_attribute: data buffer");
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITEATTR));
 		return -EDEV_NO_MEMORY;
 	}
@@ -2595,7 +2595,7 @@ int lin_tape_ibmtape_allow_overwrite(void *device, const struct tc_position pos)
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ALLOWOVERW));
-	ltfsmsg(LTFS_DEBUG, "30597D", "allow overwrite", (unsigned long long)pos.partition,
+	ltfsmsg(LTFS_DEBUG, 30597D, "allow overwrite", (unsigned long long)pos.partition,
 		(unsigned long long)pos.block, ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	memset(&append_pos, 0, sizeof(append_pos));
@@ -2607,7 +2607,7 @@ int lin_tape_ibmtape_allow_overwrite(void *device, const struct tc_position pos)
 
 	if (rc != DEVICE_GOOD) {
 		if (rc == -EDEV_EOD_DETECTED) {
-			ltfsmsg(LTFS_DEBUG, "30448D", "Allow Overwrite");
+			ltfsmsg(LTFS_DEBUG, 30448D, "Allow Overwrite");
 			rc = DEVICE_GOOD;
 		}
 
@@ -2670,7 +2670,7 @@ int lin_tape_ibmtape_set_default(void *device)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SETDEFAULT));
 	/* Disable Read across EOD on 3592 drive */
 	if (IS_ENTERPRISE(priv->drive_type)) {
-		ltfsmsg(LTFS_DEBUG, "30592D", __FUNCTION__, "Disabling read across EOD");
+		ltfsmsg(LTFS_DEBUG, 30592D, __FUNCTION__, "Disabling read across EOD");
 		rc = lin_tape_ibmtape_modesense(device, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 		if (rc != DEVICE_GOOD) {
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETDEFAULT));
@@ -2689,7 +2689,7 @@ int lin_tape_ibmtape_set_default(void *device)
 	}
 
 	/* set SILI bit */
-	ltfsmsg(LTFS_DEBUG, "30592D", __FUNCTION__, "Setting SILI bit");
+	ltfsmsg(LTFS_DEBUG, 30592D, __FUNCTION__, "Setting SILI bit");
 	while (true) {
 		memset(&param, 0, sizeof(struct stchgp_s));
 		rc = _sioc_stioc_command(device, STIOCQRYP, "GET PARAM", &param, &msg);
@@ -2712,11 +2712,11 @@ int lin_tape_ibmtape_set_default(void *device)
 		if (priv->fd < 0) {
 			priv->fd = open(priv->devname, O_RDONLY | O_NDELAY);
 			if (priv->fd < 0) {
-				ltfsmsg(LTFS_INFO, "30425I", priv->devname, errno);
+				ltfsmsg(LTFS_INFO, 30425I, priv->devname, errno);
 				rc = -EDEV_DEVICE_UNOPENABLE;
 				break;
 			}
-			ltfsmsg(LTFS_WARN, "30426W", priv->devname);
+			ltfsmsg(LTFS_WARN, 30426W, priv->devname);
 		}
 		retry ++;
 	}
@@ -2729,10 +2729,10 @@ int lin_tape_ibmtape_set_default(void *device)
 
 	/* set logical block protection */
 	if (global_data.crc_checking) {
-		ltfsmsg(LTFS_DEBUG, "30592D", __FUNCTION__, "Setting LBP");
+		ltfsmsg(LTFS_DEBUG, 30592D, __FUNCTION__, "Setting LBP");
 		rc = lin_tape_ibmtape_set_lbp(device, true);
 	} else {
-		ltfsmsg(LTFS_DEBUG, "30592D", __FUNCTION__, "Resetting LBP");
+		ltfsmsg(LTFS_DEBUG, 30592D, __FUNCTION__, "Resetting LBP");
 		rc = lin_tape_ibmtape_set_lbp(device, false);
 	}
 	if (rc != DEVICE_GOOD) {
@@ -2816,11 +2816,11 @@ int lin_tape_ibmtape_get_cartridge_health(void *device, struct tc_cartridge_heal
 	cart_health->tape_efficiency  = UNSUPPORTED_CARTRIDGE_HEALTH;
 	rc = lin_tape_ibmtape_logsense(device, LOG_PERFORMANCE, logdata, LOGSENSEPAGE);
 	if (rc)
-		ltfsmsg(LTFS_INFO, "30461I", LOG_PERFORMANCE, rc, "get cart health");
+		ltfsmsg(LTFS_INFO, 30461I, LOG_PERFORMANCE, rc, "get cart health");
 	else {
 		for(i = 0; i < (int)((sizeof(perfstats)/sizeof(perfstats[0]))); i++) { /* BEAM: loop doesn't iterate - Use loop for future enhancement. */
 			if (parse_logPage(logdata, perfstats[i], &param_size, buf, 16)) {
-				ltfsmsg(LTFS_INFO, "30462I", LOG_PERFORMANCE, "get cart health");
+				ltfsmsg(LTFS_INFO, 30462I, LOG_PERFORMANCE, "get cart health");
 			} else {
 				switch(param_size) {
 				case sizeof(uint8_t):
@@ -2867,11 +2867,11 @@ int lin_tape_ibmtape_get_cartridge_health(void *device, struct tc_cartridge_heal
 	cart_health->passes_middle    = UNSUPPORTED_CARTRIDGE_HEALTH;
 	rc = lin_tape_ibmtape_logsense(device, LOG_VOLUMESTATS, logdata, LOGSENSEPAGE);
 	if (rc)
-		ltfsmsg(LTFS_INFO, "30461I", LOG_VOLUMESTATS, rc, "get cart health");
+		ltfsmsg(LTFS_INFO, 30461I, LOG_VOLUMESTATS, rc, "get cart health");
 	else {
 		for(i = 0; i < (int)((sizeof(volstats)/sizeof(volstats[0]))); i++) {
 			if (parse_logPage(logdata, volstats[i], &param_size, buf, 16)) {
-				ltfsmsg(LTFS_INFO, "30462I", LOG_VOLUMESTATS, "get cart health");
+				ltfsmsg(LTFS_INFO, 30462I, LOG_VOLUMESTATS, "get cart health");
 			} else {
 				switch(param_size) {
 				case sizeof(uint8_t):
@@ -2964,12 +2964,12 @@ int lin_tape_ibmtape_get_tape_alert(void *device, uint64_t *tape_alert)
 	ta = 0;
 	rc = lin_tape_ibmtape_logsense(device, LOG_TAPE_ALERT, logdata, LOGSENSEPAGE);
 	if (rc)
-		ltfsmsg(LTFS_INFO, "30461I", LOG_TAPE_ALERT, rc, "get tape alert");
+		ltfsmsg(LTFS_INFO, 30461I, LOG_TAPE_ALERT, rc, "get tape alert");
 	else {
 		for(i = 1; i <= 64; i++) {
 			if (parse_logPage(logdata, (uint16_t) i, &param_size, buf, 16)
 				|| param_size != sizeof(uint8_t)) {
-				ltfsmsg(LTFS_INFO, "30462I", LOG_TAPE_ALERT, "get tape alert");
+				ltfsmsg(LTFS_INFO, 30462I, LOG_TAPE_ALERT, "get tape alert");
 				ta = 0;
 			}
 
@@ -3017,7 +3017,7 @@ int lin_tape_ibmtape_clear_tape_alert(void *device, uint64_t tape_alert)
 	uint32_t length = 0;
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
-	ltfsmsg(LTFS_DEBUG, "30592D", "read block limits", ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30592D, "read block limits", ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	memset(&spt, 0, sizeof(spt));
 	memset(cdb, 0, sizeof(cdb));
@@ -3155,7 +3155,7 @@ int lin_tape_ibmtape_get_device_list(struct tc_drive_info *buf, int count)
 	list = fopen(DEV_LIST_FILE, "r");
 	if (!list) {
 		/* Failed to open file '%s' (%d) */
-		ltfsmsg(LTFS_ERR, "30463E", DEV_LIST_FILE, errno);
+		ltfsmsg(LTFS_ERR, 30463E, DEV_LIST_FILE, errno);
 		return i;
 	}
 
@@ -3296,7 +3296,7 @@ int lin_tape_ibmtape_get_eod_status(void *device, int part)
 	/* Issue LogPage 0x17 */
 	rc = lin_tape_ibmtape_logsense(device, LOG_VOL_STATISTICS, logdata, LOGSENSEPAGE);
 	if (rc) {
-		ltfsmsg(LTFS_WARN, "30464W", LOG_VOL_STATISTICS, rc);
+		ltfsmsg(LTFS_WARN, 30464W, LOG_VOL_STATISTICS, rc);
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETEODSTAT));
 		return EOD_UNKNOWN;
 	}
@@ -3304,7 +3304,7 @@ int lin_tape_ibmtape_get_eod_status(void *device, int part)
 	/* Parse Approximate used native capacity of partitions (0x203)*/
 	if (parse_logPage(logdata, (uint16_t)LOG_VOL_USED_CAPACITY, &param_size, buf, sizeof(buf))
 		|| (param_size != sizeof(buf) ) ) {
-		ltfsmsg(LTFS_WARN, "30465W");
+		ltfsmsg(LTFS_WARN, 30465W);
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETEODSTAT));
 		return EOD_UNKNOWN;
 	}
@@ -3323,7 +3323,7 @@ int lin_tape_ibmtape_get_eod_status(void *device, int part)
 				((uint32_t) buf[i + 6] << 8) +
 				(uint32_t) buf[i + 7];
 		} else
-			ltfsmsg(LTFS_WARN, "30466W", i, part_buf, len);
+			ltfsmsg(LTFS_WARN, 30466W, i, part_buf, len);
 
 		i += (len + 1);
 	}
@@ -3366,10 +3366,10 @@ int lin_tape_ibmtape_get_xattr(void *device, const char *name, char **buf)
 			rc = lin_tape_ibmtape_logsense_page(device, LOG_PERFORMANCE, LOG_PERFORMANCE_CAPACITY_SUB,
 									   logdata, LOGSENSEPAGE);
 			if (rc)
-				ltfsmsg(LTFS_INFO, "30461I", LOG_PERFORMANCE, rc, "get xattr");
+				ltfsmsg(LTFS_INFO, 30461I, LOG_PERFORMANCE, rc, "get xattr");
 			else {
 				if (parse_logPage(logdata, PERF_ACTIVE_CQ_LOSS_W, &param_size, logbuf, 16)) {
-					ltfsmsg(LTFS_INFO, "30462I", LOG_PERFORMANCE, "get xattr");
+					ltfsmsg(LTFS_INFO, 30462I, LOG_PERFORMANCE, "get xattr");
 					rc = -LTFS_NO_XATTR;
 				} else {
 					switch(param_size) {
@@ -3380,7 +3380,7 @@ int lin_tape_ibmtape_get_xattr(void *device, const char *name, char **buf)
 						priv->dirty_acq_loss_w = false;
 						break;
 					default:
-						ltfsmsg(LTFS_INFO, "30467I", param_size);
+						ltfsmsg(LTFS_INFO, 30467I, param_size);
 						rc = -LTFS_NO_XATTR;
 						break;
 					}
@@ -3393,7 +3393,7 @@ int lin_tape_ibmtape_get_xattr(void *device, const char *name, char **buf)
 			rc = asprintf(buf, "%2.2f", priv->acq_loss_w);
 			if (rc < 0) {
 				rc = -LTFS_NO_MEMORY;
-				ltfsmsg(LTFS_INFO, "30468I", "getting active CQ loss write");
+				ltfsmsg(LTFS_INFO, 30468I, "getting active CQ loss write");
 			}
 			else
 				rc = DEVICE_GOOD;
@@ -3426,7 +3426,7 @@ int lin_tape_ibmtape_set_xattr(void *device, const char *name, const char *buf, 
 
 	null_terminated = malloc(size + 1);
 	if (! null_terminated) {
-		ltfsmsg(LTFS_ERR, "10001E", "lin_tape_ibmtape_set_xattr: null_term");
+		ltfsmsg(LTFS_ERR, 10001E, "lin_tape_ibmtape_set_xattr: null_term");
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETXATTR));
 		return -LTFS_NO_MEMORY;
 	}
@@ -3454,7 +3454,7 @@ int lin_tape_ibmtape_set_xattr(void *device, const char *name, const char *buf, 
 
 void lin_tape_ibmtape_help_message(void)
 {
-	ltfsresult("30599I", lin_tape_ibmtape_default_device);
+	ltfsresult(30599I, lin_tape_ibmtape_default_device);
 }
 
 const char *lin_tape_ibmtape_default_device_name(void)
@@ -3477,7 +3477,7 @@ static void ltfsmsg_keyalias(const char * const title, const unsigned char * con
 	else
 		sprintf(s, "keyalias: NULL");
 
-	ltfsmsg(LTFS_DEBUG, "30592D", title, s);
+	ltfsmsg(LTFS_DEBUG, 30592D, title, s);
 }
 
 static bool is_ame(void *device)
@@ -3488,7 +3488,7 @@ static bool is_ame(void *device)
 	if (rc != 0) {
 		char message[100] = {0};
 		sprintf(message, "failed to get MP %02Xh (%d)", TC_MP_READ_WRITE_CTRL, rc);
-		ltfsmsg(LTFS_DEBUG, "30592D", __FUNCTION__, message);
+		ltfsmsg(LTFS_DEBUG, 30592D, __FUNCTION__, message);
 
 		return false; /* Consider that the encryption method is not AME */
 	} else {
@@ -3522,10 +3522,10 @@ static bool is_ame(void *device)
 			break;
 		}
 		sprintf(message, "Encryption Method is %s (0x%02X)", method, encryption_method);
-		ltfsmsg(LTFS_DEBUG, "30592D", __FUNCTION__, message);
+		ltfsmsg(LTFS_DEBUG, 30592D, __FUNCTION__, message);
 
 		if (encryption_method != 0x50) {
-			ltfsmsg(LTFS_ERR, "30469E", method, encryption_method);
+			ltfsmsg(LTFS_ERR, 30469E, method, encryption_method);
 		}
 		return encryption_method == 0x50;
 	}
@@ -3536,7 +3536,7 @@ static int is_encryption_capable(void *device)
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	if (IS_ENTERPRISE(priv->drive_type)) {
-		ltfsmsg(LTFS_ERR, "30470E", priv->drive_type);
+		ltfsmsg(LTFS_ERR, 30470E, priv->drive_type);
 		return -EDEV_INTERNAL_ERROR;
 	}
 
@@ -3562,7 +3562,7 @@ int lin_tape_ibmtape_security_protocol_out(void *device, const uint16_t sps, uns
 	char *msg = NULL;
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
-	ltfsmsg(LTFS_DEBUG, "30592D", "Security Protocol Out (SPOUT)", ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30592D, "Security Protocol Out (SPOUT)", ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	/* Prepare Data Buffer */
 	spt.buffer_length = size;
@@ -3715,7 +3715,7 @@ static void show_hex_dump(const char * const title, const unsigned char * const 
 		p += sprintf(p, "%c", isprint(buf[i-j]) ? buf[i-j] : '.');
 	}
 
-	ltfsmsg(LTFS_DEBUG, "30592D", title, s);
+	ltfsmsg(LTFS_DEBUG, 30592D, title, s);
 }
 
 int lin_tape_ibmtape_get_keyalias(void *device, unsigned char **keyalias) /* This is not IBM method but T10 method. */
@@ -3746,7 +3746,7 @@ int lin_tape_ibmtape_get_keyalias(void *device, unsigned char **keyalias) /* Thi
 		free(spt.buffer);
 		spt.buffer = (unsigned char*) calloc(spt.buffer_length, sizeof(unsigned char));
 		if (spt.buffer == NULL) {
-			ltfsmsg(LTFS_ERR, "10001E", "lin_tape_ibmtape_get_keyalias: data buffer");
+			ltfsmsg(LTFS_ERR, 10001E, "lin_tape_ibmtape_get_keyalias: data buffer");
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETKEYALIAS));
 			return -EDEV_NO_MEMORY;
 		}
@@ -3848,8 +3848,8 @@ int lin_tape_ibmtape_set_lbp(void *device, bool enable)
 		lbp_method = REED_SOLOMON_CRC;
 
 	/* set logical block protection */
-	ltfsmsg(LTFS_DEBUG, "30593D", "LBP Enable", enable, "");
-	ltfsmsg(LTFS_DEBUG, "30593D", "LBP Method", lbp_method, "");
+	ltfsmsg(LTFS_DEBUG, 30593D, "LBP Enable", enable, "");
+	ltfsmsg(LTFS_DEBUG, 30593D, "LBP Method", lbp_method, "");
 	memset(&lbp, 0, sizeof(struct logical_block_protection));
 	rc = _sioc_stioc_command(device, STIOC_QUERY_BLK_PROTECTION, "GET LBP", &lbp, &msg);
 	if (rc != DEVICE_GOOD) {
@@ -3886,11 +3886,11 @@ int lin_tape_ibmtape_set_lbp(void *device, bool enable)
 			priv->f_crc_check = NULL;
 			break;
 		}
-		ltfsmsg(LTFS_INFO, "30471I");
+		ltfsmsg(LTFS_INFO, 30471I);
 	} else {
 		priv->f_crc_enc   = NULL;
 		priv->f_crc_check = NULL;
-		ltfsmsg(LTFS_INFO, "30472I");
+		ltfsmsg(LTFS_INFO, 30472I);
 	}
 
 	return rc;
@@ -3952,7 +3952,7 @@ int lin_tape_ibmtape_readbuffer(void *device, int id, unsigned char *buf, size_t
 	int rc;
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
-	ltfsmsg(LTFS_DEBUG, "30593D", "read buffer", id, ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30593D, "read buffer", id, ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	memset(&spt, 0, sizeof(spt));
 	memset(cdb, 0, sizeof(cdb));
@@ -4015,13 +4015,13 @@ int lin_tape_ibmtape_getdump_drive(void *device, const char *fname)
 	unsigned char *dump_buf;
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
-	ltfsmsg(LTFS_INFO, "30478I", fname);
+	ltfsmsg(LTFS_INFO, 30478I, fname);
 
 	/* Set transfer size */
 	transfer_size = DUMP_TRANSFER_SIZE;
 	dump_buf = calloc(1, DUMP_TRANSFER_SIZE);
 	if (dump_buf == NULL) {
-		ltfsmsg(LTFS_ERR, "10001E", "lin_tape_ibmtape_getdump_drive: dump buffer");
+		ltfsmsg(LTFS_ERR, 10001E, "lin_tape_ibmtape_getdump_drive: dump buffer");
 		return -EDEV_NO_MEMORY;
 	}
 
@@ -4040,7 +4040,7 @@ int lin_tape_ibmtape_getdump_drive(void *device, const char *fname)
 	dumpfd = open(fname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (dumpfd < 0) {
 		rc = -errno;
-		ltfsmsg(LTFS_WARN, "30479W", rc);
+		ltfsmsg(LTFS_WARN, 30479W, rc);
 		free(dump_buf);
 		return rc;
 	}
@@ -4052,13 +4052,13 @@ int lin_tape_ibmtape_getdump_drive(void *device, const char *fname)
 		num_transfers += 1;
 
 	/* Total dump data length is %lld. Total number of transfers is %d. */
-	ltfsmsg(LTFS_DEBUG, "30480D", data_length);
-	ltfsmsg(LTFS_DEBUG, "30481D", num_transfers);
+	ltfsmsg(LTFS_DEBUG, 30480D, data_length);
+	ltfsmsg(LTFS_DEBUG, 30481D, num_transfers);
 
 	/* start to transfer data */
 	buf_offset = 0;
 	i = 0;
-	ltfsmsg(LTFS_DEBUG, "30482D");
+	ltfsmsg(LTFS_DEBUG, 30482D);
 	while (num_transfers) {
 		int length;
 
@@ -4072,7 +4072,7 @@ int lin_tape_ibmtape_getdump_drive(void *device, const char *fname)
 
 		rc = lin_tape_ibmtape_readbuffer(device, buf_id, dump_buf, buf_offset, length, 0x02);
 		if (rc) {
-			ltfsmsg(LTFS_WARN, "30483W", rc);
+			ltfsmsg(LTFS_WARN, 30483W, rc);
 			free(dump_buf);
 			close(dumpfd);
 			return rc;
@@ -4082,15 +4082,15 @@ int lin_tape_ibmtape_getdump_drive(void *device, const char *fname)
 		bytes = write(dumpfd, dump_buf, length);
 		if (bytes == -1) {
 			rc = -errno;
-			ltfsmsg(LTFS_WARN, "30484W", rc);
+			ltfsmsg(LTFS_WARN, 30484W, rc);
 			free(dump_buf);
 			close(dumpfd);
 			return rc;
 		}
 
-		ltfsmsg(LTFS_DEBUG, "30485D", i, bytes);
+		ltfsmsg(LTFS_DEBUG, 30485D, i, bytes);
 		if (bytes != length) {
-			ltfsmsg(LTFS_WARN, "30486W", bytes, length);
+			ltfsmsg(LTFS_WARN, 30486W, bytes, length);
 			free(dump_buf);
 			close(dumpfd);
 			return -EDEV_DUMP_EIO;
@@ -4124,7 +4124,7 @@ int lin_tape_ibmtape_forcedump_drive(void *device)
 	char *msg;
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
-	ltfsmsg(LTFS_DEBUG, "30593D", "force dump", 0, ((struct lin_tape_ibmtape *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30593D, "force dump", 0, ((struct lin_tape_ibmtape *) device)->drive_serial);
 
 	memset(&spt, 0, sizeof(spt));
 	memset(cdb, 0, sizeof(cdb));
@@ -4194,11 +4194,11 @@ int lin_tape_ibmtape_takedump_drive(void *device, bool nonforced_dump)
 		strcpy(fname, fname_base);
 		strcat(fname, ".dmp");
 
-		ltfsmsg(LTFS_INFO, "30487I");
+		ltfsmsg(LTFS_INFO, 30487I);
 		lin_tape_ibmtape_getdump_drive(device, fname);
 	}
 
-	ltfsmsg(LTFS_INFO, "30488I");
+	ltfsmsg(LTFS_INFO, 30488I);
 	lin_tape_ibmtape_forcedump_drive(device);
 	strcpy(fname, fname_base);
 	strcat(fname, "_f.dmp");
@@ -4218,7 +4218,7 @@ int lin_tape_ibmtape_get_worm_status(void *device, bool *is_worm)
 	if (priv->loaded) {
 		*is_worm = priv->is_worm;
 	} else {
-		ltfsmsg(LTFS_INFO, "30489I");
+		ltfsmsg(LTFS_INFO, 30489I);
 		*is_worm = false;
 		rc = -1;
 	}

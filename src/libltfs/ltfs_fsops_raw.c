@@ -79,7 +79,7 @@ int ltfs_fsraw_open(const char *path, bool open_write, struct dentry **d, struct
 	if (ret < 0) {
 		/* Print message only if the error code is an unexpected one */
 		if (ret != -LTFS_NO_DENTRY && ret != -LTFS_NAMETOOLONG)
-			ltfsmsg(LTFS_ERR, "11040E", ret);
+			ltfsmsg(LTFS_ERR, 11040E, ret);
 		releaseread_mrsw(&vol->lock);
 		return ret;
 	}
@@ -128,7 +128,7 @@ int _ltfs_fsraw_write_data_unlocked(char partition, const char *buf, size_t coun
 
 	/* Validate partition ID */
 	if (partition != ltfs_dp_id(vol) && partition != ltfs_ip_id(vol)) {
-		ltfsmsg(LTFS_ERR, "11067E");
+		ltfsmsg(LTFS_ERR, 11067E);
 		writetoread_mrsw(&vol->lock);
 		return -LTFS_BAD_PARTNUM;
 	}
@@ -142,7 +142,7 @@ int _ltfs_fsraw_write_data_unlocked(char partition, const char *buf, size_t coun
 	/* Can only write multiple repetitions if the input buffer contains an integer
 	 * number of blocks */
 	if (repetitions > 1 && count % blocksize != 0) {
-		ltfsmsg(LTFS_ERR, "11068E");
+		ltfsmsg(LTFS_ERR, 11068E);
 		writetoread_mrsw(&vol->lock);
 		return -LTFS_BAD_ARG;
 	}
@@ -150,7 +150,7 @@ int _ltfs_fsraw_write_data_unlocked(char partition, const char *buf, size_t coun
 	/* Lock the device now, as we may need to issue multiple writes atomically */
 	ret = tape_device_lock(vol->device);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11004E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 11004E, __FUNCTION__);
 		writetoread_mrsw(&vol->lock);
 		return ret;
 	}
@@ -168,7 +168,7 @@ int _ltfs_fsraw_write_data_unlocked(char partition, const char *buf, size_t coun
 	else /* partition == ltfs_dp_id(vol) */
 		ret = ltfs_write_index_conditional(ltfs_ip_id(vol), vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11069E", ret);
+		ltfsmsg(LTFS_ERR, 11069E, ret);
 		writetoread_mrsw(&vol->lock);
 		goto out_unlock;
 	}
@@ -194,7 +194,7 @@ int _ltfs_fsraw_write_data_unlocked(char partition, const char *buf, size_t coun
 	/* Seek to partition append position (not necessarily end of data) */
 	ret = tape_seek_append_position(vol->device, ltfs_part_id2num(partition, vol), partition == vol->label->partid_ip);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11070E", partition);
+		ltfsmsg(LTFS_ERR, 11070E, partition);
 		goto out_unlock;
 	}
 
@@ -205,7 +205,7 @@ int _ltfs_fsraw_write_data_unlocked(char partition, const char *buf, size_t coun
 
 	ret = tape_get_position(vol->device, &start);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11071E", ret);
+		ltfsmsg(LTFS_ERR, 11071E, ret);
 		goto out_unlock;
 	}
 
@@ -221,7 +221,7 @@ int _ltfs_fsraw_write_data_unlocked(char partition, const char *buf, size_t coun
 			nwrite_last = tape_write(vol->device, buf + write_count, to_write, false, false);
 			if (nwrite_last < 0) {
 				ret = nwrite_last;
-				ltfsmsg(LTFS_ERR, "11072E", ret);
+				ltfsmsg(LTFS_ERR, 11072E, ret);
 				goto out_unlock;
 			}
 			write_count += to_write;
@@ -286,7 +286,7 @@ int _ltfs_fsraw_add_extent_unlocked(struct dentry *d, struct extent_info *ext, b
 	/* Copy the input extent now to avoid failing after the extent list has already been updated */
 	ext_copy = malloc(sizeof(struct extent_info));
 	if (! ext_copy) {
-		ltfsmsg(LTFS_ERR, "10001E", "ltfs_append_extent_unlocked: extent copy");
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs_append_extent_unlocked: extent copy");
 		return -LTFS_NO_MEMORY;
 	}
 	*ext_copy = *ext;
@@ -331,7 +331,7 @@ int _ltfs_fsraw_add_extent_unlocked(struct dentry *d, struct extent_info *ext, b
 					/* Split entry */
 					splitentry = malloc(sizeof(struct extent_info));
 					if (! splitentry) {
-						ltfsmsg(LTFS_ERR, "10001E", "ltfs_append_extent_unlocked: splitentry");
+						ltfsmsg(LTFS_ERR, 10001E, "ltfs_append_extent_unlocked: splitentry");
 						free(ext_copy);
 						return -LTFS_NO_MEMORY;
 					}
@@ -454,7 +454,7 @@ int ltfs_fsraw_cleanup_extent(struct dentry *d, struct tc_position err_pos, unsi
 			else {
                 TAILQ_FOREACH_REVERSE_SAFE(ext, &entry->d->extentlist, extent_struct, list, preventry) {
 					if (err_pos.block <= (ext->start.block + ext->bytecount/blocksize)) {
-						ltfsmsg(LTFS_INFO, "11334I", entry->name, ext->start.block, ext->bytecount);
+						ltfsmsg(LTFS_INFO, 11334I, entry->name, (unsigned long long)ext->start.block, (unsigned long long)ext->bytecount);
 
 						ret = ltfs_get_volume_lock(false, vol);
 						if (ret < 0)
@@ -485,7 +485,7 @@ int ltfs_fsraw_write(struct dentry *d, const char *buf, size_t count, off_t offs
 	struct extent_info tmpext;
 	struct tape_offset logical_start = { .partition = partition, .block = 0 };
 
-	ltfsmsg(LTFS_DEBUG2, "11252D", d->platform_safe_name, (long long)offset, count);
+	ltfsmsg(LTFS_DEBUG2, 11252D, d->platform_safe_name, (long long)offset, (unsigned long long)count);
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(buf, -LTFS_NULL_ARG);
@@ -508,7 +508,7 @@ start:
 		releaseread_mrsw(&vol->lock);
 		return ret;
 	} else if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11077E", ret);
+		ltfsmsg(LTFS_ERR, 11077E, ret);
 		releaseread_mrsw(&vol->lock);
 		return ret;
 	}
@@ -542,7 +542,7 @@ ssize_t ltfs_fsraw_read(struct dentry *d, char *buf, size_t count, off_t offset,
 	bool is_first_dp_locate = false;
 	struct ltfs_timespec ts_start, ts_end;
 
-	ltfsmsg(LTFS_DEBUG2, "11254D", d->platform_safe_name, (long long)offset, count);
+	ltfsmsg(LTFS_DEBUG2, 11254D, d->platform_safe_name, (long long)offset, (unsigned long long)count);
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
@@ -567,7 +567,7 @@ start:
 		else
 			return ret;
 	} else if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11004E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 11004E, __FUNCTION__);
 		releaseread_mrsw(&d->contents_lock);
 		releaseread_mrsw(&vol->lock);
 		return ret;
@@ -577,7 +577,7 @@ start:
 	if (! vol->last_block) {
 		vol->last_block = malloc(vol->label->blocksize);
 		if (! vol->last_block) {
-			ltfsmsg(LTFS_ERR, "10001E", "ltfs_fsraw_read: block cache");
+			ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsraw_read: block cache");
 			ret = -LTFS_NO_MEMORY;
 			goto out_unlock;
 		}
@@ -610,7 +610,7 @@ start:
 			/* Compute current position */
 			ret = tape_get_position(vol->device, &curpos);
 			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "11085E", ret);
+				ltfsmsg(LTFS_ERR, 11085E, ret);
 				goto out_unlock;
 			}
 
@@ -634,7 +634,7 @@ start:
 
 				ret = tape_seek(vol->device, &seekpos);
 				if (ret < 0) {
-					ltfsmsg(LTFS_ERR, "11086E", ret, entry->start.partition, seekpos.block);
+					ltfsmsg(LTFS_ERR, 11086E, ret, entry->start.partition, (unsigned long long)seekpos.block);
 					goto out_unlock;
 				}
 
@@ -659,7 +659,7 @@ start:
 					seekpos.block == vol->last_pos.block &&
 					(seekpos.partition == curpos.partition && seekpos.block + 1 == curpos.block)) {
 					if (vol->last_size < blockbytes) {
-						ltfsmsg(LTFS_ERR, "11087E", blockbytes, vol->last_size);
+						ltfsmsg(LTFS_ERR, 11087E, (unsigned int)blockbytes, vol->last_size);
 						ret = -LTFS_SMALL_BLOCK;
 						goto out_unlock;
 					}
@@ -674,10 +674,10 @@ start:
 
 					if (nread < 0) {
 						ret = nread;
-						ltfsmsg(LTFS_ERR, "11088E", ret);
+						ltfsmsg(LTFS_ERR, 11088E, ret);
 						goto out_unlock;
 					} else if ((size_t) nread < blockbytes) {
-						ltfsmsg(LTFS_ERR, "11089E", blockbytes, (unsigned long)nread);
+						ltfsmsg(LTFS_ERR, 11089E, (unsigned int)blockbytes, (unsigned int)nread);
 						ret = -LTFS_SMALL_BLOCK;
 						goto out_unlock;
 					}
@@ -810,10 +810,10 @@ struct dentry *ltfs_fsraw_get_dentry(struct dentry *d, struct ltfs_volume *vol)
 void ltfs_fsraw_put_dentry(struct dentry *d, struct ltfs_volume *vol)
 {
 	if (! d) {
-		ltfsmsg(LTFS_WARN, "10006W", "d", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "d", __FUNCTION__);
 		return;
 	} else if (! vol) {
-		ltfsmsg(LTFS_WARN, "10006W", "vol", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "vol", __FUNCTION__);
 		return;
 	}
 	if (dcache_initialized(vol))

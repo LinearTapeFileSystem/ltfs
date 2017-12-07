@@ -137,8 +137,7 @@ root:table {
 		30596D:string { "Backend %s: %zu %s." }
 		30597D:string { "Backend %s: (%llu, %llu) %s." }
 		30598D:string { "Backend %s: (%llu, %llu) FM = %llu %s." }
-		30599I:string { "IBMTAPE backend options:\n"
-						"    -o devname=<dev>           tape device (default=%s)\n"
+		30599I:string { "IBMTAPE backend options:\n    -o devname=<dev>           tape device (default=%s)\n"
 						"    -o autodump                enable autodump (default)\n"
 						"    -o noautodump              disable autodump\n"
 						"    -o scsi_lbprotect=<on|off> enable drive logical block protection (default=off)\n." }

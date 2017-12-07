@@ -401,7 +401,7 @@ int errormap_init()
 
 	HASH_ADD_INT(fuse_errormap, ltfs_error, fuse_error_list);
 	if (! fuse_errormap) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 	for (err=fuse_error_list+1; err->ltfs_error!=-1; ++err)

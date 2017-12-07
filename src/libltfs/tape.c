@@ -101,7 +101,7 @@ extern bool ltfs_is_interrupted(void);
 #define INTERRUPTED_RETURN()					\
 	do{											\
 		if (ltfs_is_interrupted()) {			\
-			ltfsmsg(LTFS_INFO, "17159I");		\
+			ltfsmsg(LTFS_INFO, 17159I);		\
 			free(buf);							\
 			return -LTFS_INTERRUPTED;			\
 		}										\
@@ -118,26 +118,26 @@ int tape_device_alloc(struct device_data **device)
 
 	struct device_data *newdev = calloc(1, sizeof(struct device_data));
 	if (! newdev) {
-		ltfsmsg(LTFS_ERR, "10001E", "tape_device_alloc: device data");
+		ltfsmsg(LTFS_ERR, 10001E, "tape_device_alloc: device data");
 		return -LTFS_NO_MEMORY;
 	}
 
 	ret = ltfs_mutex_init(&newdev->backend_mutex);
 	if (ret) {
-		ltfsmsg(LTFS_ERR, "12008E", ret);
+		ltfsmsg(LTFS_ERR, 12008E, ret);
 		free(newdev);
 		return -LTFS_MUTEX_INIT;
 	}
 	ret = ltfs_mutex_init(&newdev->read_only_flag_mutex);
 	if (ret) {
-		ltfsmsg(LTFS_ERR, "12008E", ret);
+		ltfsmsg(LTFS_ERR, 12008E, ret);
 		ltfs_mutex_destroy(&newdev->backend_mutex);
 		free(newdev);
 		return -LTFS_MUTEX_INIT;
 	}
 	ret = ltfs_mutex_init(&newdev->append_pos_mutex);
 	if (ret) {
-		ltfsmsg(LTFS_ERR, "12008E", ret);
+		ltfsmsg(LTFS_ERR, 12008E, ret);
 		free(newdev);
 		return -LTFS_MUTEX_INIT;
 	}
@@ -199,7 +199,7 @@ int tape_device_open(struct device_data *device, const char *devname, struct tap
 	/* Validate the tape operations structure. */
 	for (i=0; i<sizeof(struct tape_ops)/sizeof(void *); ++i) {
 		if ((((void **)ops)[i]) == NULL) {
-			ltfsmsg(LTFS_ERR, "12004E");
+			ltfsmsg(LTFS_ERR, 12004E);
 			return -LTFS_PLUGIN_INCOMPLETE;
 		}
 	}
@@ -210,7 +210,7 @@ int tape_device_open(struct device_data *device, const char *devname, struct tap
 	ret = device->backend->open(devname, &device->backend_data);
 	if (ret < 0) {
 		/* Cannot open device: backend open call failed */
-		ltfsmsg(LTFS_ERR, "12012E");
+		ltfsmsg(LTFS_ERR, 12012E);
 		goto out_free;
 	}
 
@@ -223,7 +223,7 @@ int tape_device_open(struct device_data *device, const char *devname, struct tap
 	}
 	if (ret < 0) {
 		/* Cannot open device: failed to reserve the device (%d) */
-		ltfsmsg(LTFS_ERR, "12014E", ret);
+		ltfsmsg(LTFS_ERR, 12014E, ret);
 		tape_device_close(device, kmi_handle, false);
 		goto out_free;
 	}
@@ -261,7 +261,7 @@ int tape_device_reopen(struct device_data *device, const char *devname)
 	ret = device->backend->reopen(devname, device->backend_data);
 	if (ret < 0) {
 		/* Cannot reopen device: backend reopen call failed */
-		ltfsmsg(LTFS_ERR, "17181E");
+		ltfsmsg(LTFS_ERR, 17181E);
 	}
 
 	return ret;
@@ -278,7 +278,7 @@ void _tape_device_close(struct device_data *device, void * const kmi_handle,
 						bool skip_aom_setting, bool force_release)
 {
 	if (! device) {
-		ltfsmsg(LTFS_WARN, "10006W", "device", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "device", __FUNCTION__);
 		return;
 	}
 
@@ -308,7 +308,7 @@ void _tape_device_close(struct device_data *device, void * const kmi_handle,
 void tape_device_close_raw(struct device_data *device)
 {
 	if (! device) {
-		ltfsmsg(LTFS_WARN, "10006W", "device", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "device", __FUNCTION__);
 		return;
 	}
 
@@ -363,7 +363,7 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 	do {
 		ret = dev->backend->load(dev->backend_data, &dev->position);
 		if (ret == -EDEV_NO_MEDIUM) {
-			ltfsmsg(LTFS_ERR, "12016E");
+			ltfsmsg(LTFS_ERR, 12016E);
 			return -LTFS_NO_MEDIUM;
 		} else if (ret < 0 && ! NEED_REVAL(ret)) {
 			if (ret == -EDEV_MEDIUM_FORMAT_ERROR)
@@ -378,19 +378,19 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 
 	ret = tape_wait_device_ready(dev, kmi_handle);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12017E", ret);
+		ltfsmsg(LTFS_ERR, 12017E, ret);
 		return -LTFS_DEVICE_UNREADY;
 	}
 
 	ret = tape_prevent_medium_removal(dev);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12018E", ret);
+		ltfsmsg(LTFS_ERR, 12018E, ret);
 		return ret;
 	}
 
 	ret = dev->backend->readpos(dev->backend_data, &dev->position);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12019E", ret);
+		ltfsmsg(LTFS_ERR, 12019E, ret);
 		return ret;
 	}
 
@@ -400,7 +400,7 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 	 */
 	ret = dev->backend->set_default(dev->backend_data);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12020E", ret);
+		ltfsmsg(LTFS_ERR, 12020E, ret);
 		return ret;
 	}
 
@@ -411,14 +411,14 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 	/* Get remaining capacity of the tape */
 	ret = tape_get_capacity(dev, &cap);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11999E", ret);
+		ltfsmsg(LTFS_ERR, 11999E, ret);
 		return ret;
 	}
 
 	/* Query device parameters */
 	ret = dev->backend->get_parameters(dev->backend_data, &param);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12021E", ret);
+		ltfsmsg(LTFS_ERR, 12021E, ret);
 		return ret;
 	}
 	dev->max_block_size = param.max_blksize;
@@ -426,7 +426,7 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 	/* Get programmable early warning size */
 	ret = tape_get_pews(dev, &pews);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17105E", ret);
+		ltfsmsg(LTFS_ERR, 17105E, ret);
 		return ret;
 	}
 	pews += 10; /* 10MB is extra space not to miss PEW */
@@ -464,7 +464,7 @@ int tape_unload_tape(bool keep_on_drive, struct device_data *dev)
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
 
-	ltfsmsg(LTFS_INFO, "12022I");
+	ltfsmsg(LTFS_INFO, 12022I);
 
 	/* Invalidate previous drive presence */
 	dev->previous_exist.tv_sec = 0;
@@ -568,11 +568,11 @@ int tape_reserve_device(struct device_data *dev)
 	ret = 0;
 	if (! dev->device_reserved) {
 		do {
-			ltfsmsg(LTFS_DEBUG, "12023D");
+			ltfsmsg(LTFS_DEBUG, 12023D);
 			ret = dev->backend->reserve_unit(dev->backend_data);
 		} while (NEED_REVAL(ret));
 		if (ret != 0) {
-			ltfsmsg(LTFS_ERR, "12024E", ret);
+			ltfsmsg(LTFS_ERR, 12024E, ret);
 			ret = (ret < 0) ? ret : -ret;
 		} else
 			dev->device_reserved = true;
@@ -589,16 +589,16 @@ void tape_release_device(struct device_data *dev)
 	int ret;
 
 	if (! dev) {
-		ltfsmsg(LTFS_WARN, "10006W", "dev", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "dev", __FUNCTION__);
 		return;
 	} else if (! dev->backend) {
-		ltfsmsg(LTFS_WARN, "10006W", "dev->backend", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "dev->backend", __FUNCTION__);
 		return;
 	}
 
 	if (dev->device_reserved) {
 		do {
-			ltfsmsg(LTFS_DEBUG, "12025D");
+			ltfsmsg(LTFS_DEBUG, 12025D);
 			ret = dev->backend->release_unit(dev->backend_data);
 		} while (NEED_REVAL(ret));
 		dev->device_reserved = (ret == 0) ? false : true;
@@ -620,11 +620,11 @@ int tape_prevent_medium_removal(struct device_data *dev)
 	ret = 0;
 	if (! dev->medium_locked) {
 		do {
-			ltfsmsg(LTFS_DEBUG, "12026D");
+			ltfsmsg(LTFS_DEBUG, 12026D);
 			ret = dev->backend->prevent_medium_removal(dev->backend_data);
 		} while (NEED_REVAL(ret));
 		if (ret != 0) {
-			ltfsmsg(LTFS_ERR, "12027E", ret);
+			ltfsmsg(LTFS_ERR, 12027E, ret);
 			ret = (ret < 0) ? ret : -ret;
 		} else
 			dev->medium_locked = true;
@@ -641,16 +641,16 @@ void tape_allow_medium_removal(struct device_data *dev, bool force_release)
 	int ret;
 
 	if (! dev) {
-		ltfsmsg(LTFS_WARN, "10006W", "dev", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "dev", __FUNCTION__);
 		return;
 	} else if (! dev->backend) {
-		ltfsmsg(LTFS_WARN, "10006W", "dev->backend", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "dev->backend", __FUNCTION__);
 		return;
 	}
 
 	if (dev->medium_locked || force_release) {
 		do {
-			ltfsmsg(LTFS_DEBUG, "12028D");
+			ltfsmsg(LTFS_DEBUG, 12028D);
 			ret = dev->backend->allow_medium_removal(dev->backend_data);
 		} while (NEED_REVAL(ret));
 		dev->medium_locked = (ret == 0) ? false : true;
@@ -686,7 +686,7 @@ int tape_test_unit_ready(struct device_data *dev)
 
 	ret = _tape_test_unit_ready(dev);
 	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "12029E", ret);
+		ltfsmsg(LTFS_ERR, 12029E, ret);
 
 	dev->previous_exist.tv_sec = ts_now.tv_sec;
 	dev->previous_exist.tv_nsec = ts_now.tv_nsec;
@@ -710,7 +710,7 @@ int tape_get_capacity(struct device_data *dev, struct tc_remaining_cap *cap)
 
 	ret = dev->backend->remaining_capacity(dev->backend_data, cap);
 	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "12030E", ret);
+		ltfsmsg(LTFS_ERR, 12030E, ret);
 	return ret;
 }
 
@@ -729,7 +729,7 @@ int tape_set_compression(struct device_data *dev, bool use_compression)
 
 	ret = dev->backend->set_compression(dev->backend_data, use_compression, &dev->position);
 	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "12031E", ret);
+		ltfsmsg(LTFS_ERR, 12031E, ret);
 	return ret;
 }
 
@@ -743,7 +743,7 @@ int tape_get_append_position(struct device_data *dev, tape_partition_t prt, tape
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 
 	if (prt > 1) {
-		ltfsmsg(LTFS_ERR, "12032E", (unsigned long)prt);
+		ltfsmsg(LTFS_ERR, 12032E, (unsigned long)prt);
 		return -LTFS_BAD_PARTNUM;
 	}
 
@@ -781,7 +781,7 @@ int tape_set_append_position(struct device_data *dev, tape_partition_t prt, tape
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	if (prt > 1) {
-		ltfsmsg(LTFS_ERR, "12032E", (unsigned long)prt);
+		ltfsmsg(LTFS_ERR, 12032E, (unsigned long)prt);
 		return -LTFS_BAD_PARTNUM;
 	}
 
@@ -813,7 +813,7 @@ int tape_seek_append_position(struct device_data *dev, tape_partition_t prt, boo
 		new_pos.block = TAPE_BLOCK_MAX;
 	ret = tape_seek(dev, &new_pos);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12033E", ret);
+		ltfsmsg(LTFS_ERR, 12033E, ret);
 		dev->write_error = true;
 		return ret;
 	}
@@ -845,7 +845,7 @@ int tape_get_params(struct device_data *dev, struct tc_current_param *param)
 
 	ret = dev->backend->get_parameters(dev->backend_data, param);
 	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "12034E", ret);
+		ltfsmsg(LTFS_ERR, 12034E, ret);
 
 	return ret;
 }
@@ -946,7 +946,7 @@ int tape_rewind(struct device_data *dev)
 
 	ret = dev->backend->rewind(dev->backend_data, &dev->position);
 	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "12035E", ret);
+		ltfsmsg(LTFS_ERR, 12035E, ret);
 	return ret;
 }
 
@@ -970,7 +970,7 @@ int tape_seek(struct device_data *dev, struct tc_position *pos)
 		/* Explicitly seek to (0,0) to detect known upper generation tape */
 		ret = dev->backend->locate(dev->backend_data, *pos, &dev->position);
 		if (ret < 0)
-			ltfsmsg(LTFS_ERR, "12037E", ret);
+			ltfsmsg(LTFS_ERR, 12037E, ret);
 		else {
 			ltfs_mutex_lock(&dev->read_only_flag_mutex);
 			if (dev->position.early_warning)
@@ -986,7 +986,7 @@ int tape_seek(struct device_data *dev, struct tc_position *pos)
 
 	if (ret == 0 && (dev->position.partition != pos->partition ||
 		(pos->block != TAPE_BLOCK_MAX && pos->block != dev->position.block))) {
-		ltfsmsg(LTFS_ERR, "12036E");
+		ltfsmsg(LTFS_ERR, 12036E);
 		ret = -LTFS_BAD_LOCATE;
 	}
 
@@ -1008,19 +1008,19 @@ int tape_seek_eod(struct device_data *dev, tape_partition_t partition)
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
 
 	if (partition > 1) {
-		ltfsmsg(LTFS_ERR, "12038E", (unsigned long)partition);
+		ltfsmsg(LTFS_ERR, 12038E, (unsigned long)partition);
 		return -LTFS_BAD_PARTNUM;
 	}
 
 	ret = dev->backend->locate(dev->backend_data, seekpos, &dev->position);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12039E", ret);
+		ltfsmsg(LTFS_ERR, 12039E, ret);
 		return ret;
 	}
 
 	/* Check that partition searched is correct */
 	if (partition != dev->position.partition) {
-		ltfsmsg(LTFS_ERR, "11327E", partition, dev->position.partition);
+		ltfsmsg(LTFS_ERR, 11327E, partition, dev->position.partition);
 		return -LTFS_BAD_LOCATE;
 	}
 
@@ -1062,7 +1062,7 @@ int tape_update_position(struct device_data *dev, struct tc_position *pos)
 
 	ret = dev->backend->readpos(dev->backend_data, &dev->position);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17132E");
+		ltfsmsg(LTFS_ERR, 17132E);
 		return ret;
 	}
 
@@ -1080,19 +1080,19 @@ int tape_get_physical_block_position(struct device_data *dev, struct tc_position
 
 	ret = dev->backend->readpos(dev->backend_data, &dev->position);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17132E");
+		ltfsmsg(LTFS_ERR, 17132E);
 		return ret;
 	}
 
 	ret = dev->backend->get_block_in_buffer(dev->backend_data, &block);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17132E");
+		ltfsmsg(LTFS_ERR, 17132E);
 		return ret;
 	}
 
 	memcpy(pos, &dev->position, sizeof(struct tc_position));
 
-	ltfsmsg(LTFS_DEBUG, "11335D", pos->block, block);
+	ltfsmsg(LTFS_DEBUG, 11335D, (int)pos->block, block);
 	pos->block -= block;
 
 	return 0;
@@ -1117,7 +1117,7 @@ int tape_spacefm(struct device_data *dev, int count)
 		ret = dev->backend->space(dev->backend_data, -count, TC_SPACE_FM_B, &dev->position);
 
 	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "12041E", ret);
+		ltfsmsg(LTFS_ERR, 12041E, ret);
 	return ret;
 }
 
@@ -1137,26 +1137,26 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(buf, -LTFS_NULL_ARG);
 	if (! dev->backend || ! dev->backend_data) {
-		ltfsmsg(LTFS_ERR, "12042E");
+		ltfsmsg(LTFS_ERR, 12042E);
 		return -LTFS_NULL_ARG;
 	}
 
 	ret = 0;
 	ltfs_mutex_lock(&dev->read_only_flag_mutex);
 	if (dev->write_protected) {
-		ltfsmsg(LTFS_ERR, "12043E");
+		ltfsmsg(LTFS_ERR, 12043E);
 		ret = -LTFS_WRITE_PROTECT;
 	} else if (dev->write_error) {
-		ltfsmsg(LTFS_ERR, "12043E");
+		ltfsmsg(LTFS_ERR, 12043E);
 		ret = -LTFS_WRITE_ERROR;
 	} else if (dev->partition_space[dev->position.partition] == PART_NO_SPACE && !ignore_nospc) {
-		ltfsmsg(LTFS_ERR, "12064E");
+		ltfsmsg(LTFS_ERR, 12064E);
 		ret = -LTFS_NO_SPACE;
 	} else if (dev->partition_space[dev->position.partition] == PART_LESS_SPACE && !ignore_less) {
-		ltfsmsg(LTFS_ERR, "12064E");
+		ltfsmsg(LTFS_ERR, 12064E);
 		ret = -LTFS_LESS_SPACE;
 	} else if (count > dev->max_block_size) {
-		ltfsmsg(LTFS_ERR, "12044E", count, (unsigned long)dev->max_block_size);
+		ltfsmsg(LTFS_ERR, 12044E, (unsigned int)count, (unsigned long)dev->max_block_size);
 		ret = -LTFS_LARGE_BLOCKSIZE;
 	}
 	ltfs_mutex_unlock(&dev->read_only_flag_mutex);
@@ -1167,7 +1167,7 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 	if (ret < 0) {
 		/* If a "real" write error occurs, refuse any additional writes */
 		if (! NEED_REVAL(ret)) {
-			ltfsmsg(LTFS_ERR, "12045E", ret);
+			ltfsmsg(LTFS_ERR, 12045E, (int)ret);
 			ltfs_mutex_lock(&dev->read_only_flag_mutex);
 			dev->write_error = true;
 			ltfs_mutex_unlock(&dev->read_only_flag_mutex);
@@ -1209,7 +1209,7 @@ int tape_write_filemark(struct device_data *dev, uint8_t count, bool ignore_less
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	if (! dev->backend || ! dev->backend_data) {
-		ltfsmsg(LTFS_ERR, "12046E");
+		ltfsmsg(LTFS_ERR, 12046E);
 		return -LTFS_NULL_ARG;
 	}
 
@@ -1231,7 +1231,7 @@ int tape_write_filemark(struct device_data *dev, uint8_t count, bool ignore_less
 	if (ret < 0) {
 		/* If a "real" write error occurs, refuse all further writes */
 		if (! NEED_REVAL(ret)) {
-			ltfsmsg(LTFS_ERR, "12047E", ret);
+			ltfsmsg(LTFS_ERR, 12047E, ret);
 			ltfs_mutex_lock(&dev->read_only_flag_mutex);
 			dev->write_error = true;
 			ltfs_mutex_unlock(&dev->read_only_flag_mutex);
@@ -1275,7 +1275,7 @@ ssize_t tape_read(struct device_data *dev, char *buf, size_t count, const bool u
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(buf, -LTFS_NULL_ARG);
 	if (! dev->backend || ! dev->backend_data) {
-		ltfsmsg(LTFS_ERR, "12048E");
+		ltfsmsg(LTFS_ERR, 12048E);
 		return -LTFS_BAD_DEVICE_DATA;
 	}
 
@@ -1288,21 +1288,21 @@ ssize_t tape_read(struct device_data *dev, char *buf, size_t count, const bool u
 		do {
 			tmp = tape_get_keyalias(dev, &keyalias);
 			if (tmp < 0) {
-				ltfsmsg(LTFS_ERR, "17175E", tmp);
+				ltfsmsg(LTFS_ERR, 17175E, tmp);
 				break;
 			}
 			tmp = kmi_get_key(&keyalias, &key, kmi_handle);
 			if (tmp < 0) {
-				ltfsmsg(LTFS_ERR, "17176E", tmp);
+				ltfsmsg(LTFS_ERR, 17176E, tmp);
 				break;
 			}
 			if (! key) {
-				ltfsmsg(LTFS_ERR, "17177E");
+				ltfsmsg(LTFS_ERR, 17177E);
 				break;
 			}
 			tmp = tape_set_key(dev, keyalias, key);
 			if (tmp < 0) {
-				ltfsmsg(LTFS_ERR, "17178E", tmp);
+				ltfsmsg(LTFS_ERR, 17178E, tmp);
 				break;
 			}
 
@@ -1312,9 +1312,9 @@ ssize_t tape_read(struct device_data *dev, char *buf, size_t count, const bool u
 	}
 
 	if (ret == -EDEV_CRYPTO_ERROR || ret == -EDEV_KEY_REQUIRED)
-		ltfsmsg(LTFS_WARN, "17192W");
+		ltfsmsg(LTFS_WARN, 17192W);
 	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "12049E", ret);
+		ltfsmsg(LTFS_ERR, 12049E, (int)ret);
 	return ret;
 }
 
@@ -1332,7 +1332,7 @@ int tape_erase(struct device_data *dev, bool long_erase)
 
 	ret = dev->backend->erase(dev->backend_data, &dev->position, long_erase);
 	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "17149E", ret);
+		ltfsmsg(LTFS_ERR, 17149E, ret);
 
 	return ret;
 }
@@ -1359,14 +1359,14 @@ int tape_reset_capacity(struct device_data *dev)
 	 */
 	ret = dev->backend->load(dev->backend_data, &dev->position);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12050E", ret);
+		ltfsmsg(LTFS_ERR, 12050E, ret);
 		return ret;
 	}
 
 	/* Issue Set Capacity */
 	ret = dev->backend->setcap(dev->backend_data, 0xFFFF);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17164E", ret);
+		ltfsmsg(LTFS_ERR, 17164E, ret);
 		return ret;
 	}
 
@@ -1385,7 +1385,7 @@ static int tape_update_density(struct device_data *dev, int density_code)
 	ret = dev->backend->modesense(dev->backend_data, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0x00,
 								  mp_read_write_ctrl, TC_MP_READ_WRITE_CTRL_SIZE);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17239E", "modesense", ret);
+		ltfsmsg(LTFS_ERR, 17239E, "modesense", ret);
 		return ret;
 	}
 
@@ -1396,10 +1396,10 @@ static int tape_update_density(struct device_data *dev, int density_code)
 
 	ret = dev->backend->modeselect(dev->backend_data, mp_read_write_ctrl, TC_MP_READ_WRITE_CTRL_SIZE);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17239E", "modeselect", ret);
+		ltfsmsg(LTFS_ERR, 17239E, "modeselect", ret);
 	}
 
-	ltfsmsg(LTFS_INFO, "17240I", density_code);
+	ltfsmsg(LTFS_INFO, 17240I, density_code);
 
 	return 0;
 }
@@ -1425,7 +1425,7 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 	 */
 	ret = dev->backend->load(dev->backend_data, &dev->position);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12050E", ret);
+		ltfsmsg(LTFS_ERR, 12050E, ret);
 		return ret;
 	}
 
@@ -1434,7 +1434,7 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 	ret = dev->backend->modesense(dev->backend_data, TC_MP_MEDIUM_PARTITION, TC_MP_PC_CURRENT, 0x00,
 		mp_medium_partition, TC_MP_MEDIUM_PARTITION_SIZE);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12051E", ret);
+		ltfsmsg(LTFS_ERR, 12051E, ret);
 		return ret;
 	}
 
@@ -1443,7 +1443,7 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 			&& mp_medium_partition[2]!=TC_MP_JK && mp_medium_partition[2]!=TC_MP_JL
 			&& mp_medium_partition[2]!=TC_MP_JY && mp_medium_partition[2]!=TC_MP_JZ
 			&& mp_medium_partition[2]!=TC_MP_LTO7D_CART){
-			ltfsmsg(LTFS_ERR, "17239E", "unsupported cartridge", mp_medium_partition[2]);
+			ltfsmsg(LTFS_ERR, 17239E, "unsupported cartridge", mp_medium_partition[2]);
 			return -LTFS_OP_NOT_ALLOWED;
 		}
 
@@ -1488,7 +1488,7 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 	/* Issue Format Medium (destroy all medium data and make 2-partitition medium) */
 	ret = dev->backend->format(dev->backend_data, TC_FORMAT_DEST_PART);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12053E", ret);
+		ltfsmsg(LTFS_ERR, 12053E, ret);
 		return ret;
 	}
 
@@ -1513,14 +1513,14 @@ int tape_unformat(struct device_data *dev)
 	/* Locate block 0 @ P0 */
 	ret = dev->backend->locate(dev->backend_data, bom, &dev->position);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12054E", ret);
+		ltfsmsg(LTFS_ERR, 12054E, ret);
 		return ret;
 	}
 
 	/* Issue Format Medium */
 	ret = dev->backend->format(dev->backend_data, TC_FORMAT_DEFAULT);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "12055E", ret);
+		ltfsmsg(LTFS_ERR, 12055E, ret);
 		return ret;
 	}
 
@@ -1555,7 +1555,7 @@ int tape_get_volume_change_reference(struct device_data *dev, uint64_t *volume_c
 		if (*volume_change_ref == UINT32_MAX)
 			*volume_change_ref = UINT64_MAX; /* maintain "unusable VCR" state correctly */
 	} else {
-		ltfsmsg(LTFS_WARN, "12056W", ret);
+		ltfsmsg(LTFS_WARN, 12056W, ret);
 		*volume_change_ref = UINT64_MAX; /* disallow use of VCR */
 	}
 
@@ -1587,12 +1587,12 @@ int tape_get_cart_coherency(struct device_data *dev, const tape_partition_t part
 		uint8_t  vcr_size = coh_data[5];
 
 		if (id != TC_MAM_PAGE_COHERENCY) {
-			ltfsmsg(LTFS_WARN, "12058W", id);
+			ltfsmsg(LTFS_WARN, 12058W, id);
 			return -LTFS_UNEXPECTED_VALUE;
 		}
 
 		if (len != TC_MAM_PAGE_COHERENCY_SIZE) {
-			ltfsmsg(LTFS_WARN, "12059W", len);
+			ltfsmsg(LTFS_WARN, 12059W, len);
 			return -LTFS_UNEXPECTED_VALUE;
 		}
 
@@ -1604,7 +1604,7 @@ int tape_get_cart_coherency(struct device_data *dev, const tape_partition_t part
 				coh->volume_change_ref = ltfs_betou64(coh_data + 6);
 				break;
 			default:
-				ltfsmsg(LTFS_WARN, "12060W", vcr_size);
+				ltfsmsg(LTFS_WARN, 12060W, vcr_size);
 				return -LTFS_UNEXPECTED_VALUE;
 		}
 
@@ -1616,10 +1616,10 @@ int tape_get_cart_coherency(struct device_data *dev, const tape_partition_t part
 		 */
 		uint16_t ap_clent_specific_len = ltfs_betou16(coh_data + 30);
 		if (ap_clent_specific_len != 42 && ap_clent_specific_len != 43) {
-			ltfsmsg(LTFS_WARN, "12061W", ap_clent_specific_len);
+			ltfsmsg(LTFS_WARN, 12061W, ap_clent_specific_len);
 			return -LTFS_UNEXPECTED_VALUE;
 		} else if (strncmp((char *)coh_data + 32, "LTFS", sizeof("LTFS")) != 0) {
-			ltfsmsg(LTFS_WARN, "12062W");
+			ltfsmsg(LTFS_WARN, 12062W);
 			return -LTFS_UNEXPECTED_VALUE;
 		}
 
@@ -1630,7 +1630,7 @@ int tape_get_cart_coherency(struct device_data *dev, const tape_partition_t part
 		 */
 		coh->version = coh_data[74];
 	} else
-		ltfsmsg(LTFS_WARN, "12057W", ret);
+		ltfsmsg(LTFS_WARN, 12057W, ret);
 
 	return ret;
 }
@@ -1670,7 +1670,7 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 
 	ret = dev->backend->write_attribute(dev->backend_data, part, coh_data, sizeof(coh_data));
 	if (ret < 0)
-		ltfsmsg(LTFS_WARN, "12063W", ret);
+		ltfsmsg(LTFS_WARN, 12063W, ret);
 	return ret;
 }
 
@@ -1693,23 +1693,23 @@ int tape_get_cart_volume_lock_status(struct device_data *dev, int *status)
 		uint16_t len = ltfs_betou16(attr_data + 3);
 
 		if (id != TC_MAM_VOLUME_LOCKED) {
-			ltfsmsg(LTFS_WARN, "17196W", id);
+			ltfsmsg(LTFS_WARN, 17196W, id);
 			return -LTFS_UNEXPECTED_VALUE;
 		}
 		if (len != TC_MAM_VOLUME_LOCKED_SIZE) {
-			ltfsmsg(LTFS_WARN, "17197W", len);
+			ltfsmsg(LTFS_WARN, 17197W, len);
 			return -LTFS_UNEXPECTED_VALUE;
 		}
 
 		*status = (int)(attr_data[TC_MAM_PAGE_HEADER_SIZE]); /* TC_MAM_LOCKED_SIZE is 1 byte field */
-		ltfsmsg(LTFS_DEBUG, "11339D", "Read", *status);
+		ltfsmsg(LTFS_DEBUG, 11339D, "Read", *status);
 
 	} else if (ret == -EDEV_INVALID_FIELD_CDB) {
-		ltfsmsg(LTFS_INFO, "11336I");
+		ltfsmsg(LTFS_INFO, 11336I);
 		*status = VOLUME_UNLOCKED;
 		ret = 0;
 	} else
-		ltfsmsg(LTFS_DEBUG, "17198D", TC_MAM_VOLUME_LOCKED, "tape_get_cart_volume_lock_status");
+		ltfsmsg(LTFS_DEBUG, 17198D, TC_MAM_VOLUME_LOCKED, "tape_get_cart_volume_lock_status");
 
 	return ret;
 }
@@ -1726,11 +1726,11 @@ int tape_set_cart_volume_lock_status(struct ltfs_volume *vol, int status)
 		return 0;
 	} else if (cur_stat == VOLUME_PERM_LOCKED) {
 		/* perm locked cartridge cannot be updated */
-		ltfsmsg(LTFS_WARN, "17199W", TC_MAM_VOLUME_LOCKED, "tape_set_cart_volume_lock_status : perm locked");
+		ltfsmsg(LTFS_WARN, 17199W, TC_MAM_VOLUME_LOCKED, "tape_set_cart_volume_lock_status : perm locked");
 		return -LTFS_UNEXPECTED_VALUE;
 	} else if (status > VOLUME_WRITE_PERM_BOTH) {
 		/* invalid status */
-		ltfsmsg(LTFS_WARN, "17199W", TC_MAM_VOLUME_LOCKED, "tape_set_cart_volume_lock_status : invalid stat");
+		ltfsmsg(LTFS_WARN, 17199W, TC_MAM_VOLUME_LOCKED, "tape_set_cart_volume_lock_status : invalid stat");
 		return -LTFS_UNEXPECTED_VALUE;
 	}
 
@@ -1740,7 +1740,7 @@ int tape_set_cart_volume_lock_status(struct ltfs_volume *vol, int status)
 	/* update CM MAM attribute */
 	ret = update_tape_attribute(vol, value, TC_MAM_VOLUME_LOCKED, TC_MAM_VOLUME_LOCKED_SIZE);
 	if (ret < 0) {
-		ltfsmsg(LTFS_WARN, "17199W", TC_MAM_VOLUME_LOCKED, "tape_set_cart_volume_lock_status");
+		ltfsmsg(LTFS_WARN, 17199W, TC_MAM_VOLUME_LOCKED, "tape_set_cart_volume_lock_status");
 		return ret;
 	}
 
@@ -1861,7 +1861,7 @@ int tape_set_media_pool_info(struct ltfs_volume *vol, const char *new_val, int s
 	/* update CM MAM attribute */
 	ret = update_tape_attribute(vol, value, TC_MAM_MEDIA_POOL, strlen(value));
 	if (ret < 0) {
-		ltfsmsg(LTFS_WARN, "17199W", TC_MAM_MEDIA_POOL, "tape_get_media_pool_info");
+		ltfsmsg(LTFS_WARN, 17199W, TC_MAM_MEDIA_POOL, "tape_get_media_pool_info");
 	}
 
 	free(v);
@@ -1915,29 +1915,29 @@ int tape_recover_eod_status(struct device_data *dev, void * const kmi_handle)
 
 	ret = tape_get_max_blocksize(dev, &recover_block_size);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17195E", "eod", ret);
+		ltfsmsg(LTFS_ERR, 17195E, "eod", ret);
 		return ret;
 	}
 
 	buf = calloc(1, recover_block_size + LTFS_CRC_SIZE);
 	if (! buf) {
-		ltfsmsg(LTFS_ERR, "10001E", "tape_recover_eod_status: data buffer");
+		ltfsmsg(LTFS_ERR, 10001E, "tape_recover_eod_status: data buffer");
 		return -LTFS_NO_MEMORY;
 	}
 
 	/* Read forward by hitting read perm (actual EOD), or EOD */
-	ltfsmsg(LTFS_INFO, "17127I");
+	ltfsmsg(LTFS_INFO, 17127I);
 	ret = 0;
 	while ( ret >= 0) {
 		INTERRUPTED_RETURN();
 		ret = tape_read(dev, buf, (size_t)recover_block_size, true, kmi_handle);
 		if(ret == -EDEV_EOD_DETECTED) {
-			ltfsmsg(LTFS_INFO, "17169I");
+			ltfsmsg(LTFS_INFO, 17169I);
 		} else if (ret == -EDEV_READ_PERM)
-			ltfsmsg(LTFS_INFO, "17130I");
+			ltfsmsg(LTFS_INFO, 17130I);
 		else {
 			if(ret < 0)
-				ltfsmsg(LTFS_WARN, "17129W");
+				ltfsmsg(LTFS_WARN, 17129W);
 		}
 	}
 	free(buf);
@@ -1946,37 +1946,37 @@ int tape_recover_eod_status(struct device_data *dev, void * const kmi_handle)
 	/* Read position to specify the erase position */
 	ret = dev->backend->readpos(dev->backend_data, &eod_pos);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17132E");
+		ltfsmsg(LTFS_ERR, 17132E);
 		return ret;
 	}
 
 	/* Unload -> Load -> locate(erase point) -> erase to avoid drive fence behavior */
 	INTERRUPTED_RETURN();
-	ltfsmsg(LTFS_INFO, "17131I", eod_pos.partition, eod_pos.block);
+	ltfsmsg(LTFS_INFO, 17131I, (unsigned long long)eod_pos.partition, (unsigned long long)eod_pos.block);
 	ret = tape_unload_tape(false, dev);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17133E");
+		ltfsmsg(LTFS_ERR, 17133E);
 		return ret;
 	}
 
 	INTERRUPTED_RETURN();
 	ret = tape_load_tape(dev, kmi_handle, true);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17134E");
+		ltfsmsg(LTFS_ERR, 17134E);
 		return ret;
 	}
 
 	INTERRUPTED_RETURN();
 	ret = tape_seek(dev, &eod_pos);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17135E");
+		ltfsmsg(LTFS_ERR, 17135E);
 		return ret;
 	}
 
 	INTERRUPTED_RETURN();
 	ret = tape_erase(dev, false);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17136E");
+		ltfsmsg(LTFS_ERR, 17136E);
 		return ret;
 	}
 
@@ -2007,7 +2007,7 @@ int tape_get_device_list(struct tape_ops *ops, struct tc_drive_info *buf, int co
 void tape_print_help_message(struct tape_ops *ops)
 {
 	if (! ops) {
-		ltfsmsg(LTFS_WARN, "10006W", "ops", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "ops", __FUNCTION__);
 		return;
 	}
 
@@ -2026,7 +2026,7 @@ int tape_parse_opts(struct device_data *dev, void *opt_args)
 	ret = dev->backend->parse_opts(dev->backend_data, opt_args);
 	if (ret < 0)
 		/* Cannot parse backend options: backend call failed (%d) */
-		ltfsmsg(LTFS_ERR, "12040E", ret);
+		ltfsmsg(LTFS_ERR, 12040E, ret);
 
 	return ret;
 }
@@ -2042,7 +2042,7 @@ int tape_parse_library_backend_opts(void *opts, void *opt_args)
 	rc = backend->parse_opts(NULL, opt_args);
 	if (rc < 0)
 		/* Cannot parse backend options: backend call failed (%d) */
-		ltfsmsg(LTFS_ERR, "12040E", rc);
+		ltfsmsg(LTFS_ERR, 12040E, rc);
 
 	return rc;
 }
@@ -2065,7 +2065,7 @@ int tape_inquiry(struct device_data *dev, struct tc_inq *inq)
 	ret = dev->backend->inquiry(dev->backend_data, inq);
 	if (ret < 0) {
 		/* Failed to inquiry the tape: backend call failed (%d) */
-		ltfsmsg(LTFS_ERR, "12013E", ret);
+		ltfsmsg(LTFS_ERR, 12013E, ret);
 	}
 
 	return ret;
@@ -2090,7 +2090,7 @@ int tape_inquiry_page(struct device_data *dev, unsigned char page, struct tc_inq
 	ret = dev->backend->inquiry_page(dev->backend_data, page, inq);
 	if (ret < 0) {
 		/* Failed to inquiry tape page: backend call failed (%d) */
-		ltfsmsg(LTFS_ERR, "12013E", ret);
+		ltfsmsg(LTFS_ERR, 12013E, ret);
 	}
 
 	return ret;
@@ -2300,7 +2300,7 @@ int tape_set_pews(struct device_data *dev, bool set_value)
 	/* Get remaining capacity of the tape */
 	ret = tape_get_capacity(dev, &cap);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11999E", ret);
+		ltfsmsg(LTFS_ERR, 11999E, ret);
 		return ret;
 	}
 
@@ -2319,7 +2319,7 @@ int tape_set_pews(struct device_data *dev, bool set_value)
 	ret = dev->backend->modesense(dev->backend_data, TC_MP_DEV_CONFIG_EXT, TC_MP_PC_CURRENT, 0x01,
 		mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17102E", ret);
+		ltfsmsg(LTFS_ERR, 17102E, ret);
 		return ret;
 	}
 
@@ -2337,7 +2337,7 @@ int tape_set_pews(struct device_data *dev, bool set_value)
 		);
 
 	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "17103E", ret);
+		ltfsmsg(LTFS_ERR, 17103E, ret);
 	return ret;
 }
 
@@ -2362,7 +2362,7 @@ int tape_get_pews(struct device_data *dev, uint16_t *pews)
 	ret = dev->backend->modesense(dev->backend_data, TC_MP_DEV_CONFIG_EXT, TC_MP_PC_CURRENT, 0x01,
 		mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17104E", ret);
+		ltfsmsg(LTFS_ERR, 17104E, ret);
 		return ret;
 	}
 
@@ -2399,7 +2399,7 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable)
 	ret = dev->backend->modesense(dev->backend_data, TC_MP_DEV_CONFIG_EXT, TC_MP_PC_CURRENT, 0x01,
 		mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17154E", ret);
+		ltfsmsg(LTFS_ERR, 17154E, ret);
 		return ret;
 	}
 
@@ -2408,7 +2408,7 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable)
 	if (loaded && !enable && (mp_dev_config_ext[21]& 0xF0) == 0x10) {
 		ret = dev->backend->unload(dev->backend_data, &dev->position);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "17151E", ret);
+			ltfsmsg(LTFS_ERR, 17151E, ret);
 			return ret;
 		}
 		reload = true;
@@ -2419,7 +2419,7 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable)
 		if (ret == -EDEV_MEDIUM_FORMAT_ERROR)
 			ret = -LTFS_UNSUPPORTED_MEDIUM;
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "17152E", "BOP", ret);
+			ltfsmsg(LTFS_ERR, 17152E, "BOP", ret);
 			return ret;
 		}
 	}
@@ -2436,14 +2436,14 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable)
 		mp_dev_config_ext,
 		TC_MP_DEV_CONFIG_EXT_SIZE);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17155E", ret);
+		ltfsmsg(LTFS_ERR, 17155E, ret);
 		return ret;
 	}
 
 	if (reload) {
 		ret = dev->backend->load(dev->backend_data, &dev->position);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "17152E", "Reload", ret);
+			ltfsmsg(LTFS_ERR, 17152E, "Reload", ret);
 			return ret;
 		}
 	}
@@ -2474,7 +2474,7 @@ int tape_get_append_only_mode_setting(struct device_data *dev, bool *enabled)
 	ret = dev->backend->modesense(dev->backend_data, TC_MP_DEV_CONFIG_EXT, TC_MP_PC_CURRENT, 0x01,
 		mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17156E", ret);
+		ltfsmsg(LTFS_ERR, 17156E, ret);
 		return ret;
 	}
 
@@ -2543,14 +2543,14 @@ make_ready:
 			if (!print_message) {
 				switch (ret) {
 				case -EDEV_NEED_INITIALIZE:
-					ltfsmsg(LTFS_INFO, "17189I", ret);
+					ltfsmsg(LTFS_INFO, 17189I, ret);
 					break;
 				case -EDEV_BECOMING_READY:
-					ltfsmsg(LTFS_INFO, "17189I", ret);
+					ltfsmsg(LTFS_INFO, 17189I, ret);
 					print_message = true;
 					break;
 				default:
-					ltfsmsg(LTFS_ERR, "17187E", ret);
+					ltfsmsg(LTFS_ERR, 17187E, ret);
 					break;
 				}
 			}
@@ -2562,7 +2562,7 @@ make_ready:
 				const uint64_t any_cleaning_media = cleaning_media | expired_cleaning_tape | invalid_cleaning_tape;
 
 				if ((tape_alert & any_cleaning_media) != 0) {
-					ltfsmsg(LTFS_INFO, "17179I", tape_alert);
+					ltfsmsg(LTFS_INFO, 17179I, (unsigned long long)tape_alert);
 					return ret;
 				}
 
@@ -2580,7 +2580,7 @@ make_ready:
 	for(i = 0; i < 30 && ret < 0; i++) {
 		ret = _tape_test_unit_ready(dev);
 		if (ret != -EDEV_BECOMING_READY)
-			ltfsmsg(LTFS_INFO, "17188I", ret);
+			ltfsmsg(LTFS_INFO, 17188I, ret);
 		if (ret == DEVICE_GOOD || ret == -EDEV_NO_MEDIUM || ret == -EDEV_DRIVER_ERROR ||
 			IS_MEDIUM_ERROR(-ret) || IS_HARDWARE_ERROR(-ret) )
 			break;
@@ -2614,11 +2614,11 @@ int tape_set_key(struct device_data *dev, const unsigned char *keyalias, const u
 	if (0 <= ret) {
 		static int last_message_id = 0;
 		if (keyalias && key) {
-			ltfsmsg(LTFS_INFO, "17190I"); /* Show the message at every DK setting because the difference DK may set. */
+			ltfsmsg(LTFS_INFO, 17190I); /* Show the message at every DK setting because the difference DK may set. */
 			last_message_id = 17190;
 		} else {
 			if (last_message_id != 17191) {
-				ltfsmsg(LTFS_INFO, "17191I"); /* Do not show the message at redundant clear. */
+				ltfsmsg(LTFS_INFO, 17191I); /* Do not show the message at redundant clear. */
 				last_message_id = 17191;
 			}
 		}
@@ -2825,12 +2825,12 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 	int len_volname = 0;
 
 	if (!vol) {
-		ltfsmsg(LTFS_ERR, "17231E", "set", "dev");
+		ltfsmsg(LTFS_ERR, 17231E, "set", "dev");
 		return;
 	}
 
 	if (!t_attr) {
-		ltfsmsg(LTFS_ERR, "17231E", "set", "t_attr");
+		ltfsmsg(LTFS_ERR, 17231E, "set", "t_attr");
 		return;
 	}
 
@@ -2852,7 +2852,7 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 	if ( vol->index->volume_name.name ) {
 		len_volname = strlen(vol->index->volume_name.name);
 		if ( len_volname > TC_MAM_USER_MEDIUM_LABEL_SIZE - 1) {
-			ltfsmsg(LTFS_DEBUG, "17229D", "USER MEDIUM TEXT LABEL",
+			ltfsmsg(LTFS_DEBUG, 17229D, "USER MEDIUM TEXT LABEL",
 					vol->index->volume_name.name, TC_MAM_USER_MEDIUM_LABEL_SIZE - 1);
 			len_volname = u_get_truncate_size(vol->index->volume_name.name, len_volname, TC_MAM_USER_MEDIUM_LABEL_SIZE);
 			if (len_volname == -LTFS_ICU_ERROR)
@@ -2867,11 +2867,11 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 	/* BARCODE set */
 	if ( vol->label->barcode[0] ) {
 		if ( strlen(vol->label->barcode) > TC_MAM_BARCODE_SIZE)
-			ltfsmsg(LTFS_WARN, "17203W", "BARCODE", vol->label->barcode, TC_MAM_BARCODE_SIZE);
+			ltfsmsg(LTFS_WARN, 17203W, "BARCODE", vol->label->barcode, TC_MAM_BARCODE_SIZE);
 		strncpy(t_attr->barcode, vol->label->barcode, TC_MAM_BARCODE_SIZE);
 		parse_vol(t_attr->barcode, strlen(vol->label->barcode), TC_MAM_BARCODE_SIZE);
 	} else {
-		ltfsmsg(LTFS_WARN, "17230W");
+		ltfsmsg(LTFS_WARN, 17230W);
 		parse_vol(t_attr->barcode, 0, TC_MAM_BARCODE_SIZE);
 	}
 
@@ -2933,7 +2933,7 @@ int tape_set_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr, 
 		attr_size = TC_MAM_MEDIA_POOL_SIZE;
 		format = TEXT_FORMAT;
 	} else {
-		ltfsmsg(LTFS_WARN, "17204W", type, "tape_set_attribute_to_cm");
+		ltfsmsg(LTFS_WARN, 17204W, type, "tape_set_attribute_to_cm");
 		return -1;
 	}
 
@@ -2970,7 +2970,7 @@ int tape_set_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr, 
 	                                      sizeof(attr_data));
 
 	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "17205E", type, "tape_set_attribute_to_cm");
+		ltfsmsg(LTFS_ERR, 17205E, type, "tape_set_attribute_to_cm");
 
 	return ret;
 
@@ -3084,7 +3084,7 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 		attr_len = TC_MAM_MEDIA_POOL_SIZE;
 		break;
 	default:
-		ltfsmsg(LTFS_WARN, "17204W", type, "tape_get_attribute_from_cm");
+		ltfsmsg(LTFS_WARN, 17204W, type, "tape_get_attribute_from_cm");
 		return -LTFS_BAD_ARG;
 		break;
 	}
@@ -3102,11 +3102,11 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 		uint16_t len = ltfs_betou16(attr_data + 3);
 
 		if (id != type) {
-			ltfsmsg(LTFS_WARN, "17196W", id);
+			ltfsmsg(LTFS_WARN, 17196W, id);
 			return -LTFS_UNEXPECTED_VALUE;
 		}
 		if (len != attr_len) {
-			ltfsmsg(LTFS_WARN, "17197W", len);
+			ltfsmsg(LTFS_WARN, 17197W, len);
 			return -LTFS_UNEXPECTED_VALUE;
 		}
 
@@ -3137,7 +3137,7 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 			t_attr->media_pool[attr_len] = '\0';
 		}
 	} else
-		ltfsmsg(LTFS_DEBUG, "17198D", type, "tape_get_attribute_from_cm");
+		ltfsmsg(LTFS_DEBUG, 17198D, type, "tape_get_attribute_from_cm");
 
 	return ret;
 }
@@ -3153,12 +3153,12 @@ void tape_load_all_attribute_from_cm(struct device_data *dev, struct tape_attr *
 	int ret;
 
 	if (!dev) {
-		ltfsmsg(LTFS_ERR, "17231E", "get", "dev");
+		ltfsmsg(LTFS_ERR, 17231E, "get", "dev");
 		return;
 	}
 
 	if (!t_attr) {
-		ltfsmsg(LTFS_ERR, "17231E", "get", "t_attr");
+		ltfsmsg(LTFS_ERR, 17231E, "get", "t_attr");
 		return;
 	}
 
@@ -3207,15 +3207,15 @@ void tape_load_all_attribute_from_cm(struct device_data *dev, struct tape_attr *
 	if (ret < 0)
 		t_attr->media_pool[0] = '\0';
 
-	ltfsmsg(LTFS_INFO, "17227I", "Vendor", t_attr->vender);
-	ltfsmsg(LTFS_INFO, "17227I", "Application Name", t_attr->app_name);
-	ltfsmsg(LTFS_INFO, "17227I", "Application Version", t_attr->app_ver);
-	ltfsmsg(LTFS_INFO, "17227I", "Medium Label", t_attr->medium_label);
-	ltfsmsg(LTFS_INFO, "17228I", "Text Localization ID", t_attr->tli);
-	ltfsmsg(LTFS_INFO, "17227I", "Barcode", t_attr->barcode);
-	ltfsmsg(LTFS_INFO, "17227I", "Application Format Version", t_attr->app_format_ver);
-	ltfsmsg(LTFS_INFO, "17228I", "Volume Lock Status", t_attr->vollock);
-	ltfsmsg(LTFS_INFO, "17227I", "Media Pool name", t_attr->media_pool);
+	ltfsmsg(LTFS_INFO, 17227I, "Vendor", t_attr->vender);
+	ltfsmsg(LTFS_INFO, 17227I, "Application Name", t_attr->app_name);
+	ltfsmsg(LTFS_INFO, 17227I, "Application Version", t_attr->app_ver);
+	ltfsmsg(LTFS_INFO, 17227I, "Medium Label", t_attr->medium_label);
+	ltfsmsg(LTFS_INFO, 17228I, "Text Localization ID", t_attr->tli);
+	ltfsmsg(LTFS_INFO, 17227I, "Barcode", t_attr->barcode);
+	ltfsmsg(LTFS_INFO, 17227I, "Application Format Version", t_attr->app_format_ver);
+	ltfsmsg(LTFS_INFO, 17228I, "Volume Lock Status", t_attr->vollock);
+	ltfsmsg(LTFS_INFO, 17227I, "Media Pool name", t_attr->media_pool);
 
 	return;
 }
@@ -3238,7 +3238,7 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 	/* type check */
 	if (type != TC_MAM_USER_MEDIUM_LABEL && type != TC_MAM_BARCODE
 	 && type != TC_MAM_VOLUME_LOCKED && type != TC_MAM_MEDIA_POOL) {
-		ltfsmsg(LTFS_WARN, "17204W", type, "update_tape_attribute");
+		ltfsmsg(LTFS_WARN, 17204W, type, "update_tape_attribute");
 		return -1;
 	}
 
@@ -3248,7 +3248,7 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 	/* Attribute size check */
 	if ( type == TC_MAM_USER_MEDIUM_LABEL ) {
 		if ( size > TC_MAM_USER_MEDIUM_LABEL_SIZE - 1) {
-			ltfsmsg(LTFS_DEBUG, "17229D", "USER MEDIUM TEXT LABEL",
+			ltfsmsg(LTFS_DEBUG, 17229D, "USER MEDIUM TEXT LABEL",
 					vol->index->volume_name.name, TC_MAM_USER_MEDIUM_LABEL_SIZE - 1);
 			size = u_get_truncate_size(vol->index->volume_name.name, size, TC_MAM_USER_MEDIUM_LABEL_SIZE);
 			if (size == -LTFS_ICU_ERROR)
@@ -3256,7 +3256,7 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 		}
 		pre_attr = strdup(vol->t_attr->medium_label);
 		if (! pre_attr) {
-			ltfsmsg(LTFS_ERR, "10001E", "update_tape_attribute: pre_attr");
+			ltfsmsg(LTFS_ERR, 10001E, "update_tape_attribute: pre_attr");
 		    ret = -ENOMEM;
 		    return ret;
 		}
@@ -3266,12 +3266,12 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 		}
 	} else if (type == TC_MAM_BARCODE) {
 		if ( size > TC_MAM_BARCODE_SIZE) {
-			ltfsmsg(LTFS_WARN, "17226W", "BARCODE", TC_MAM_BARCODE_SIZE);
+			ltfsmsg(LTFS_WARN, 17226W, "BARCODE", TC_MAM_BARCODE_SIZE);
 			return -LTFS_LARGE_XATTR;
 		}
 		pre_attr = strdup(vol->t_attr->barcode);
 		if (! pre_attr) {
-		    ltfsmsg(LTFS_ERR, "10001E", "update_tape_attribute: pre_attr");
+		    ltfsmsg(LTFS_ERR, 10001E, "update_tape_attribute: pre_attr");
 		    ret = -ENOMEM;
 		    return ret;
 		}
@@ -3282,7 +3282,7 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 		parse_vol(vol->t_attr->barcode, strlen(new_value), TC_MAM_BARCODE_SIZE);
 	} else if (type == TC_MAM_VOLUME_LOCKED) {
 		if ( size > TC_MAM_VOLUME_LOCKED_SIZE) {
-			ltfsmsg(LTFS_WARN, "17226W", "VOLLOCK", TC_MAM_VOLUME_LOCKED_SIZE);
+			ltfsmsg(LTFS_WARN, 17226W, "VOLLOCK", TC_MAM_VOLUME_LOCKED_SIZE);
 			return -LTFS_LARGE_XATTR;
 		}
 
@@ -3291,7 +3291,7 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 		}
 	} else if (type == TC_MAM_MEDIA_POOL) {
 		if ( size > TC_MAM_MEDIA_POOL_SIZE) {
-			ltfsmsg(LTFS_WARN, "17226W", "MEDIAPOOL", TC_MAM_MEDIA_POOL_SIZE);
+			ltfsmsg(LTFS_WARN, 17226W, "MEDIAPOOL", TC_MAM_MEDIA_POOL_SIZE);
 			return -LTFS_LARGE_XATTR;
 		}
 		memset(vol->t_attr->media_pool, '\0', TC_MAM_MEDIA_POOL_SIZE + 1);
@@ -3365,7 +3365,7 @@ int read_tape_attribute(struct ltfs_volume *vol, char **val, const char *name)
 	}
 
 	if (!*val) {
-		ltfsmsg(LTFS_ERR, "10001E", "read_tape_attribute: *val");
+		ltfsmsg(LTFS_ERR, 10001E, "read_tape_attribute: *val");
 		return -LTFS_UNEXPECTED_VALUE;
 	}
 

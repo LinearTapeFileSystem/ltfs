@@ -272,7 +272,7 @@ void *memcpy_crc32c_enc(void *dest, const void *src, size_t n)
 	*dest_cur++ = (reg >> 8) & 0xff;
 	*dest_cur++ = (reg >> 16) & 0xff;
 	*dest_cur++ = (reg >> 24) & 0xff;
-	ltfsmsg(LTFS_DEBUG, "39804D", "encode", n, reg);
+	ltfsmsg(LTFS_DEBUG, 39804D, "encode", (int)n, reg);
 
 	return dest;
 }
@@ -289,7 +289,7 @@ void crc32c_enc(void *buf, size_t n)
 	*reg_cur++ = (reg >> 8) & 0xff;
 	*reg_cur++ = (reg >> 16) & 0xff;
 	*reg_cur++ = (reg >> 24) & 0xff;
-	ltfsmsg(LTFS_DEBUG, "39804D", "encode", n, reg);
+	ltfsmsg(LTFS_DEBUG, 39804D, "encode", (int)n, reg);
 
 	return;
 }
@@ -307,10 +307,10 @@ int memcpy_crc32c_check(void *dest, const void *src, size_t n)
 	crc |= *src_cur++ << 24;
 
 	if (crc != reg) {
-		ltfsmsg(LTFS_ERR, "39803E", n, reg, crc);
+		ltfsmsg(LTFS_ERR, 39803E, (int)n, reg, crc);
 		return -1;
 	}
-	ltfsmsg(LTFS_DEBUG, "39804D", "check", n, crc);
+	ltfsmsg(LTFS_DEBUG, 39804D, "check", (int)n, crc);
 
 	return n;
 }
@@ -328,10 +328,10 @@ int crc32c_check(void *buf, size_t n)
 	crc |= *buf_cur++ << 24;
 
 	if (crc != reg) {
-		ltfsmsg(LTFS_ERR, "39803E", n, reg, crc);
+		ltfsmsg(LTFS_ERR, 39803E, (int)n, reg, crc);
 		return -1;
 	}
-	ltfsmsg(LTFS_DEBUG, "39804D", "check", n, crc);
+	ltfsmsg(LTFS_DEBUG, 39804D, "check", (int)n, crc);
 
 	return n;
 }

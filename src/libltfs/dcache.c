@@ -76,7 +76,7 @@ int dcache_init(struct libltfs_plugin *plugin, const struct dcache_options *opti
 
 	priv = calloc(1, sizeof(struct dcache_priv));
 	if (! priv) {
-		ltfsmsg(LTFS_ERR, "10001E", "dcache_init: private data");
+		ltfsmsg(LTFS_ERR, 10001E, "dcache_init: private data");
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -87,7 +87,7 @@ int dcache_init(struct libltfs_plugin *plugin, const struct dcache_options *opti
 	for (i=0; i<sizeof(struct dcache_ops)/sizeof(void *); ++i) {
 		if (((void **)(priv->ops))[i] == NULL) {
 			/* Dentry cache backend does not implement all required methods */
-			ltfsmsg(LTFS_ERR, "13004E");
+			ltfsmsg(LTFS_ERR, 13004E);
 			free(priv);
 			return -LTFS_PLUGIN_INCOMPLETE;
 		}
@@ -150,21 +150,21 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 
 	opt = calloc(1, sizeof(struct dcache_options));
 	if (! opt) {
-		ltfsmsg(LTFS_ERR, "10001E", "dcache_parse_options: opt");
+		ltfsmsg(LTFS_ERR, 10001E, "dcache_parse_options: opt");
 		return -ENOMEM;
 	}
 
 	for (i=0; options[i]; ++i) {
 		line = strdup(options[i]);
 		if (! line) {
-			ltfsmsg(LTFS_ERR, "10001E", "dcache_parse_options: line");
+			ltfsmsg(LTFS_ERR, 10001E, "dcache_parse_options: line");
 			ret = -ENOMEM;
 			goto out_free;
 		}
 		option = strtok(line, " \t");
 		if (! option) {
 			/* Failed to parse LTFS dcache configuration rules: invalid option '%s' */
-			ltfsmsg(LTFS_ERR, "17170E", options[i]);
+			ltfsmsg(LTFS_ERR, 17170E, options[i]);
 			ret = -EINVAL;
 			goto out_free;
 		}
@@ -184,7 +184,7 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 		value = strtok(NULL, " \t");
 		if (! value) {
 			/* Failed to parse LTFS dcache configuration rules: invalid option '%s' */
-			ltfsmsg(LTFS_ERR, "17170E", options[i]);
+			ltfsmsg(LTFS_ERR, 17170E, options[i]);
 			ret = -EINVAL;
 			goto out_free;
 		}
@@ -193,7 +193,7 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 			opt->minsize = atoi(value);
 			if (opt->minsize <= 0) {
 				/* Failed to parse LTFS dcache configuration rules: invalid value '%d' for option '%s' */
-				ltfsmsg(LTFS_ERR, "17171E", opt->minsize, option);
+				ltfsmsg(LTFS_ERR, 17171E, opt->minsize, option);
 				ret = -EINVAL;
 				goto out_free;
 			}
@@ -201,13 +201,13 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 			opt->maxsize = atoi(value);
 			if (opt->maxsize <= 0) {
 				/* Failed to parse LTFS dcache configuration rules: invalid value '%d' for option '%s' */
-				ltfsmsg(LTFS_ERR, "17171E", opt->maxsize, option);
+				ltfsmsg(LTFS_ERR, 17171E, opt->maxsize, option);
 				ret = -EINVAL;
 				goto out_free;
 			}
 		} else {
 			/* Failed to parse LTFS dcache configuration rules: invalid option '%s' */
-			ltfsmsg(LTFS_ERR, "17170E", options[i]);
+			ltfsmsg(LTFS_ERR, 17170E, options[i]);
 			ret = -EINVAL;
 			goto out_free;
 		}

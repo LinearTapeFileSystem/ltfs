@@ -82,6 +82,17 @@ AC_ARG_ENABLE([debug],
 AC_MSG_RESULT([$use_debug])
 
 dnl
+dnl Handle --enable-message-checker (default:no)
+dnl
+AC_MSG_CHECKING([whether to compile in message checking mode])
+AC_ARG_ENABLE([message-checker],
+	[AS_HELP_STRING([--enable-message-checker],[compile in message checking mode (may be binary is defunct)])],
+	[use_msg_check=$enableval],
+	[use_msg_check=no]
+)
+AC_MSG_RESULT([$use_msg_check])
+
+dnl
 dnl Handle --enable-fast (default:no)
 dnl
 AC_MSG_CHECKING([whether to enable optimizations])
@@ -318,6 +329,11 @@ else
 	fi
 fi
 
+if test "x$use_msg_check" = "xyes"
+then
+    AM_CPPFLAGS="${AM_CPPFLAGS} -DMSG_CHECK"
+fi
+
 if test "x$livelink" = "xno"
 then
 	AM_CPPFLAGS="${AM_CPPFLAGS} -DPOSIXLINK_ONLY"
@@ -377,6 +393,8 @@ AM_CFLAGS=`echo ${AM_CFLAGS} | ${SED} 's|-D_FORTIFY_SOURCE=. ||g'`
 AM_LDFLAGS="${AM_LDFLAGS} ${FUSE_MODULE_LIBS} ${UUID_MODULE_LIBS} ${LIBXML2_MODULE_LIBS} ${ICU_MODULE_LIBS} ${SNMP_MODULE_LIBS_A} ${SNMP_MODULE_LIBS}"
 CFLAGS="${CFLAGS} ${OPT_FLAGS}"
 
+
+
 dnl
 dnl Define options
 dnl
@@ -384,6 +402,7 @@ AM_CONDITIONAL([PLATFORM_LINUX], [test "x${host_linux}" = "xyes"])
 AM_CONDITIONAL([ENABLE_LIN_TAPE], [test "x${lintape}" = "xyes"])
 AM_CONDITIONAL([PLATFORM_MAC], [test "x${host_mac}" = "xyes"])
 AM_CONDITIONAL([OSS], [true])
+AM_CONDITIONAL([CHK_MESSAGE], [test "x${use_msg_check}" = "xyes"])
 
 AC_SUBST(CFLAGS)
 AC_SUBST(CRC_OPTIMIZE)

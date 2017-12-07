@@ -70,17 +70,17 @@ void *fcfs_init(struct ltfs_volume *vol)
 	int ret;
 	struct fcfs_data *priv = calloc(1, sizeof(struct fcfs_data));
 	if (! priv) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return NULL;
 	}
 	ret = ltfs_mutex_init(&priv->sched_lock);
 	if (ret) {
-		ltfsmsg(LTFS_ERR, "10002E", ret);
+		ltfsmsg(LTFS_ERR, 10002E, ret);
 		free(priv);
 		return NULL;
 	}
 	priv->vol = vol;
-	ltfsmsg(LTFS_INFO, "13019I");
+	ltfsmsg(LTFS_INFO, 13019I);
 	return priv;
 }
 
@@ -96,7 +96,7 @@ int fcfs_destroy(void *iosched_handle)
 
 	ltfs_mutex_destroy(&priv->sched_lock);
 	free(priv);
-	ltfsmsg(LTFS_INFO, "13020I");
+	ltfsmsg(LTFS_INFO, 13020I);
 	return 0;
 }
 

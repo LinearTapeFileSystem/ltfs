@@ -228,20 +228,20 @@ static int ltfs_request_trace_init(void)
 
 	req_trace = calloc(1, sizeof(struct request_trace));
 	if (!req_trace) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	ret = ltfs_mutex_init(&req_trace->req_trace_lock);
 	if (ret) {
-		ltfsmsg(LTFS_ERR, "10002E", ret);
+		ltfsmsg(LTFS_ERR, 10002E, ret);
 		free(req_trace);
 		return -LTFS_MUTEX_INIT;
 	}
 
 	ret = ltfs_mutex_init(&req_trace->req_profiler_lock);
 	if (ret) {
-		ltfsmsg(LTFS_ERR, "10002E", ret);
+		ltfsmsg(LTFS_ERR, 10002E, ret);
 		free(req_trace);
 		return -LTFS_MUTEX_INIT;
 	}
@@ -278,14 +278,14 @@ int ltfs_fn_trace_start(FUNCTION_TRACE_TYPE type, uint32_t tid)
 		struct filesystem_function_trace *tr_data = NULL;
 		item = (struct filesystem_trace_list *) calloc(1, sizeof(struct filesystem_trace_list));
 		if (!item) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 		item->tid = tid;
 
 		tr_data = (struct filesystem_function_trace *) calloc(1, sizeof(struct filesystem_function_trace));
 		if (!tr_data) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 		tr_data->max_index = FS_FN_TRACE_ENTRIES - 1;
@@ -298,14 +298,14 @@ int ltfs_fn_trace_start(FUNCTION_TRACE_TYPE type, uint32_t tid)
 		struct admin_function_trace *tr_data = NULL;
 		item = (struct admin_trace_list *) calloc(1, sizeof(struct admin_trace_list));
 		if (!item) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 		item->tid = tid;
 
 		tr_data = (struct admin_function_trace *) calloc(1, sizeof(struct admin_function_trace));
 		if (!tr_data) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 		tr_data->max_index = ADMIN_FN_TRACE_ENTRIES - 1;
@@ -450,7 +450,7 @@ int ltfs_request_profiler_start(const char *work_dir)
 
 	ret = asprintf(&path, "%s/%s", work_dir, REQ_PROFILER_FILE);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10001E", __FILE__);
+		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -483,7 +483,7 @@ int ltfs_header_init(void)
 	/* Trace header */
 	trc_header = calloc(1, sizeof(struct trace_header));
 	if (!trc_header) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 	strncpy(trc_header->signature, LTFS_TRACE_SIGNATURE, strlen(LTFS_TRACE_SIGNATURE));
@@ -498,7 +498,7 @@ int ltfs_header_init(void)
 	/* Request trace header */
 	req_header = calloc(1, sizeof(struct request_header));
 	if (!trc_header) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 	req_header->header_size = sizeof(struct request_header);
@@ -508,7 +508,7 @@ int ltfs_header_init(void)
 	/* Function trace header */
 	fn_trc_header = calloc(1, sizeof(struct function_trace_header));
 	if (!fn_trc_header) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 	fn_trc_header->crc = 0xDEADBEEF;
@@ -584,19 +584,19 @@ int ltfs_dump(char *fname, const char *work_dir)
 
 	ret = asprintf(&path, "%s/%s", work_dir, fname);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10001E", __FILE__);
+		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	ret = asprintf(&pid, "%ld", (long)getpid());
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10001E", __FILE__);
+		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	fork_pid = fork();
 	if (fork_pid < 0) {
-		ltfsmsg(LTFS_ERR, "17233E");
+		ltfsmsg(LTFS_ERR, 17233E);
 	} else  if (fork_pid == 0) {
 		args[num_args++] = "/usr/bin/gcore";
 		args[num_args++] = "-o";
@@ -627,7 +627,7 @@ int ltfs_trace_dump(char *fname, const char *work_dir)
 
 	ret = asprintf(&path, "%s/%s", work_dir, fname);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10001E", __FILE__);
+		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -658,7 +658,7 @@ int ltfs_trace_dump(char *fname, const char *work_dir)
 		fn_trc_header->req_t_desc =
 			(struct function_trace_descriptor *) calloc(num_of_fn_trace, sizeof(struct function_trace_descriptor));
 		if (!fn_trc_header->req_t_desc) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -740,12 +740,12 @@ int ltfs_get_trace_status(char **val)
 
 	ret = asprintf(&trstat, "%s", (trace_enable == true) ? "on" : "off" );
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10001E", __FILE__);
+		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
 	*val = strdup(trstat);
 	if (! (*val)) {
-		ltfsmsg(LTFS_ERR, "10001E", __FILE__);
+		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
 	free(trstat);

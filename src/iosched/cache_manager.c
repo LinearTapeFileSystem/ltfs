@@ -93,12 +93,12 @@ struct cache_object *_cache_manager_create_object(struct cache_pool *pool)
 	int ret;
 	struct cache_object *object = calloc(1, sizeof(struct cache_object));
 	if (! object) {
-		ltfsmsg(LTFS_ERR, "10001E", "cache manager: object");
+		ltfsmsg(LTFS_ERR, 10001E, "cache manager: object");
 		return NULL;
 	}
 	object->data = calloc(1, pool->object_size + LTFS_CRC_SIZE); /* Allocate extra 4-bytes for SCSI logical block protection */
 	if (! object->data) {
-		ltfsmsg(LTFS_ERR, "10001E", "cache manager: object data");
+		ltfsmsg(LTFS_ERR, 10001E, "cache manager: object data");
 		free(object);
 		return NULL;
 	}
@@ -106,7 +106,7 @@ struct cache_object *_cache_manager_create_object(struct cache_pool *pool)
 	object->refcount = 1;
 	ret = ltfs_mutex_init(&object->lock);
 	if (ret) {
-		ltfsmsg(LTFS_ERR, "10002E", ret);
+		ltfsmsg(LTFS_ERR, 10002E, ret);
 		free(object->data);
 		free(object);
 		return NULL;
@@ -129,7 +129,7 @@ void *cache_manager_init(size_t object_size, size_t initial_capacity, size_t max
 
 	pool = (struct cache_pool *) calloc(1, sizeof (struct cache_pool));
 	if (! pool) {
-		ltfsmsg(LTFS_ERR, "10001E", "cache manager: pool");
+		ltfsmsg(LTFS_ERR, 10001E, "cache manager: pool");
 		return NULL;
 	}
 	pool->object_size = object_size;
@@ -141,7 +141,7 @@ void *cache_manager_init(size_t object_size, size_t initial_capacity, size_t max
 	for (i=0; i<initial_capacity; ++i) {
 		struct cache_object *object = _cache_manager_create_object(pool);
 		if (! object) {
-			ltfsmsg(LTFS_ERR, "11114E");
+			ltfsmsg(LTFS_ERR, 11114E);
 			cache_manager_destroy(pool);
 			return NULL;
 		}
@@ -159,7 +159,7 @@ void cache_manager_destroy(void *cache)
 	struct cache_object *object, *aux;
 	struct cache_pool *pool = (struct cache_pool *) cache;
 	if (! pool) {
-		ltfsmsg(LTFS_WARN, "10006W", "pool", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "pool", __FUNCTION__);
 		return;
 	}
 
@@ -233,7 +233,7 @@ void *cache_manager_allocate_object(void *cache)
 		struct cache_object *object = _cache_manager_create_object(pool);
 		if (! object) {
 			/* Luckily we might have increased the size of the cache by a few entries.. */
-			ltfsmsg(LTFS_WARN, "11115W");
+			ltfsmsg(LTFS_WARN, 11115W);
 			break;
 		}
 		last_object = object;
@@ -242,7 +242,7 @@ void *cache_manager_allocate_object(void *cache)
 
 	if (! last_object) {
 		/* If we couldn't grow the cache any further return failure */
-		ltfsmsg(LTFS_ERR, "11116E");
+		ltfsmsg(LTFS_ERR, 11116E);
 		return NULL;
 	}
 
@@ -278,7 +278,7 @@ void cache_manager_free_object(void *cache_object, size_t count)
 	struct cache_pool *pool;
 	struct cache_object *object = (struct cache_object *) cache_object;
 	if (! object) {
-		ltfsmsg(LTFS_WARN, "10006W", "object", __FUNCTION__);
+		ltfsmsg(LTFS_WARN, 10006W, "object", __FUNCTION__);
 		return;
 	}
 

@@ -174,7 +174,7 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 		// we would allocate more than 1 IOVirtualRange.
 		range = (IOVirtualRange *) malloc(sizeof(IOVirtualRange));
 		if (range == NULL) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			ret = -EDEV_NO_MEMORY;
 			goto free;
 		}
@@ -187,7 +187,7 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 		kernelReturn = (*device->task)->SetScatterGatherEntries(device->task, range, 1,
 																req->dxfer_len, req->dxfer_direction);
 		if (kernelReturn != kIOReturnSuccess) {
-			ltfsmsg(LTFS_INFO, "30800I", *req->cmdp, kernelReturn);
+			ltfsmsg(LTFS_INFO, 30800I, *req->cmdp, kernelReturn);
 			ret = -EDEV_INTERNAL_ERROR;
 			goto free;
 		}
@@ -196,7 +196,7 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 	// Set the actual cdb in the task.
 	kernelReturn = (*device->task)->SetCommandDescriptorBlock(device->task, req->cmdp, req->cmd_len);
 	if (kernelReturn != kIOReturnSuccess) {
-		ltfsmsg(LTFS_INFO, "30801I", *req->cmdp, kernelReturn);
+		ltfsmsg(LTFS_INFO, 30801I, *req->cmdp, kernelReturn);
 		ret = -EDEV_INTERNAL_ERROR;
 		goto free;
 	}
@@ -204,7 +204,7 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 	// Set the timeout in the task
 	kernelReturn = (*device->task)->SetTimeoutDuration(device->task, req->timeout);
 	if (kernelReturn != kIOReturnSuccess) {
-		ltfsmsg(LTFS_INFO, "30802I", *req->cmdp, kernelReturn);
+		ltfsmsg(LTFS_INFO, 30802I, *req->cmdp, kernelReturn);
 		ret = -EDEV_INTERNAL_ERROR;
 		goto free;
 	}
@@ -212,7 +212,7 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 	kernelReturn = (*device->task)->ExecuteTaskSync(device->task, &req->sense_buffer,
 													&req->status, &transfer_count);
 	if (kernelReturn != kIOReturnSuccess) {
-		ltfsmsg(LTFS_INFO, "30803I", *req->cmdp, kernelReturn);
+		ltfsmsg(LTFS_INFO, 30803I, *req->cmdp, kernelReturn);
 		ret = -EDEV_INTERNAL_ERROR;
 		goto free;
 	}
@@ -226,17 +226,17 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 			break;
 		case kSCSITaskStatus_CHECK_CONDITION:
 			ret = iokit_sense2errno(req, &sense, msg);
-			ltfsmsg(LTFS_DEBUG, "30804D", sense, *msg);
+			ltfsmsg(LTFS_DEBUG, 30804D, sense, *msg);
 			break;
 		case kSCSITaskStatus_BUSY:
-			ltfsmsg(LTFS_DEBUG, "30805D", "busy");
+			ltfsmsg(LTFS_DEBUG, 30805D, "busy");
 			ret = -EDEV_DEVICE_BUSY;
 			if (msg) {
 				*msg = "Drive busy";
 			}
 			break;
 		case kSCSITaskStatus_RESERVATION_CONFLICT:
-			ltfsmsg(LTFS_DEBUG, "30805D", "reservation conflict");
+			ltfsmsg(LTFS_DEBUG, 30805D, "reservation conflict");
 			ret = -EDEV_RESERVATION_CONFLICT;
 			if (msg) {
 				*msg = "Drive reservation conflict";
@@ -244,7 +244,7 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 			break;
 		default:
 			ret = -EDEV_DRIVER_ERROR;
-			ltfsmsg(LTFS_INFO, "30806I", req->status);
+			ltfsmsg(LTFS_INFO, 30806I, req->status);
 			if (msg) {
 				*msg = "CDB command returned with unexpected status";
 			}
@@ -254,9 +254,9 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 free:
 	if (ret != DEVICE_GOOD) {
 		if (is_expected_error(device, req->cmdp, ret)) {
-			ltfsmsg(LTFS_DEBUG, "30807D", req->desc, req->cmdp[0], ret);
+			ltfsmsg(LTFS_DEBUG, 30807D, req->desc, req->cmdp[0], ret);
 		} else {
-			ltfsmsg(LTFS_INFO, "30808I", req->desc, req->cmdp[0], ret);
+			ltfsmsg(LTFS_INFO, 30808I, req->desc, req->cmdp[0], ret);
 		}
 	}
 
@@ -319,7 +319,7 @@ int iokit_get_drive_identifier(struct iokit_device *device,
 
 	ret = _inquiry_low(device, 0, inquiry_buf, MAX_INQ_LEN);
 	if( ret < 0 ) {
-		ltfsmsg(LTFS_INFO, "30809I", ret);
+		ltfsmsg(LTFS_INFO, 30809I, ret);
 		return ret;
 	}
 
@@ -331,7 +331,7 @@ int iokit_get_drive_identifier(struct iokit_device *device,
 
 	ret = _inquiry_low(device, 0x80, inquiry_buf, MAX_INQ_LEN);
 	if( ret < 0 ) {
-		ltfsmsg(LTFS_INFO, "30809I", ret);
+		ltfsmsg(LTFS_INFO, 30809I, ret);
 		return ret;
 	}
 

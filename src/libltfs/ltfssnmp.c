@@ -91,7 +91,7 @@ int read_trap_def_file(char *deffile)
 	fp = fopen(trapfile, TABLE_FILE_MODE);
 	if (! fp) {
 		ret = -errno;
-		ltfsmsg(LTFS_ERR, "11268E", trapfile, ret);
+		ltfsmsg(LTFS_ERR, 11268E, trapfile, ret);
 		return ret;
 	}
 
@@ -99,7 +99,7 @@ int read_trap_def_file(char *deffile)
 	if (!ret) {
 		while(fgets(line, 65536, fp) != NULL) {
 			if (strlen(line) == 65535) {
-				ltfsmsg(LTFS_ERR, "11269E");
+				ltfsmsg(LTFS_ERR, 11269E);
 				ret = -LTFS_CONFIG_INVALID;
 				return ret;
 			}
@@ -118,7 +118,7 @@ int read_trap_def_file(char *deffile)
 			if (tok) {
 				entry = (struct trap_entry *) calloc(1, sizeof(struct trap_entry));
 				if (! entry) {
-					ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+					ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 					return -LTFS_NO_MEMORY;
 				}
 				entry->id = strdup(tok);

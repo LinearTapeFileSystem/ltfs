@@ -189,34 +189,34 @@ static struct option long_options[] = {
 
 void show_usage(char *appname, struct config_file *config, bool full)
 {
-	ltfsresult("16400I", appname); /* Usage: %s [options] filesys */
+	ltfsresult(16400I, appname); /* Usage: %s [options] filesys */
 	fprintf(stderr, "\n");
-	ltfsresult("16401I"); /* filesys   Device file for the tape drive */
+	ltfsresult(16401I); /* filesys   Device file for the tape drive */
 	fprintf(stderr, "\n");
-	ltfsresult("16402I"); /* Available options are: */
-	ltfsresult("16403I"); /* -g, --generation */
-	ltfsresult("16404I"); /* -r, --rollback */
-	ltfsresult("16405I"); /* -n, --no-rollback */
-	ltfsresult("16406I", LTFS_LOSTANDFOUND_DIR); /* -f, --full-recovery */
-	ltfsresult("16421I"); /* -z --deep-recovery */
-	ltfsresult("16407I"); /* -l, --list-rollback-points */
-	ltfsresult("16422I"); /* -m, --full-index-info */
-	ltfsresult("16420I"); /* -v, --traverse */
-	ltfsresult("16408I"); /* -j, --erase-history */
-	ltfsresult("16409I"); /* -k, --keep-history */
-	ltfsresult("16410I"); /* -q, --quiet */
-	ltfsresult("16411I"); /* -t, --trace */
-	ltfsresult("16425I"); /* --syslogtrace */
-	ltfsresult("16426I"); /* -V --version */
-	ltfsresult("16412I"); /* -h, --help */
-	ltfsresult("16413I"); /* -p, --advanced-help */
+	ltfsresult(16402I); /* Available options are: */
+	ltfsresult(16403I); /* -g, --generation */
+	ltfsresult(16404I); /* -r, --rollback */
+	ltfsresult(16405I); /* -n, --no-rollback */
+	ltfsresult(16406I, LTFS_LOSTANDFOUND_DIR); /* -f, --full-recovery */
+	ltfsresult(16421I); /* -z --deep-recovery */
+	ltfsresult(16407I); /* -l, --list-rollback-points */
+	ltfsresult(16422I); /* -m, --full-index-info */
+	ltfsresult(16420I); /* -v, --traverse */
+	ltfsresult(16408I); /* -j, --erase-history */
+	ltfsresult(16409I); /* -k, --keep-history */
+	ltfsresult(16410I); /* -q, --quiet */
+	ltfsresult(16411I); /* -t, --trace */
+	ltfsresult(16425I); /* --syslogtrace */
+	ltfsresult(16426I); /* -V --version */
+	ltfsresult(16412I); /* -h, --help */
+	ltfsresult(16413I); /* -p, --advanced-help */
 	if (full) {
-		ltfsresult("16414I", LTFS_CONFIG_FILE); /* -i, --config=<file> */
-		ltfsresult("16415I");                   /* -e, --backend=<name> */
-		ltfsresult("16423I");                   /*     --kmi-backend=<name> */
-		ltfsresult("16416I");                   /* -x, --fulltrace */
-		ltfsresult("16424I");                   /*     --capture-index */
-		ltfsresult("16427I");                   /*     --salvage-rollback-points */
+		ltfsresult(16414I, LTFS_CONFIG_FILE); /* -i, --config=<file> */
+		ltfsresult(16415I);                   /* -e, --backend=<name> */
+		ltfsresult(16423I);                   /*     --kmi-backend=<name> */
+		ltfsresult(16416I);                   /* -x, --fulltrace */
+		ltfsresult(16424I);                   /*     --capture-index */
+		ltfsresult(16427I);                   /*     --salvage-rollback-points */
 		fprintf(stderr, "\n");
 		plugin_usage("driver", config);
 		fprintf(stderr, "\n");
@@ -264,21 +264,21 @@ int main(int argc, char **argv)
 #endif
 	ret = ltfs_init(LTFS_INFO, true, false);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10000E", ret);
+		ltfsmsg(LTFS_ERR, 10000E, ret);
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 
 	/*  Setup signal handler to terminate cleanly */
 	ret = ltfs_set_signal_handlers();
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10013E");
+		ltfsmsg(LTFS_ERR, 10013E);
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 
 	/* Register messages with libltfs */
 	ret = ltfsprintf_load_plugin("bin_ltfsck", bin_ltfsck_dat, &message_handle);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10012E", ret);
+		ltfsmsg(LTFS_ERR, 10012E, ret);
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 
@@ -305,7 +305,7 @@ int main(int argc, char **argv)
 	/* Load configuration file */
 	ret = config_file_load(config_file, &opt.config);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10008E", ret);
+		ltfsmsg(LTFS_ERR, 10008E, ret);
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 
@@ -399,8 +399,8 @@ int main(int argc, char **argv)
 				++num_of_o;
 				break;
 			case 'V':
-				ltfsresult("16108I", "ltfsck", PACKAGE_VERSION);
-				ltfsresult("16108I", "LTFS Format Specification", LTFS_INDEX_VERSION_STR);
+				ltfsresult(16108I, "ltfsck", PACKAGE_VERSION);
+				ltfsresult(16108I, "LTFS Format Specification", LTFS_INDEX_VERSION_STR);
 				return 0;
 			case '?':
 			default:
@@ -413,7 +413,7 @@ int main(int argc, char **argv)
 	if (! opt.backend_path) {
 		const char *default_backend = config_file_get_default_plugin("tape", opt.config);
 		if (! default_backend) {
-			ltfsmsg(LTFS_ERR, "10009E");
+			ltfsmsg(LTFS_ERR, 10009E);
 			return LTFSCK_OPERATIONAL_ERROR;
 		}
 		opt.backend_path = strdup(default_backend);
@@ -430,7 +430,7 @@ int main(int argc, char **argv)
 
 	/* Set the logging level */
 	if (opt.quiet && (opt.trace || opt.fulltrace)) {
-		ltfsmsg(LTFS_ERR, "9013E");
+		ltfsmsg(LTFS_ERR, 9013E);
 		show_usage(argv[0], opt.config, false);
 		return LTFSCK_OPERATIONAL_ERROR;
 	} else if (opt.quiet) {
@@ -453,7 +453,7 @@ int main(int argc, char **argv)
 	ltfs_set_syslog_level(log_level);
 
 	/* Starting ltfsck */
-	ltfsmsg(LTFS_INFO, "16000I", PACKAGE_NAME, PACKAGE_VERSION, log_level);
+	ltfsmsg(LTFS_INFO, 16000I, PACKAGE_NAME, PACKAGE_VERSION, log_level);
 
 	/* Show command line arguments */
 	for (i = 0, cmd_args_len = 0 ; i < argc; i++) {
@@ -462,7 +462,7 @@ int main(int argc, char **argv)
 	cmd_args = calloc(1, cmd_args_len + 1);
 	if (!cmd_args) {
 		/* Memory allocation failed */
-		ltfsmsg(LTFS_ERR, "10001E", "ltfsck (arguments)");
+		ltfsmsg(LTFS_ERR, 10001E, "ltfsck (arguments)");
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 	strcat(cmd_args, argv[0]);
@@ -470,12 +470,12 @@ int main(int argc, char **argv)
 		strcat(cmd_args, " ");
 		strcat(cmd_args, argv[i]);
 	}
-	ltfsmsg(LTFS_INFO, "16088I", cmd_args);
+	ltfsmsg(LTFS_INFO, 16088I, cmd_args);
 	free(cmd_args);
 
 	/* Show build time information */
-	ltfsmsg(LTFS_INFO, "16089I", BUILD_SYS_FOR);
-	ltfsmsg(LTFS_INFO, "16090I", BUILD_SYS_GCC);
+	ltfsmsg(LTFS_INFO, 16089I, BUILD_SYS_FOR);
+	ltfsmsg(LTFS_INFO, 16090I, BUILD_SYS_GCC);
 
 	/* Show run time information */
 	show_runtime_system_info();
@@ -483,7 +483,7 @@ int main(int argc, char **argv)
 	/* Actually mkltfs logic starts here */
 	ret = ltfs_volume_alloc("ltfsck", &vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "16001E");
+		ltfsmsg(LTFS_ERR, 16001E);
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 
@@ -493,7 +493,7 @@ int main(int argc, char **argv)
 	opt.prg_name = strdup(argv[0]);
 
 	if (_ltfsck_validate_options(&opt)) {
-		ltfsmsg(LTFS_ERR, "16002E");
+		ltfsmsg(LTFS_ERR, 16002E);
 		show_usage(argv[0], opt.config, false);
 		return LTFSCK_USAGE_SYNTAX_ERROR;
 	}
@@ -523,37 +523,37 @@ int ltfsck(struct ltfs_volume *vol, struct other_check_opts *opt, void *args)
 	/* load the backend, open the tape device, and load a tape */
 	ret = plugin_load(&backend, "tape", opt->backend_path, opt->config);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "16010E", opt->backend_path, ret);
+		ltfsmsg(LTFS_ERR, 16010E, opt->backend_path, ret);
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 	if (opt->kmi_backend_name) {
 		ret = plugin_load(&kmi, "kmi", opt->kmi_backend_name, opt->config);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "16102E", opt->kmi_backend_name);
+			ltfsmsg(LTFS_ERR, 16102E, opt->kmi_backend_name);
 			return LTFSCK_OPERATIONAL_ERROR;
 		}
 	}
 
 	ret = LTFSCK_OPERATIONAL_ERROR;
 	if (ltfs_device_open(opt->devname, backend.ops, vol) < 0) {
-		ltfsmsg(LTFS_ERR, "16011E", opt->devname);
+		ltfsmsg(LTFS_ERR, 16011E, opt->devname);
 		goto out_unload_backend;
 	}
 	ret = ltfs_parse_tape_backend_opts(args, vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "16106E");
+		ltfsmsg(LTFS_ERR, 16106E);
 		goto out_unload_backend;
 	}
 	if (opt->kmi_backend_name) {
 		ret = kmi_init(&kmi, vol);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "16104E", opt->devname, ret);
+			ltfsmsg(LTFS_ERR, 16104E, opt->devname, ret);
 			goto out_unload_backend;
 		}
 
 		ret = ltfs_parse_kmi_backend_opts(args, vol);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "16105E");
+			ltfsmsg(LTFS_ERR, 16105E);
 			goto out_unload_backend;
 		}
 
@@ -567,7 +567,7 @@ int ltfsck(struct ltfs_volume *vol, struct other_check_opts *opt, void *args)
 
 		for (i = 0; i < a->argc && a->argv[i]; ++i) {
 			if (!strcmp(a->argv[i], "-o")) {
-				ltfsmsg(LTFS_ERR, "16107E", a->argv[i], a->argv[i + 1] ? a->argv[i + 1] : "");
+				ltfsmsg(LTFS_ERR, 16107E, a->argv[i], a->argv[i + 1] ? a->argv[i + 1] : "");
 				ret = LTFSCK_USAGE_SYNTAX_ERROR;
 				goto out_unload_backend;
 			}
@@ -579,36 +579,36 @@ int ltfsck(struct ltfs_volume *vol, struct other_check_opts *opt, void *args)
 	ltfs_load_tape(vol);
 	ret = ltfs_wait_device_ready(vol);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "16092E", opt->devname);
+		ltfsmsg(LTFS_ERR, 16092E, opt->devname);
 		goto out_close;
 	}
 
 	if (ltfs_setup_device(vol)) {
-		ltfsmsg(LTFS_ERR, "16092E", opt->devname);
+		ltfsmsg(LTFS_ERR, 16092E, opt->devname);
 		goto out_close;
 	}
 
 	switch (opt->op_mode) {
 	case MODE_CHECK:
-		ltfsmsg(LTFS_INFO, "16014I", opt->devname);
+		ltfsmsg(LTFS_INFO, 16014I, opt->devname);
 		opt->full_index_info = false;
 		ret = check_ltfs_volume(vol, opt);
 		break;
 	case MODE_ROLLBACK:
-		ltfsmsg(LTFS_INFO, "16015I", opt->devname);
+		ltfsmsg(LTFS_INFO, 16015I, opt->devname);
 		opt->full_index_info = false;
 		switch(opt->search_mode) {
 		case SEARCH_BY_GEN:
 			ret = rollback(vol, opt);
 			break;
 		default:
-			ltfsmsg(LTFS_ERR, "16016E");
+			ltfsmsg(LTFS_ERR, 16016E);
 			ret = LTFSCK_USAGE_SYNTAX_ERROR;
 			break;
 		}
 		break;
 	case MODE_VERIFY:
-		ltfsmsg(LTFS_INFO, "16017I", opt->devname);
+		ltfsmsg(LTFS_INFO, 16017I, opt->devname);
 		opt->full_index_info = false;
 		switch(opt->search_mode) {
 		case SEARCH_BY_GEN:
@@ -617,18 +617,18 @@ int ltfsck(struct ltfs_volume *vol, struct other_check_opts *opt, void *args)
 				ret = LTFSCK_NO_ERRORS;
 			break;
 		default:
-			ltfsmsg(LTFS_ERR, "16016E");
+			ltfsmsg(LTFS_ERR, 16016E);
 			show_usage(opt->prg_name, opt->config, false);
 			ret = LTFSCK_USAGE_SYNTAX_ERROR;
 			break;
 		}
 		break;
 	case MODE_LIST_POINT:
-		ltfsmsg(LTFS_INFO, "16018I", opt->devname);
+		ltfsmsg(LTFS_INFO, 16018I, opt->devname);
 		ret = list_rollback_points(vol, opt);
 		break;
 	default:
-		ltfsmsg(LTFS_ERR, "16019E");
+		ltfsmsg(LTFS_ERR, 16019E);
 		ret = LTFSCK_USAGE_SYNTAX_ERROR;
 		break;
 	}
@@ -641,13 +641,13 @@ out_close:
 out_unload_backend:
 	ret_close = plugin_unload(&backend);
 	if (ret == 0 && ret_close < 0) {
-		ltfsmsg(LTFS_WARN, "16020W", ret_close);
+		ltfsmsg(LTFS_WARN, 16020W, ret_close);
 		ret = LTFSCK_OPERATIONAL_ERROR;
 	}
 	if (opt->kmi_backend_name) {
 		ret_close = plugin_unload(&kmi);
 		if (ret == 0 && ret_close < 0) {
-			ltfsmsg(LTFS_WARN, "16103W");
+			ltfsmsg(LTFS_WARN, 16103W);
 			ret = LTFSCK_OPERATIONAL_ERROR;
 		}
 	}
@@ -663,13 +663,13 @@ int check_ltfs_volume(struct ltfs_volume *vol, struct other_check_opts *opt)
 	/* Load tape and read labels */
 	ret = load_tape(vol);
 	if (ret != LTFSCK_NO_ERRORS) {
-		ltfsmsg(LTFS_ERR, "16080E", ret);
+		ltfsmsg(LTFS_ERR, 16080E, ret);
 		return LTFSCK_UNCORRECTED;
 	}
 
 	ret = tape_get_cart_volume_lock_status(vol->device, &vollock);
 	if (vollock != VOLUME_UNLOCKED) {
-		ltfsmsg(LTFS_INFO, "16111I", vollock);
+		ltfsmsg(LTFS_INFO, 16111I, vollock);
 	} else if (opt->deep_recovery) {
 		/* Performe EOD recovery, if deep_recovery option is set */
 		bool is_worm;
@@ -679,7 +679,7 @@ int check_ltfs_volume(struct ltfs_volume *vol, struct other_check_opts *opt)
 		}
 
 		if (is_worm && opt->deep_recovery) {
-			ltfsmsg(LTFS_ERR, "16109E", "Deep Recovery");
+			ltfsmsg(LTFS_ERR, 16109E, "Deep Recovery");
 			return LTFSCK_USAGE_SYNTAX_ERROR;
 		}
 
@@ -691,7 +691,7 @@ int check_ltfs_volume(struct ltfs_volume *vol, struct other_check_opts *opt)
 		 */
 		ret = ltfs_recover_eod(vol);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "16091E", ret);
+			ltfsmsg(LTFS_ERR, 16091E, ret);
 			return LTFSCK_UNCORRECTED;
 		}
 		vol->ignore_wrong_version = true;
@@ -701,18 +701,18 @@ int check_ltfs_volume(struct ltfs_volume *vol, struct other_check_opts *opt)
 	if (ret < 0) {
 		if(ret == -LTFS_BOTH_EOD_MISSING && opt->deep_recovery) {
 			/* CM corrupted? try -o force_mount_no_eod */
-			ltfsmsg(LTFS_ERR, "16093E");
-			ltfsmsg(LTFS_ERR, "16094E");
+			ltfsmsg(LTFS_ERR, 16093E);
+			ltfsmsg(LTFS_ERR, 16094E);
 		} else if (ret == -LTFS_UNSUPPORTED_INDEX_VERSION) {
-			ltfsmsg(LTFS_ERR, "16100E");
-			ltfsmsg(LTFS_ERR, "16101E");
+			ltfsmsg(LTFS_ERR, 16100E);
+			ltfsmsg(LTFS_ERR, 16101E);
 		} else /* Could not mount. Please format (mkltfs) or check (ltfsck). */
-			ltfsmsg(LTFS_ERR, "16021E");
+			ltfsmsg(LTFS_ERR, 16021E);
 		return LTFSCK_UNCORRECTED;
 	} else {
 		print_criteria_info(vol);
 		ltfs_unmount(SYNC_CHECK, vol);
-		ltfsmsg(LTFS_INFO, "16022I");
+		ltfsmsg(LTFS_INFO, 16022I);
 		return LTFSCK_CORRECTED;
 	}
 }
@@ -784,7 +784,7 @@ struct index_info * _make_new_index(struct ltfs_volume *vol)
 
 	new = calloc(1, sizeof(struct index_info));
 	if (!new) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return NULL;
 	}
 
@@ -979,22 +979,22 @@ void print_volume_info(struct ltfs_volume *vol)
 	struct ltfs_timespec format_time;
 	struct tm *t_st;
 
-	ltfsmsg(LTFS_INFO, "16023I");
-	ltfsmsg(LTFS_INFO, "16024I", ltfs_get_barcode(vol));
-	ltfsmsg(LTFS_INFO, "16025I", ltfs_get_volume_uuid(vol));
+	ltfsmsg(LTFS_INFO, 16023I);
+	ltfsmsg(LTFS_INFO, 16024I, ltfs_get_barcode(vol));
+	ltfsmsg(LTFS_INFO, 16025I, ltfs_get_volume_uuid(vol));
 
 	format_time = ltfs_get_format_time(vol);
 	t_st = get_localtime(&(format_time.tv_sec));
-	ltfsmsg(LTFS_INFO, "16026I",
+	ltfsmsg(LTFS_INFO, 16026I,
 			t_st->tm_year+1900, t_st->tm_mon+1, t_st->tm_mday,
 			t_st->tm_hour, t_st->tm_min, t_st->tm_sec, format_time.tv_nsec,
 			t_st->tm_zone);
 
-	ltfsmsg(LTFS_INFO, "16027I", ltfs_get_blocksize(vol));
-	ltfsmsg(LTFS_INFO, "16028I", ltfs_get_compression(vol) ? "Enabled" : "Disabled");
-	ltfsmsg(LTFS_INFO, "16029I",
+	ltfsmsg(LTFS_INFO, 16027I, ltfs_get_blocksize(vol));
+	ltfsmsg(LTFS_INFO, 16028I, ltfs_get_compression(vol) ? "Enabled" : "Disabled");
+	ltfsmsg(LTFS_INFO, 16029I,
 			   ltfs_ip_id(vol), ltfs_part_id2num(ltfs_ip_id(vol), vol));
-	ltfsmsg(LTFS_INFO, "16030I",
+	ltfsmsg(LTFS_INFO, 16030I,
 			   ltfs_dp_id(vol), ltfs_part_id2num(ltfs_dp_id(vol), vol));
 	if (ltfs_log_level >= LTFS_INFO)
 		fprintf(stderr, "\n");
@@ -1009,8 +1009,8 @@ void print_criteria_info(struct ltfs_volume *vol)
 	const struct index_criteria *ic = ltfs_get_index_criteria(vol);
 
 	if(ic->have_criteria) {
-		ltfsmsg(LTFS_INFO, "16031I");
-		ltfsmsg(LTFS_INFO, "16032I",
+		ltfsmsg(LTFS_INFO, 16031I);
+		ltfsmsg(LTFS_INFO, 16032I,
 			(unsigned long long)ic->max_filesize_criteria);
 
 		if(ic->glob_patterns) {
@@ -1018,12 +1018,12 @@ void print_criteria_info(struct ltfs_volume *vol)
 			while(1) {
 				if(ic->glob_patterns[i].name == NULL)
 					break;
-				ltfsmsg(LTFS_INFO, "16033I", ic->glob_patterns[i].name);
+				ltfsmsg(LTFS_INFO, 16033I, ic->glob_patterns[i].name);
 				i++;
 			}
 		}
 
-		ltfsmsg(LTFS_INFO, "16034I", update ? "Allowed" : "Not allowed");
+		ltfsmsg(LTFS_INFO, 16034I, update ? "Allowed" : "Not allowed");
 		if (ltfs_log_level >= LTFS_INFO)
 			fprintf(stderr, "\n");
 	}
@@ -1036,8 +1036,8 @@ int search_index_by_gen(struct ltfs_volume *vol, unsigned int target, void **lis
 	struct index_info *new;
 
 	if (vol->index->generation == (unsigned int)-1) {
-		ltfsmsg(LTFS_ERR, "16098E");
-		ltfsmsg(LTFS_ERR, "16099E");
+		ltfsmsg(LTFS_ERR, 16098E);
+		ltfsmsg(LTFS_ERR, 16099E);
 		return -LTFS_UNSUPPORTED_INDEX_VERSION;
 	}
 
@@ -1090,7 +1090,7 @@ int _erase_history(struct ltfs_volume *vol, struct other_check_opts *opt, struct
 	int ret;
 	struct tc_position pos;
 
-	ltfsmsg(LTFS_DEBUG, "16045D", position->partition, position->block);
+	ltfsmsg(LTFS_DEBUG, 16045D, (int)position->partition, (unsigned long long)position->block);
 
 	pos.partition = ltfs_part_id2num(position->partition, vol);
 	pos.block = position->block;
@@ -1099,23 +1099,23 @@ int _erase_history(struct ltfs_volume *vol, struct other_check_opts *opt, struct
 	if (ret < 0)
 		return LTFSCK_OPERATIONAL_ERROR;
 
-	ltfsmsg(LTFS_DEBUG, "16050D");
+	ltfsmsg(LTFS_DEBUG, 16050D);
 	ret = tape_spacefm(vol->device, 1);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "16051E", ret);
+		ltfsmsg(LTFS_ERR, 16051E, ret);
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 
-	ltfsmsg(LTFS_DEBUG, "16052D");
+	ltfsmsg(LTFS_DEBUG, 16052D);
 	ret = tape_spacefm(vol->device, -1);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "16053E", ret);
+		ltfsmsg(LTFS_ERR, 16053E, ret);
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 
 	ret = tape_write_filemark(vol->device, 1, true, true, false);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "16054E", ret);
+		ltfsmsg(LTFS_ERR, 16054E, ret);
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 
@@ -1127,16 +1127,16 @@ int _rollback_ip(struct ltfs_volume *vol, struct other_check_opts *opt, struct t
 	int ret;
 
 	if (position)
-		ltfsmsg(LTFS_DEBUG, "16046D", "IP", position->partition, position->block);
+		ltfsmsg(LTFS_DEBUG, 16046D, "IP", (int)position->partition, (unsigned long long)position->block);
 
 	if(opt->erase_history && position) {
 		ret = _erase_history(vol, opt, position);
 		if (ret != LTFSCK_NO_ERRORS)
-			ltfsmsg(LTFS_ERR, "16059E", ret);
+			ltfsmsg(LTFS_ERR, 16059E, ret);
 	} else {
 		ret = ltfs_write_index(ltfs_ip_id(vol), SYNC_ROLLBACK, vol);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "16060E", ret);
+			ltfsmsg(LTFS_ERR, 16060E, ret);
 			ret = LTFSCK_OPERATIONAL_ERROR;
 		}
 	}
@@ -1148,16 +1148,16 @@ int _rollback_dp(struct ltfs_volume *vol, struct other_check_opts *opt, struct t
 {
 	int ret;
 
-	ltfsmsg(LTFS_DEBUG, "16046D", "DP", position->partition, position->block);
+	ltfsmsg(LTFS_DEBUG, 16046D, "DP", (int)position->partition, (unsigned long long)position->block);
 
 	if(opt->erase_history && position) {
 		ret = _erase_history(vol, opt, position);
 		if (ret != LTFSCK_NO_ERRORS)
-			ltfsmsg(LTFS_ERR, "16055E", ret);
+			ltfsmsg(LTFS_ERR, 16055E, ret);
 	} else {
 		ret = ltfs_write_index(ltfs_dp_id(vol), SYNC_ROLLBACK, vol);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "16056E", ret);
+			ltfsmsg(LTFS_ERR, 16056E, ret);
 			ret = LTFSCK_OPERATIONAL_ERROR;
 		}
 	}
@@ -1172,7 +1172,7 @@ int _rollback(struct ltfs_volume *vol, struct other_check_opts *opt, struct roll
 	index_num = num_of_index(rb->target_info);
 
 	if (index_num == 1) {
-		ltfsmsg(LTFS_INFO, "16067I");
+		ltfsmsg(LTFS_INFO, 16067I);
 		print_index_array(vol, rb->target_info, opt);
 
 		if (opt->op_mode == MODE_ROLLBACK) {
@@ -1180,7 +1180,7 @@ int _rollback(struct ltfs_volume *vol, struct other_check_opts *opt, struct roll
 			if (! ret || ret == -LTFS_NO_SPACE || ret == -LTFS_LESS_SPACE)
 				ret = ltfs_get_partition_readonly(ltfs_dp_id(vol), vol);
 			if (ret < 0 && ret != -LTFS_NO_SPACE && ret != -LTFS_LESS_SPACE) { /* Try to roll back even in low space condition. */
-				ltfsmsg(LTFS_ERR, "16057E");
+				ltfsmsg(LTFS_ERR, 16057E);
 				return LTFSCK_OPERATIONAL_ERROR;
 			}
 
@@ -1194,13 +1194,13 @@ int _rollback(struct ltfs_volume *vol, struct other_check_opts *opt, struct roll
 			ret = tape_set_append_position(
 				vol->device, ltfs_part_id2num(ltfs_ip_id(vol), vol), rb->current_pos.block - 1);
 			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "16079E", ret);
+				ltfsmsg(LTFS_ERR, 16079E, ret);
 				return LTFSCK_OPERATIONAL_ERROR;
 			}
 
 			if (rb->target_info->selfptr.partition == ltfs_ip_id(vol)) {
 				/* Recover from an index on index partition */
-				ltfsmsg(LTFS_INFO, "16058I");
+				ltfsmsg(LTFS_INFO, 16058I);
 				ret = _rollback_dp(vol, opt, &(rb->target->backptr));
 				if (ret != LTFSCK_NO_ERRORS)
 					return ret;
@@ -1209,7 +1209,7 @@ int _rollback(struct ltfs_volume *vol, struct other_check_opts *opt, struct roll
 					return ret;
 			} else if (rb->target_info->selfptr.partition == ltfs_dp_id(vol)) {
 				/* Recover from an index on data partition */
-				ltfsmsg(LTFS_INFO, "16062I");
+				ltfsmsg(LTFS_INFO, 16062I);
 				ret = _rollback_dp(vol, opt, &rb->target->selfptr);
 				if (ret != LTFSCK_NO_ERRORS)
 					return ret;
@@ -1217,12 +1217,12 @@ int _rollback(struct ltfs_volume *vol, struct other_check_opts *opt, struct roll
 				if (ret != LTFSCK_NO_ERRORS)
 					return ret;
 			} else {
-				ltfsmsg(LTFS_ERR, "16061E", rb->target->selfptr.partition);
+				ltfsmsg(LTFS_ERR, 16061E, rb->target->selfptr.partition);
 				return LTFSCK_OPERATIONAL_ERROR;
 			}
 		}
 	}  else {
-		ltfsmsg(LTFS_ERR, "16068E", index_num);
+		ltfsmsg(LTFS_ERR, 16068E, index_num);
 		print_index_array(vol, rb->target_info, opt);
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
@@ -1241,7 +1241,7 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 	/* Load tape and read labels */
 	ret = load_tape(vol);
 	if (ret !=  LTFSCK_NO_ERRORS) {
-		ltfsmsg(LTFS_ERR, "16070E", ret);
+		ltfsmsg(LTFS_ERR, 16070E, ret);
 		return ret;
 	}
 
@@ -1251,7 +1251,7 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 	}
 
 	if (is_worm && opt->op_mode == MODE_ROLLBACK) {
-		ltfsmsg(LTFS_ERR, "16109E", "Rollback");
+		ltfsmsg(LTFS_ERR, 16109E, "Rollback");
 		return LTFSCK_USAGE_SYNTAX_ERROR;
 	}
 
@@ -1259,23 +1259,23 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 	ret = ltfs_mount(false, false, false, false, 0, vol);
 	if (ret < 0) {
 		if(ret == -LTFS_BOTH_EOD_MISSING)
-			ltfsmsg(LTFS_ERR, "16097E");
+			ltfsmsg(LTFS_ERR, 16097E);
 		else
-			ltfsmsg(LTFS_ERR, "16087E");
+			ltfsmsg(LTFS_ERR, 16087E);
 		return LTFSCK_UNCORRECTED;
 	}
 	else {
 		r.current = vol->index;
 		r.current_pos = ltfs_get_index_selfpointer(vol);
-		ltfsmsg(LTFS_DEBUG, "16081D", ltfs_get_index_generation(vol),
-				r.current_pos.partition, r.current_pos.block);
+		ltfsmsg(LTFS_DEBUG, 16081D, ltfs_get_index_generation(vol),
+				(int)r.current_pos.partition, (unsigned long long)r.current_pos.block);
 		ltfs_unmount(SYNC_ROLLBACK, vol);
 		vol->index = NULL;
 	}
 
 	/* Cartridge is concistent and genaration is latest. No operation is needed */
 	if (opt->point_gen == r.current->generation) {
-		ltfsmsg(LTFS_INFO, "16063I");
+		ltfsmsg(LTFS_INFO, 16063I);
 		return LTFSCK_NO_ERRORS;
 	}
 
@@ -1287,22 +1287,22 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 			ret = ltfs_traverse_index_forward(vol, ltfs_dp_id(vol), opt->point_gen,
 											  search_index_by_gen, (void *)(&(r.target_info)), (void *)opt);
 			if (ret == -LTFS_NO_INDEX) {
-				ltfsmsg(LTFS_ERR, "16072E", ret);
+				ltfsmsg(LTFS_ERR, 16072E, ret);
 				return LTFSCK_OPERATIONAL_ERROR;
 			} else if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "16072E", ret);
+				ltfsmsg(LTFS_ERR, 16072E, ret);
 				return LTFSCK_OPERATIONAL_ERROR;;
 			}
 		} else {
 			ret = ltfs_traverse_index_backward(vol, ltfs_dp_id(vol), opt->point_gen,
 											   search_index_by_gen, (void *)(&(r.target_info)), (void *)opt);
 			if (ret !=  LTFSCK_NO_ERRORS) {
-				ltfsmsg(LTFS_ERR, "16072E", ret);
+				ltfsmsg(LTFS_ERR, 16072E, ret);
 				return LTFSCK_OPERATIONAL_ERROR;
 			}
 		}
 	} else if ( ret < 0) {
-		ltfsmsg(LTFS_ERR, "16071E", ret);
+		ltfsmsg(LTFS_ERR, 16071E, ret);
 		return ret;
 	}
 
@@ -1310,12 +1310,12 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 	r.target = vol->index;
 	if (opt->op_mode == MODE_ROLLBACK && !opt->erase_history) {
 		struct tape_offset selfptr = ltfs_get_index_selfpointer(vol);
-		ltfsmsg(LTFS_INFO, "16082I");
+		ltfsmsg(LTFS_INFO, 16082I);
 		ret = ltfs_get_partition_readonly(ltfs_ip_id(vol), vol);
 		if (! ret || ret == -LTFS_NO_SPACE || ret == -LTFS_LESS_SPACE)
 			ret = ltfs_get_partition_readonly(ltfs_dp_id(vol), vol);
 		if (ret < 0 && ret != -LTFS_NO_SPACE && ret != -LTFS_LESS_SPACE) { /* Try to roll back even in low space condition. */
-			ltfsmsg(LTFS_ERR, "16057E");
+			ltfsmsg(LTFS_ERR, 16057E);
 			return LTFSCK_OPERATIONAL_ERROR;
 		}
 		vol->index = r.current;
@@ -1327,7 +1327,7 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 	if (r.target_info)
 		ret = _rollback(vol, opt, &r);
 	else {
-		ltfsmsg(LTFS_ERR, "16073E");
+		ltfsmsg(LTFS_ERR, 16073E);
 		ret = LTFSCK_OPERATIONAL_ERROR;
 		goto out_destroy;
 	}
@@ -1336,11 +1336,11 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 	if(ret == 0) {
 		ret = ltfs_mount(true, true, false, false, 0, vol);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "16021E");
+			ltfsmsg(LTFS_ERR, 16021E);
 			ret = LTFSCK_UNCORRECTED;
 			goto out_destroy;
 		}
-		ltfsmsg(LTFS_INFO, "16086I");
+		ltfsmsg(LTFS_INFO, 16086I);
 		ret = LTFSCK_CORRECTED;
 	}
 
@@ -1357,7 +1357,7 @@ int list_rollback_points_normal(struct ltfs_volume *vol, struct other_check_opts
 	/* Load tape and read labels */
 	ret = load_tape(vol);
 	if (ret !=  LTFSCK_NO_ERRORS) {
-		ltfsmsg(LTFS_ERR, "16074E", ret);
+		ltfsmsg(LTFS_ERR, 16074E, ret);
 		return ret;
 	}
 
@@ -1365,9 +1365,9 @@ int list_rollback_points_normal(struct ltfs_volume *vol, struct other_check_opts
 	ret = ltfs_mount(false, false, false, false, 0, vol);
 	if (ret < 0) {
 		if(ret == -LTFS_BOTH_EOD_MISSING)
-			ltfsmsg(LTFS_WARN, "16096W");
+			ltfsmsg(LTFS_WARN, 16096W);
 		else {
-			ltfsmsg(LTFS_ERR, "16087E");
+			ltfsmsg(LTFS_ERR, 16087E);
 			return LTFSCK_UNCORRECTED;
 		}
 	}
@@ -1382,7 +1382,7 @@ int list_rollback_points_normal(struct ltfs_volume *vol, struct other_check_opts
 		ret = ltfs_traverse_index_backward(vol, ltfs_ip_id(vol), opt->point_gen,
 										   print_a_index_noheader, NULL, (void *)opt);
 	if (ret !=  LTFSCK_NO_ERRORS) {
-		ltfsmsg(LTFS_ERR, "16075E", ret);
+		ltfsmsg(LTFS_ERR, 16075E, ret);
 		return ret;
 	}
 
@@ -1394,7 +1394,7 @@ int list_rollback_points_normal(struct ltfs_volume *vol, struct other_check_opts
 		ret = ltfs_traverse_index_backward(vol, ltfs_dp_id(vol), opt->point_gen,
 										   print_a_index_noheader, NULL, (void *)opt);
 	if (ret !=  LTFSCK_NO_ERRORS) {
-		ltfsmsg(LTFS_ERR, "16076E", ret);
+		ltfsmsg(LTFS_ERR, 16076E, ret);
 	}
 
 	return ret;
@@ -1408,20 +1408,20 @@ int list_rollback_points_no_eod(struct ltfs_volume *vol, struct other_check_opts
 	/* Load tape and read labels */
 	ret = load_tape(vol);
 	if (ret !=  LTFSCK_NO_ERRORS) {
-		ltfsmsg(LTFS_ERR, "16074E", ret);
+		ltfsmsg(LTFS_ERR, 16074E, ret);
 		return ret;
 	}
 
 	ret = tape_get_worm_status(vol->device, &is_worm);
 	if (ret < 0 || !is_worm) {
-		ltfsmsg(LTFS_ERR, "16109E", "Salvage Rollback Points");
+		ltfsmsg(LTFS_ERR, 16109E, "Salvage Rollback Points");
 		return LTFSCK_USAGE_SYNTAX_ERROR;
 	}
 
 	/* Check EOD status to reject normal tape. */
 	ret = ltfs_check_eod_status(vol);
 	if (ret == 0) {
-		ltfsmsg(LTFS_ERR, "16110E");
+		ltfsmsg(LTFS_ERR, 16110E);
 		return LTFSCK_USAGE_SYNTAX_ERROR;
 	}
 
@@ -1430,7 +1430,7 @@ int list_rollback_points_no_eod(struct ltfs_volume *vol, struct other_check_opts
 	ret = ltfs_traverse_index_no_eod(vol, ltfs_dp_id(vol), opt->point_gen,
 									  print_a_index_noheader, NULL, (void *)opt);
 	if (ret !=  LTFSCK_NO_ERRORS) {
-		ltfsmsg(LTFS_ERR, "16076E", ret);
+		ltfsmsg(LTFS_ERR, 16076E, ret);
 	}
 
 	return ret;
@@ -1454,22 +1454,22 @@ int _ltfsck_validate_options(struct other_check_opts *opt)
 {
 	if(opt->op_mode == MODE_VERIFY || opt->op_mode == MODE_ROLLBACK) {
 		if (!opt->str_gen) {
-			ltfsmsg(LTFS_ERR, "16003E");
+			ltfsmsg(LTFS_ERR, 16003E);
 			return LTFSCK_USAGE_SYNTAX_ERROR;
 		}
 
 		if (opt->search_mode == SEARCH_BY_GEN) {
 			if (!opt->str_gen) {
-				ltfsmsg(LTFS_ERR, "16004E");
+				ltfsmsg(LTFS_ERR, 16004E);
 				return LTFSCK_USAGE_SYNTAX_ERROR;
 			} else {
 				char *invalid_start;
 				errno = 0;
 				opt->point_gen = strtoul(opt->str_gen, &invalid_start, 0);
 				if( (*invalid_start == '\0') && opt->str_gen )
-					ltfsmsg(LTFS_INFO, "16006I", opt->point_gen);
+					ltfsmsg(LTFS_INFO, 16006I, opt->point_gen);
 				else {
-					ltfsmsg(LTFS_ERR, "16005E", opt->str_gen);
+					ltfsmsg(LTFS_ERR, 16005E, opt->str_gen);
 					return LTFSCK_USAGE_SYNTAX_ERROR;
 				}
 			}
@@ -1477,28 +1477,28 @@ int _ltfsck_validate_options(struct other_check_opts *opt)
 	}
 
 	if (opt->traverse_mode != TRAVERSE_FORWARD && opt->traverse_mode != TRAVERSE_BACKWARD) {
-		ltfsmsg(LTFS_ERR, "16085E");
+		ltfsmsg(LTFS_ERR, 16085E);
 		return LTFSCK_USAGE_SYNTAX_ERROR;
 	}
 
 	if(opt->op_mode == MODE_LIST_POINT) {
 		if ( opt->traverse_mode == TRAVERSE_FORWARD )
-			ltfsmsg(LTFS_INFO, "16083I");
+			ltfsmsg(LTFS_INFO, 16083I);
 		else if (opt->traverse_mode == TRAVERSE_BACKWARD)
-			ltfsmsg(LTFS_INFO, "16084I");
+			ltfsmsg(LTFS_INFO, 16084I);
 
 		if (opt->capture_index && opt->search_mode == SEARCH_BY_GEN) {
 			if (!opt->str_gen) {
-				ltfsmsg(LTFS_ERR, "16004E");
+				ltfsmsg(LTFS_ERR, 16004E);
 				return LTFSCK_USAGE_SYNTAX_ERROR;
 			} else {
 				char *invalid_start;
 				errno = 0;
 				opt->point_gen = strtoul(opt->str_gen, &invalid_start, 0);
 				if( (*invalid_start == '\0') && opt->str_gen )
-					ltfsmsg(LTFS_INFO, "16006I", opt->point_gen);
+					ltfsmsg(LTFS_INFO, 16006I, opt->point_gen);
 				else {
-					ltfsmsg(LTFS_ERR, "16005E", opt->str_gen);
+					ltfsmsg(LTFS_ERR, 16005E, opt->str_gen);
 					return LTFSCK_USAGE_SYNTAX_ERROR;
 				}
 				opt->op_mode = MODE_VERIFY;
@@ -1508,7 +1508,7 @@ int _ltfsck_validate_options(struct other_check_opts *opt)
 	}
 
 	if (!opt->devname) {
-		ltfsmsg(LTFS_ERR, "16009E");
+		ltfsmsg(LTFS_ERR, 16009E);
 		return LTFSCK_USAGE_SYNTAX_ERROR;
 	}
 

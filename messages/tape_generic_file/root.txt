@@ -145,8 +145,7 @@ root:table {
 		30196D:string { "Backend %s: %llu." }
 		30197D:string { "Backend %s: (%llu, %llu)." }
 		30198D:string { "Backend %s: (%llu, %llu) FM = %llu." }
-		30199I:string { "FILE backend options:\n"
-						"    -o devname=<dev>          LTFS emulation directory (default=%s)\n"
+		30199I:string { "FILE backend options:\n    -o devname=<dev>          LTFS emulation directory (default=%s)\n"
 						"    -o emulate_delays         Emulate delays on seeks\n"
 						"    -o file_readonly          Emulate operation in read-only mode\n"
 						"    -o file_p0_warning=<num>  Set early warning position partition 0\n"

@@ -95,9 +95,9 @@ static inline void backtrace_info(void)
 
 	for( i = 0; i < back_num; ++i ) {
 		if (funcs && funcs[i])
-			ltfsmsg( LTFS_INFO, "17193I", i, address[i], funcs[i]);
+			ltfsmsg(LTFS_INFO, 17193I, (int)i, address[i], funcs[i]);
 		else
-			ltfsmsg( LTFS_INFO, "17194I", i, address[i]);
+			ltfsmsg(LTFS_INFO, 17194I, (int)i, address[i]);
 	}
 
 	return;
@@ -287,7 +287,7 @@ releaseread_mrsw(MultiReaderSingleWriter *mrsw)
 
 	if ( mrsw->read_count<=0 ) {
 		mrsw->read_count=0;
-		ltfsmsg(LTFS_ERR, "17186E");
+		ltfsmsg(LTFS_ERR, 17186E);
 
 	} else {
 		mrsw->read_count--;

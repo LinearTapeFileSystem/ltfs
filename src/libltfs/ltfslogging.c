@@ -274,7 +274,7 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 	udata_setAppData(bundle_name, bundle_data, &err);
 	if (U_FAILURE(err)) {
 		if (libltfs_dat_init)
-			ltfsmsg(LTFS_ERR, "11287E", err);
+			ltfsmsg(LTFS_ERR, 11287E, err);
 		else
 			fprintf(stderr, "LTFS11287E Cannot load messages: failed to register message data (%d)\n", err);
 		return -1;
@@ -284,7 +284,7 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 	pl = calloc(1, sizeof(struct plugin_bundle));
 	if (! pl) {
 		if (libltfs_dat_init)
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		else
 			fprintf(stderr, "LTFS10001E Memory allocation failed (%s)\n", __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -294,7 +294,7 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 	pl->bundle_root = ures_open(bundle_name, NULL, &err);
 	if (U_FAILURE(err)) {
 		if (libltfs_dat_init)
-			ltfsmsg(LTFS_ERR, "11286E", err);
+			ltfsmsg(LTFS_ERR, 11286E, err);
 		else
 			fprintf(stderr, "LTFS11286E Cannot load messages: failed to open resource bundle (%d)\n", err);
 		free(pl);
@@ -303,7 +303,7 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 	pl->bundle_messages = ures_getByKey(pl->bundle_root, "messages", NULL, &err);
 	if (U_FAILURE(err)) {
 		if (libltfs_dat_init)
-			ltfsmsg(LTFS_ERR, "11281E", err);
+			ltfsmsg(LTFS_ERR, 11281E, err);
 		else
 			fprintf(stderr, "LTFS11281E Cannot load messages: failed to get message table (%d)\n", err);
 		ures_close(pl->bundle_root);
@@ -315,7 +315,7 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 	bundle = ures_getByKey(pl->bundle_messages, "start_id", NULL, &err);
 	if (U_FAILURE(err)) {
 		if (libltfs_dat_init)
-			ltfsmsg(LTFS_ERR, "11282E", err);
+			ltfsmsg(LTFS_ERR, 11282E, err);
 		else
 			fprintf(stderr, "LTFS11282E Cannot load messages: failed to determine first message ID (ures_getByKey: %d)\n", err);
 		ures_close(pl->bundle_messages);
@@ -327,7 +327,7 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 	pl->start_id = ures_getInt(bundle, &err);
 	if (U_FAILURE(err)) {
 		if (libltfs_dat_init)
-			ltfsmsg(LTFS_ERR, "11283E", err);
+			ltfsmsg(LTFS_ERR, 11283E, err);
 		else
 			fprintf(stderr, "LTFS11283E Cannot load messages: failed to determine first message ID (ures_getInt: %d)\n", err);
 		ures_close(bundle);
@@ -344,7 +344,7 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 		pl->end_id = ures_getInt(bundle, &err);
 		if (U_FAILURE(err)) {
 			if (libltfs_dat_init)
-				ltfsmsg(LTFS_WARN, "11288W");
+				ltfsmsg(LTFS_WARN, 11288W);
 			else
 				fprintf(stderr, "LTFS11288W No end ID found for this message bundle, assigning 1000 message IDs\n");
 			pl->end_id = pl->start_id + 999;

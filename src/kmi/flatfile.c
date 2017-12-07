@@ -92,14 +92,14 @@ static int convert_option(const unsigned char * const path, unsigned char **dk_l
 	int dk_list_offset = 0;
 	*dk_list = calloc(dk_list_length, sizeof(unsigned char));
 	if (! *dk_list) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	FILE *fp = fopen((const char *) path, "r");
 	if (! fp) {
 		ret = -errno;
-		ltfsmsg(LTFS_ERR, "15513E", path, ret);
+		ltfsmsg(LTFS_ERR, 15553E, path, ret);
 		return ret;
 	}
 
@@ -118,7 +118,7 @@ static int convert_option(const unsigned char * const path, unsigned char **dk_l
 
 			void *new_dk_list = realloc(*dk_list, dk_list_length);
 			if (! new_dk_list) {
-				ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+				ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 				fclose(fp);
 				return -LTFS_NO_MEMORY;
 			}
@@ -139,7 +139,7 @@ static int convert_option(const unsigned char * const path, unsigned char **dk_l
 			continue;
 		} else {
 			ret = -1;
-			ltfsmsg(LTFS_ERR, "15514E");
+			ltfsmsg(LTFS_ERR, 15554E);
 			break;
 		}
 	}
@@ -158,7 +158,13 @@ static int convert_option(const unsigned char * const path, unsigned char **dk_l
  */
 void *flatfile_init(struct ltfs_volume *vol)
 {
-	return key_format_ltfs_init(vol, "15510D");
+	void* km;
+
+	km = key_format_ltfs_init(vol);
+	if (km)
+		ltfsmsg(LTFS_DEBUG, 15550D);
+
+	return km;
 }
 
 /**
@@ -168,7 +174,12 @@ void *flatfile_init(struct ltfs_volume *vol)
  */
 int flatfile_destroy(void * const kmi_handle)
 {
-	return key_format_ltfs_destroy(kmi_handle, "15511D");
+	int ret;
+
+	ret = key_format_ltfs_destroy(kmi_handle);
+	ltfsmsg(LTFS_DEBUG, 15551D);
+
+	return ret;
 }
 
 /**
@@ -185,7 +196,7 @@ int flatfile_get_key(unsigned char **keyalias, unsigned char **key, void * const
 	if (priv.dk_list && dk_list == NULL) {
 		int ret = convert_option(priv.dk_list, &dk_list);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "15512E");
+			ltfsmsg(LTFS_ERR, 15552E);
 			if (dk_list) {
 				memset(dk_list, 0, strlen((char *) dk_list));
 				free(dk_list);
@@ -212,7 +223,7 @@ int flatfile_get_key(unsigned char **keyalias, unsigned char **key, void * const
  */
 int flatfile_help_message(void)
 {
-	ltfsresult("15608I");
+	ltfsresult(15568I);
 
 	return 0;
 }
@@ -244,7 +255,7 @@ int flatfile_parse_opts(void *opt_args)
 	/* fuse_opt_parse can handle a NULL device parameter just fine */
 	ret = fuse_opt_parse(args, &priv, kmi_flatfile_options, null_parser);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "15604E", ret);
+		ltfsmsg(LTFS_ERR, 15564E, ret);
 		return ret;
 	}
 

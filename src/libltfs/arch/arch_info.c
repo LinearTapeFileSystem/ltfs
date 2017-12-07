@@ -69,7 +69,7 @@ void show_runtime_system_info(void)
 
 	fd = open("/proc/version", O_RDONLY);
 	if( fd == -1) {
-		ltfsmsg(LTFS_WARN, "17086W");
+		ltfsmsg(LTFS_WARN, 17086W);
 	} else {
 		memset(kernel_version, 0, sizeof(kernel_version));
 		read(fd, kernel_version, sizeof(kernel_version));
@@ -94,7 +94,7 @@ void show_runtime_system_info(void)
 			strcat(kernel_version, " unknown");
 #endif
 		}
-		ltfsmsg(LTFS_INFO, "17087I", kernel_version);
+		ltfsmsg(LTFS_INFO, 17087I, kernel_version);
 		close(fd);
 	}
 
@@ -106,7 +106,7 @@ void show_runtime_system_info(void)
 				path = calloc(1, strlen(dent->d_name) + strlen("/etc/") + 1);
 				if (!path) {
 					/* Memory allocation failed */
-					ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+					ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 					closedir(dir);
 					return;
 				}
@@ -115,13 +115,13 @@ void show_runtime_system_info(void)
 				if(stat(path, &stat_rel) != -1 && S_ISREG(stat_rel.st_mode)) {
 					fd = open(path, O_RDONLY);
 					if( fd == -1) {
-						ltfsmsg(LTFS_WARN, "17088W");
+						ltfsmsg(LTFS_WARN, 17088W);
 					} else {
 						memset(destribution, 0, sizeof(destribution));
 						read(fd, destribution, sizeof(destribution));
 						if((tmp = strchr(destribution, '\n')) != NULL)
 							*tmp = '\0';
-						ltfsmsg(LTFS_INFO, "17089I", destribution);
+						ltfsmsg(LTFS_INFO, 17089I, destribution);
 						close(fd);
 					}
 				}
@@ -143,21 +143,21 @@ void show_runtime_system_info(void)
 	mib[1] = KERN_VERSION;
 
 	if (sysctl(mib, 2, NULL, &len, NULL, 0) == -1) {
-		ltfsmsg(LTFS_WARN, "17090W", "Length check");
+		ltfsmsg(LTFS_WARN, 17090W, "Length check");
 		return;
 	}
 
 	kernel_version = malloc(len);
 	if (!kernel_version) {
 		/* Memory allocation failed */
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return;
 	}
 
 	if (sysctl(mib, 2, kernel_version, &len, NULL, 0) == -1)
-		ltfsmsg(LTFS_WARN, "17090W", "Getting kernel version");
+		ltfsmsg(LTFS_WARN, 17090W, "Getting kernel version");
 	else if (len > 0)
-		ltfsmsg(LTFS_INFO, "17087I", kernel_version);
+		ltfsmsg(LTFS_INFO, 17087I, kernel_version);
 
 	free(kernel_version);
 
@@ -166,12 +166,12 @@ void show_runtime_system_info(void)
 #elif defined(mingw_PLATFORM)
 {
 	/* Windows kernel detection is not supported yet*/
-	ltfsmsg(LTFS_INFO, "17087I", "Windows");
+	ltfsmsg(LTFS_INFO, 17087I, "Windows");
 	return;
 }
 #else
 {
-	ltfsmsg(LTFS_INFO, "17087I", "Unknown kernel");
+	ltfsmsg(LTFS_INFO, 17087I, "Unknown kernel");
 	return;
 }
 #endif

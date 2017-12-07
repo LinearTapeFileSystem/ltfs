@@ -80,7 +80,7 @@ static int _filedebug_tc_write_schema(xmlTextWriterPtr writer, const struct file
 	/* Create XML document */
 	ret = xmlTextWriterStartDocument(writer, NULL, "UTF-8", NULL);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "30150E", ret);
+		ltfsmsg(LTFS_ERR, 30150E, ret);
 		return -1;
 	}
 
@@ -151,7 +151,7 @@ static int _filedebug_tc_write_schema(xmlTextWriterPtr writer, const struct file
 
 	ret = xmlTextWriterEndDocument(writer);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "30151E", ret);
+		ltfsmsg(LTFS_ERR, 30151E, ret);
 		return -1;
 	}
 
@@ -166,15 +166,15 @@ int filedebug_conf_tc_write_xml(char *filename, const struct filedebug_conf_tc *
 	/* Create XML writer. */
 	writer = xmlNewTextWriterFilename(filename, 0);
 	if (! writer) {
-		ltfsmsg(LTFS_ERR, "30152E");
+		ltfsmsg(LTFS_ERR, 30152E);
 		return -1;
 	}
 
 	ret = _filedebug_tc_write_schema(writer, conf);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "30153E");
+		ltfsmsg(LTFS_ERR, 30153E);
 	} else if (ret == 0) {
-		ltfsmsg(LTFS_WARN, "30154W");
+		ltfsmsg(LTFS_WARN, 30154W);
 		ret = -1;
 	}
 
@@ -191,14 +191,14 @@ static int _filedebug_parser_init(xmlTextReaderPtr reader, const char *top_name)
 	if (xml_next_tag(reader, "", &name, &type) < 0)
 		return -1;
 	if (strcmp(name, top_name)) {
-		ltfsmsg(LTFS_ERR, "30155E", name);
+		ltfsmsg(LTFS_ERR, 30155E, name);
 		return -1;
 	}
 
 	/* reject this XML file if it isn't UTF-8 */
 	encoding = (const char *)xmlTextReaderConstEncoding(reader);
 	if (! encoding || strcmp(encoding, "UTF-8")) {
-		ltfsmsg(LTFS_ERR, "30156E", encoding);
+		ltfsmsg(LTFS_ERR, 30156E, encoding);
 		return -1;
 	}
 
@@ -347,7 +347,7 @@ int filedebug_conf_tc_read_xml(char *filename, struct filedebug_conf_tc *conf)
 
 	reader = xmlReaderForFile(filename, NULL, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
 	if (! reader) {
-		ltfsmsg(LTFS_ERR, "30157E");
+		ltfsmsg(LTFS_ERR, 30157E);
 		return -1;
 	}
 
@@ -357,7 +357,7 @@ int filedebug_conf_tc_read_xml(char *filename, struct filedebug_conf_tc *conf)
 	doc = xmlTextReaderCurrentDoc(reader);
 	ret = _filedebug_tc_parse_schema(reader, conf);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "30158E");
+		ltfsmsg(LTFS_ERR, 30158E);
 	}
 	if (doc)
 		xmlFreeDoc(doc);

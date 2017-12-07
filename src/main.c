@@ -146,38 +146,38 @@ static struct fuse_opt ltfs_options[] = {
 
 void single_drive_advanced_usage(const char *default_driver, struct ltfs_fuse_data *priv)
 {
-	ltfsresult("14401I");                        /* LTFS options: */
-	ltfsresult("14413I", LTFS_CONFIG_FILE);      /* -o config_file=<file> */
-	ltfsresult("14404I", LTFS_DEFAULT_WORK_DIR); /* -o work_directory=<dir> */
-	ltfsresult("14414I");                        /* -o atime */
-	ltfsresult("14440I");                        /* -o noatime */
-	ltfsresult("14415I", default_driver);        /* -o tape_backend=<name> */
-	ltfsresult("14416I", config_file_get_default_plugin("iosched", priv->config)); /* -o iosched_backend=<name> */
-	ltfsresult("14455I", config_file_get_default_plugin("kmi", priv->config)); /* -o kmi_backend=<name> */
-	ltfsresult("14417I");                        /* -o umask=<mode> */
-	ltfsresult("14418I");                        /* -o fmask=<mode> */
-	ltfsresult("14419I");                        /* -o dmask=<mode> */
-	ltfsresult("14420I", LTFS_MIN_CACHE_SIZE_DEFAULT); /* -o min_pool_size=<num> */
-	ltfsresult("14421I", LTFS_MAX_CACHE_SIZE_DEFAULT); /* -o max_pool_size=<num> */
-	ltfsresult("14422I"); /* -o rules=<rule[,rule]> */
-	ltfsresult("14423I"); /* -o quiet */
-	ltfsresult("14405I"); /* -o trace */
-	ltfsresult("14467I"); /* -o syslogtrace */
-	ltfsresult("14424I"); /* -o fulltrace */
-	ltfsresult("14441I", LTFS_INFO); /* -o verbose=<num> */
-	ltfsresult("14425I"); /* -o eject */
-	ltfsresult("14439I"); /* -o noeject */
-	ltfsresult("14427I"); /* -o sync_type=type */
-	ltfsresult("14443I"); /* -o force_mount_no_eod */
-	ltfsresult("14436I"); /* -o device_list */
-	ltfsresult("14437I"); /* -o rollback_mount */
-	ltfsresult("14448I"); /* -o release_device */
-	ltfsresult("14456I"); /* -o capture_index */
-	ltfsresult("14463I"); /* -o scsi_append_only_mode=<on|off> */
-	ltfsresult("14406I"); /* -a */
+	ltfsresult(14401I);                        /* LTFS options: */
+	ltfsresult(14413I, LTFS_CONFIG_FILE);      /* -o config_file=<file> */
+	ltfsresult(14404I, LTFS_DEFAULT_WORK_DIR); /* -o work_directory=<dir> */
+	ltfsresult(14414I);                        /* -o atime */
+	ltfsresult(14440I);                        /* -o noatime */
+	ltfsresult(14415I, default_driver);        /* -o tape_backend=<name> */
+	ltfsresult(14416I, config_file_get_default_plugin("iosched", priv->config)); /* -o iosched_backend=<name> */
+	ltfsresult(14455I, config_file_get_default_plugin("kmi", priv->config)); /* -o kmi_backend=<name> */
+	ltfsresult(14417I);                        /* -o umask=<mode> */
+	ltfsresult(14418I);                        /* -o fmask=<mode> */
+	ltfsresult(14419I);                        /* -o dmask=<mode> */
+	ltfsresult(14420I, LTFS_MIN_CACHE_SIZE_DEFAULT); /* -o min_pool_size=<num> */
+	ltfsresult(14421I, LTFS_MAX_CACHE_SIZE_DEFAULT); /* -o max_pool_size=<num> */
+	ltfsresult(14422I); /* -o rules=<rule[,rule]> */
+	ltfsresult(14423I); /* -o quiet */
+	ltfsresult(14405I); /* -o trace */
+	ltfsresult(14467I); /* -o syslogtrace */
+	ltfsresult(14424I); /* -o fulltrace */
+	ltfsresult(14441I, LTFS_INFO); /* -o verbose=<num> */
+	ltfsresult(14425I); /* -o eject */
+	ltfsresult(14439I); /* -o noeject */
+	ltfsresult(14427I, LONG_MAX / 60); /* -o sync_type=type */
+	ltfsresult(14443I); /* -o force_mount_no_eod */
+	ltfsresult(14436I); /* -o device_list */
+	ltfsresult(14437I); /* -o rollback_mount */
+	ltfsresult(14448I); /* -o release_device */
+	ltfsresult(14456I); /* -o capture_index */
+	ltfsresult(14463I); /* -o scsi_append_only_mode=<on|off> */
+	ltfsresult(14406I); /* -a */
 	/* TODO: future use for WORM */
 	/* set worm rollback flag and rollback_str by this option */
-	/* ltfsresult("14468I"); */ /* -o rollback_mount_no_eod */
+	/* ltfsresult(14468I); */ /* -o rollback_mount_no_eod */
 }
 
 void usage(char *progname, struct ltfs_fuse_data *priv)
@@ -194,30 +194,30 @@ void usage(char *progname, struct ltfs_fuse_data *priv)
 		if (ret == 0)
 			default_device = ltfs_default_device_name(priv->tape_plugin.ops);
 
-		ltfsresult("14400I", progname);                   /* usage: %s mountpoint [options] */
+		ltfsresult(14400I, progname);                   /* usage: %s mountpoint [options] */
 		fprintf(stderr, "\n");
-		ltfsresult("14401I");                             /* LTFS options: */
+		ltfsresult(14401I);                             /* LTFS options: */
 		if (default_device)
-			ltfsresult("14402I", default_device);         /* -o devname=<dev> */
+			ltfsresult(14402I, default_device);         /* -o devname=<dev> */
 		else
-			ltfsresult("14403I");                         /* -o devname=<dev> */
-		ltfsresult("14404I", LTFS_DEFAULT_WORK_DIR);      /* -o work_directory=<dir> */
-		ltfsresult("14405I");                             /* -o trace */
-		ltfsresult("14425I");                             /* -o eject */
-		ltfsresult("14427I", LONG_MAX / 60);              /* -o sync_type=type */
-		ltfsresult("14443I");                             /* -o force_mount_no_eod */
-		ltfsresult("14436I");                             /* -o device_list */
-		ltfsresult("14437I");                             /* -o rollback_mount */
-		ltfsresult("14448I");                             /* -o release_device */
-		ltfsresult("14461I");                             /* -o symlink_type=type */
-		ltfsresult("14406I");                             /* -a */
-		ltfsresult("14407I");                             /* -V, --version */
-		ltfsresult("14408I");                             /* -h, --help */
+			ltfsresult(14403I);                         /* -o devname=<dev> */
+		ltfsresult(14404I, LTFS_DEFAULT_WORK_DIR);      /* -o work_directory=<dir> */
+		ltfsresult(14405I);                             /* -o trace */
+		ltfsresult(14425I);                             /* -o eject */
+		ltfsresult(14427I, LONG_MAX / 60);              /* -o sync_type=type */
+		ltfsresult(14443I);                             /* -o force_mount_no_eod */
+		ltfsresult(14436I);                             /* -o device_list */
+		ltfsresult(14437I);                             /* -o rollback_mount */
+		ltfsresult(14448I);                             /* -o release_device */
+		ltfsresult(14461I);                             /* -o symlink_type=type */
+		ltfsresult(14406I);                             /* -a */
+		ltfsresult(14407I);                             /* -V, --version */
+		ltfsresult(14408I);                             /* -h, --help */
 		fprintf(stderr, "\n");
-		ltfsresult("14409I");                             /* FUSE options: */
-		ltfsresult("14410I");                             /* -o umask=M */
-		ltfsresult("14411I");                             /* -o uid=N */
-		ltfsresult("14412I");                             /* -o gid=N */
+		ltfsresult(14409I);                             /* FUSE options: */
+		ltfsresult(14410I);                             /* -o umask=M */
+		ltfsresult(14411I);                             /* -o uid=N */
+		ltfsresult(14412I);                             /* -o gid=N */
 		fprintf(stderr, "\n");
 		fprintf(stderr, "\n");
 
@@ -303,7 +303,7 @@ int permissions_setup(struct ltfs_fuse_data *priv)
 		priv->mount_uid = parse_uid(priv->force_uid);
 		if (priv->mount_uid == (uid_t)-1) {
 			/* Invalid UID */
-			ltfsmsg(LTFS_ERR, "14079E", priv->force_uid);
+			ltfsmsg(LTFS_ERR, 14079E, priv->force_uid);
 			return -1;
 		}
 		free(priv->force_uid);
@@ -315,7 +315,7 @@ int permissions_setup(struct ltfs_fuse_data *priv)
 		priv->mount_gid = parse_gid(priv->force_gid);
 		if (priv->mount_gid == (gid_t)-1) {
 			/* Invalid GID */
-			ltfsmsg(LTFS_ERR, "14080E", priv->force_gid);
+			ltfsmsg(LTFS_ERR, 14080E, priv->force_gid);
 			return -1;
 		}
 		free(priv->force_gid);
@@ -327,7 +327,7 @@ int permissions_setup(struct ltfs_fuse_data *priv)
 		mode = parse_mode(priv->force_umask);
 		if (mode == (mode_t)-1) {
 			/* Invalid umask */
-			ltfsmsg(LTFS_ERR, "14006E", priv->force_umask);
+			ltfsmsg(LTFS_ERR, 14006E, priv->force_umask);
 			return -1;
 		}
 		priv->file_mode = (S_IFREG | 0777) & ~mode;
@@ -341,7 +341,7 @@ int permissions_setup(struct ltfs_fuse_data *priv)
 		mode = parse_mode(priv->force_fmask);
 		if (mode == (mode_t)-1) {
 			/* Invalid fmask */
-			ltfsmsg(LTFS_ERR, "14007E", priv->force_fmask);
+			ltfsmsg(LTFS_ERR, 14007E, priv->force_fmask);
 			return -1;
 		}
 		priv->file_mode = (S_IFREG | 0777) & ~mode;
@@ -354,7 +354,7 @@ int permissions_setup(struct ltfs_fuse_data *priv)
 		mode = parse_mode(priv->force_dmask);
 		if (mode == (mode_t)-1) {
 			/* Invalid dmask */
-			ltfsmsg(LTFS_ERR, "14008E", priv->force_dmask);
+			ltfsmsg(LTFS_ERR, 14008E, priv->force_dmask);
 			return -1;
 		}
 		priv->dir_mode = (S_IFDIR | 0777) & ~mode;
@@ -382,8 +382,8 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 
 	switch(key) {
 		case KEY_VERSION:
-			ltfsresult("14058I", PACKAGE_NAME, PACKAGE_VERSION);
-			ltfsresult("14058I", "LTFS Format Specification", LTFS_INDEX_VERSION_STR);
+			ltfsresult(14058I, PACKAGE_NAME, PACKAGE_VERSION);
+			ltfsresult(14058I, "LTFS Format Specification", LTFS_INDEX_VERSION_STR);
 			exit(0);
 		case KEY_ADVANCED_HELP:
 			priv->advanced_help = true;
@@ -400,7 +400,7 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 			if (! priv->advanced_help) {
 				if (! valid_fuse_option && key == FUSE_OPT_KEY_OPT && arg && arg[0] == '-') {
 					/* invalid option */
-					ltfsmsg(LTFS_ERR, "9010E", arg);
+					ltfsmsg(LTFS_ERR, 9010E, arg);
 				} else
 					break;
 			}
@@ -437,7 +437,7 @@ int mkdir_p(const char *path, mode_t mode)
 		if (*ptr == '\0' || last) {
 			ret = mkdir(buf, mode);
 			if (ret && errno != EEXIST) {
-				ltfsmsg(LTFS_ERR, "9014E", path, strerror(errno));
+				ltfsmsg(LTFS_ERR, 9014E, path, strerror(errno));
 				return 1;
 			}
 			if (! last)
@@ -457,12 +457,12 @@ static int create_workdir(struct ltfs_fuse_data *priv)
 		ret = mkdir_p(priv->work_directory, S_IRWXU | S_IRWXG | S_IRWXO);
 		if (ret < 0) {
 			/* Failed to create work directory */
-			ltfsmsg(LTFS_ERR, "14004E", ret);
+			ltfsmsg(LTFS_ERR, 14004E, ret);
 			return ret;
 		}
 	} else if (! S_ISDIR(statbuf.st_mode)) {
 		/* Path exists but is not a directory */
-		ltfsmsg(LTFS_ERR, "14005E", priv->work_directory);
+		ltfsmsg(LTFS_ERR, 14005E, priv->work_directory);
 		return -ENOTDIR;
 	}
 
@@ -495,7 +495,7 @@ int validate_sync_option(struct ltfs_fuse_data *priv)
 	else if (strcasecmp(priv->sync_type_str, "unmount") == 0)
 		priv->sync_type = LTFS_SYNC_UNMOUNT;
 	else {
-		ltfsmsg(LTFS_ERR, "14061E", priv->sync_type_str);
+		ltfsmsg(LTFS_ERR, 14061E, priv->sync_type_str);
 		return 1;
 	}
 
@@ -505,19 +505,19 @@ int validate_sync_option(struct ltfs_fuse_data *priv)
 			errno = 0;
 			priv->sync_time = strtol(sync_time_str, &end_time_str, 10);
 			if (sync_time_str == end_time_str) {
-				ltfsmsg(LTFS_ERR, "14060E", sync_time_str);
+				ltfsmsg(LTFS_ERR, 14060E, sync_time_str);
 				return 1;
 			}
 			if ((priv->sync_time == LONG_MAX || priv->sync_time == LONG_MIN) && errno != 0) {
-				ltfsmsg(LTFS_ERR, "14067E", sync_time_str);
+				ltfsmsg(LTFS_ERR, 14067E, sync_time_str);
 				return 1;
 			}
 			if (priv->sync_time < 0) {
-				ltfsmsg(LTFS_ERR, "14066E");
+				ltfsmsg(LTFS_ERR, 14066E);
 				return 1;
 			}
 			if (priv->sync_time > (LONG_MAX / 60) || priv->sync_time < (LONG_MIN / 60)) {
-				ltfsmsg(LTFS_ERR, "14068E", priv->sync_time);
+				ltfsmsg(LTFS_ERR, 14068E, priv->sync_time);
 				return 1;
 			}
 			priv->sync_time *= 60; /* Convert minutes to seconds*/
@@ -527,7 +527,7 @@ int validate_sync_option(struct ltfs_fuse_data *priv)
 		priv->sync_time = LTFS_SYNC_PERIOD_DEFAULT;
 
 	if (priv->sync_type == LTFS_SYNC_TIME && priv->sync_time == 0) {
-		ltfsmsg(LTFS_INFO, "14062I");
+		ltfsmsg(LTFS_INFO, 14062I);
 		priv->sync_type = LTFS_SYNC_UNMOUNT;
 	}
 
@@ -549,7 +549,7 @@ static int show_device_list(struct ltfs_fuse_data *priv)
 		priv->tape_backend_name = config_file_get_default_plugin("tape", priv->config);
 	ret = plugin_load(&priv->tape_plugin, "tape", priv->tape_backend_name, priv->config);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "14054E", ret);
+		ltfsmsg(LTFS_ERR, 14054E, ret);
 		return 1;
 	}
 
@@ -591,18 +591,18 @@ int main(int argc, char **argv)
 	ret = ltfs_init(LTFS_INFO, true, true);
 	if (ret < 0) {
 		/* Failed to initialize libltfs */
-		ltfsmsg(LTFS_ERR, "10000E", ret);
+		ltfsmsg(LTFS_ERR, 10000E, ret);
 	}
 
 	/* Register messages with libltfs */
 	ret = ltfsprintf_load_plugin("bin_ltfs", bin_ltfs_dat, &message_handle);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10012E", ret);
+		ltfsmsg(LTFS_ERR, 10012E, ret);
 		return 1;
 	}
 
 	if (! priv) {
-		ltfsmsg(LTFS_ERR, "10001E", "main: private data");
+		ltfsmsg(LTFS_ERR, 10001E, "main: private data");
 		return 1;
 	}
 
@@ -610,14 +610,14 @@ int main(int argc, char **argv)
 	priv->first_parsing_pass = true;
 	ret = fuse_opt_parse(&args, priv, ltfs_options_pass1, ltfs_parse_options);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "9001E");
+		ltfsmsg(LTFS_ERR, 9001E);
 		return 1;
 	}
 
 	/* Load the configuration file */
 	ret = config_file_load(priv->config_file, &priv->config);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10008E", ret);
+		ltfsmsg(LTFS_ERR, 10008E, ret);
 		return 1;
 	}
 
@@ -631,7 +631,7 @@ int main(int argc, char **argv)
 			else if (! strncmp(snmp_options[i], "deffile ", 8)) {
 				ret = asprintf(&priv->snmp_deffile, "%s", snmp_options[i]+8);
 				if (ret < 0) {
-					ltfsmsg(LTFS_ERR, "10001E", "library_main: snmp_deffile");
+					ltfsmsg(LTFS_ERR, 10001E, "library_main: snmp_deffile");
 					priv->snmp_enabled = false;
 					break;
 				}
@@ -651,7 +651,7 @@ int main(int argc, char **argv)
 		ret = fuse_opt_insert_arg(&args, i+1, mount_options[i]);
 		if (ret < 0) {
 			/* Could not enable FUSE option */
-			ltfsmsg(LTFS_ERR, "14001E", mount_options[i], ret);
+			ltfsmsg(LTFS_ERR, 14001E, mount_options[i], ret);
 			return 1;
 		}
 		free(mount_options[i]);
@@ -662,7 +662,7 @@ int main(int argc, char **argv)
 	priv->first_parsing_pass = false;
 	ret = fuse_opt_parse(&args, priv, ltfs_options, ltfs_parse_options);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "9001E");
+		ltfsmsg(LTFS_ERR, 9001E);
 		return 1;
 	}
 
@@ -672,8 +672,8 @@ int main(int argc, char **argv)
 	ltfs_set_log_level(priv->verbose % 100);
 
 	/* LTFS starting */
-	ltfsmsg(LTFS_INFO, "14000I", PACKAGE_NAME, PACKAGE_VERSION, priv->verbose);
-	ltfsmsg(LTFS_INFO, "14058I", "LTFS Format Specification", LTFS_INDEX_VERSION_STR);
+	ltfsmsg(LTFS_INFO, 14000I, PACKAGE_NAME, PACKAGE_VERSION, priv->verbose);
+	ltfsmsg(LTFS_INFO, 14058I, "LTFS Format Specification", LTFS_INDEX_VERSION_STR);
 
 	/* Show command line arguments */
 	for (i = 0, cmd_args_len = 0 ; i < argc; i++) {
@@ -682,7 +682,7 @@ int main(int argc, char **argv)
 	cmd_args = calloc(1, cmd_args_len + 1);
 	if (!cmd_args) {
 		/* Memory allocation failed */
-		ltfsmsg(LTFS_ERR, "10001E", "ltfs (arguments)");
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs (arguments)");
 		return -ENOMEM;
 	}
 	strcat(cmd_args, argv[0]);
@@ -690,12 +690,12 @@ int main(int argc, char **argv)
 		strcat(cmd_args, " ");
 		strcat(cmd_args, argv[i]);
 	}
-	ltfsmsg(LTFS_INFO, "14104I", cmd_args);
+	ltfsmsg(LTFS_INFO, 14104I, cmd_args);
 	free(cmd_args);
 
 	/* Show build time information */
-	ltfsmsg(LTFS_INFO, "14105I", BUILD_SYS_FOR);
-	ltfsmsg(LTFS_INFO, "14106I", BUILD_SYS_GCC);
+	ltfsmsg(LTFS_INFO, 14105I, BUILD_SYS_FOR);
+	ltfsmsg(LTFS_INFO, 14106I, BUILD_SYS_GCC);
 
 	/* Show run time information */
 	show_runtime_system_info();
@@ -715,16 +715,16 @@ int main(int argc, char **argv)
 	/* Print the active sync mode */
 	switch(priv->sync_type) {
 		case LTFS_SYNC_TIME:
-			ltfsmsg(LTFS_INFO, "14063I", "time", priv->sync_time);
+			ltfsmsg(LTFS_INFO, 14063I, "time", priv->sync_time);
 			break;
 		case LTFS_SYNC_CLOSE:
-			ltfsmsg(LTFS_INFO, "14064I", "close");
+			ltfsmsg(LTFS_INFO, 14064I, "close");
 			break;
 		case LTFS_SYNC_UNMOUNT:
-			ltfsmsg(LTFS_INFO, "14064I", "unmount");
+			ltfsmsg(LTFS_INFO, 14064I, "unmount");
 			break;
 		default:
-			ltfsmsg(LTFS_ERR, "14065E", priv->sync_type);
+			ltfsmsg(LTFS_ERR, 14065E, priv->sync_type);
 			return 1;
 	}
 
@@ -732,7 +732,7 @@ int main(int argc, char **argv)
 	ret = fuse_opt_add_arg(&args, "-odefault_permissions");
 	if (ret < 0) {
 		/* Could not enable FUSE option */
-		ltfsmsg(LTFS_ERR, "14001E", "default_permissions", ret);
+		ltfsmsg(LTFS_ERR, 14001E, "default_permissions", ret);
 		return 1;
 	}
 
@@ -741,7 +741,7 @@ int main(int argc, char **argv)
 		ret = fuse_opt_add_arg(&args, "-oallow_other");
 		if (ret < 0) {
 			/* Could not enable FUSE option */
-			ltfsmsg(LTFS_ERR, "14001E", "allow_other", ret);
+			ltfsmsg(LTFS_ERR, 14001E, "allow_other", ret);
 			return 1;
 		}
 	}
@@ -750,7 +750,7 @@ int main(int argc, char **argv)
 	ret = fuse_opt_add_arg(&args, "-ohard_remove");
 	if (ret < 0) {
 		/* Could not enable FUSE option */
-		ltfsmsg(LTFS_ERR, "14001E", "hard_remove", ret);
+		ltfsmsg(LTFS_ERR, 14001E, "hard_remove", ret);
 		return 1;
 	}
 
@@ -758,7 +758,7 @@ int main(int argc, char **argv)
 	ret = fuse_opt_add_arg(&args, "-osync_read");
 	if (ret < 0) {
 		/* Could not enable FUSE option */
-		ltfsmsg(LTFS_ERR, "14001E", "sync_read", ret);
+		ltfsmsg(LTFS_ERR, 14001E, "sync_read", ret);
 		return 1;
 	}
 
@@ -771,7 +771,7 @@ int main(int argc, char **argv)
 	fuse_opt_add_arg(&args, "-odaemon_timeout=3100");
 	if (ret < 0) {
 		/* Could not enable FUSE option */
-		ltfsmsg(LTFS_ERR, "14001E", "daemon_timeout", ret);
+		ltfsmsg(LTFS_ERR, 14001E, "daemon_timeout", ret);
 		return 1;
 	}
 	/*
@@ -782,7 +782,7 @@ int main(int argc, char **argv)
 	fuse_opt_add_arg(&args, "-onovncache");
 	if (ret < 0) {
 		/* Could not enable FUSE option */
-		ltfsmsg(LTFS_ERR, "14001E", "novncache", ret);
+		ltfsmsg(LTFS_ERR, 14001E, "novncache", ret);
 		return 1;
 	}
 #endif
@@ -792,7 +792,7 @@ int main(int argc, char **argv)
 	ret = fuse_opt_add_arg(&args, "-obig_writes");
 	if (ret < 0) {
 		/* Could not enable FUSE option */
-		ltfsmsg(LTFS_ERR, "14001E", "big_writes", ret);
+		ltfsmsg(LTFS_ERR, 14001E, "big_writes", ret);
 		return 1;
 	}
 #endif
@@ -801,7 +801,7 @@ int main(int argc, char **argv)
 	ret = permissions_setup(priv);
 	if (ret < 0) {
 		/* Failed to set up permissions */
-		ltfsmsg(LTFS_ERR, "14002E", ret);
+		ltfsmsg(LTFS_ERR, 14002E, ret);
 		usage(argv[0], priv);
 		return 1;
 	}
@@ -811,7 +811,7 @@ int main(int argc, char **argv)
 		priv->tape_backend_name = config_file_get_default_plugin("tape", priv->config);
 		if (priv->tape_backend_name == NULL) {
 			/* No driver plugin configured and no default found */
-			ltfsmsg(LTFS_ERR, "14056E");
+			ltfsmsg(LTFS_ERR, 14056E);
 			return 1;
 		}
 	}
@@ -828,7 +828,7 @@ int main(int argc, char **argv)
 	if (priv->force_min_pool) {
 		priv->min_pool_size = parse_size_t(priv->force_min_pool);
 		if (priv->min_pool_size == 0) {
-			ltfsmsg(LTFS_ERR, "14109E");
+			ltfsmsg(LTFS_ERR, 14109E);
 			return 1;
 		}
 	} else
@@ -836,14 +836,14 @@ int main(int argc, char **argv)
 	if (priv->force_max_pool) {
 		priv->max_pool_size = parse_size_t(priv->force_max_pool);
 		if (priv->max_pool_size == 0) {
-			ltfsmsg(LTFS_ERR, "14110E");
+			ltfsmsg(LTFS_ERR, 14110E);
 			return 1;
 		}
 	} else
 		priv->max_pool_size = LTFS_MAX_CACHE_SIZE_DEFAULT;
 	if (priv->min_pool_size > priv->max_pool_size) {
 		/* Min pool size cannot be greater than max pool size */
-		ltfsmsg(LTFS_ERR, "14003E", priv->min_pool_size, priv->max_pool_size);
+		ltfsmsg(LTFS_ERR, 14003E, (int)priv->min_pool_size, (int)priv->max_pool_size);
 		return 1;
 	}
 
@@ -855,14 +855,14 @@ int main(int argc, char **argv)
 	/* Load plugins */
 	ret = plugin_load(&priv->tape_plugin, "tape", priv->tape_backend_name, priv->config);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "14054E", ret);
+		ltfsmsg(LTFS_ERR, 14054E, ret);
 		return 1;
 	}
 	if (priv->iosched_backend_name) {
 		ret = plugin_load(&priv->iosched_plugin, "iosched", priv->iosched_backend_name,
 			priv->config);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "14055E", ret);
+			ltfsmsg(LTFS_ERR, 14055E, ret);
 			return 1;
 		}
 	}
@@ -870,7 +870,7 @@ int main(int argc, char **argv)
 		ret = plugin_load(&priv->kmi_plugin, "kmi", priv->kmi_backend_name,
 			priv->config);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "14057E", ret);
+			ltfsmsg(LTFS_ERR, 14057E, ret);
 			return 1;
 		}
 	}
@@ -880,7 +880,7 @@ int main(int argc, char **argv)
 		priv->devname = ltfs_default_device_name(priv->tape_plugin.ops);
 		if (! priv->devname) {
 			/* The backend \'%s\' does not have a default device */
-			ltfsmsg(LTFS_ERR, "14009E", priv->tape_backend_name);
+			ltfsmsg(LTFS_ERR, 14009E, priv->tape_backend_name);
 			return 1;
 		}
 	}
@@ -894,7 +894,7 @@ int main(int argc, char **argv)
 	ret = ltfs_mutex_init(&priv->file_table_lock);
 	if (ret) {
 		/*  Cannot initialize open file table */
-		ltfsmsg(LTFS_ERR, "14114E");
+		ltfsmsg(LTFS_ERR, 14114E);
 		return 1;
 	}
 	ret = single_drive_main(&args, priv);
@@ -937,7 +937,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	/*  Setup signal handler to terminate cleanly */
 	ret = ltfs_set_signal_handlers();
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10013E");
+		ltfsmsg(LTFS_ERR, 10013E);
 		return 1;
 	}
 
@@ -946,7 +946,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		errno = 0;
 		priv->rollback_gen = strtoul(priv->rollback_str, &invalid_start, 0);
 		if( (*invalid_start != '\0') || priv->rollback_gen == 0 ) {
-			ltfsmsg(LTFS_ERR, "14091E", priv->rollback_str);
+			ltfsmsg(LTFS_ERR, 14091E, priv->rollback_str);
 			return 1;
 		}
 	}
@@ -958,7 +958,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		else if (strcasecmp(priv->str_append_only_mode, "off") == 0)
 			priv->append_only_mode = 0;
 		else {
-			ltfsmsg(LTFS_ERR, "14115E", priv->str_append_only_mode);
+			ltfsmsg(LTFS_ERR, 14115E, priv->str_append_only_mode);
 			return 1;
 		}
 	} else
@@ -968,7 +968,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		/* Append only mode need to eject a cartridge at unmount to clear the mode on drive setting */
 		/* To avoid cartridge ejection at unmount, disable append only mode at the moount with noeject option */
 		priv->append_only_mode = 0;
-		ltfsmsg(LTFS_INFO, "14095I");
+		ltfsmsg(LTFS_INFO, 14095I);
 	}
 
 	/* If the local inode space is big enough, have FUSE pass through our UIDs as inode
@@ -977,7 +977,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		ret = fuse_opt_add_arg(args, "-ouse_ino");
 		if (ret < 0) {
 			/* Could not enable FUSE option */
-			ltfsmsg(LTFS_ERR, "14001E", "use_ino", ret);
+			ltfsmsg(LTFS_ERR, 14001E, "use_ino", ret);
 			return 1;
 		}
 	}
@@ -987,14 +987,14 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	ret = fuse_opt_add_arg(args, fsname);
 	if (ret < 0) {
 		/* Could not enable FUSE option */
-		ltfsmsg(LTFS_ERR, "14001E", "fsname", ret);
+		ltfsmsg(LTFS_ERR, 14001E, "fsname", ret);
 		return 1;
 	}
 
 	/* Allocate the LTFS volume structure */
 	if (ltfs_volume_alloc("ltfs", &priv->data) < 0) {
 		/* Could not allocate LTFS volume structure */
-		ltfsmsg(LTFS_ERR, "14011E");
+		ltfsmsg(LTFS_ERR, 14011E);
 		return 1;
 	}
 	ltfs_use_atime(priv->atime, priv->data);
@@ -1002,7 +1002,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 
 	if (ltfs_device_open(priv->devname, priv->tape_plugin.ops, priv->data) < 0) {
 		/* Could not open device */
-		ltfsmsg(LTFS_ERR, "10004E", priv->devname);
+		ltfsmsg(LTFS_ERR, 10004E, priv->devname);
 		ltfs_volume_free(&priv->data);
 		return 1;
 	}
@@ -1017,7 +1017,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	/* Parse backend options */
 	if (ltfs_parse_tape_backend_opts(args, priv->data)) {
 		/* Backend option parsing failed */
-		ltfsmsg(LTFS_ERR, "14012E");
+		ltfsmsg(LTFS_ERR, 14012E);
 		ltfs_volume_free(&priv->data);
 		return 1;
 	}
@@ -1025,14 +1025,14 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	if (priv->kmi_backend_name) {
 		if (kmi_init(&priv->kmi_plugin, priv->data) < 0) {
 			/* Encryption function disabled. */
-			ltfsmsg(LTFS_ERR, "14089E");
+			ltfsmsg(LTFS_ERR, 14089E);
 			ltfs_volume_free(&priv->data);
 			return 1;
 		}
 
 		if (ltfs_parse_kmi_backend_opts(args, priv->data)) {
 			/* Backend option parsing failed */
-			ltfsmsg(LTFS_ERR, "14090E");
+			ltfsmsg(LTFS_ERR, 14090E);
 			ltfs_volume_free(&priv->data);
 			return 1;
 		}
@@ -1045,22 +1045,22 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	ltfs_load_tape(priv->data);
 	ret = ltfs_wait_device_ready(priv->data);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "14075E");
+		ltfsmsg(LTFS_ERR, 14075E);
 		ltfs_volume_free(&priv->data);
 		return 1;
 	}
 
 	priv->data->append_only_mode = (bool)priv->append_only_mode;
 	if (ltfs_setup_device(priv->data)) {
-		ltfsmsg(LTFS_ERR, "14075E");
+		ltfsmsg(LTFS_ERR, 14075E);
 		ltfs_volume_free(&priv->data);
 		return 1;
 	}
 
 	/* Check EOD validation is skipped or not */
 	if (priv->skip_eod_check) {
-		ltfsmsg(LTFS_INFO, "14076I");
-		ltfsmsg(LTFS_INFO, "14077I");
+		ltfsmsg(LTFS_INFO, 14076I);
+		ltfsmsg(LTFS_INFO, 14077I);
 		ltfs_set_eod_check(! priv->skip_eod_check, priv->data);
 	}
 
@@ -1072,23 +1072,23 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		else if (strcasecmp(priv->symlink_str, "posix") == 0)
 			priv->data->livelink = false;
 		else {
-			ltfsmsg(LTFS_ERR, "14093E", priv->symlink_str);
+			ltfsmsg(LTFS_ERR, 14093E, priv->symlink_str);
 			return 1;
 		}
-		ltfsmsg(LTFS_INFO, "14092I", priv->symlink_str);
+		ltfsmsg(LTFS_INFO, 14092I, priv->symlink_str);
 	}
 
 	/* Mount the volume */
 	ltfs_set_traverse_mode(TRAVERSE_BACKWARD, priv->data);
 	if (ltfs_mount(false, false, false, false, priv->rollback_gen, priv->data) < 0) {
-		ltfsmsg(LTFS_ERR, "14013E");
+		ltfsmsg(LTFS_ERR, 14013E);
 		ltfs_volume_free(&priv->data);
 		return 1;
 	}
 
 	ret = tape_get_worm_status(priv->data->device, &is_worm);
 	if (ret != 0 || is_worm) {
-		ltfsmsg(LTFS_ERR, "14116E", ret);
+		ltfsmsg(LTFS_ERR, 14116E, ret);
 		ltfs_volume_free(&priv->data);
 		return 1;
 	}
@@ -1098,7 +1098,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		ret = pathname_format(priv->index_rules, &index_rules_utf8, false, false);
 		if (ret < 0) {
 			/* Could not format data placement rules. */
-			ltfsmsg(LTFS_ERR, "14016E", ret);
+			ltfsmsg(LTFS_ERR, 14016E, ret);
 			ltfs_volume_free(&priv->data);
 			return 1;
 		}
@@ -1106,10 +1106,10 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		free(index_rules_utf8);
 		if (ret == -LTFS_POLICY_IMMUTABLE) {
 			/* Volume doesn't allow override. Ignoring user-specified criteria. */
-			ltfsmsg(LTFS_WARN, "14015W");
+			ltfsmsg(LTFS_WARN, 14015W);
 		} else if (ret < 0) {
 			/* Could not parse data placement rules */
-			ltfsmsg(LTFS_ERR, "14017E", ret);
+			ltfsmsg(LTFS_ERR, 14017E, ret);
 			ltfs_volume_free(&priv->data);
 			return 1;
 		}
@@ -1123,7 +1123,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	if (ret < 0 && ret != -LTFS_WRITE_PROTECT && ret != -LTFS_WRITE_ERROR && ret != -LTFS_NO_SPACE &&
 		ret != -LTFS_LESS_SPACE) { /* No other errors are expected. */
 		/* Could not get read-only status of medium */
-		ltfsmsg(LTFS_ERR, "14018E");
+		ltfsmsg(LTFS_ERR, 14018E);
 		ltfs_volume_free(&priv->data);
 		return 1;
 	} else if (ret == -LTFS_WRITE_PROTECT || ret == -LTFS_WRITE_ERROR || ret == -LTFS_NO_SPACE || ret == -LTFS_LESS_SPACE || priv->rollback_gen != 0) {
@@ -1131,23 +1131,23 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 			ret = ltfs_get_partition_readonly(ltfs_ip_id(priv->data), priv->data);
 			if (ret == -LTFS_WRITE_PROTECT || ret == -LTFS_WRITE_ERROR) {
 				/* The tape is really write protected */
-				ltfsmsg(LTFS_INFO, "14019I");
+				ltfsmsg(LTFS_INFO, 14019I);
 			} else if (ret == -LTFS_NO_SPACE) {
 				/* The index partition is in early warning zone. To be mounted read-only */
-				ltfsmsg(LTFS_INFO, "14073I");
+				ltfsmsg(LTFS_INFO, 14073I);
 			} else { /* 0 or -LTFS_LESS_SPACE */
 				/* The data partition may be in early warning zone. To be mounted read-only */
-				ltfsmsg(LTFS_INFO, "14074I");
+				ltfsmsg(LTFS_INFO, 14074I);
 			}
 		} else if (ret == -LTFS_LESS_SPACE)
-			ltfsmsg(LTFS_INFO, "14071I");
+			ltfsmsg(LTFS_INFO, 14071I);
 		else
-			ltfsmsg(LTFS_INFO, "14072I", priv->rollback_gen);
+			ltfsmsg(LTFS_INFO, 14072I, priv->rollback_gen);
 
 		ret = fuse_opt_add_arg(args, "-oro");
 		if (ret < 0) {
 			/* Could not set FUSE option */
-			ltfsmsg(LTFS_ERR, "14001E", "ro", ret);
+			ltfsmsg(LTFS_ERR, 14001E, "ro", ret);
 			ltfs_volume_free(&priv->data);
 			return 1;
 		}
@@ -1156,7 +1156,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	/*  Cleanup signal handler */
 	ret = ltfs_unset_signal_handlers();
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10014E");
+		ltfsmsg(LTFS_ERR, 10014E);
 		return 1;
 	}
 
@@ -1168,7 +1168,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		ret = asprintf(&opt_volname, "-ovolname=%s(%s)", priv->data->index->volume_name.name, "ltfs");
 		if (ret < 0) {
 			/* Memory allocation failed */
-			ltfsmsg(LTFS_ERR, "10001E", "option string for volume name");
+			ltfsmsg(LTFS_ERR, 10001E, "option string for volume name");
 			ltfs_volume_free(&priv->data);
 			return 1;
 		}
@@ -1176,7 +1176,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		ret = fuse_opt_add_arg(args, opt_volname);
 		if (ret < 0) {
 			/* Could not set FUSE option */
-			ltfsmsg(LTFS_ERR, "14001E", "volname", ret);
+			ltfsmsg(LTFS_ERR, 14001E, "volname", ret);
 			ltfs_volume_free(&priv->data);
 			free(opt_volname);
 			return 1;
@@ -1191,7 +1191,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	ret = fuse_parse_cmdline( &tmpa, &mountpoint, NULL, NULL);
 	fuse_opt_free_args(&tmpa);
 	if (ret < 0 || mountpoint == NULL) {
-		ltfsmsg(LTFS_ERR, "14094E", ret);
+		ltfsmsg(LTFS_ERR, 14094E, ret);
 		ltfs_volume_free(&priv->data);
 		return 1;
 	}
@@ -1203,15 +1203,15 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		send_ltfsStartTrap();
 
 	/* now we can safely call FUSE */
-	ltfsmsg(LTFS_INFO, "14111I");
-	ltfsmsg(LTFS_INFO, "14112I");
-	ltfsmsg(LTFS_INFO, "14113I");
+	ltfsmsg(LTFS_INFO, 14111I);
+	ltfsmsg(LTFS_INFO, 14112I);
+	ltfsmsg(LTFS_INFO, 14113I);
 	ret = fuse_main(args->argc, args->argv, &ltfs_ops, priv);
 
 	/*  Setup signal handler again to terminate cleanly */
 	ret = ltfs_set_signal_handlers();
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10013E");
+		ltfsmsg(LTFS_ERR, 10013E);
 		return 1;
 	}
 

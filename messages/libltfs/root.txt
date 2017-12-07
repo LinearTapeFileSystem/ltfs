@@ -346,9 +346,9 @@ root:table {
 		11249E:string { "Cannot convert system locale to UTF-16: failed to fill output buffer (%d) for '%s'." }
 		11250E:string { "Cannot convert UTF-8 to system locale: failed to get output buffer size (%d)." }
 		11251E:string { "Cannot convert UTF-8 to system locale: failed to fill output buffer (%d)." }
-		11252D:string { "libltfs write to \'%s\': offset = %lld, count = %u." }
+		11252D:string { "libltfs write to \'%s\': offset = %lld, count = %llu." }
 		11253E:string { "No index found in the medium." }
-		11254D:string { "libltfs read from \'%s\': offset = %lld, count = %u." }
+		11254D:string { "libltfs read from \'%s\': offset = %lld, count = %llu." }
 		11255I:string { "Appending a file mark to the data partition." }
 		11256I:string { "Appending a file mark to the index partition." }
 		11257I:string { "No index found in the index partition." }
@@ -427,8 +427,8 @@ root:table {
 		11330I:string { "Loading cartridge." }
 		11331E:string { "Failed to load the cartridge (%s)." }
 		11332I:string { "Load successful." }
-		11333I:string { "A cartridge with a write-perm error is detected. Seek the newest index (%d, %d)." }
-		11334I:string { "Remove extent : %s (%d, %d)." }
+		11333I:string { "A cartridge with a write-perm error is detected. Seek the newest index (%llu, %llu)." }
+		11334I:string { "Remove extent : %s (%llu, %llu)." }
 		11335D:string { "Get physical block position (%d - %d)." }
 		11336I:string { "The attribute does not exist. Ignore the expected error." }
 		11337I:string { "Update index-dirty flag (%d) - %s (0x%p)." }
@@ -750,7 +750,7 @@ root:table {
 		17203W:string { "Truncate the tape attribute: %s (%s) to %d bytes." }
 		17204W:string { "Cannot set: unkown tape attribute type(0x%04x): %s." }
 		17205E:string { "Cannot set the tape attribute (type: 0x%04x): %s ." }
-		17206E:string { "Cannot write XML data to file descriptor (%s, %d, %ld)." }
+		17206E:string { "Cannot write XML data to file descriptor (%s, %d, %lu)." }
 		17207E:string { "Use the ltfsck command with the --salvage-rollback-points option and select the latest index from the list\n           Then use the ltfs command with the -o rollback-mount-no-eod option by specifying the generation." }
 		17208I:string { "Encountered the last data on the tape (%d). The last read index generation is %d." }
 		17217W:string { "%s is out of range in setting time (%s:%llu sec=%lld)." }
@@ -782,7 +782,7 @@ root:table {
 		17243W:string { "Failed to release the advisory lock (%d)." }
 		17244E:string { "XML writer: failed to write a block to the disk (%d)." }
 		17245E:string { "XML writer: failed to flush cached data to the disk (%d)." }
-		17246E:string { "Failed to % (%d)." }
+		17246E:string { "Failed to %s (%d)." }
 		17247W:string { "Failed to create the path of %s (%s)." }
 		17248W:string { "Failed to open %s (%s)." }
 		17249I:string { "Information of %lld files are written to the offset cache." }
