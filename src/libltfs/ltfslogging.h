@@ -78,21 +78,15 @@ extern bool ltfs_print_thread_id;
 	} while (0)
 #endif
 
+/* CAUTION: ltfsmsg_buffer takes message ID as a text literal */
 /* Wrapper for ltfsmsg_internal. It only invokes the message print function if the requested
  * log level is not too verbose. */
-#ifdef MSG_CHECK
-#define ltfsmsg_buffer(level, id, ...)			\
-	do {										\
-		printf(LTFS ## id, ##__VA_ARGS__);		\
-	} while(0)
-#else
 #define ltfsmsg_buffer(level, id, buffer, ...)	\
 	do { \
 		*buffer = NULL; \
 		if (level <= ltfs_log_level) \
-			ltfsmsg_internal(true, level, buffer, #id, ##__VA_ARGS__);	\
+			ltfsmsg_internal(true, level, buffer, id, ##__VA_ARGS__);	\
 	} while (0)
-#endif
 
 /* Wrapper for ltfsmsg_internal that prints a message without the LTFSnnnnn prefix. It
  * always invokes the message print function, regardless of the message level. */
