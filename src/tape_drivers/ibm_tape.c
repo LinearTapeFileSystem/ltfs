@@ -1074,7 +1074,7 @@ static inline int _is_mountable(const int drive_type,
 	}
 
 	if (IS_LTO(drive_type)) {
-		if (product == 'L' || product == 0x00) {
+		if (product == 'L' || product == 'M' || product == 0x00) {
 			if (strict) {
 				table = lto_drive_density_strict;
 				num_table = num_lto_drive_density_strict;
