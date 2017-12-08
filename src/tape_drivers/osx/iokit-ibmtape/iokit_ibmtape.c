@@ -3363,7 +3363,7 @@ int iokit_ibmtape_get_device_list(struct tc_drive_info *buf, int count)
 
 void iokit_ibmtape_help_message(void)
 {
-	ltfsresult("30999I", default_device);
+	ltfsresult(30999I, default_device);
 }
 
 int iokit_ibmtape_parse_opts(void *device, void *opt_args)
