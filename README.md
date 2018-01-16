@@ -61,11 +61,11 @@ brew link --force icu4c
 brew link --force libxml2
 ```
 
-On OSX (macOS), snmp cannot be supported. Need to disable it on configure script.
+On OSX (macOS), snmp cannot be supported, you need to disable it on configure script. And may be, you need to specify LDFLAGS while running configure script to link some required frameworks, CoreFundation and IOKit.
 
 ```
 ./autogen.sh
-./configure --disable-snmp
+LDFLAGS="-framework CoreFoundation -framework IOKit" ./configure --disable-snmp
 make
 make install
 ```

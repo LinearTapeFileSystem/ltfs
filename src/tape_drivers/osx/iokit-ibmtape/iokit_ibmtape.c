@@ -619,7 +619,7 @@ start:
 	/* Print holder information here */
 	if (holder) {
 		memcpy(r->key, cur, KEYLEN);
-		ibmtape_parsekey(cur, r);
+		ibm_tape_parsekey(cur, r);
 	} else
 		ret = -EDEV_INTERNAL_ERROR;
 
@@ -803,7 +803,7 @@ int iokit_ibmtape_open(const char *devname, void **handle)
 	ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
 
 	/* Register reservation key */
-	ibmtape_genkey(priv->key);
+	ibm_tape_genkey(priv->key);
 	_register_key(priv, priv->key);
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_OPEN));
