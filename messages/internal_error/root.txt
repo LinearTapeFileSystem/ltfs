@@ -360,6 +360,11 @@ root:table {
 		D1716E:string{ "The actual transfer length and residual length do not match." }
 		D1717E:string{ "A buffer overrun is detected." }
 		D1718E:string{ "The number of drives are not correct." }
+		D1719E:string{ "Reservation Conflict." }
+		D1720E:string{ "Connection lost while executing a command." }
+		D1721E:string{ "No reservation holder." }
+		D1722E:string{ "Path switch happens, need to reissue the command." }
+		D1723E:string{ "Real power on reset is detected." }
 		D9998E:string{ "Unknown sense." }
 		D9999E:string{ "Vendor unique sense. ASC >= 0x80 or ASCQ >= 0x80." }
 	}

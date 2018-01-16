@@ -392,6 +392,11 @@ static struct error_map fuse_error_list[] = {
 	{ EDEV_LENGTH_MISMATCH,          "D1716E", EINVAL},
 	{ EDEV_BUFFER_OVERFLOW,          "D1717E", EINVAL},
 	{ EDEV_DRIVES_MISMATCH,          "D1718E", EINVAL},
+	{ EDEV_RESERVATION_CONFLICT,     "D1719E", EIO},
+	{ EDEV_CONNECTION_LOST,          "D1720E", EIO},
+	{ EDEV_NO_RESERVATION_HOLDER,    "D1721E", EIO},
+	{ EDEV_NEED_FAILOVER,            "D1722E", EIO},
+	{ EDEV_REAL_POWER_ON_RESET,      "D1723E", EIO},
 	{ -1, NULL, 0 }
 };
 

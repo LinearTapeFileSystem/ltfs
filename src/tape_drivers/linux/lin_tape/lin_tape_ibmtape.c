@@ -1065,7 +1065,7 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 	}
 
 	ltfsmsg(LTFS_INFO, 30432I, inq_data.revision);
-	if (! ibmtape_is_supported_firmware(priv->drive_type, (unsigned char*)inq_data.revision)) {
+	if (! ibm_tape_is_supported_firmware(priv->drive_type, (unsigned char*)inq_data.revision)) {
 		ltfsmsg(LTFS_INFO, 30430I, "firmware");
 		close(priv->fd);
 		free(priv);
@@ -1940,7 +1940,7 @@ int lin_tape_ibmtape_load(void *device, struct tc_position *pos)
 		return 0;
 	}
 
-	rc = ibmtape_is_supported_tape(priv->cart_type, priv->density_code, &(priv->is_worm));
+	rc = ibm_tape_is_supported_tape(priv->cart_type, priv->density_code, &(priv->is_worm));
 	if(rc == -LTFS_UNSUPPORTED_MEDIUM)
 		ltfsmsg(LTFS_INFO, 30455I, priv->cart_type, priv->density_code);
 
@@ -3904,7 +3904,7 @@ int lin_tape_ibmtape_is_mountable(void *device, const char *barcode, const unsig
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ISMOUNTABLE));
 
-	ret = ibmtape_is_mountable( priv->drive_type,
+	ret = ibm_tape_is_mountable( priv->drive_type,
 								barcode,
 								cart_type,
 								density,
@@ -3920,7 +3920,7 @@ bool lin_tape_ibmtape_is_readonly(void *device)
 	int ret;
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *)device;
 
-	ret = ibmtape_is_mountable( priv->drive_type,
+	ret = ibm_tape_is_mountable( priv->drive_type,
 								NULL,
 								priv->cart_type,
 								priv->density_code,

@@ -67,7 +67,7 @@
 /* iokit functions */
 #include "sg_scsi_tape.h"
 
-/* Definitions of this backend*/
+/* Definitions of this backend */
 #include "sg_ibmtape.h"
 
 #include "libltfs/ltfs_fuse_version.h"
@@ -92,6 +92,8 @@ struct sg_ibmtape_global_data global_data;
 
 #define DK_LENGTH 32
 #define DKI_LENGTH 12
+
+#define DEFAULT_TIMEOUT (60)
 
 /* Forward references (For keep function order to struct tape_ops) */
 int sg_ibmtape_readpos(void *device, struct tc_position *pos);
@@ -400,27 +402,310 @@ static int _take_dump(struct sg_ibmtape_data *priv, bool capture_unforced)
 	return 0;
 }
 
-static void _process_errors(struct sg_ibmtape_data *priv, int ret, char *msg, char *cmd, bool take_dump)
+static int _raw_dev_open(const char *devname)
 {
-	bool unforced_dump;
+	int fd = -1;
+	int flags = 0;
 
-	if (msg != NULL) {
-		ltfsmsg(LTFS_INFO, 30263I, cmd, msg, ret, priv->devname);
-	} else {
-		ltfsmsg(LTFS_ERR, 30264E, cmd, ret, priv->devname);
+	/*
+	 *  Open the device file exclusively with non-blocking first to fail another LTFS instance
+	 *  to try to mount the same device.
+	 */
+	fd = open(devname, O_RDWR | O_EXCL | O_NONBLOCK);
+	if (fd < 0) {
+		ltfsmsg(LTFS_INFO, 30210I, devname, errno);
+		return -EDEV_DEVICE_UNOPENABLE;
 	}
 
-	if (priv) {
-		if (take_dump && !global_data.disable_auto_dump
+	/* Get the device back to blocking mode */
+	flags = fcntl(fd, F_GETFL, 0);
+	if (flags < 0) {
+		ltfsmsg(LTFS_INFO, 30211I, "get", errno);
+		close(fd);
+		return -EDEV_DEVICE_UNOPENABLE;
+	}
+	flags = (flags & (~O_NONBLOCK));
+	flags = fcntl(fd, F_SETFL, 0);
+	if (flags < 0) {
+		ltfsmsg(LTFS_INFO, 30211I, "set", errno);
+		close(fd);
+		return -EDEV_DEVICE_UNOPENABLE;
+	}
+
+	return fd;
+}
+
+static int _raw_open(struct sg_ibmtape_data *priv)
+{
+	int ret = -EDEV_UNKNOWN;
+	int drive_type = DRIVE_UNSUPPORTED;
+
+	scsi_device_identifier id_data;
+
+	/* Open device */
+	ret = _raw_dev_open(priv->devname);
+	if (ret < 0) {
+		priv->dev.fd = -1;
+		return ret;
+	}
+	priv->dev.fd = ret;
+	ret = -EDEV_UNKNOWN;
+
+	/* Check the drive is supportable */
+	ret = sg_get_drive_identifier(&priv->dev, &id_data);
+	if (ret < 0) {
+		ltfsmsg(LTFS_INFO, 30212I, priv->devname);
+		close(priv->dev.fd);
+		priv->dev.fd = -1;
+		return ret;
+	}
+
+	struct supported_device **cur = ibm_supported_drives;
+	while(*cur) {
+		if((! strncmp(id_data.vendor_id, (*cur)->vendor_id, strlen((*cur)->vendor_id)) ) &&
+		   (! strncmp(id_data.product_id, (*cur)->product_id, strlen((*cur)->product_id)) ) ) {
+			drive_type = (*cur)->drive_type;
+			break;
+		}
+		cur++;
+	}
+
+	if(drive_type > 0) {
+		if (!ibm_tape_is_supported_firmware(drive_type, (unsigned char*)id_data.product_rev)) {
+			close(priv->dev.fd);
+			priv->dev.fd = -1;
+			return -EDEV_UNSUPPORTED_FIRMWARE;
+		} else
+			priv->drive_type = drive_type;
+	} else {
+		ltfsmsg(LTFS_INFO, 30213I, id_data.product_id);
+		close(priv->dev.fd);
+		priv->dev.fd = -1;
+		return -EDEV_DEVICE_UNSUPPORTABLE; /* Unsupported device */
+	}
+
+	if (priv->drive_serial[0]) {
+		/* if serial number is already set, compare it */
+		if (strcmp(priv->drive_serial, id_data.unit_serial)) {
+			ltfsmsg(LTFS_INFO, 30248I, priv->drive_serial, id_data.unit_serial);
+			close(priv->dev.fd);
+			priv->dev.fd = -1;
+			return -EDEV_DEVICE_UNOPENABLE; /* Unexpected device is opened */
+		}
+	} else
+		strncpy(priv->drive_serial, id_data.unit_serial, sizeof(priv->drive_serial) - 1);
+
+	ltfsmsg(LTFS_INFO, 30207I, id_data.vendor_id);
+	ltfsmsg(LTFS_INFO, 30208I, id_data.product_id);
+	ltfsmsg(LTFS_INFO, 30214I, id_data.product_rev);
+	ltfsmsg(LTFS_INFO, 30215I, priv->drive_serial);
+
+	return 0;
+}
+
+int _raw_tur(const int fd)
+{
+	int ret = -EDEV_UNKNOWN;
+	struct sg_tape dev = {fd, false};
+
+	sg_io_hdr_t req;
+	unsigned char cdb[CDB6_LEN];
+	unsigned char sense[MAXSENSE];
+	int timeout;
+	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "TEST_UNIT_READY";
+	char *msg = NULL;
+
+	/* Zero out the CDB and the result buffer */
+	ret = init_sg_io_header(&req);
+	if (ret < 0)
+		return ret;
+
+	memset(cdb, 0, sizeof(cdb));
+	memset(sense, 0, sizeof(sense));
+
+	/* Build CDB */
+	cdb[0] = TEST_UNIT_READY;
+	timeout = DEFAULT_TIMEOUT;
+
+	/* Build request */
+	req.dxfer_direction = SCSI_NO_DATA_TRANSFER;
+	req.cmd_len         = sizeof(cdb);
+	req.mx_sb_len       = sizeof(sense);
+	req.cmdp            = cdb;
+	req.sbp             = sense;
+	req.timeout         = SGConversion(timeout);
+	req.usr_ptr         = (void *)cmd_desc;
+
+	ret = sg_issue_cdb_command(&dev, &req, &msg);
+	if (ret < 0) {
+		/* Print debug message */
+		ltfsmsg(LTFS_DEBUG, 30245D, ret);
+	}
+
+	return ret;
+}
+
+#define _clear_por(p) _clear_por_raw((p)->dev.fd);
+
+void _clear_por_raw(const int fd)
+{
+	int i = 0, ret = -1;
+
+	while (ret && i < 3) {
+		ret = _raw_tur(fd);
+		switch (ret) {
+			case -EDEV_NO_MEDIUM:
+				/*
+				 * The enterprise tape will return this error code
+				 * when a tape is on the lock position.
+				 * Just ignore this on both the LTO and the enterprise tape
+				 */
+				ret = 0;
+				break;
+			default:
+				break;
+		}
+		i++;
+	}
+}
+
+/* Forward reference */
+int sg_ibmtape_get_device_list(struct tc_drive_info *buf, int count);
+int sg_ibmtape_reserve(void *device);
+static int _register_key(void *device, unsigned char *key);
+static int _fetch_reservation_key(void *device, struct reservation_info *r);
+static int _cdb_pro(void *device,
+					enum pro_action action, enum pro_type type,
+					unsigned char *key, unsigned char *sakey);
+
+static int _reconnect_device(void *device)
+{
+	int ret = -EDEV_UNKNOWN, f_ret;
+	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
+	int i, devs = 0, info_devs = 0;
+	struct tc_drive_info *buf = NULL;
+	struct reservation_info r_info;
+
+	/* Close disconnected file descriptor */
+	if (priv->dev.fd >= 0)
+		close(priv->dev.fd);
+	priv->dev.fd = -1;
+
+	if (priv->devname)
+		free(priv->devname);
+	priv->devname = NULL;
+
+	/* Search another device files which has same serial number */
+	devs = sg_ibmtape_get_device_list(NULL, 0);
+	if (devs) {
+		buf = (struct tc_drive_info *)calloc(devs * 2, sizeof(struct tc_drive_info));
+		if (! buf) {
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+			return -LTFS_NO_MEMORY;
+		}
+		info_devs = sg_ibmtape_get_device_list(buf, devs * 2);
+	}
+
+	for (i = 0; i < info_devs; i++) {
+		if (! strncmp(buf[i].serial_number, priv->drive_serial, TAPE_SERIAL_LEN_MAX) ) {
+			priv->devname = strdup(buf[i].name);
+			break;
+		}
+	}
+
+	if (buf) {
+		free(buf);
+		buf = NULL;
+	}
+
+	/* Open another device file found in the previous step */
+	if (!priv->devname) {
+		ltfsmsg(LTFS_INFO, 30247I, priv->drive_serial);
+		return -LTFS_NO_DEVICE;
+	}
+
+	ltfsmsg(LTFS_INFO, 30249I, priv->drive_serial, priv->devname);
+	ret = _raw_open(priv);
+	if (ret < 0) {
+		ltfsmsg(LTFS_INFO, 30210I, priv->drive_serial, ret);
+		return ret;
+	}
+
+	/* Issue TUR and check reservation conflict happens or not */
+	_clear_por(priv);
+	ret = _raw_tur(priv->dev.fd);
+	if (ret == -EDEV_RESERVATION_CONFLICT) {
+		/* Select another path, recover reservation */
+		ltfsmsg(LTFS_INFO, 30269I, priv->drive_serial);
+		_register_key(priv, priv->key);
+		ret = _cdb_pro(device, PRO_ACT_PREEMPT_ABORT, PRO_TYPE_EXCLUSIVE,
+					   priv->key, priv->key);
+		if (!ret) {
+			ltfsmsg(LTFS_INFO, 30272I, priv->drive_serial);
+			_clear_por(priv);
+			ret = -EDEV_NEED_FAILOVER;
+		}
+	} else {
+		/* Read reservation information and print */
+		_clear_por(priv);
+		memset(&r_info, 0x00, sizeof(r_info));
+		f_ret = _fetch_reservation_key(device, &r_info);
+		if (f_ret == -EDEV_NO_RESERVATION_HOLDER) {
+			/* Real POR may happens */
+			ltfsmsg(LTFS_INFO, 30270I, priv->drive_serial);
+			_register_key(priv, priv->key);
+			ret = sg_ibmtape_reserve(device);
+			if (!ret) {
+				ltfsmsg(LTFS_INFO, 30272I, priv->drive_serial);
+				_clear_por(priv);
+				ret = -EDEV_REAL_POWER_ON_RESET;
+			}
+		} else {
+			/* Select same path */
+			ltfsmsg(LTFS_INFO, 30271I, priv->drive_serial);
+			_clear_por(priv);
+			ret = -EDEV_NEED_FAILOVER;
+		}
+	}
+
+	return ret;
+}
+
+static int _process_errors(struct sg_ibmtape_data *priv, int ret, char *msg, char *cmd, bool print, bool take_dump)
+{
+	int ret_fo = 0; /* Error code while reconnecting process */
+	bool unforced_dump;
+
+	if (print) {
+		if (msg != NULL) {
+			ltfsmsg(LTFS_INFO, 30263I, cmd, msg, ret, priv->devname);
+		} else {
+			ltfsmsg(LTFS_ERR, 30264E, cmd, ret, priv->devname);
+		}
+	}
+
+	if (!priv->is_reconnecting && ret == -EDEV_CONNECTION_LOST) {
+		/* Reconnecting */
+		ltfsmsg(LTFS_INFO, 30246I, priv->drive_serial);
+		priv->is_reconnecting = true;
+		ret_fo = _reconnect_device(priv);
+		priv->is_reconnecting = false;
+	}
+
+	if (priv && !ret_fo) {
+		if (print && take_dump && !global_data.disable_auto_dump
 			&& is_dump_required(priv, ret, &unforced_dump)) {
 			(void)_take_dump(priv, unforced_dump);
 		}
 	}
+
+	return ret_fo;
 }
 
 static int _cdb_read_buffer(void *device, int id, unsigned char *buf, size_t offset, size_t len, int type)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -428,7 +713,7 @@ static int _cdb_read_buffer(void *device, int id, unsigned char *buf, size_t off
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READ_BUFFER";
-	char *msg;
+	char *msg = NULL;
 
 	ltfsmsg(LTFS_DEBUG, 30393D, "read buffer", id, priv->drive_serial);
 
@@ -468,7 +753,9 @@ static int _cdb_read_buffer(void *device, int id, unsigned char *buf, size_t off
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	return ret;
@@ -477,13 +764,14 @@ static int _cdb_read_buffer(void *device, int id, unsigned char *buf, size_t off
 static int _cdb_force_dump(struct sg_ibmtape_data *priv)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 
 	sg_io_hdr_t req;
 	unsigned char cdb[CDB6_LEN];
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "FORCE_DUMP";
-	char *msg;
+	char *msg = NULL;
 
 	unsigned char buf[SENDDIAG_BUF_LEN];
 
@@ -527,7 +815,9 @@ static int _cdb_force_dump(struct sg_ibmtape_data *priv)
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(priv, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(priv, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	return ret;
@@ -536,6 +826,7 @@ static int _cdb_force_dump(struct sg_ibmtape_data *priv)
 static int _cdb_pri(void *device, unsigned char *buf, int size)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -543,7 +834,7 @@ static int _cdb_pri(void *device, unsigned char *buf, int size)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "PRI";
-	char *msg;
+	char *msg = NULL;
 
 	/* Zero out the CDB and the result buffer */
 	ret = init_sg_io_header(&req);
@@ -578,7 +869,9 @@ static int _cdb_pri(void *device, unsigned char *buf, int size)
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	return ret;
@@ -627,11 +920,13 @@ start:
 	}
 
 	/* Print holder information here */
-	if (holder) {
-		memcpy(r->key, cur, KEYLEN);
-		ibmtape_parsekey(cur, r);
-	} else
-		ret = -EDEV_INTERNAL_ERROR;
+	if (!ret) {
+		if (holder) {
+			memcpy(r->key, cur, KEYLEN);
+			ibm_tape_parsekey(cur, r);
+		} else
+			ret = -EDEV_NO_RESERVATION_HOLDER;
+	}
 
 	free(buf);
 
@@ -643,6 +938,7 @@ static int _cdb_pro(void *device,
 					unsigned char *key, unsigned char *sakey)
 {
 	int ret = -EDEV_UNKNOWN, f_ret;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -651,7 +947,7 @@ static int _cdb_pro(void *device,
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "PRO";
 	unsigned char buf[PRO_BUF_LEN];
-	char *msg;
+	char *msg = NULL;
 
 	struct reservation_info r_info;
 
@@ -708,7 +1004,9 @@ static int _cdb_pro(void *device,
 				ltfsmsg(LTFS_WARN, 30266W, "unknown host (reserve command)", priv->drive_serial);
 			}
 		} else {
-			_process_errors(device, ret, msg, cmd_desc, true);
+			ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+			if (ret_ep < 0)
+				ret = ret_ep;
 		}
 	}
 
@@ -734,12 +1032,9 @@ start:
 /* Global functions */
 int sg_ibmtape_open(const char *devname, void **handle)
 {
-	int drive_type = DRIVE_UNSUPPORTED;
 	int ret = -1;
-	int flags;
 
 	struct sg_ibmtape_data *priv;
-	scsi_device_identifier id_data;
 
 	CHECK_ARG_NULL(devname, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(handle, -LTFS_NULL_ARG);
@@ -761,80 +1056,22 @@ int sg_ibmtape_open(const char *devname, void **handle)
 		return -EDEV_NO_MEMORY;
 	}
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_OPEN));
+	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_OPEN));
 
-	/*
-	 *  Open the device file exclusively with non-blocking first to fail another LTFS instance
-	 *  to try to mount the same device.
-	 */
-	priv->dev.fd = open(priv->devname, O_RDWR | O_EXCL | O_NONBLOCK);
-	if (priv->dev.fd < 0) {
-		ltfsmsg(LTFS_INFO, 30210I, devname, errno);
-		ret = -EDEV_DEVICE_UNOPENABLE;
+	ret = _raw_open(priv);
+	if (ret < 0)
 		goto free;
-	}
-
-	/* Get the device back to blocking mode */
-	flags = fcntl(priv->dev.fd, F_GETFL, 0);
-	if (flags < 0) {
-		ltfsmsg(LTFS_INFO, 30211I, "get", errno);
-		close(priv->dev.fd);
-		ret = -EDEV_DEVICE_UNOPENABLE;
-		goto free;
-	}
-	flags = (flags & (~O_NONBLOCK));
-	flags = fcntl(priv->dev.fd, F_SETFL, 0);
-	if (flags < 0) {
-		ltfsmsg(LTFS_INFO, 30211I, "set", errno);
-		close(priv->dev.fd);
-		ret = -EDEV_DEVICE_UNOPENABLE;
-		goto free;
-	}
-
-	/* Check the drive is supportable */
-	ret = sg_get_drive_identifier(&priv->dev, &id_data);
-	if (ret < 0) {
-		ltfsmsg(LTFS_INFO, 30212I, priv->devname);
-		close(priv->dev.fd);
-		goto free;
-	}
-
-	struct supported_device **cur = ibm_supported_drives;
-	while(*cur) {
-		if((! strncmp(id_data.vendor_id, (*cur)->vendor_id, strlen((*cur)->vendor_id)) ) &&
-		   (! strncmp(id_data.product_id, (*cur)->product_id, strlen((*cur)->product_id)) ) ) {
-			drive_type = (*cur)->drive_type;
-			break;
-		}
-		cur++;
-	}
-
-	if(drive_type > 0) {
-		if (!ibmtape_is_supported_firmware(drive_type, (unsigned char*)id_data.product_rev)) {
-			ret = -EDEV_UNSUPPORTED_FIRMWARE;
-			goto free;
-		} else
-			priv->drive_type = drive_type;
-	} else {
-		ltfsmsg(LTFS_INFO, 30213I, id_data.product_id);
-		ret = -EDEV_DEVICE_UNSUPPORTABLE; /* Unsupported device */
-		goto free;
-	}
-
-	strncpy(priv->drive_serial, id_data.unit_serial, sizeof(priv->drive_serial) - 1);
-
-	ltfsmsg(LTFS_INFO, 30207I, id_data.vendor_id);
-	ltfsmsg(LTFS_INFO, 30208I, id_data.product_id);
-	ltfsmsg(LTFS_INFO, 30214I, id_data.product_rev);
-	ltfsmsg(LTFS_INFO, 30215I, priv->drive_serial);
 
 	/* Setup IBM tape specific parameters */
 	standard_table = standard_tape_errors;
 	vendor_table   = ibm_tape_errors;
 	ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
 
+	/* Issue TURs to clear POR sense */
+	_clear_por(priv);
+
 	/* Register reservation key */
-	ibmtape_genkey(priv->key);
+	ibm_tape_genkey(priv->key);
 	_register_key(priv, priv->key);
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_OPEN));
@@ -916,6 +1153,7 @@ int sg_ibmtape_is_connected(const char *devname)
 int sg_ibmtape_inquiry_page(void *device, unsigned char page, struct tc_inq_page *inq)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -923,7 +1161,7 @@ int sg_ibmtape_inquiry_page(void *device, unsigned char page, struct tc_inq_page
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "INQUIRY";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_INQUIRYPAGE));
 	ltfsmsg(LTFS_DEBUG, 30393D, "inquiry", page, priv->drive_serial);
@@ -960,7 +1198,9 @@ int sg_ibmtape_inquiry_page(void *device, unsigned char page, struct tc_inq_page
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_INQUIRYPAGE));
@@ -1000,6 +1240,7 @@ int sg_ibmtape_inquiry(void *device, struct tc_inq *inq)
 int sg_ibmtape_test_unit_ready(void *device)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1007,7 +1248,7 @@ int sg_ibmtape_test_unit_ready(void *device)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "TEST_UNIT_READY";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_TUR));
 	ltfsmsg(LTFS_DEBUG3, 30392D, "test unit ready", priv->drive_serial);
@@ -1058,9 +1299,9 @@ int sg_ibmtape_test_unit_ready(void *device)
 				break;
 		}
 
-		if (print_msg) {
-			_process_errors(device, ret, msg, cmd_desc, take_dump);
-		}
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, print_msg, take_dump);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_TUR));
@@ -1071,6 +1312,7 @@ int sg_ibmtape_test_unit_ready(void *device)
 static int _cdb_read(void *device, char *buf, size_t size, bool sili)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1078,7 +1320,7 @@ static int _cdb_read(void *device, char *buf, size_t size, bool sili)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READ";
-	char *msg;
+	char *msg = NULL;
 	size_t length = -EDEV_UNKNOWN;
 
 	/* Zero out the CDB and the result buffer */
@@ -1111,6 +1353,7 @@ static int _cdb_read(void *device, char *buf, size_t size, bool sili)
 	req.sbp             = sense;
 	req.timeout         = SGConversion(timeout);
 	req.usr_ptr         = (void *)cmd_desc;
+	req.flags           = SG_FLAG_DIRECT_IO;
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
@@ -1156,9 +1399,14 @@ static int _cdb_read(void *device, char *buf, size_t size, bool sili)
 		}
 
 		if (ret != DEVICE_GOOD && ret != -EDEV_FILEMARK_DETECTED) {
-			if ((ret != -EDEV_CRYPTO_ERROR && ret != -EDEV_KEY_REQUIRED) || priv->dev.is_data_key_set)
-				_process_errors(device, ret, msg, cmd_desc, true);
-			length = ret;
+			if ((ret != -EDEV_CRYPTO_ERROR && ret != -EDEV_KEY_REQUIRED) || priv->dev.is_data_key_set) {
+				ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+			}
+
+			if (ret_ep < 0)
+				length = ret_ep;
+			else
+				length = ret;
 		}
 	} else {
 		/* check condition is not set so we have a good read and can trust the length value */
@@ -1246,6 +1494,7 @@ read_retry:
 static int _cdb_write(void *device, uint8_t *buf, size_t size, bool *ew, bool *pew)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1253,7 +1502,7 @@ static int _cdb_write(void *device, uint8_t *buf, size_t size, bool *ew, bool *p
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "WRITE";
-	char *msg;
+	char *msg = NULL;
 
 	/* Zero out the CDB and the result buffer */
 	ret = init_sg_io_header(&req);
@@ -1284,6 +1533,7 @@ static int _cdb_write(void *device, uint8_t *buf, size_t size, bool *ew, bool *p
 	req.sbp             = sense;
 	req.timeout         = SGConversion(timeout);
 	req.usr_ptr         = (void *)cmd_desc;
+	req.flags           = SG_FLAG_DIRECT_IO;
 
 	*ew = false;
 	*pew = false;
@@ -1311,7 +1561,9 @@ static int _cdb_write(void *device, uint8_t *buf, size_t size, bool *ew, bool *p
 		}
 
 		if (ret < 0) {
-			_process_errors(device, ret, msg, cmd_desc, true);
+			ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+			if (ret_ep < 0)
+				ret = ret_ep;
 		}
 	}
 
@@ -1320,9 +1572,10 @@ static int _cdb_write(void *device, uint8_t *buf, size_t size, bool *ew, bool *p
 
 int sg_ibmtape_write(void *device, const char *buf, size_t count, struct tc_position *pos)
 {
-	int ret;
+	int ret, ret_fo;
 	bool ew = false, pew = false;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
+	struct tc_position cur_pos;
 	size_t datacount = count;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITE));
@@ -1336,10 +1589,22 @@ int sg_ibmtape_write(void *device, const char *buf, size_t count, struct tc_posi
 	}
 
 	ret = _cdb_write(device, (uint8_t *)buf, datacount, &ew, &pew);
-	if(ret == DEVICE_GOOD) {
+	if (ret == DEVICE_GOOD) {
 		pos->block++;
 		pos->early_warning = ew;
 		pos->programmable_early_warning = pew;
+	} else if (ret == -EDEV_NEED_FAILOVER) {
+		ret_fo = sg_ibmtape_readpos(device, &cur_pos);
+		if (!ret_fo) {
+			if (pos->partition == cur_pos.partition
+				&& pos->block + 1 == cur_pos.block) {
+				pos->block++;
+				pos->early_warning = cur_pos.early_warning;
+				pos->programmable_early_warning = cur_pos.programmable_early_warning;
+				ret = DEVICE_GOOD;
+			} else
+				ret = -EDEV_POR_OR_BUS_RESET;
+		}
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
@@ -1349,7 +1614,8 @@ int sg_ibmtape_write(void *device, const char *buf, size_t count, struct tc_posi
 
 int sg_ibmtape_writefm(void *device, size_t count, struct tc_position *pos, bool immed)
 {
-	int ret = -EDEV_UNKNOWN;
+	int ret = -EDEV_UNKNOWN, ret_fo;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1357,8 +1623,9 @@ int sg_ibmtape_writefm(void *device, size_t count, struct tc_position *pos, bool
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "WRITEFM";
-	char *msg;
+	char *msg = NULL;
 
+	struct tc_position cur_pos;
 	bool ew = false, pew = false;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITEFM));
@@ -1416,7 +1683,9 @@ int sg_ibmtape_writefm(void *device, size_t count, struct tc_position *pos, bool
 		}
 
 		if (ret < 0) {
-			_process_errors(device, ret, msg, cmd_desc, true);
+			ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+			if (ret_ep < 0)
+				ret = ret_ep;
 		}
 	}
 
@@ -1428,6 +1697,18 @@ int sg_ibmtape_writefm(void *device, size_t count, struct tc_position *pos, bool
 			if (pew && !pos->programmable_early_warning)
 				pos->programmable_early_warning = pew;
 		}
+	} else if (ret == -EDEV_NEED_FAILOVER) {
+		ret_fo = sg_ibmtape_readpos(device, &cur_pos);
+		if (!ret_fo) {
+			if (pos->partition == cur_pos.partition
+				&& pos->block + count == cur_pos.block) {
+				pos->block++;
+				pos->early_warning = cur_pos.early_warning;
+				pos->programmable_early_warning = cur_pos.programmable_early_warning;
+				ret = DEVICE_GOOD;
+			} else
+				ret = -EDEV_POR_OR_BUS_RESET;
+		}
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITEFM));
@@ -1438,6 +1719,7 @@ int sg_ibmtape_writefm(void *device, size_t count, struct tc_position *pos, bool
 int sg_ibmtape_rewind(void *device, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1445,7 +1727,7 @@ int sg_ibmtape_rewind(void *device, struct tc_position *pos)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "REWIND";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REWIND));
 	ltfsmsg(LTFS_DEBUG, 30397D, "rewind", (unsigned long long)0, (unsigned long long)0, priv->drive_serial);
@@ -1476,7 +1758,9 @@ int sg_ibmtape_rewind(void *device, struct tc_position *pos)
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	if(ret == DEVICE_GOOD) {
@@ -1498,6 +1782,7 @@ int sg_ibmtape_rewind(void *device, struct tc_position *pos)
 int sg_ibmtape_locate(void *device, struct tc_position dest, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1505,7 +1790,7 @@ int sg_ibmtape_locate(void *device, struct tc_position dest, struct tc_position 
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOCATE";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOCATE));
 	ltfsmsg(LTFS_DEBUG, 30397D, "locate",
@@ -1546,7 +1831,9 @@ int sg_ibmtape_locate(void *device, struct tc_position dest, struct tc_position 
 			ltfsmsg(LTFS_DEBUG, 30224D, "Locate");
 			ret = DEVICE_GOOD;
 		} else {
-			_process_errors(device, ret, msg, cmd_desc, true);
+			ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+			if (ret_ep < 0)
+				ret = ret_ep;
 		}
 	}
 
@@ -1567,6 +1854,7 @@ int sg_ibmtape_locate(void *device, struct tc_position dest, struct tc_position 
 int sg_ibmtape_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1574,7 +1862,7 @@ int sg_ibmtape_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_p
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "SPACE";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SPACE));
 
@@ -1637,7 +1925,10 @@ int sg_ibmtape_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_p
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		/* TODO: Need to confirm additional operation is required or not */
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	if(ret == DEVICE_GOOD)
@@ -1658,6 +1949,7 @@ int sg_ibmtape_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_p
 static int _cdb_request_sense(void *device, unsigned char *buf, unsigned char size)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1665,7 +1957,7 @@ static int _cdb_request_sense(void *device, unsigned char *buf, unsigned char si
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "REQUEST_SENSE";
-	char *msg;
+	char *msg = NULL;
 
 	/* Zero out the CDB and the result buffer */
 	ret = init_sg_io_header(&req);
@@ -1696,7 +1988,9 @@ static int _cdb_request_sense(void *device, unsigned char *buf, unsigned char si
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0) {
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	return ret;
@@ -1705,6 +1999,7 @@ static int _cdb_request_sense(void *device, unsigned char *buf, unsigned char si
 int sg_ibmtape_erase(void *device, struct tc_position *pos, bool long_erase)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1712,7 +2007,7 @@ int sg_ibmtape_erase(void *device, struct tc_position *pos, bool long_erase)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "ERASE";
-	char *msg;
+	char *msg = NULL;
 	struct ltfs_timespec ts_start, ts_now;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ERASE));
@@ -1783,7 +2078,9 @@ int sg_ibmtape_erase(void *device, struct tc_position *pos, bool long_erase)
 	}
 
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_ERASE));
@@ -1794,6 +2091,7 @@ int sg_ibmtape_erase(void *device, struct tc_position *pos, bool long_erase)
 static int _cdb_load_unload(void *device, bool load)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1801,7 +2099,7 @@ static int _cdb_load_unload(void *device, bool load)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOAD_UNLOAD";
-	char *msg;
+	char *msg = NULL;
 
 	/* Zero out the CDB and the result buffer */
 	ret = init_sg_io_header(&req);
@@ -1834,7 +2132,9 @@ static int _cdb_load_unload(void *device, bool load)
 		if (ret == -EDEV_MEDIUM_MAY_BE_CHANGED) {
 			ret = DEVICE_GOOD;
 		} else {
-			_process_errors(device, ret, msg, cmd_desc, true);
+			ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+			if (ret_ep < 0)
+				ret = ret_ep;
 		}
 	}
 
@@ -1882,7 +2182,7 @@ int sg_ibmtape_load(void *device, struct tc_position *pos)
 		return 0;
 	}
 
-	ret = ibmtape_is_supported_tape(priv->cart_type, priv->density_code, &(priv->is_worm));
+	ret = ibm_tape_is_supported_tape(priv->cart_type, priv->density_code, &(priv->is_worm));
 	if(ret == -LTFS_UNSUPPORTED_MEDIUM)
 		ltfsmsg(LTFS_INFO, 30228I, priv->cart_type, priv->density_code);
 
@@ -1901,7 +2201,7 @@ int sg_ibmtape_unload(void *device, struct tc_position *pos)
 
 	ret = _cdb_load_unload(device, false);
 	if (ret < 0) {
-		/* TODO: Read position here */
+		sg_ibmtape_readpos(device, pos);
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_UNLOAD));
 		return ret;
 	}
@@ -1918,6 +2218,7 @@ int sg_ibmtape_unload(void *device, struct tc_position *pos)
 int sg_ibmtape_readpos(void *device, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1925,7 +2226,7 @@ int sg_ibmtape_readpos(void *device, struct tc_position *pos)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READPOS";
-	char *msg;
+	char *msg = NULL;
 	unsigned char buf[REDPOS_LONG_LEN];
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READPOS));
@@ -1969,7 +2270,9 @@ int sg_ibmtape_readpos(void *device, struct tc_position *pos)
 				(unsigned long long)pos->block, (unsigned long long)pos->filemarks,
 				priv->drive_serial);
 	} else {
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READPOS));
@@ -1980,6 +2283,7 @@ int sg_ibmtape_readpos(void *device, struct tc_position *pos)
 int sg_ibmtape_setcap(void *device, uint16_t proportion)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1987,7 +2291,7 @@ int sg_ibmtape_setcap(void *device, uint16_t proportion)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "SETCAP";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SETCAP));
 	ltfsmsg(LTFS_DEBUG, 30393D, "setcap", proportion, priv->drive_serial);
@@ -2042,7 +2346,9 @@ int sg_ibmtape_setcap(void *device, uint16_t proportion)
 
 		ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 		if (ret < 0) {
-			_process_errors(device, ret, msg, cmd_desc, true);
+			ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+			if (ret_ep < 0)
+				ret = ret_ep;
 		}
 	}
 
@@ -2054,6 +2360,7 @@ int sg_ibmtape_setcap(void *device, uint16_t proportion)
 int sg_ibmtape_format(void *device, TC_FORMAT_TYPE format)
 {
 	int ret = -EDEV_UNKNOWN, aux_ret;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 	unsigned char buf[TC_MP_SUPPORTEDPAGE_SIZE];
 
@@ -2062,7 +2369,7 @@ int sg_ibmtape_format(void *device, TC_FORMAT_TYPE format)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "FORMAT";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_FORMAT));
 	ltfsmsg(LTFS_DEBUG, 30392D, "format", priv->drive_serial);
@@ -2094,7 +2401,9 @@ int sg_ibmtape_format(void *device, TC_FORMAT_TYPE format)
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0) {
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	/* Check Cartridge type */
@@ -2232,6 +2541,7 @@ static int _cdb_logsense(void *device, const unsigned char page, const unsigned 
 						 unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -2239,7 +2549,7 @@ static int _cdb_logsense(void *device, const unsigned char page, const unsigned 
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOGSENSE";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
 
@@ -2274,7 +2584,9 @@ static int _cdb_logsense(void *device, const unsigned char page, const unsigned 
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOGSENSE));
@@ -2296,6 +2608,7 @@ int sg_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_PC_
 						 const unsigned char subpage, unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -2303,7 +2616,7 @@ int sg_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_PC_
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "MODESENSE";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_MODESENSE));
 	ltfsmsg(LTFS_DEBUG3, 30393D, "modesense", page, priv->drive_serial);
@@ -2339,7 +2652,9 @@ int sg_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_PC_
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_MODESENSE));
@@ -2350,6 +2665,7 @@ int sg_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_PC_
 int sg_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -2357,7 +2673,7 @@ int sg_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "MODESELECT";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_MODESELECT));
 	ltfsmsg(LTFS_DEBUG3, 30392D, "modeselect", priv->drive_serial);
@@ -2391,7 +2707,9 @@ int sg_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size)
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_MODESELECT));
@@ -2423,6 +2741,9 @@ start:
 		goto start;
 	}
 
+	if (!ret)
+		priv->is_reserved = true;
+
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_RESERVEUNIT));
 
 	return ret;
@@ -2434,10 +2755,15 @@ int sg_ibmtape_release(void *device)
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RELEASEUNIT));
+
 	ltfsmsg(LTFS_DEBUG, 30392D, "release (PRO)", priv->drive_serial);
 
+	/* Issue release command even if no reservation is made */
 	ret = _cdb_pro(device, PRO_ACT_RELEASE, PRO_TYPE_EXCLUSIVE,
 				   priv->key, NULL);
+
+	if (!ret)
+		priv->is_reserved = false;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_RELEASEUNIT));
 
@@ -2447,6 +2773,7 @@ int sg_ibmtape_release(void *device)
 static int _cdb_prevent_allow_medium_removal(void *device, bool prevent)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -2454,7 +2781,7 @@ static int _cdb_prevent_allow_medium_removal(void *device, bool prevent)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "PREVENT/ALLOW_MEDIUM_REMOVAL";
-	char *msg;
+	char *msg = NULL;
 
 	/* Zero out the CDB and the result buffer */
 	ret = init_sg_io_header(&req);
@@ -2484,7 +2811,16 @@ static int _cdb_prevent_allow_medium_removal(void *device, bool prevent)
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
+	}
+
+	if (!ret) {
+		if (prevent)
+			priv->is_tape_locked = true;
+		else
+			priv->is_tape_locked = false;
 	}
 
 	return ret;
@@ -2520,6 +2856,7 @@ int sg_ibmtape_write_attribute(void *device, const tape_partition_t part,
 							   const unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -2527,7 +2864,7 @@ int sg_ibmtape_write_attribute(void *device, const tape_partition_t part,
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "WRITE_ATTR";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITEATTR));
 	ltfsmsg(LTFS_DEBUG3, 30396D, "writeattr", (unsigned long long)part,
@@ -2577,7 +2914,9 @@ int sg_ibmtape_write_attribute(void *device, const tape_partition_t part,
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	free(buffer);
@@ -2591,6 +2930,7 @@ int sg_ibmtape_read_attribute(void *device, const tape_partition_t part,
 							  const uint16_t id, unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -2598,7 +2938,7 @@ int sg_ibmtape_read_attribute(void *device, const tape_partition_t part,
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READ_ATTR";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READATTR));
 	ltfsmsg(LTFS_DEBUG3, 30397D, "readattr", (unsigned long long)part, (unsigned long long)id, priv->drive_serial);
@@ -2648,7 +2988,9 @@ int sg_ibmtape_read_attribute(void *device, const tape_partition_t part,
 		if (ret == -EDEV_INVALID_FIELD_CDB)
 			tape_dump = false;
 
-		_process_errors(device, ret, msg, cmd_desc, tape_dump);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, tape_dump);
+		if (ret_ep < 0)
+			ret = ret_ep;
 
 		if (id != TC_MAM_PAGE_COHERENCY &&
 			id != TC_MAM_APP_VENDER &&
@@ -2672,6 +3014,7 @@ int sg_ibmtape_read_attribute(void *device, const tape_partition_t part,
 int sg_ibmtape_allow_overwrite(void *device, const struct tc_position pos)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -2679,7 +3022,7 @@ int sg_ibmtape_allow_overwrite(void *device, const struct tc_position pos)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "ALLOWOVERW";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ALLOWOVERW));
 	ltfsmsg(LTFS_DEBUG, 30397D, "allow overwrite", (unsigned long long)pos.partition, (unsigned long long)pos.block, priv->drive_serial);
@@ -2717,7 +3060,9 @@ int sg_ibmtape_allow_overwrite(void *device, const struct tc_position pos)
 			ltfsmsg(LTFS_DEBUG, 30224D, "Allow Overwrite");
 			ret = DEVICE_GOOD;
 		} else {
-			_process_errors(device, ret, msg, cmd_desc, true);
+			ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+			if (ret_ep < 0)
+				ret = ret_ep;
 		}
 	}
 
@@ -3116,6 +3461,7 @@ int sg_ibmtape_set_xattr(void *device, const char *name, const char *buf, size_t
 
 static int _cdb_read_block_limits(void *device) {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -3123,7 +3469,7 @@ static int _cdb_read_block_limits(void *device) {
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READ_BLOCK_LIMITS";
-	char *msg;
+	char *msg = NULL;
 
 	unsigned char buf[BLOCKLEN_DATA_SIZE];
 
@@ -3157,7 +3503,9 @@ static int _cdb_read_block_limits(void *device) {
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	} else {
 		ret =  ((unsigned int) buf[1] & 0xFF) << 16;
 		ret += ((unsigned int) buf[2] & 0xFF) << 8;
@@ -3351,14 +3699,14 @@ int sg_ibmtape_get_device_list(struct tc_drive_info *buf, int count)
 		/* Get the device back to blocking mode */
 		flags = fcntl(dev.fd, F_GETFL, 0);
 		if (flags < 0) {
-			/* TODO: Need a message */
+			ltfsmsg(LTFS_INFO, 30273I, "get", flags);
 			close(dev.fd);
 			continue;
 		}
 		flags = (flags & (~O_NONBLOCK));
 		flags = fcntl(dev.fd, F_SETFL, 0);
 		if (flags < 0) {
-			/* TODO: Need a message */
+			ltfsmsg(LTFS_INFO, 30273I, "set", flags);
 			close(dev.fd);
 			continue;
 		}
@@ -3430,6 +3778,7 @@ const char *sg_ibmtape_default_device_name(void)
 static int _cdb_spin(void *device, const uint16_t sps, unsigned char **buffer, size_t * const size)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -3437,7 +3786,7 @@ static int _cdb_spin(void *device, const uint16_t sps, unsigned char **buffer, s
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "SPIN";
-	char *msg;
+	char *msg = NULL;
 	size_t len = *size + 4;
 
 	/* Zero out the CDB and the result buffer */
@@ -3477,7 +3826,9 @@ static int _cdb_spin(void *device, const uint16_t sps, unsigned char **buffer, s
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	*size = ltfs_betou16((*buffer) + 2);
@@ -3489,6 +3840,7 @@ int _cdb_spout(void *device, const uint16_t sps,
 			   unsigned char* const buffer, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -3496,7 +3848,7 @@ int _cdb_spout(void *device, const uint16_t sps,
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "SPOUT";
-	char *msg;
+	char *msg = NULL;
 
 	/* Zero out the CDB and the result buffer */
 	ret = init_sg_io_header(&req);
@@ -3529,7 +3881,9 @@ int _cdb_spout(void *device, const uint16_t sps,
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	return ret;
@@ -3828,7 +4182,7 @@ int sg_ibmtape_is_mountable(void *device, const char *barcode, const unsigned ch
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ISMOUNTABLE));
 
-	ret = ibmtape_is_mountable( priv->drive_type,
+	ret = ibm_tape_is_mountable( priv->drive_type,
 								barcode,
 								cart_type,
 								density,
@@ -3844,7 +4198,7 @@ bool sg_ibmtape_is_readonly(void *device)
 	int ret;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
-	ret = ibmtape_is_mountable( priv->drive_type,
+	ret = ibm_tape_is_mountable( priv->drive_type,
 								NULL,
 								priv->cart_type,
 								priv->density_code,
@@ -3935,6 +4289,7 @@ int sg_ibmtape_set_profiler(void *device, char *work_dir, bool enable)
 int sg_ibmtape_get_block_in_buffer(void *device, uint32_t *block)
 {
 	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -3942,7 +4297,7 @@ int sg_ibmtape_get_block_in_buffer(void *device, uint32_t *block)
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READPOS";
-	char *msg;
+	char *msg = NULL;
 	unsigned char buf[REDPOS_EXT_LEN];
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READPOS));
@@ -3981,7 +4336,9 @@ int sg_ibmtape_get_block_in_buffer(void *device, uint32_t *block)
 		ltfsmsg(LTFS_DEBUG, 30398D, "blocks-in-buffer",
 				(unsigned long long)*block, (unsigned long long)0, (unsigned long long)0, priv->drive_serial);
 	} else {
-		_process_errors(device, ret, msg, cmd_desc, true);
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READPOS));

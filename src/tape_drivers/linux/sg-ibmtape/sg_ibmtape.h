@@ -54,6 +54,9 @@ struct sg_ibmtape_data {
 	struct sg_tape       dev;                  /**< device structure of sg */
 	bool                 loaded;               /**< Is cartridge loaded? */
 	bool                 loadfailed;           /**< Is load/unload failed? */
+	bool                 is_reserved;          /**< Is reserved? */
+	bool                 is_tape_locked;       /**< Is medium removal prevented? */
+	bool                 is_reconnecting;      /**< Reconnecting, suppress nested reconnect */
 	char                 drive_serial[255];    /**< serial number of device */
 	long                 fetch_sec_acq_loss_w; /**< Sec to fetch Active CQs loss write */
 	bool                 dirty_acq_loss_w;     /**< Is Active CQs loss write dirty */

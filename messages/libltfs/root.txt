@@ -568,7 +568,7 @@ root:table {
 		17022E:string { "XML parser: invalid block size %s." }
 		17023E:string { "XML parser: invalid generation number %s." }
 		17024E:string { "XML parser: invalid size criterion %s." }
-		17025E:string { "XML parser: failed to normalize value (%d)." }
+		//unused 17025E:string { "XML parser: failed to normalize value (%d)." }
 		17026E:string { "XML parser: file size is shorter than extent list." }
 		17027E:string { "XML parser: unsupported extended attribute type \'%s\'." }
 		17028E:string { "XML parser: base64 decoding failed." }
@@ -641,7 +641,7 @@ root:table {
 		17095W:string { "The index read from the tape uses an old version of the LTFS format. If this tape is modified, the index upgrades format version to %s from %d.%d.%d." }
 		17096W:string { "The index read from the tape uses a newer version of the LTFS format than the one supported by this software. Some functionality might be unavailable. If this tape is modified, the index downgrades format version to %s from %d.%d.%d." }
 		17097E:string { "XML parser: two extents overlap." }
-		17098E:string { "XML parser: invalid name pattern '%s\'." }
+		//unused 17098E:string { "XML parser: invalid name pattern '%s\'." }
 		17099E:string { "Failed to spawn the periodic sync thread (%d)." }
 
 		17100E:string { "XML parser: UID on the root directory must be 1." }

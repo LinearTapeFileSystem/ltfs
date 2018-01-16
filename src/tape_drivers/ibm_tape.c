@@ -1125,7 +1125,7 @@ static inline int _is_mountable(const int drive_type,
 	return ret;
 }
 
-int ibmtape_is_mountable(const int drive_type,
+int ibm_tape_is_mountable(const int drive_type,
 						 const char *barcode,
 						 const unsigned char cart_type,
 						 const unsigned char density_code,
@@ -1157,7 +1157,7 @@ int ibmtape_is_mountable(const int drive_type,
 	return ret;
 }
 
-int ibmtape_is_supported_tape(unsigned char type, unsigned char density, bool *is_worm)
+int ibm_tape_is_supported_tape(unsigned char type, unsigned char density, bool *is_worm)
 {
 	int ret = -LTFS_UNSUPPORTED_MEDIUM, i;
 
@@ -1189,7 +1189,7 @@ int ibmtape_is_supported_tape(unsigned char type, unsigned char density, bool *i
 /**
  *  Generate a key for persistent reservation
  */
-int ibmtape_genkey(unsigned char *key)
+int ibm_tape_genkey(unsigned char *key)
 {
 #ifdef mingw_PLATFORM
 	memset(key, 0x00, KEYLEN);
@@ -1269,7 +1269,7 @@ int ibmtape_genkey(unsigned char *key)
 	return 0;
 }
 
-int ibmtape_parsekey(unsigned char *key, struct reservation_info *r)
+int ibm_tape_parsekey(unsigned char *key, struct reservation_info *r)
 {
 	r->key_type = key[0];
 	switch (r->key_type) {
@@ -1301,7 +1301,7 @@ int ibmtape_parsekey(unsigned char *key, struct reservation_info *r)
 	return 0;
 }
 
-bool ibmtape_is_supported_firmware(int drive_type, const unsigned char * const revision)
+bool ibm_tape_is_supported_firmware(int drive_type, const unsigned char * const revision)
 {
 	bool supported = true;
 	const uint32_t rev = ltfs_betou32(revision);

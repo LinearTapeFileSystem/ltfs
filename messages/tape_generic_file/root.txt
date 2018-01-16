@@ -128,7 +128,7 @@ root:table {
 		30084D:string { "Found a device (%s, %s, %s, %s)." }
 		30085I:string { "Cartridge is read-only (%d, %s)." }
 		30086I:string { "Cartridge is unsupported (%s, 0x%02x)." }
-		30087I:string { "Cartridge is unsupported (0x%x, 0x%02x)." }
+		//unused
 		30088I:string { "Unsupported density code (0x%x, 0x%02x)." }
 
 		30150E:string { "Cannot parse cartridge configuration file: start document (%d)." }

@@ -1443,7 +1443,7 @@ int filedebug_load(void *device, struct tc_position *pos)
 	}
 
 	/* Configure internal read_only flag */
-	ret = ibmtape_is_mountable( state->drive_type,
+	ret = ibm_tape_is_mountable( state->drive_type,
 								NULL,
 								state->conf.cart_type,
 								state->conf.density_code,
@@ -2527,7 +2527,7 @@ int filedebug_is_mountable(void *device, const char *barcode, const unsigned cha
 	int ret;
 	struct filedebug_data *state = (struct filedebug_data *)device;
 
-	ret = ibmtape_is_mountable( state->drive_type,
+	ret = ibm_tape_is_mountable( state->drive_type,
 								barcode,
 								cart_type,
 								density,
@@ -2541,7 +2541,7 @@ bool filedebug_is_readonly(void *device)
 	int ret;
 	struct filedebug_data *state = (struct filedebug_data *)device;
 
-	ret = ibmtape_is_mountable( state->drive_type,
+	ret = ibm_tape_is_mountable( state->drive_type,
 								NULL,
 								state->conf.cart_type,
 								state->conf.density_code,

@@ -78,7 +78,9 @@ extern "C" {
 #define NEED_REVAL(ret) (ret == -EDEV_POR_OR_BUS_RESET	\
 						 || ret == -EDEV_MEDIUM_MAY_BE_CHANGED	\
 						 || ret == -EDEV_RESERVATION_PREEMPTED	\
-						 || ret == -EDEV_REGISTRATION_PREEMPTED)
+						 || ret == -EDEV_REGISTRATION_PREEMPTED \
+						 || ret == -EDEV_REAL_POWER_ON_RESET	\
+		                 || ret == -EDEV_NEED_FAILOVER)
 
 #define IS_UNEXPECTED_MOVE(ret) (ret == -EDEV_MEDIUM_REMOVAL_REQ)
 

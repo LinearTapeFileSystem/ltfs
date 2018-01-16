@@ -42,7 +42,7 @@ root:table {
 		30200I:string { "Failed to execute SG_IO ioctl, opcode = %02x (%d)." }
 		30201D:string { "CDB check condition: sense = %06x, %s." }
 		30202D:string { "CDB %s." }
-		30203I:string { "CDB unexpected status: S = 0x%02x, H = 0x02%x, D = 0x%02x." }
+		30203I:string { "CDB unexpected status: S = 0x%02x, M = 0x02%x" }
 		30204D:string { "%s (0x%02x) expected error %d." }
 		30205I:string { "%s (0x%02x) returns %d." }
 		30206I:string { "Cannot open device: inquiry failed (%d)." }
@@ -83,12 +83,12 @@ root:table {
 		30241E:string { "Invalid scsi_lbprotect option: %s." }
 		30242E:string { "Encryption method of the drive is not AME but %s (0x%02X)." }
 		30243E:string { "Encryption feature is not supported on the drive: %d." }
-		//unused 30244
-		//unused 30245
-		//unused 30246
-		//unused 30247
-		//unused 30248
-		//unused (moved) 30249W:string { "Drive firmware must be upgraded to %s or later." }
+		30244I:string { "CDB unexpected status: H = 0x%02x, D = 0x02%x" }
+		30245D:string { "Tape device returns %d, ignore for buffered sense cleaning." }
+		30246I:string { "Connection down is detected, try to reconnect (%s)." }
+		30247I:string { "No alternate device is found for drive %s." }
+		30248I:string { "Drive serial is not matched. Actual: %s, Expected %s." }
+		30249I:string { "Opening another path for drive %s on %s." }
 		//unused (moved) 30250W:string { "Drive firmware level does not correctly detect the EOD status." }
 		30251I:string { "Logical block protection is enabled." }
 		30252I:string { "Logical block protection is disabled." }
@@ -105,9 +105,14 @@ root:table {
 		30263I:string { "%s returns %s (%d) %s." }
 		30264E:string { "%s returns msg = NULL (%d) %s." }
 		30265W:string { "Failed to get medium type code: medium type check is skipped." }
-		30266W:string { "The drive is already reserved: %s (%s)" }
-		30267W:string { "WWPID of reservation: x%02x%02x%02x%02x%02x%02x%02x%02x (%s)" }
-		30268I:string { "Retry to reserve from key registration (%s)" }
+		30266W:string { "The drive is already reserved: %s (%s)." }
+		30267W:string { "WWPID of reservation: x%02x%02x%02x%02x%02x%02x%02x%02x (%s)." }
+		30268I:string { "Retry to reserve from key registration (%s)." }
+		30269I:string { "Successfully reopen the drive %s with another path. Preempting reservation." }
+		30270I:string { "Power-On-Reset happened in the drive %s." }
+		30271I:string { "Successfully reopen the drive %s with same path." }
+		30272I:string { "Drive %s is reserved successfully." }
+		30273I:string { "Cannot %s device flag (%d)." }
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }

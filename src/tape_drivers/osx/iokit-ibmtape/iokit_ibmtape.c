@@ -434,7 +434,7 @@ static int _cdb_read_buffer(void *device, int id, unsigned char *buf, size_t off
 	unsigned char cdb[CDB10_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READ_BUFFER";
-	char *msg;
+	char *msg = NULL;
 
 	ltfsmsg(LTFS_DEBUG, 30993D, "read buffer", id, priv->drive_serial);
 
@@ -484,7 +484,7 @@ static int _cdb_force_dump(struct iokit_ibmtape_data *priv)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "FORCE_DUMP";
-	char *msg;
+	char *msg = NULL;
 
 	unsigned char buf[SENDDIAG_BUF_LEN];
 
@@ -539,7 +539,7 @@ static int _cdb_pri(void *device, unsigned char *buf, int size)
 	unsigned char cdb[CDB10_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "PRI";
-	char *msg;
+	char *msg = NULL;
 
 	memset(cdb, 0, sizeof(cdb));
 	memset(buf, 0, size);
@@ -640,7 +640,7 @@ static int _cdb_pro(void *device,
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "PRO";
 	unsigned char buf[PRO_BUF_LEN];
-	char *msg;
+	char *msg = NULL;
 
 	struct reservation_info r_info;
 
@@ -779,7 +779,7 @@ int iokit_ibmtape_open(const char *devname, void **handle)
 	}
 
 	if(drive_type > 0) {
-		if (!ibmtape_is_supported_firmware(drive_type, (unsigned char*)id_data.product_rev)) {
+		if (!ibm_tape_is_supported_firmware(drive_type, (unsigned char*)id_data.product_rev)) {
 			iokit_release_exclusive_access(&priv->dev);
 			ret = -EDEV_UNSUPPORTED_FIRMWARE;
 			goto free;
@@ -877,7 +877,7 @@ int iokit_ibmtape_reopen(const char *devname, void *device)
 	}
 
 	if(drive_type > 0) {
-		if (!ibmtape_is_supported_firmware(drive_type, (unsigned char*)id_data.product_rev)) {
+		if (!ibm_tape_is_supported_firmware(drive_type, (unsigned char*)id_data.product_rev)) {
 			iokit_release_exclusive_access(&priv->dev);
 			ret = -EDEV_UNSUPPORTED_FIRMWARE;
 		} else
@@ -958,7 +958,7 @@ int iokit_ibmtape_inquiry_page(void *device, unsigned char page, struct tc_inq_p
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "INQUIRY";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_INQUIRYPAGE));
 	ltfsmsg(LTFS_DEBUG, 30993D, "inquiry", page, priv->drive_serial);
@@ -1037,7 +1037,7 @@ int iokit_ibmtape_test_unit_ready(void *device)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "TEST_UNIT_READY";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_TUR));
 	ltfsmsg(LTFS_DEBUG3, 30992D, "test unit ready", priv->drive_serial);
@@ -1103,7 +1103,7 @@ static int _cdb_read(void *device, char *buf, size_t size, boolean_t sili)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READ";
-	char *msg;
+	char *msg = NULL;
 	size_t length = -EDEV_UNKNOWN;
 
 	// Zero out the CDB and the result buffer
@@ -1292,7 +1292,7 @@ static int _cdb_write(void *device, uint8_t *buf, size_t size, bool *ew, bool *p
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "WRITE";
-	char *msg;
+	char *msg = NULL;
 
 	// Zero out the CDB and the result buffer
 	memset(cdb, 0, sizeof(cdb));
@@ -1390,7 +1390,7 @@ int iokit_ibmtape_writefm(void *device, size_t count, struct tc_position *pos, b
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "WRITEFM";
-	char *msg;
+	char *msg = NULL;
 
 	bool ew = false, pew = false;
 
@@ -1472,7 +1472,7 @@ int iokit_ibmtape_rewind(void *device, struct tc_position *pos)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "REWIND";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REWIND));
 	ltfsmsg(LTFS_DEBUG, 30997D, "rewind", 0, 0, priv->drive_serial);
@@ -1526,7 +1526,7 @@ int iokit_ibmtape_locate(void *device, struct tc_position dest, struct tc_positi
 	unsigned char cdb[CDB16_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOCATE";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOCATE));
 	ltfsmsg(LTFS_DEBUG, 30997D, "locate", dest.partition, dest.block, priv->drive_serial);
@@ -1586,7 +1586,7 @@ int iokit_ibmtape_space(void *device, size_t count, TC_SPACE_TYPE type, struct t
 	unsigned char cdb[CDB16_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "SPACE";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SPACE));
 
@@ -1672,7 +1672,7 @@ static int _cdb_request_sense(void *device, unsigned char *buf, unsigned char si
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "REQUEST_SENSE";
-	char *msg;
+	char *msg = NULL;
 
 	// Zero out the CDB and the result buffer
 	memset(cdb, 0, sizeof(cdb));
@@ -1713,7 +1713,7 @@ int iokit_ibmtape_erase(void *device, struct tc_position *pos, bool long_erase)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "ERASE";
-	char *msg;
+	char *msg = NULL;
 	struct ltfs_timespec ts_start, ts_now;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ERASE));
@@ -1796,7 +1796,7 @@ static int _cdb_load_unload(void *device, bool load)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOAD_UNLOAD";
-	char *msg;
+	char *msg = NULL;
 
 	// Zero out the CDB and the result buffer
 	memset(cdb, 0, sizeof(cdb));
@@ -1862,7 +1862,7 @@ int iokit_ibmtape_load(void *device, struct tc_position *pos)
 	priv->cart_type = buf[2];
 	priv->density_code = buf[8];
 
-	ret = ibmtape_is_supported_tape(priv->cart_type, priv->density_code, &(priv->is_worm));
+	ret = ibm_tape_is_supported_tape(priv->cart_type, priv->density_code, &(priv->is_worm));
 	if(ret == -LTFS_UNSUPPORTED_MEDIUM)
 		ltfsmsg(LTFS_INFO, 30831I, priv->cart_type, priv->density_code);
 
@@ -1904,7 +1904,7 @@ int iokit_ibmtape_readpos(void *device, struct tc_position *pos)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READPOS";
-	char *msg;
+	char *msg = NULL;
 	unsigned char buf[REDPOS_LONG_LEN];
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READPOS));
@@ -1960,7 +1960,7 @@ int iokit_ibmtape_setcap(void *device, uint16_t proportion)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "SETCAP";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SETCAP));
 	ltfsmsg(LTFS_DEBUG, 30993D, "setcap", proportion, priv->drive_serial);
@@ -2029,7 +2029,7 @@ int iokit_ibmtape_format(void *device, TC_FORMAT_TYPE format)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "FORMAT";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_FORMAT));
 	ltfsmsg(LTFS_DEBUG, 30992D, "format", priv->drive_serial);
@@ -2200,7 +2200,7 @@ static int _cdb_logsense(void *device, const unsigned char page, const unsigned 
 	unsigned char cdb[CDB10_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOGSENSE";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
 
@@ -2259,7 +2259,7 @@ int iokit_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_
 	unsigned char cdb[CDB10_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "MODESENSE";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_MODESENSE));
 	ltfsmsg(LTFS_DEBUG3, 30993D, "modesense", page, priv->drive_serial);
@@ -2308,7 +2308,7 @@ int iokit_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size
 	unsigned char cdb[CDB10_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "MODESELECT";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_MODESELECT));
 	ltfsmsg(LTFS_DEBUG3, 30992D, "modeselect", priv->drive_serial);
@@ -2356,7 +2356,7 @@ int iokit_ibmtape_reserve(void *device)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "RESERVE6";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RESERVEUNIT));
 	ltfsmsg(LTFS_DEBUG, 30992D, "reserve unit (6)", priv->drive_serial);
@@ -2428,7 +2428,7 @@ int iokit_ibmtape_release(void *device)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "RELEASE6";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RELEASEUNIT));
 	ltfsmsg(LTFS_DEBUG, 30992D, "release unit (6)", priv->drive_serial);
@@ -2484,7 +2484,7 @@ static int _cdb_prevent_allow_medium_removal(void *device, bool prevent)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "PREVENT/ALLOW_MEDIUM_REMOVAL";
-	char *msg;
+	char *msg = NULL;
 
 	// Zero out the CDB and the result buffer
 	memset(cdb, 0, sizeof(cdb));
@@ -2551,7 +2551,7 @@ int iokit_ibmtape_write_attribute(void *device, const tape_partition_t part,
 	unsigned char cdb[CDB16_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "WRITE_ATTR";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITEATTR));
 	ltfsmsg(LTFS_DEBUG3, 30996D, "writeattr", (unsigned long long)part,
@@ -2617,7 +2617,7 @@ int iokit_ibmtape_read_attribute(void *device, const tape_partition_t part,
 	unsigned char cdb[CDB16_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READ_ATTR";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READATTR));
 	ltfsmsg(LTFS_DEBUG3, 30997D, "readattr", (unsigned long)part, id, priv->drive_serial);
@@ -2693,7 +2693,7 @@ int iokit_ibmtape_allow_overwrite(void *device, const struct tc_position pos)
 	unsigned char cdb[CDB16_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "ALLOWOVERW";
-	char *msg;
+	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ALLOWOVERW));
 	ltfsmsg(LTFS_DEBUG, 30997D, "allow overwrite", pos.partition, pos.block, priv->drive_serial);
@@ -3129,7 +3129,7 @@ static int _cdb_read_block_limits(void *device) {
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READ_BLOCK_LIMITS";
-	char *msg;
+	char *msg = NULL;
 
 	unsigned char buf[BLOCKLEN_DATA_SIZE];
 
@@ -3410,7 +3410,7 @@ static int _cdb_spin(void *device, const uint16_t sps, unsigned char **buffer, s
 	unsigned char cdb[CDB12_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "SPIN";
-	char *msg;
+	char *msg = NULL;
 	size_t len = *size + 4;
 
 	// Zero out the CDB and the result buffer
@@ -3464,7 +3464,7 @@ int _cdb_spout(void *device, const uint16_t sps,
 	unsigned char cdb[CDB12_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "SPOUT";
-	char *msg;
+	char *msg = NULL;
 
 	// Zero out the CDB and the result buffer
 	memset(cdb, 0, sizeof(cdb));
@@ -3794,7 +3794,7 @@ int iokit_ibmtape_is_mountable(void *device, const char *barcode, const unsigned
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ISMOUNTABLE));
 
-	ret = ibmtape_is_mountable( priv->drive_type,
+	ret = ibm_tape_is_mountable( priv->drive_type,
 								barcode,
 								cart_type,
 								density,
@@ -3810,7 +3810,7 @@ bool iokit_ibmtape_is_readonly(void *device)
 	int ret;
 	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
 
-	ret = ibmtape_is_mountable( priv->drive_type,
+	ret = ibm_tape_is_mountable( priv->drive_type,
 								NULL,
 								priv->cart_type,
 								priv->density_code,
@@ -3907,7 +3907,7 @@ int iokit_ibmtape_get_block_in_buffer(void *device, uint32_t *block)
 	unsigned char cdb[CDB6_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READPOS";
-	char *msg;
+	char *msg = NULL;
 	unsigned char buf[REDPOS_EXT_LEN];
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READPOS));
