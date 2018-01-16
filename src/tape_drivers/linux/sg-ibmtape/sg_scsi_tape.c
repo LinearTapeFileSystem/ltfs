@@ -141,21 +141,213 @@ static bool is_expected_error(struct sg_tape *device, uint8_t *cdb, int32_t rc )
 }
 
 /* Global functions */
+#define HOST_OK          (0x00)
+#define HOST_NO_CONNECT  (0x01)
+#define HOST_BUS_BUSY    (0x02)
+#define HOST_TIME_OUT    (0x03)
+#define HOST_BAD_TARGET  (0x04)
+#define HOST_ABORT       (0x05)
+#define HOST_PARITY      (0x06)
+#define HOST_ERROR       (0x07)
+#define HOST_RESET       (0x08)
+#define HOST_BAD_INTR    (0x09)
+#define HOST_PASSTHROUGH (0x0a)
+#define HOST_SOFT_ERROR  (0x0b)
+#define HOST_IMM_RETRY   (0x0c)
+#define HOST_REQUEUE     (0x0d)
+#define HOST_TRANS_DISR  (0x0e)
+#define HOST_TRANS_FAIL  (0x0f)
+#define HOST_TARGET_FAIL (0x10)
+#define HOST_NEXUS_FAIL  (0x11)
+
+#define DRIVER_OK        (0x00)
+#define DRIVER_BUSY      (0x01)
+#define DRIVER_SOFT      (0x02)
+#define DRIVER_MEDIA     (0x03)
+#define DRIVER_ERROR     (0x04)
+#define DRIVER_INVALID   (0x05)
+#define DRIVER_TIMEOUT   (0x06)
+#define DRIVER_HARD      (0x07)
+#define DRIVER_SENSE     (0x08)
+
+#define NO_SUGGESTION    (0x00)
+#define SUGGEST_RETRY    (0x10)
+#define SUGGEST_ABORT    (0x20)
+#define SUGGEST_REMAP    (0x30)
+#define SUGGEST_DIE      (0x40)
+#define SUGGEST_SENSE    (0x80)
+
 int sg_issue_cdb_command(struct sg_tape *device, sg_io_hdr_t *req, char **msg)
 {
 	int ret = -1;
 	uint32_t sense = 0;
+	unsigned short d_suggest = 0, d_status;
+	unsigned char masked_status = 0;
+	bool retry_count = 0;
 
 	CHECK_ARG_NULL(req, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(msg, -LTFS_NULL_ARG);
 
+start:
 	ret = ioctl(device->fd, SG_IO, req);
 	if (ret < 0) {
 		ltfsmsg(LTFS_INFO, 30200I, *req->cmdp, errno);
-		return -EDEV_INTERNAL_ERROR;
+		if (errno == ENODEV) {
+			if (msg) *msg = "No device found";
+			return -EDEV_CONNECTION_LOST;
+		} else {
+			if (msg) *msg = "ioctl error";
+			return -EDEV_INTERNAL_ERROR;
+		}
 	}
 
-	switch (req->masked_status) {
+	if (req->host_status) {
+		switch (req->host_status) {
+			case HOST_NO_CONNECT:
+				if (msg) *msg = "Couldn't connect before timeout period";
+				ret = -EDEV_CONNECTION_LOST;
+				break;
+			case HOST_BUS_BUSY:
+				if (msg) *msg = "Bus stayed busy through timeout period";
+				ret = -EDEV_DEVICE_BUSY;
+				break;
+			case HOST_TIME_OUT:
+				if (msg) *msg = "Command TIMEOUT";
+				ret = -EDEV_TIMEOUT;
+				break;
+			case HOST_BAD_TARGET:
+				if (msg) *msg = "Bad target, device not responding?";
+				ret = -EDEV_CONNECTION_LOST;
+				break;
+			case HOST_ABORT:
+				if (msg) *msg = "Abort";
+				ret = -EDEV_ABORTED_COMMAND;
+				break;
+			case HOST_PARITY:
+				if (msg) *msg = "Parity error";
+				ret = -EDEV_HOST_ERROR;
+				break;
+			case HOST_ERROR:
+				if (msg) *msg = "Internal error detected in the host adapter";
+				ret = -EDEV_HOST_ERROR;
+				break;
+			case HOST_RESET:
+				if (msg) *msg = "The SCSI bus (or this device) has been reset";
+				ret = -EDEV_CONNECTION_LOST;
+				break;
+			case HOST_BAD_INTR:
+				if (msg) *msg = "Unexpected interrupt";
+				ret = -EDEV_HOST_ERROR;
+				break;
+			case HOST_PASSTHROUGH:
+				if (msg) *msg = "Force command past mid-layer";
+				ret = -EDEV_HOST_ERROR;
+				break;
+			case HOST_SOFT_ERROR:
+				if (msg) *msg = "The low level driver wants a retry";
+				if (!retry_count) {
+					if (msg) *msg = "";
+					retry_count++;
+					goto start;
+				}
+				ret = -EDEV_HOST_ERROR;
+				break;
+			case HOST_IMM_RETRY:
+			case HOST_REQUEUE:
+				/* immediate retry without decrementing counter */
+				goto start;
+				break;
+			case HOST_TRANS_DISR:
+				if (msg) *msg = "Disrupted transport failure";
+				ret = -EDEV_CONNECTION_LOST;
+				break;
+			case HOST_TRANS_FAIL:
+				if (msg) *msg = "Transport failure";
+				ret = -EDEV_CONNECTION_LOST;
+				break;
+			case HOST_TARGET_FAIL:
+				if (msg) *msg = "Target failure";
+				ret = -EDEV_CONNECTION_LOST;
+				break;
+			case HOST_NEXUS_FAIL:
+				if (msg) *msg = "SCSI nexus failure";
+				ret = -EDEV_CONNECTION_LOST;
+				break;
+			default:
+				ltfsmsg(LTFS_INFO, 30244I, req->host_status, req->driver_status);
+				if (msg) *msg = "Unexpected host status";
+				ret = -EDEV_HOST_ERROR;
+				break;
+		}
+
+		if (ret)
+			return ret;
+	}
+
+	if (req->driver_status) {
+		d_suggest = req->driver_status & 0xF0;
+		d_status  = req->driver_status & 0x0F;
+
+		switch (d_status) {
+			case DRIVER_OK:
+				/* Do nothing */
+				break;
+			case DRIVER_BUSY:
+				if (msg) *msg = "Busy on the driver";
+				ret = -EDEV_DEVICE_BUSY;
+				break;
+			case DRIVER_TIMEOUT:
+				if (msg) *msg = "Timeout on the driver";
+				ret = -EDEV_TIMEOUT;
+				break;
+			case DRIVER_SENSE:
+				masked_status = SCSI_CHECK_CONDITION;
+				break;
+			case DRIVER_SOFT:
+			case DRIVER_MEDIA:
+			case DRIVER_ERROR:
+			case DRIVER_INVALID:
+			case DRIVER_HARD:
+			default:
+				ltfsmsg(LTFS_INFO, 30244I, req->host_status, req->driver_status);
+				if (msg) *msg = "Busy on the driver";
+				ret = -EDEV_DRIVER_ERROR;
+				break;
+		}
+
+		switch (d_suggest) {
+			case NO_SUGGESTION:
+				/* Do nothing */
+				break;
+			case SUGGEST_RETRY:
+				if (!retry_count) {
+					if (msg) *msg = "";
+					retry_count++;
+					goto start;
+				}
+				ret = -EDEV_DRIVER_ERROR;
+				break;
+			case SUGGEST_SENSE:
+				if (masked_status != SCSI_CHECK_CONDITION)
+					masked_status = SCSI_CHECK_CONDITION;
+				break;
+			case SUGGEST_ABORT:
+			case SUGGEST_REMAP:
+			case SUGGEST_DIE:
+			default:
+				if (!ret)
+					ret = -EDEV_DRIVER_ERROR;
+				break;
+		}
+
+		if (ret)
+			return ret;
+	}
+
+	if (masked_status != SCSI_CHECK_CONDITION)
+		masked_status = req->masked_status;
+
+	switch (masked_status) {
 		case SCSI_GOOD:
 			ret = DEVICE_GOOD;
 			break;
@@ -171,35 +363,17 @@ int sg_issue_cdb_command(struct sg_tape *device, sg_io_hdr_t *req, char **msg)
 		case SCSI_BUSY:
 			ltfsmsg(LTFS_DEBUG, 30202D, "busy");
 			ret = -EDEV_DEVICE_BUSY;
-			if (msg) {
-				*msg = "Drive busy";
-			}
+			if (msg) *msg = "Drive busy";
 			break;
 		case SCSI_RESERVATION_CONFLICT:
 			ltfsmsg(LTFS_DEBUG, 30202D, "reservation conflict");
 			ret = -EDEV_RESERVATION_CONFLICT;
-			if (msg) {
-				*msg = "Drive reservation conflict";
-			}
+			if (msg) *msg = "Drive reservation conflict";
 			break;
 		default:
-			ltfsmsg(LTFS_INFO, 30203I, req->masked_status, req->host_status, req->driver_status);
-			if (req->host_status) {
-				ret = -EDEV_HOST_ERROR;
-				if (msg) {
-					*msg = "CDB command returned host error";
-				}
-			} else if (req->driver_status) {
-				ret = -EDEV_DRIVER_ERROR;
-				if (msg) {
-					*msg = "CDB command returned driver error";
-				}
-			} else {
-				ret = -EDEV_TARGET_ERROR;
-				if (msg) {
-					*msg = "CDB command returned unexpected status";
-				}
-			}
+			ltfsmsg(LTFS_INFO, 30203I, req->status, req->masked_status);
+			ret = -EDEV_TARGET_ERROR;
+			if (msg) *msg = "CDB command returned unexpected status";
 			break;
 	}
 

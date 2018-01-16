@@ -402,6 +402,10 @@
 #define EDEV_BUFFER_OVERFLOW         21717  /* Detect buffer overrun */
 #define EDEV_DRIVES_MISMATCH         21718  /* Number of drives are not correct */
 #define EDEV_RESERVATION_CONFLICT    21719  /* Reservation Conflict */
+#define EDEV_CONNECTION_LOST         21720  /* Connection lost while executing a command */
+#define EDEV_NO_RESERVATION_HOLDER   21721  /* No reservation holder */
+#define EDEV_NEED_FAILOVER           21722  /* Path switch happens, need to reissue the command */
+#define EDEV_REAL_POWER_ON_RESET     21723  /* Real power on reset is detected */
 
 /* Vendor Unique codes */
 #define EDEV_UNKNOWN                 29998  /* Unknown sense code */

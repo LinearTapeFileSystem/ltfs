@@ -209,6 +209,7 @@ enum {
 #define PRO_BUF_LEN                  (0x18)
 #define PRI_BUF_HEADER               (0x08) // Header of PRI
 #define PRI_BUF_LEN                  (0xF8) // Initial buffer size (Header + 5 x full info)
+#define PRI_FULL_LEN_BASE            (24)
 
 enum pro_type {
 	PRO_TYPE_NONE          = 0x00,
@@ -248,15 +249,13 @@ int  ibm_tape_init_timeout(struct timeout_tape **table, int type);
 void ibm_tape_destroy_timeout(struct timeout_tape **table);
 int  ibm_tape_get_timeout(struct timeout_tape *table, int op_code);
 
-int ibmtape_is_mountable(const int drive_type,
+int ibm_tape_is_mountable(const int drive_type,
 						 const char *barcode,
 						 const unsigned char cart_type,
 						 const unsigned char density_code,
 						 const bool strict);
 
-int ibmtape_is_supported_tape(unsigned char type, unsigned char density, bool *is_worm);
-
-#define PRI_FULL_LEN_BASE (24)
+int ibm_tape_is_supported_tape(unsigned char type, unsigned char density, bool *is_worm);
 
 #define KEYLEN (8)
 #define KEY_PREFIX_HOST (0x10)
@@ -270,9 +269,9 @@ struct reservation_info {
 	unsigned char wwid[8];     /* WWPN */
 };
 
-int ibmtape_genkey(unsigned char *key);
-int ibmtape_parsekey(unsigned char *key, struct reservation_info *r);
-bool ibmtape_is_supported_firmware(int drive_type, const unsigned char * const revision);
+int ibm_tape_genkey(unsigned char *key);
+int ibm_tape_parsekey(unsigned char *key, struct reservation_info *r);
+bool ibm_tape_is_supported_firmware(int drive_type, const unsigned char * const revision);
 
 extern struct supported_device *ibm_supported_drives[];
 extern struct supported_device *usb_supported_drives[];

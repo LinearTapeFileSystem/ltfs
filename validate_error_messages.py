@@ -3,10 +3,10 @@
 import os
 import re
 
-re_msgid_all      = r'"(?P<id>(?P<val>[0-9]{4,5})[^0-9])"'
-re_msgid_all2     = r'"LTFS(?P<id>(?P<val>[0-9]{4,5})[^0-9])'
+re_msgid_all      = r'(?P<id>(?P<val>[I0-9][0-9]{3,4})[EWID])'
+re_msgid_all2     = r'"LTFS(?P<id>(?P<val>[0-9]{4,5})[EWID])'
 
-re_msgid_bundle   = r'(^|[^0-9])(?P<id>(?P<val>[0-9]{4,5})[^0-9]):string'
+re_msgid_bundle   = r'(^|[^0-9])(?P<id>(?P<val>[0-9]{4,5})[EWID]):string'
 
 msg_used = set()
 msg_unref = set()
@@ -18,20 +18,23 @@ def check_line(path, linenum, x):
 		m1 = m2
 	if m1:
 		mid = m1.group('id')
-		mval = int(m1.group('val'))
-		if mid[0] == '0':
-			print 'Leading zero(s) in message ID at %s:%d' % (path, linenum)
-			print line.rstrip()
+
+		if m1.group('val')[0] != 'I':
+			mval = int(m1.group('val'))
+		else:
 			return None
-		if (mval < 9000 or mval >= 40000) and (mval < 60000 or mval > 69000):
-			print 'Reserved message ID %d at %s:%d' % (mval, path, linenum)
-			print line.rstrip()
+
+		if re.search(r'/\* ltfsresult', line):
 			return None
-		if re.search(r'[^EWID]$', mid):
+		if re.search(r'[^EWID],$', mid):
 			print 'Bad output level in message ID at %s:%d' % (path, linenum)
 			print line.rstrip()
 			return None
 		if re.search(r'ltfsmsg\(', line):
+			if mid[0] == '0':
+				print 'Leading zero(s) in message ID at %s:%d' % (path, linenum)
+				print line.rstrip()
+				return None
 			if re.search(r'LTFS_ERR', line):
 				if mid[-1] != 'E':
 					print 'Output level mismatch at %s:%d' % (path, linenum)
@@ -56,7 +59,20 @@ def check_line(path, linenum, x):
 				print 'Unknown output level at %s:%d' % (path, linenum)
 				print line.rstrip()
 				return None
-		return mid
+			return mid
+		elif re.search(r'ltfsresult\(', line):
+			return mid
+		elif re.search(r'fprintf\(', line):
+			return mid
+		elif re.search(r'_slext_trace', line):
+			return mid
+		elif re.search(r'check_err\(', line):
+			return mid
+		elif re.search(r' [0-9]{4,5}[EWID],', line):
+			return mid
+		elif re.search(r'\s+[0-9]{4,5}[EWID],', line):
+			return mid
+		#return mid
 	return None
 
 # List the messages present in the source
