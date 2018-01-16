@@ -433,7 +433,7 @@ int filedebug_open(const char *name, void **handle)
 		/* Store directory base */
 		tmp = strdup(name);
 		if (!tmp) {
-			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirbase");
+			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirbase tmp");
 			free(state);
 			return -EDEV_NO_MEMORY;
 		}
@@ -616,7 +616,8 @@ int filedebug_read(void *device, char *buf, size_t count, struct tc_position *po
 
 		/*
 		 *  Dummy I/O mode
-		 *  Do not write any data on partition1 (DP)
+		 *  No actual data is written to partition1 (DP), hence we can simply
+		 *  advance the current block address.
 		 */
 
 		++state->current_position.block;
@@ -1528,7 +1529,7 @@ int filedebug_unload(void *device, struct tc_position *pos)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
 
-	/* Write EOD of DP here when dummy io mode is enebaled */
+	/* Write EOD of DP here when dummy io mode is enabled */
 	if (state->conf.dummy_io) {
 		state->current_position.partition = 1;
 		state->current_position.block = state->eod[1];
@@ -1651,7 +1652,7 @@ int filedebug_format(void *device, TC_FORMAT_TYPE format)
 	state->current_position.block = 0;
 	filedebug_erase(state, &pos, false);
 
-	/* Calculate early warning threadolds */
+	/* Calculate early warning thresholds */
 	if (state->partitions == 2) {
 		/* Assume 512KB per 1 record */
 		state->p0_warning = calc_p0_cap(state) * 2;
