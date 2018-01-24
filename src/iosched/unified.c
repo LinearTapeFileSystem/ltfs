@@ -1189,7 +1189,7 @@ void _unified_process_index_queue(struct unified_data *priv)
 				if (ret < 0) {
 					/* Index partition writer: failed to write data to the tape (%d) */
 					ltfsmsg(LTFS_WARN, 13013W, (int)ret);
-					if (IS_MEDIUM_ERROR(-ret)) {
+					if (IS_WRITE_PERM(-ret)) {
 						ret = tape_set_cart_volume_lock_status(priv->vol, VOLUME_WRITE_PERM_IP);
 					}
 					_unified_handle_write_error(ret, req, dentry_priv, priv);
@@ -2252,7 +2252,7 @@ int _unified_write_index_after_perm(int write_ret, struct unified_data *priv)
 	struct tc_position err_pos;
 	unsigned long blocksize;
 
-	if (!IS_MEDIUM_ERROR(-write_ret)) {
+	if (!IS_WRITE_PERM(-write_ret)) {
 		/* Nothing to do for non-medium error */
 		return ret;
 	}
