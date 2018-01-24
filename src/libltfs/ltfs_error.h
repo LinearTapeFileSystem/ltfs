@@ -317,7 +317,10 @@
 #define EDEV_READ_PERM               20308  /* 03/1100 Read Perm */
 #define EDEV_WRITE_PERM              20309  /* 03/0c00 Write perm */
 #define EDEV_MEDIUM_MAX              20399  /* Maximum medium error value */
+
 #define IS_MEDIUM_ERROR(e)           ((e>=EDEV_MEDIUM_MIN)&&(e<=EDEV_MEDIUM_MAX))
+#define IS_READ_PERM(e)              ((e==EDEV_RW_PERM)||(e==EDEV_READ_PERM)||(e==EDEV_MEDIUM_FORMAT_CORRUPTED))
+#define IS_WRITE_PERM(e)             ((e==EDEV_RW_PERM)||(e==EDEV_WRITE_PERM)||(e==EDEV_MEDIUM_FORMAT_CORRUPTED))
 
 /* Sense Key 4 Hardware or Firmware Error */
 #define EDEV_HARDWARE_MIN            20400  /* Minimum hardware error value */
@@ -325,6 +328,7 @@
 #define EDEV_LBP_WRITE_ERROR         20401  /* 04/1001 Logical Block Guard Check Failed */
 #define EDEV_LBP_READ_ERROR          20402  /* ------- Logical Block Protection read error */
 #define EDEV_HARDWARE_MAX            20499  /* Maximum hardware error value */
+
 #define IS_HARDWARE_ERROR(e)         ((e>=EDEV_HARDWARE_MIN)&&(e<=EDEV_HARDWARE_MAX))
 
 /* Sense Key 5 Illegal Request */
