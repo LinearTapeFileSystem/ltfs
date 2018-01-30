@@ -297,7 +297,7 @@ static int _xml_write_file(xmlTextWriterPtr writer, struct dentry *file, struct 
 		TAILQ_FOREACH(extent, &file->extentlist, list) {
 			/* Write file offset cache */
 			if (offset_c->fp && ! write_offset) {
-				fprintf(offset_c->fp, "%s,%"PRIu64"\n", file->name.name, extent->start.block);
+				fprintf(offset_c->fp, "%s,%"PRIu64",%"PRIu64"\n", file->name.name, extent->start.block, file->used_blocks);
 				write_offset = true;
 				offset_c->count++;
 			}
