@@ -35,6 +35,18 @@ These instructions will get you a copy of the project up and running on your loc
   * icu4c
   * gnu-sed
 
+## Supported Tape Drives
+
+  | Vendor | Drive Type | Minimum F/W Level |
+  |-       |-           |-                  |
+  | IBM    | LTO5       | B170              |
+  | IBM    | LTO6       | None              |
+  | IBM    | LTO7       | None              |
+  | IBM    | LTO8       | HB81              |
+  | IBM    | TS1140     | 3694              |
+  | IBM    | TS1150     | None              |
+  | IBM    | TS1155     | None              |
+
 ## Installing
 
 ### Build and install on Linux
