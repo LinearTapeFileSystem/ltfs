@@ -38,7 +38,7 @@ These instructions will get you a copy of the project up and running on your loc
 ## Supported Tape Drives
 
   | Vendor | Drive Type | Minimum F/W Level |
-  |-       |-           |-                  |
+  |:-:     |:-:         |:-:                |
   | IBM    | LTO5       | B170              |
   | IBM    | LTO6       | None              |
   | IBM    | LTO7       | None              |
