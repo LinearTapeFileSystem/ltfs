@@ -199,7 +199,7 @@ static void print_help_message(void *ops, const char * const type)
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 11316E);
 		}
-	} else if (! strcmp(type, "driver"))
+	} else if (! strcmp(type, "tape"))
 		tape_print_help_message(ops);
 	else
 		ltfsmsg(LTFS_ERR, 11317E, type);

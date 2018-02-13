@@ -58,6 +58,14 @@ extern "C" {
 #include "arch/win/win_thread.h"
 #else
 
+/*
+ * restrict is a C99 extension, and isn't necessarily supported by C++
+ * compilers.
+ */
+#ifdef __cplusplus
+#define	restrict
+#endif
+
 #include <pthread.h>
 #include <sys/time.h>
 #include <sys/syscall.h>
@@ -200,14 +208,14 @@ static inline ltfs_thread_t ltfs_thread_self(void)
 
 static inline int ltfs_thread_yield(void)
 {
-#ifdef __APPLE__
+#if defined (__APPLE__) || defined(__FreeBSD__)
 	return sched_yield();
 #else
 	return pthread_yield();
 #endif
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 extern uint32_t ltfs_get_thread_id(void);
 #else
 static inline uint32_t ltfs_get_thread_id(void)

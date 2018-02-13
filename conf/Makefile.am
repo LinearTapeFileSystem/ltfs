@@ -10,6 +10,10 @@ if PLATFORM_MAC
 PLAT_OPT += plugin tape iokit __LIBDIR__/ltfs/libtape-iokit-ibmtape.so
 endif
 
+if PLATFORM_FREEBSD
+PLAT_OPT += plugin tape camtape __LIBDIR__/ltfs/libtape-camtape-freebsd.so
+endif
+
 if ENABLE_LIN_TAPE
 PLAT_OPT += \\nplugin tape lin_tape __LIBDIR__/ltfs/libtape-lin_tape.so
 endif

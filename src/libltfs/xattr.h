@@ -58,6 +58,10 @@
 extern "C" {
 #endif
 
+#ifdef __FreeBSD__
+#include "libltfs/arch/freebsd/xattr.h"
+#endif
+
 #include "ltfs.h"
 
 #define LTFS_PRIVATE_PREFIX "ltfs."

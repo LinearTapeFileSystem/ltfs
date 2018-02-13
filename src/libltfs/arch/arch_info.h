@@ -74,6 +74,11 @@
 #define BUILD_SYS_FOR "This binary is built for Mac OS X "
 #define BUILD_SYS_GCC __VERSION__
 
+#elif defined(__FreeBSD__)
+
+#define BUILD_SYS_FOR "This binary is built for FreeBSD"
+#define BUILD_SYS_GCC __VERSION__
+
 #elif defined(mingw_PLATFORM)
 
 #define BUILD_SYS_FOR "This binary is built for Windows"
