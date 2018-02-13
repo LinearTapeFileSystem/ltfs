@@ -35,6 +35,17 @@ These instructions will get you a copy of the project up and running on your loc
   * icu4c
   * gnu-sed
 
+- FreeBSD:
+  * FreeBSD 10.2 or 11.0 or later (for sa(4) driver changes)
+  * automake
+  * autoconf
+  * libtool
+  * fusefs-libs
+  * net-snmp
+  * e2fsprogs-libuuid
+  * libxml2
+  * icu
+
 ## Supported Tape Drives
 
   | Vendor | Drive Type | Minimum F/W Level |
@@ -83,6 +94,15 @@ make install
 ```
 
 `./configure --help` shows various options for build and install.
+
+### Build and install on FreeBSD
+
+```
+./autogen.sh
+./configure
+make
+make install
+```
 
 ## Contributing
 

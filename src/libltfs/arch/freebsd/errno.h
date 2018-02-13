@@ -1,0 +1,6 @@
+#ifndef LIBLTFS_ARCH_FREEBSD_ERRNO_H
+#define LIBLTFS_ARCH_FREEBSD_ERRNO_H
+
+#define ENODATA EIO
+
+#endif

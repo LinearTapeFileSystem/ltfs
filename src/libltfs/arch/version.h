@@ -61,6 +61,8 @@
     #define PLATFORM "Mac OS X"
 #elif mingw_PLATFORM
     #define PLATFORM "Windows"
+#elif __FreeBSD__
+    #define PLATFORM "FreeBSD"
 #else
     #define PLATFORM "Linux"
 #endif /* __APPLE__ */

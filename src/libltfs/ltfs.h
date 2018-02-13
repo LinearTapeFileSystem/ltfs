@@ -89,7 +89,9 @@ extern "C" {
 #endif
 
 #ifndef mingw_PLATFORM
-#include <sys/xattr.h>
+  #ifndef __FreeBSD__
+    #include <sys/xattr.h>
+  #endif
 #endif
 
 #include "libltfs/arch/signal_internal.h"
@@ -264,8 +266,8 @@ struct dentry {
 	 * iosched_lock, contents_lock, meta_lock. If the tape device lock is needed, take it
 	 * before meta_lock. If locks are needed on a dentry's parent, take all parent locks before
 	 * any dentry locks. */
-	struct MultiReaderSingleWriter contents_lock;      /**< Lock for 'extentlist' and 'list' */
-	struct MultiReaderSingleWriter meta_lock;          /**< Lock for metadata */
+	MultiReaderSingleWriter contents_lock;      /**< Lock for 'extentlist' and 'list' */
+	MultiReaderSingleWriter meta_lock;          /**< Lock for metadata */
 	ltfs_mutex_t iosched_lock;                      /**< Lock for use by the I/O scheduler */
 
 	/* Immutable fields. No locks are needed to access these. */
@@ -368,7 +370,7 @@ enum volumelock_status {
 struct ltfs_volume {
 	/* acquire this lock for read before using the volume in any way. acquire it for write before
 	 * writing the index to tape or performing other exclusive operations. */
-	struct MultiReaderSingleWriter lock; /**< Controls access to volume metadata */
+	MultiReaderSingleWriter lock; /**< Controls access to volume metadata */
 
 	/* LTFS format data */
 	struct tc_coherency ip_coh;    /**< Index partition coherency info */
@@ -540,7 +542,7 @@ typedef enum {
 #define SYNC_DNO_SPACE       "Dcache no space"
 #define SYNC_UNMOUNT         "Unmount"
 #define SYNC_UNMOUNT_NOMEM   "Unmount - no memory"
-#define SYNC_MOVE            "Unmount - %"PRIu64
+#define SYNC_MOVE            "Unmount - %" PRIu64
 #define SYNC_CHECK           "Check"
 #define SYNC_ROLLBACK        "Rollback"
 #define SYNC_FORMAT          "Format"

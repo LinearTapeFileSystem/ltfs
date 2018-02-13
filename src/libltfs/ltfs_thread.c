@@ -61,4 +61,19 @@ uint32_t ltfs_get_thread_id(void)
 	return tid;
 }
 
+#elif defined(__FreeBSD__)
+
+#include <pthread.h>
+#include <pthread_np.h>
+
+uint32_t ltfs_get_thread_id(void)
+{
+	uint32_t tid;
+
+	tid = (uint32_t)pthread_getthreadid_np();
+
+	return tid;
+}
+
+
 #endif
