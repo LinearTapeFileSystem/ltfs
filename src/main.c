@@ -922,7 +922,7 @@ int main(int argc, char **argv)
 
 int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 {
-	int ret;
+	int ret, altret;
 	char *index_rules_utf8;
 	char fsname[strlen(priv->devname) + 16];
 	char *invalid_start;
@@ -1120,29 +1120,59 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 
 	/* mount read-only if underlying medium is write-protected */
 	ret = ltfs_get_tape_readonly(priv->data);
-	if (ret < 0 && ret != -LTFS_WRITE_PROTECT && ret != -LTFS_WRITE_ERROR && ret != -LTFS_NO_SPACE &&
-		ret != -LTFS_LESS_SPACE) { /* No other errors are expected. */
-		/* Could not get read-only status of medium */
-		ltfsmsg(LTFS_ERR, 14018E);
-		ltfs_volume_free(&priv->data);
-		return 1;
-	} else if (ret == -LTFS_WRITE_PROTECT || ret == -LTFS_WRITE_ERROR || ret == -LTFS_NO_SPACE || ret == -LTFS_LESS_SPACE || priv->rollback_gen != 0) {
-		if (ret == -LTFS_WRITE_PROTECT || ret == -LTFS_WRITE_ERROR || ret == -LTFS_NO_SPACE) {
-			ret = ltfs_get_partition_readonly(ltfs_ip_id(priv->data), priv->data);
-			if (ret == -LTFS_WRITE_PROTECT || ret == -LTFS_WRITE_ERROR) {
-				/* The tape is really write protected */
-				ltfsmsg(LTFS_INFO, 14019I);
-			} else if (ret == -LTFS_NO_SPACE) {
-				/* The index partition is in early warning zone. To be mounted read-only */
-				ltfsmsg(LTFS_INFO, 14073I);
-			} else { /* 0 or -LTFS_LESS_SPACE */
-				/* The data partition may be in early warning zone. To be mounted read-only */
-				ltfsmsg(LTFS_INFO, 14074I);
-			}
-		} else if (ret == -LTFS_LESS_SPACE)
-			ltfsmsg(LTFS_INFO, 14071I);
-		else
-			ltfsmsg(LTFS_INFO, 14072I, priv->rollback_gen);
+	switch (ret) {
+		case 0:
+		case -LTFS_WRITE_PROTECT:
+		case -LTFS_WRITE_ERROR:
+		case -LTFS_NO_SPACE:
+		case -LTFS_LESS_SPACE:
+		case -LTFS_RDONLY_CART_DRV:
+			/* Do nothing */
+			break;
+		default:
+			/* Fail immidiatly when return code is NOT success or NOT possible R/O related errors */
+			/* Could not get read-only status of medium */
+			ltfsmsg(LTFS_ERR, 14018E);
+			ltfs_volume_free(&priv->data);
+			return 1;
+			break;
+	}
+
+	if (ret < 0 || priv->rollback_gen != 0) {
+		switch (ret) {
+			case -LTFS_WRITE_PROTECT:
+			case -LTFS_WRITE_ERROR:
+			case -LTFS_NO_SPACE:
+				altret = ltfs_get_partition_readonly(ltfs_ip_id(priv->data), priv->data);
+				switch (altret) {
+					case -LTFS_WRITE_PROTECT:
+					case -LTFS_WRITE_ERROR:
+						/* The tape is really write protected */
+						ltfsmsg(LTFS_INFO, 14019I);
+						break;
+					case -LTFS_NO_SPACE:
+						/* The index partition is in early warning zone. To be mounted read-only */
+						ltfsmsg(LTFS_INFO, 14073I);
+						break;
+					default:  /* 0 or -LTFS_LESS_SPACE */
+						/* The data partition may be in early warning zone. To be mounted read-only */
+						ltfsmsg(LTFS_INFO, 14074I);
+						break;
+				}
+				break;
+			case -LTFS_LESS_SPACE:
+				/* Medium has no space to write data. Mounting as read-only */
+				ltfsmsg(LTFS_INFO, 14071I);
+				break;
+			case -LTFS_RDONLY_CART_DRV:
+				/* Medium is Read-Only in this device */
+				ltfsmsg(LTFS_INFO, 14078I);
+				break;
+			default:
+				/* Rollback mount is specified */
+				ltfsmsg(LTFS_INFO, 14072I, priv->rollback_gen);
+				break;
+		}
 
 		ret = fuse_opt_add_arg(args, "-oro");
 		if (ret < 0) {
