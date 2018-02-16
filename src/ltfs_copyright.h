@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2017 IBM Corp.
+**  Copyright 2010, 2018 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -56,7 +56,7 @@ extern "C" {
 
 #define LTFS_COPYRIGHT_0              "Licensed Materials - Property of IBM"
 #define LTFS_COPYRIGHT_1              "IBM Spectrum Archive Single Drive Edition"
-#define LTFS_COPYRIGHT_2              "(C) Copyright IBM Corp. 2011, 2017 All Rights Reserved"
+#define LTFS_COPYRIGHT_2              "(C) Copyright IBM Corp. 2011, 2018 All Rights Reserved"
 #define LTFS_COPYRIGHT_3              "US Government Users Restricted Rights - Use, duplication or "
 #define LTFS_COPYRIGHT_4              "disclosure restricted by GSA ADP Schedule Contract with"
 #define LTFS_COPYRIGHT_5              "IBM Corp."
