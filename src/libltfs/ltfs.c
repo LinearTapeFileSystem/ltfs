@@ -200,11 +200,7 @@ int ltfs_set_signal_handlers(void)
 }
 #else
 {
-#ifdef __FreeBSD__
-	sig_t ret;
-#else
-	sighandler_t ret;
-#endif
+	ltfs_sighandler_t ret;
 
 	interrupted = false;
 
@@ -252,11 +248,7 @@ int ltfs_unset_signal_handlers(void)
 }
 #else
 {
-#ifdef __FreeBSD__
-	sig_t rc;
-#else
-	sighandler_t rc;
-#endif
+	ltfs_sighandler_t rc;
 	int ret = 0;
 
 	rc = signal(SIGINT, SIG_DFL);

@@ -233,7 +233,7 @@ int _camtape_inquiry_page(void *device, unsigned char page, struct tc_inq_page *
 	char *msg = NULL;
 	int rc = DEVICE_GOOD;
 	union ccb *ccb = NULL;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	uint8_t *data_ptr = NULL;
 	int timeout;
 
@@ -246,7 +246,7 @@ int _camtape_inquiry_page(void *device, unsigned char page, struct tc_inq_page *
 		goto bailout;
 	}
 
-	bzero(&(&ccb->ccb_h)[1],
+	memset(&(&ccb->ccb_h)[1], 0,
 		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	data_ptr = malloc(sizeof(*inq));
@@ -254,7 +254,7 @@ int _camtape_inquiry_page(void *device, unsigned char page, struct tc_inq_page *
 		rc = -EDEV_NO_MEMORY;
 		goto bailout;
 	}
-	bzero(data_ptr, sizeof(*inq));
+	memset(data_ptr, 0, sizeof(*inq));
 
 	timeout = camtape_get_timeout(softc->timeouts, INQUIRY);
 	if (timeout < 0) {
@@ -262,7 +262,7 @@ int _camtape_inquiry_page(void *device, unsigned char page, struct tc_inq_page *
 		goto bailout;
 	}
 
-	ltfsmsg(LTFS_DEBUG, 30593D, "inquiry", page, ((struct camtape_data *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30593D, "inquiry", page, softc->drive_serial);
 
 	scsi_inquiry(&ccb->csio,
 				 /*retries*/ 1,
@@ -298,7 +298,7 @@ bailout:
 
 int camtape_inquiry_page(void *device, unsigned char page, struct tc_inq_page *inq)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	int ret = 0;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_INQUIRYPAGE));
@@ -316,16 +316,16 @@ int camtape_inquiry(void *device, struct tc_inq *inq)
 {
 	int rc = DEVICE_GOOD;
 	struct scsi_inquiry_data *inq_data;
-	struct camtape_data *td = (struct camtape_data *)device;
+	struct camtape_data *softc= (struct camtape_data *)device;
 	int vendor_length;
 
-	ltfs_profiler_add_entry(td->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_INQUIRY));
-	if (td->cd == NULL) {
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_INQUIRY));
+	if (softc->cd == NULL) {
 		rc = -EDEV_INVALID_ARG;
 		goto bailout;
 	}
 
-	inq_data = &td->cd->inq_data;
+	inq_data = &softc->cd->inq_data;
 	inq->devicetype = SID_TYPE(inq_data);
 	inq->cmdque = (inq_data->flags & SID_CmdQue) ? 1 : 0;
 	strncpy((char *)inq->vid, (char *)inq_data->vendor, 8);
@@ -336,7 +336,7 @@ int camtape_inquiry(void *device, struct tc_inq *inq)
 	inq->revision[4] = '\0';
 
 	vendor_length = 20;
-	if (IS_ENTERPRISE(td->drive_type))
+	if (IS_ENTERPRISE(softc->drive_type))
 		vendor_length = 18;
 
 	strncpy((char *)inq->vendor, (char *)inq_data->vendor_specific0,
@@ -344,7 +344,7 @@ int camtape_inquiry(void *device, struct tc_inq *inq)
 	inq->vendor[vendor_length] = '\0';
 
 bailout:
-	ltfs_profiler_add_entry(td->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_INQUIRY));
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_INQUIRY));
 	return rc;
 }
 
@@ -361,7 +361,7 @@ int camtape_request_sense(void *device, struct scsi_sense_data *sense, int alloc
 {
 	int rc = DEVICE_GOOD;
 	char *msg;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	struct scsi_sense_data sense_data;
 	union ccb *ccb = NULL;
 
@@ -371,7 +371,7 @@ int camtape_request_sense(void *device, struct scsi_sense_data *sense, int alloc
 		goto bailout;
 	}
 
-	bzero(&sense_data, sizeof(sense_data));
+	memset(&sense_data, 0, sizeof(sense_data));
 
 	scsi_request_sense(&ccb->csio,
 					   /*retries*/ 0,
@@ -388,7 +388,7 @@ int camtape_request_sense(void *device, struct scsi_sense_data *sense, int alloc
 
 	if (rc == DEVICE_GOOD) {
 		*valid_sense_len = ccb->csio.dxfer_len - ccb->csio.resid;
-		bcopy(&sense_data, sense, MIN(alloc_sense_len, *valid_sense_len));
+		memcpy(sense, &sense_data, MIN(alloc_sense_len, *valid_sense_len));
 	}
 bailout:
 	if (ccb != NULL)
@@ -409,7 +409,7 @@ int camtape_test_unit_ready(void *device)
 	char *msg;
 	int rc = DEVICE_GOOD;
 	bool take_dump = true, print_message = true;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	int timeout;
 	union ccb *ccb = NULL;
 
@@ -429,7 +429,7 @@ int camtape_test_unit_ready(void *device)
 		goto bailout;
 	}
 
-	bzero(&(&ccb->ccb_h)[1],
+	memset(&(&ccb->ccb_h)[1], 0,
 		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	scsi_test_unit_ready(&ccb->csio,
@@ -487,7 +487,7 @@ bailout:
  */
 int camtape_reserve_unit(void *device)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RESERVEUNIT));
 	ltfsmsg(LTFS_DEBUG, 30592D, "reserve unit (6)", softc->drive_serial);
@@ -507,7 +507,7 @@ int camtape_reserve_unit(void *device)
  */
 int camtape_release_unit(void *device)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RELEASEUNIT));
 	ltfsmsg(LTFS_DEBUG, 30592D, "release unit (6)", softc->drive_serial);
@@ -546,7 +546,7 @@ int camtape_readbuffer(struct camtape_data *softc, int id, unsigned char *buf, s
 	}
 
 	/* cam_getccb cleans up the header, caller has to zero the payload */
-	bzero(&(&ccb->ccb_h)[1],
+	memset(&(&ccb->ccb_h)[1], 0,
 		  sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, READ_BUFFER);
@@ -592,7 +592,7 @@ bailout:
 
 int camtape_getdump_drive(void *device, const char *fname)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	long long data_length, buf_offset;
 	int dumpfd = -1;
 	int transfer_size, num_transfers, excess_transfer;
@@ -770,7 +770,7 @@ int camtape_takedump_drive(void *device, bool nonforced_dump)
 	char fname[1024];
 	time_t now;
 	struct tm *tm_now;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	unsigned char *serial = softc->drive_serial;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_TAKEDUMPDRV));
@@ -838,7 +838,7 @@ int camtape_set_profiler(void *device, char *work_dir, bool enable)
 	char *path;
 	FILE *p;
 	struct timer_info timerinfo;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	if (enable) {
 		if (softc->profiler)

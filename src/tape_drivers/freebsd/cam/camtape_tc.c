@@ -88,12 +88,12 @@
  * Prototypes for opening the SA (Sequential Access) and pass (Pass Through) 
  * device drivers on FreeBSD
 */
-int open_sa_pass(struct camtape_data *priv, const char *saDeviceName);
+int open_sa_pass(struct camtape_data *softc, const char *saDeviceName);
 
-int open_sa_device(struct camtape_data *priv, const char* saDeviceName);
-void close_sa_device(struct camtape_data *priv);
+int open_sa_device(struct camtape_data *softc, const char* saDeviceName);
+void close_sa_device(struct camtape_data *softc);
 
-void close_cd_pass_device(struct camtape_data *priv);
+void close_cd_pass_device(struct camtape_data *softc);
 
 /*
  * Default tape device
@@ -187,22 +187,22 @@ int parse_logPage(const unsigned char *logdata, const uint16_t param, int *param
 }
 
 /**
- * Parse option for IBM tape driver
+ * Parse option for CAM tape driver
  * @param devname device name of the LTO tape driver
  * @return a pointer to the camtape backend on success or NULL on error
  */
-#define IBMTAPE_OPT(templ,offset,value) { templ, offsetof(struct camtape_global_data, offset), value }
+#define CAMTAPE_OPT(templ,offset,value) { templ, offsetof(struct camtape_global_data, offset), value }
 
 static struct fuse_opt camtape_global_opts[] = {
-	IBMTAPE_OPT("autodump",          disable_auto_dump, 0),
-	IBMTAPE_OPT("noautodump",        disable_auto_dump, 1),
-	IBMTAPE_OPT("scsi_lbprotect=%s", str_crc_checking, 0),
-	IBMTAPE_OPT("strict_drive",   strict_drive, 1),
-	IBMTAPE_OPT("nostrict_drive", strict_drive, 0),
+	CAMTAPE_OPT("autodump",          disable_auto_dump, 0),
+	CAMTAPE_OPT("noautodump",        disable_auto_dump, 1),
+	CAMTAPE_OPT("scsi_lbprotect=%s", str_crc_checking, 0),
+	CAMTAPE_OPT("strict_drive",   strict_drive, 1),
+	CAMTAPE_OPT("nostrict_drive", strict_drive, 0),
 	FUSE_OPT_END
 };
 
-int null_parser(void *priv, const char *arg, int key, struct fuse_args *outargs)
+int null_parser(void *device, const char *arg, int key, struct fuse_args *outargs)
 {
 	return 1;
 }
@@ -210,7 +210,7 @@ int null_parser(void *priv, const char *arg, int key, struct fuse_args *outargs)
 int camtape_parse_opts(void *device, void *opt_args)
 {
 	struct fuse_args *args = (struct fuse_args *) opt_args;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	int ret;
 
 	/* fuse_opt_parse can handle a NULL device parameter just fine */
@@ -239,14 +239,14 @@ int camtape_parse_opts(void *device, void *opt_args)
 }
 
 /**
- * Open IBM tape backend.
+ * Open CAM tape backend.
  * @param devname device name of the LTO tape driver
- * @param[out] handle contains the handle to the IBM tape backend on success
+ * @param[out] handle contains the handle to the CAM tape backend on success
  * @return 0 on success or a negative value on error
  */
 int camtape_open(const char *devname, void **handle)
 {
-	struct camtape_data *priv;
+	struct camtape_data *softc = NULL;
 	int drive_type = DRIVE_UNSUPPORTED;
 	char vendor[10];
 	char product[20];
@@ -265,22 +265,22 @@ int camtape_open(const char *devname, void **handle)
 
 	ltfsmsg(LTFS_INFO, 30423I, devname);
 
-	priv = calloc(1, sizeof(struct camtape_data));
-	if (! priv) {
+	softc = calloc(1, sizeof(struct camtape_data));
+	if (! softc) {
 		ltfsmsg(LTFS_ERR, 10001E, "camtape_open: device private data");
 		return -EDEV_NO_MEMORY;
 	}
 
-	ret = open_sa_pass(priv, devname);
+	ret = open_sa_pass(softc, devname);
 	if (ret) {
-		free(priv);
+		free(softc);
 		return ret;
 	}
 
-	cam_strvis((uint8_t *)product, (uint8_t *)priv->cd->inq_data.product,
-	    sizeof(priv->cd->inq_data.product), sizeof(product));
-	cam_strvis((uint8_t *)vendor, (uint8_t *)priv->cd->inq_data.vendor,
-	    sizeof(priv->cd->inq_data.vendor), sizeof(vendor));
+	cam_strvis((uint8_t *)product, (uint8_t *)softc->cd->inq_data.product,
+	    sizeof(softc->cd->inq_data.product), sizeof(product));
+	cam_strvis((uint8_t *)vendor, (uint8_t *)softc->cd->inq_data.vendor,
+	    sizeof(softc->cd->inq_data.vendor), sizeof(vendor));
 	ltfsmsg(LTFS_INFO, 30428I, product);
 	ltfsmsg(LTFS_INFO, 30429I, vendor);
 
@@ -288,9 +288,9 @@ int camtape_open(const char *devname, void **handle)
 	/* Check the drive is supportable */
 	struct supported_device **cur = ibm_supported_drives;
 	while(*cur) {
-		if ((! strncmp((char*)priv->cd->inq_data.vendor, (*cur)->vendor_id,
+		if ((! strncmp((char*)softc->cd->inq_data.vendor, (*cur)->vendor_id,
 					   strlen((*cur)->vendor_id)) ) &&
-		   (! strncmp((char*)priv->cd->inq_data.product, (*cur)->product_id,
+		   (! strncmp((char*)softc->cd->inq_data.product, (*cur)->product_id,
 					  strlen((*cur)->product_id)) ) ) {
 			drive_type = (*cur)->drive_type;
 			break;
@@ -300,50 +300,50 @@ int camtape_open(const char *devname, void **handle)
 
 
 	if (drive_type != DRIVE_UNSUPPORTED) {
-		priv->drive_type = drive_type;
+		softc->drive_type = drive_type;
 
 		/* Setup IBM tape specific parameters */
 		standard_table = standard_tape_errors;
 		vendor_table   = ibm_tape_errors;
 
 		/* Set specific timeout value based on drive type */
-		ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
+		ibm_tape_init_timeout(&softc->timeouts, softc->drive_type);
 	} else {
-		ltfsmsg(LTFS_INFO, 30430I, priv->cd->inq_data.product);
-		close(priv->fd_sa);
-		close_cd_pass_device(priv);
-		free(priv);
+		ltfsmsg(LTFS_INFO, 30430I, softc->cd->inq_data.product);
+		close(softc->fd_sa);
+		close_cd_pass_device(softc);
+		free(softc);
 		return -EDEV_DEVICE_UNSUPPORTABLE;
 	}
 
 	/* Set drive serial number to private data to put it to the dump file name */
-	memset(priv->drive_serial, 0, sizeof(priv->drive_serial));
-	memcpy(priv->drive_serial, priv->cd->serial_num, priv->cd->serial_num_len);
+	memset(softc->drive_serial, 0, sizeof(softc->drive_serial));
+	memcpy(softc->drive_serial, softc->cd->serial_num, softc->cd->serial_num_len);
 
-	ltfsmsg(LTFS_INFO, 30432I, priv->cd->inq_data.revision);
-	if (! ibm_tape_is_supported_firmware(priv->drive_type, (uint8_t *)priv->cd->inq_data.revision)) {
-		ltfsmsg(LTFS_INFO, 30430I, "firmware", priv->cd->inq_data.revision);
-		close(priv->fd_sa);
-		close_cd_pass_device(priv);
+	ltfsmsg(LTFS_INFO, 30432I, softc->cd->inq_data.revision);
+	if (! ibm_tape_is_supported_firmware(softc->drive_type, (uint8_t *)softc->cd->inq_data.revision)) {
+		ltfsmsg(LTFS_INFO, 30430I, "firmware", softc->cd->inq_data.revision);
+		close(softc->fd_sa);
+		close_cd_pass_device(softc);
 
-		free(priv);
+		free(softc);
 		return -EDEV_UNSUPPORTED_FIRMWARE;
 	}
 
-	ltfsmsg(LTFS_INFO, 30433I, priv->drive_serial);
+	ltfsmsg(LTFS_INFO, 30433I, softc->drive_serial);
 
-	priv->loaded = false; /* Assume tape is not loaded until a successful load call. */
+	softc->loaded = false; /* Assume tape is not loaded until a successful load call. */
 
-	priv->force_writeperm = DEFAULT_WRITEPERM;
-	priv->force_readperm  = DEFAULT_READPERM;
-	priv->force_errortype = DEFAULT_ERRORTYPE;
+	softc->force_writeperm = DEFAULT_WRITEPERM;
+	softc->force_readperm  = DEFAULT_READPERM;
+	softc->force_errortype = DEFAULT_ERRORTYPE;
 
-	*handle = (void *) priv;
+	*handle = (void *) softc;
 	return DEVICE_GOOD;
 }
 
 /**
- * Reopen IBM tape backend
+ * Reopen CAM tape backend
  * @param devname device name of the LTO tape driver
  * @param device a pointer to the camtape backend
  * @return 0 on success or a negative value on error
@@ -355,35 +355,35 @@ int camtape_reopen(const char *name, void *vstate)
 }
 
 /**
- * Close IBM tape backend
+ * Close CAM tape backend
  * @param device a pointer to the camtape backend
  * @return 0 on success or a negative value on error
  */
 int camtape_close(void *device)
 {
-	struct camtape_data *priv = (struct camtape_data *) device;
+	struct camtape_data *softc = (struct camtape_data *) device;
 	struct tc_position pos;
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_CLOSE));
-	if (priv->loaded)
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_CLOSE));
+	if (softc->loaded)
 		camtape_rewind(device, &pos);
 
 	camtape_set_lbp(device, false);
 
-	close(priv->fd_sa);
+	close(softc->fd_sa);
 
-	close_cd_pass_device(priv);
+	close_cd_pass_device(softc);
 
-	ibm_tape_destroy_timeout(&priv->timeouts);
+	ibm_tape_destroy_timeout(&softc->timeouts);
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_CLOSE));
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_CLOSE));
 
-	if (priv->profiler) {
-		fclose(priv->profiler);
-		priv->profiler = NULL;
+	if (softc->profiler) {
+		fclose(softc->profiler);
+		softc->profiler = NULL;
 	}
 
-	free(priv);
+	free(softc);
 	return 0;
 }
 
@@ -394,15 +394,15 @@ int camtape_close(void *device)
  */
 int camtape_close_raw(void *device)
 {
-	struct camtape_data *priv = (struct camtape_data *) device;
+	struct camtape_data *softc = (struct camtape_data *) device;
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_CLOSERAW));
-	close(priv->fd_sa);
-	priv->fd_sa = -1;
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_CLOSERAW));
+	close(softc->fd_sa);
+	softc->fd_sa = -1;
 
-	close_cd_pass_device(priv);
+	close_cd_pass_device(softc);
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_CLOSERAW));
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_CLOSERAW));
 	return 0;
 }
 
@@ -468,8 +468,8 @@ int camtape_read(void *device, char *buf, size_t count, struct tc_position *pos,
 	int rc;
 	bool silion = unusual_size;
 	char *msg = NULL;
-	struct camtape_data *priv = (struct camtape_data *) device;
-	int    fd = priv->fd_sa;
+	struct camtape_data *softc = (struct camtape_data *) device;
+	int    fd = softc->fd_sa;
 	size_t datacount = count;
 
 	/*
@@ -478,15 +478,15 @@ int camtape_read(void *device, char *buf, size_t count, struct tc_position *pos,
 	 *       ssize_t read(int fd, void *buf, size_t count);
 	 */
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READ));
-	ltfsmsg(LTFS_DEBUG3, 30595D, "read", count, priv->drive_serial);
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READ));
+	ltfsmsg(LTFS_DEBUG3, 30595D, "read", count, softc->drive_serial);
 
-	if (priv->force_readperm) {
-		priv->read_counter++;
-		if (priv->read_counter > priv->force_readperm) {
+	if (softc->force_readperm) {
+		softc->read_counter++;
+		if (softc->read_counter > softc->force_readperm) {
 			ltfsmsg(LTFS_INFO, 30434I, "read");
-			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READ));
-			if (priv->force_errortype)
+			ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READ));
+			if (softc->force_errortype)
 				return -EDEV_NO_SENSE;
 			else
 				return -EDEV_READ_PERM;
@@ -500,9 +500,9 @@ int camtape_read(void *device, char *buf, size_t count, struct tc_position *pos,
 		uint8_t stream_bits;
 
 		/* XXX KDM need to pass back valid length of sense data */
-		rc = camtape_ioctlrc2err(priv, fd , &sense_data, /*control_cmd*/ 0, &msg);
+		rc = camtape_ioctlrc2err(softc, fd , &sense_data, /*control_cmd*/ 0, &msg);
 
-		if (scsi_get_stream_info(&sense_data, sizeof(sense_data), &priv->cd->inq_data,
+		if (scsi_get_stream_info(&sense_data, sizeof(sense_data), &softc->cd->inq_data,
 								 &stream_bits) != 0) {
 			stream_bits = 0;
 		}
@@ -575,15 +575,15 @@ int camtape_read(void *device, char *buf, size_t count, struct tc_position *pos,
 	}
 
 	if(global_data.crc_checking && len > 4) {
-		if (priv->f_crc_check)
-			len = priv->f_crc_check(buf, len - 4);
+		if (softc->f_crc_check)
+			len = softc->f_crc_check(buf, len - 4);
 		if (len < 0) {
 			ltfsmsg(LTFS_ERR, 30439E);
 			len = -EDEV_LBP_READ_ERROR;
 		}
 	}
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READ));
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READ));
 	return len;
 }
 
@@ -606,8 +606,8 @@ int camtape_write(void *device, const char *buf, size_t count, struct tc_positio
 	struct scsi_sense_data sense_data;
 	int write_retry_done = 0;
 
-	struct camtape_data *priv = (struct camtape_data *) device;
-	int    fd = priv->fd_sa;
+	struct camtape_data *softc = (struct camtape_data *) device;
+	int    fd = softc->fd_sa;
 	size_t     datacount = count;
 
 	/*
@@ -616,22 +616,22 @@ int camtape_write(void *device, const char *buf, size_t count, struct tc_positio
 	 *       ssize_t write(int fd, const void *buf, size_t count);
 	 */
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITE));
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITE));
 	ltfsmsg(LTFS_DEBUG, 30595D, "write", count, ((struct camtape_data *) device)->drive_serial);
 
-	if ( priv->force_writeperm ) {
-		priv->write_counter++;
-		if ( priv->write_counter > priv->force_writeperm ) {
+	if ( softc->force_writeperm ) {
+		softc->write_counter++;
+		if ( softc->write_counter > softc->force_writeperm ) {
 			ltfsmsg(LTFS_INFO, 30434I, "write");
-			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
-			if (priv->force_errortype)
+			ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
+			if (softc->force_errortype)
 				return -EDEV_NO_SENSE;
 			else
 				return -EDEV_WRITE_PERM;
-		} else if ( priv->write_counter > (priv->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE)) {
+		} else if ( softc->write_counter > (softc->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE)) {
 			ltfsmsg(LTFS_INFO, 30435I);
 			pos->block++;
-			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
+			ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
 			return DEVICE_GOOD;
 		}
 	}
@@ -639,8 +639,8 @@ int camtape_write(void *device, const char *buf, size_t count, struct tc_positio
 
 	/* Invoke _ioctl to Write */
 	if(global_data.crc_checking) {
-		if (priv->f_crc_enc)
-			priv->f_crc_enc((void *)buf, count);
+		if (softc->f_crc_enc)
+			softc->f_crc_enc((void *)buf, count);
 		datacount = count + 4;
 	}
 
@@ -655,7 +655,7 @@ retry_write:
 	 */
 	written = write(fd, buf, datacount);
 	if ((size_t)written != datacount) {
-		ltfsmsg(LTFS_INFO, 30408I, "WRITE", count, written, errno, priv->drive_serial);
+		ltfsmsg(LTFS_INFO, 30408I, "WRITE", count, written, errno, softc->drive_serial);
 
 		if (written == -1) {
 			/*
@@ -666,7 +666,7 @@ retry_write:
 			 * the write path, we do a blocking allocation that will sleep until it has memory.
 			 * So, the only failures we'll see here are failures that come from the tape drive.
 			 */
-			rc = camtape_ioctlrc2err(priv, fd , &sense_data, /*control_cmd*/ 0, &msg);
+			rc = camtape_ioctlrc2err(softc, fd , &sense_data, /*control_cmd*/ 0, &msg);
 		} else {
 			/*
 			 * Short write.  This means that we hit early warning.  Grab the position to see
@@ -678,7 +678,7 @@ retry_write:
 				write_retry_done = 1;
 				goto retry_write;
 			} else
-				rc = camtape_ioctlrc2err(priv, fd , &sense_data, /*control_cmd*/ 0, &msg);
+				rc = camtape_ioctlrc2err(softc, fd , &sense_data, /*control_cmd*/ 0, &msg);
 		}
 
 		if (rc != DEVICE_GOOD)
@@ -691,9 +691,9 @@ retry_write:
 		pos->block++;
 	}
 
-	((struct camtape_data *) device)->dirty_acq_loss_w = true;
+	softc->dirty_acq_loss_w = true;
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
 	return rc;
 }
 
@@ -710,10 +710,10 @@ int camtape_writefm(void *device, size_t count, struct tc_position *pos, bool im
 	char *msg = NULL;
 	size_t written_count;
 	tape_filemarks_t cur_fm = pos->filemarks;
-	struct camtape_data *priv = (struct camtape_data *) device;
+	struct camtape_data *softc = (struct camtape_data *) device;
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITEFM));
-	ltfsmsg(LTFS_DEBUG, 30596D, "writefm", count, priv->drive_serial);
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITEFM));
+	ltfsmsg(LTFS_DEBUG, 30596D, "writefm", count, softc->drive_serial);
 
 start_wfm:
 	errno = 0;
@@ -767,7 +767,7 @@ start_wfm:
 		}
 	}
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITEFM));
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITEFM));
 	return rc;
 }
 
@@ -784,7 +784,7 @@ int camtape_rewind(void *device, struct tc_position *pos)
 	struct camtape_data *softc = device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REWIND));
-	ltfsmsg(LTFS_DEBUG, 30592D, "rewind", ((struct camtape_data *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30592D, "rewind", softc->drive_serial);
 
 	rc = _mt_command(device, MTREW, "REWIND", 0, &msg);
 	camtape_readpos(device, pos);
@@ -821,7 +821,7 @@ int camtape_locate(void *device, struct tc_position dest, struct tc_position *po
 	ltfsmsg(LTFS_DEBUG, 30597D, "locate", (unsigned long long)dest.partition,
 		(unsigned long long)dest.block, softc->drive_serial);
 
-	bzero(&mtl, sizeof(mtl));
+	memset(&mtl, 0, sizeof(mtl));
 
 	mtl.dest_type = MT_LOCATE_DEST_OBJECT;
 	mtl.block_address_mode = MT_LOCATE_BAM_IMPLICIT;
@@ -872,33 +872,33 @@ int camtape_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_posi
 	int cmd;
 	int rc;
 	char *msg = NULL;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SPACE));
 	switch (type) {
 		case TC_SPACE_EOD:
-			ltfsmsg(LTFS_DEBUG, 30592D, "space to EOD", ((struct camtape_data *) device)->drive_serial);
+			ltfsmsg(LTFS_DEBUG, 30592D, "space to EOD", softc->drive_serial);
 			cmd = MTEOD;
 			count = 0;
 			break;
 		case TC_SPACE_FM_F:
 			ltfsmsg(LTFS_DEBUG, 30594D, "space forward file marks", (unsigned long long)count,
-					((struct camtape_data *) device)->drive_serial);
+					softc->drive_serial);
 			cmd = MTFSF;
 			break;
 		case TC_SPACE_FM_B:
 			ltfsmsg(LTFS_DEBUG, 30594D, "space back file marks", (unsigned long long)count,
-					((struct camtape_data *) device)->drive_serial);
+					softc->drive_serial);
 			cmd = MTBSF;
 			break;
 		case TC_SPACE_F:
 			ltfsmsg(LTFS_DEBUG, 30594D, "space forward records", (unsigned long long)count,
-					((struct camtape_data *) device)->drive_serial);
+					softc->drive_serial);
 			cmd = MTFSR;
 			break;
 		case TC_SPACE_B:
 			ltfsmsg(LTFS_DEBUG, 30594D, "space back records", (unsigned long long)count,
-					((struct camtape_data *) device)->drive_serial);
+					softc->drive_serial);
 			cmd = MTBSR;
 			break;
 		default:
@@ -930,7 +930,7 @@ int camtape_long_erase(void *device)
 {
 	int rc;
 	union ccb *ccb = NULL;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	char *msg;
 	int timeout;
 
@@ -940,7 +940,7 @@ int camtape_long_erase(void *device)
 		goto bailout;
 	}
 
-	bzero(&(&ccb->ccb_h)[1],
+	memset(&(&ccb->ccb_h)[1], 0,
 		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, ERASE);
@@ -984,7 +984,7 @@ int camtape_erase(void *device, struct tc_position *pos, bool long_erase)
 	int rc;
 	char *msg = NULL;
 	struct ltfs_timespec ts_start, ts_now;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ERASE));
 
@@ -1006,7 +1006,7 @@ int camtape_erase(void *device, struct tc_position *pos, bool long_erase)
 			struct scsi_sense_data sense_data;
 			int fill_len = 0;
 
-			bzero(&sense_data, sizeof(sense_data));
+			memset(&sense_data, 0, sizeof(sense_data));
 			rc = camtape_request_sense(device, &sense_data, sizeof(sense_data), &fill_len);
 			if (rc != -EDEV_OPERATION_IN_PROGRESS)
 				goto bailout;
@@ -1017,7 +1017,7 @@ int camtape_erase(void *device, struct tc_position *pos, bool long_erase)
 			} else {
 				struct scsi_sense_sks_progress prog;
 
-				bzero(&prog, sizeof(prog));
+				memset(&prog, 0, sizeof(prog));
 				rc = scsi_get_sks(&sense_data, fill_len, (uint8_t *)&prog);
 				if (rc == 0) {
 					int progress;
@@ -1061,7 +1061,7 @@ int _camtape_load_unload(void *device, bool load, struct tc_position *pos)
 	int rc;
 	char *msg = NULL;
 	bool take_dump = true;
-	struct camtape_data *priv = ((struct camtape_data *) device);
+	struct camtape_data *softc = ((struct camtape_data *) device);
 
 	if (load) {
 		rc = _mt_command(device, MTLOAD, "LOAD", 0, &msg);
@@ -1073,11 +1073,11 @@ int _camtape_load_unload(void *device, bool load, struct tc_position *pos)
 	if (rc != DEVICE_GOOD) {
 		switch (rc) {
 		case -EDEV_LOAD_UNLOAD_ERROR:
-			if (priv->loadfailed) {
+			if (softc->loadfailed) {
 				take_dump = false;
 			}
 			else {
-				priv->loadfailed = true;
+				softc->loadfailed = true;
 			}
 			break;
 		case -EDEV_NO_MEDIUM:
@@ -1094,14 +1094,14 @@ int _camtape_load_unload(void *device, bool load, struct tc_position *pos)
 	else {
 		if (load) {
 			camtape_readpos(device, pos);
-			priv->tape_alert = 0;
+			softc->tape_alert = 0;
 		}
 		else {
 			pos->partition = 0;
 			pos->block = 0;
-			priv->tape_alert = 0;
+			softc->tape_alert = 0;
 		}
-		priv->loadfailed = false;
+		softc->loadfailed = false;
 	}
 
 	return rc;
@@ -1111,7 +1111,7 @@ int camtape_load(void *device, struct tc_position *pos)
 {
 	int rc;
 	unsigned char buf[TC_MP_SUPPORTEDPAGE_SIZE];
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOAD));
 	ltfsmsg(LTFS_DEBUG, 30592D, "load", softc->drive_serial);
@@ -1163,7 +1163,7 @@ int camtape_load(void *device, struct tc_position *pos)
 int camtape_unload(void *device, struct tc_position *pos)
 {
 	int rc;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_UNLOAD));
 	ltfsmsg(LTFS_DEBUG, 30592D, "unload", softc->drive_serial);
@@ -1179,8 +1179,8 @@ int camtape_unload(void *device, struct tc_position *pos)
 		ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_UNLOAD));
 		return rc;
 	} else {
-		((struct camtape_data *)device)->loaded = false;
-		((struct camtape_data *)device)->is_worm = false;
+		softc->loaded = false;
+		softc->is_worm = false;
 		ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_UNLOAD));
 		return rc;
 	}
@@ -1194,7 +1194,7 @@ static int camtape_get_block_in_buffer(void *device, uint32_t *block)
 {
 	int rc;
 	union ccb *ccb = NULL;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	struct scsi_tape_position_ext_data ext_data;
 	int timeout;
 	char *msg;
@@ -1207,7 +1207,7 @@ static int camtape_get_block_in_buffer(void *device, uint32_t *block)
 		goto bailout;
 	}
 	CCB_CLEAR_ALL_EXCEPT_HDR(ccb);
-	bzero(&ext_data, sizeof(ext_data));
+	memset(&ext_data, 0, sizeof(ext_data));
 
 	timeout = camtape_get_timeout(softc->timeouts, READ_POSITION);
 	if (timeout < 0) {
@@ -1296,7 +1296,7 @@ static int camtape_load_attr(struct mt_status_data *mtinfo, xmlDocPtr doc, xmlAt
 					retval = -EDEV_NO_MEMORY;
 					goto bailout;
 				}
-				bzero(nv, sizeof(*nv));
+				memset(nv, 0, sizeof(*nv));
 				nv->name = strdup((char *)xattr->name);
 				nv->value = str;
 				STAILQ_INSERT_TAIL(&entry->nv_list, nv, links);
@@ -1336,7 +1336,7 @@ static int camtape_load_elements(struct mt_status_data *mtinfo, xmlDocPtr doc, x
 				retval = -EDEV_NO_MEMORY;
 				goto bailout;
 			}
-			bzero(entry, sizeof(*entry)); 
+			memset(entry, 0, sizeof(*entry)); 
 			STAILQ_INIT(&entry->nv_list);
 			STAILQ_INIT(&entry->child_entries);
 			entry->entry_name = strdup((char *)xnode->name);
@@ -1404,7 +1404,7 @@ int camtape_get_mtinfo(struct camtape_data *softc, struct mt_status_data *mtinfo
 
 extget_retry:
 
-	bzero(&extget, sizeof(extget));
+	memset(&extget, 0, sizeof(extget));
 	xml_str = malloc(alloc_size);
 	if (xml_str == NULL) {
 		*msg = strdup("Unable to allocate memory");
@@ -1466,7 +1466,7 @@ extget_retry:
 	}
 
 	root_element = xmlDocGetRootElement(doc);
-	bzero(mtinfo, sizeof(*mtinfo));
+	memset(mtinfo, 0, sizeof(*mtinfo));
 	mtinfo->level = 1;
 	STAILQ_INIT(&mtinfo->entries);
 	retval = camtape_load_elements(mtinfo, doc, root_element, 0, msg);
@@ -1549,7 +1549,7 @@ bailout:
  */
 int camtape_readpos(void *device, struct tc_position *pos)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	int rc = DEVICE_GOOD;
 	char *msg = NULL;
 	struct camtape_status_item status_items[CT_NUM_STATUS_ITEMS];
@@ -1557,9 +1557,9 @@ int camtape_readpos(void *device, struct tc_position *pos)
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READPOS));
 
-	bzero(status_items, sizeof(status_items));
-	bzero(&mtinfo, sizeof(mtinfo));
-	bcopy(req_status_items, status_items, MIN(sizeof(status_items), sizeof(req_status_items)));
+	memset(status_items, 0, sizeof(status_items));
+	memset(&mtinfo, 0, sizeof(mtinfo));
+	memcpy(status_items, req_status_items, MIN(sizeof(status_items), sizeof(req_status_items)));
 
 	rc = camtape_getstatus(softc, &mtinfo, status_items, CT_NUM_STATUS_ITEMS, &msg);
 	if (rc != DEVICE_GOOD) {
@@ -1602,7 +1602,7 @@ int camtape_format(void *device, TC_FORMAT_TYPE format)
 {
 	int rc, aux_rc;
 	char *msg = NULL;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	unsigned char buf[TC_MP_SUPPORTEDPAGE_SIZE];
 	union ccb *ccb = NULL;
 	int timeout;
@@ -1622,7 +1622,7 @@ int camtape_format(void *device, TC_FORMAT_TYPE format)
 		goto bailout;
 	}
 
-	bzero(&(&ccb->ccb_h)[1],
+	memset(&(&ccb->ccb_h)[1], 0,
 		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, FORMAT_MEDIUM);
@@ -1692,7 +1692,7 @@ int camtape_logsense_page(struct camtape_data *softc, const uint8_t page, const 
 		goto bailout;
 	}
 
-	bzero(&(&ccb->ccb_h)[1],
+	memset(&(&ccb->ccb_h)[1], 0,
 		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, LOG_SENSE);
@@ -1736,7 +1736,7 @@ bailout:
 
 int camtape_logsense(void *device, const uint8_t page, unsigned char *buf, const size_t size)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	int ret = 0;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
@@ -1751,7 +1751,7 @@ int camtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 {
 	unsigned char logdata[LOGSENSEPAGE];
 	unsigned char buf[32];
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	int param_size, i;
 	int length;
 	int offset;
@@ -1848,9 +1848,9 @@ int camtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 	}
 
 	ltfsmsg(LTFS_DEBUG3, 30597D, "capacity part0", (unsigned long long)cap->remaining_p0,
-			(unsigned long long)cap->max_p0, ((struct camtape_data *) device)->drive_serial);
+			(unsigned long long)cap->max_p0, softc->drive_serial);
 	ltfsmsg(LTFS_DEBUG3, 30597D, "capacity part1", (unsigned long long)cap->remaining_p1,
-		(unsigned long long)cap->max_p1, ((struct camtape_data *) device)->drive_serial);
+		(unsigned long long)cap->max_p1, softc->drive_serial);
 
 	return 0;
 }
@@ -1870,7 +1870,7 @@ int camtape_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc, 
 {
 	int rc;
 	char *msg = NULL;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	union ccb *ccb = NULL;
 	int timeout;
 
@@ -1883,7 +1883,7 @@ int camtape_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc, 
 		goto bailout;
 	}
 
-	bzero(&(&ccb->ccb_h)[1],
+	memset(&(&ccb->ccb_h)[1], 0,
 		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, MODE_SENSE_10);
@@ -1936,7 +1936,7 @@ int camtape_modeselect(void *device, unsigned char *buf, const size_t size)
 {
 	int rc;
 	char *msg = NULL;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	union ccb *ccb;
 	int timeout;
 
@@ -1949,7 +1949,7 @@ int camtape_modeselect(void *device, unsigned char *buf, const size_t size)
 		goto bailout;
 	}
 
-	bzero(&(&ccb->ccb_h)[1],
+	memset(&(&ccb->ccb_h)[1], 0,
 		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, MODE_SELECT_10);
@@ -1996,7 +1996,7 @@ bailout:
  */
 int camtape_prevent_medium_removal(void *device)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_PREVENTM));
 	ltfsmsg(LTFS_DEBUG, 30592D, "prevent medium removal", softc->drive_serial);
@@ -2017,7 +2017,7 @@ int camtape_prevent_medium_removal(void *device)
  */
 int camtape_allow_medium_removal(void *device)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ALLOWMREM));
 	ltfsmsg(LTFS_DEBUG, 30592D, "allow medium removal", softc->drive_serial);
@@ -2046,7 +2046,7 @@ int camtape_read_attribute(void *device, const tape_partition_t part, const uint
 	char *msg = NULL;
 	bool take_dump= true;
 	int timeout;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	struct scsi_read_attribute_values *attr_header = NULL;
 	size_t attr_size;
 	union ccb *ccb = NULL;
@@ -2061,7 +2061,7 @@ int camtape_read_attribute(void *device, const tape_partition_t part, const uint
 		goto bailout;
 	}
 
-	bzero(&(&ccb->ccb_h)[1],
+	memset(&(&ccb->ccb_h)[1], 0,
 		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	/*
@@ -2119,7 +2119,7 @@ int camtape_read_attribute(void *device, const tape_partition_t part, const uint
 			id != TC_MAM_APP_FORMAT_VERSION)
 			ltfsmsg(LTFS_INFO, 30460I, rc);
 	} else {
-		bcopy(&attr_header[1], buf, size);
+		memcpy(buf, &attr_header[1], size);
 	}
 
 bailout:
@@ -2147,7 +2147,7 @@ int camtape_write_attribute(void *device, const tape_partition_t part, const uns
 {
 	int rc = DEVICE_GOOD;
 	char *msg = NULL;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	struct scsi_read_attribute_values *attr_header = NULL;
 	size_t attr_size;
 	int timeout;
@@ -2163,7 +2163,7 @@ int camtape_write_attribute(void *device, const tape_partition_t part, const uns
 		goto bailout;
 	}
 
-	bzero(&(&ccb->ccb_h)[1],
+	memset(&(&ccb->ccb_h)[1], 0,
 		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	/*
@@ -2178,7 +2178,7 @@ int camtape_write_attribute(void *device, const tape_partition_t part, const uns
 		rc = -EDEV_NO_MEMORY;
 		goto bailout;
 	}
-	bcopy(buf, &attr_header[1], size);
+	memcpy(&attr_header[1], buf, size);
 	scsi_ulto4b(size, attr_header->length);
 
 	timeout = camtape_get_timeout(softc->timeouts, WRITE_ATTRIBUTE);
@@ -2221,7 +2221,7 @@ int camtape_allow_overwrite(void *device, const struct tc_position pos)
 {
 	int rc;
 	char *msg = NULL;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	struct allow_data_overwrite append_pos;
 	int timeout;
 	union ccb *ccb;
@@ -2236,7 +2236,7 @@ int camtape_allow_overwrite(void *device, const struct tc_position pos)
 		goto bailout;
 	}
 
-	bzero(&(&ccb->ccb_h)[1],
+	memset(&(&ccb->ccb_h)[1], 0,
 		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, ALLOW_OVERWRITE);
@@ -2290,7 +2290,7 @@ int camtape_set_compression(void *device, const bool enable_compression, struct 
 {
 	int rc;
 	unsigned char buf[TC_MP_COMPRESSION_SIZE];
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SETCOMPRS));
 	rc = camtape_modesense(device, TC_MP_COMPRESSION, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
@@ -2319,7 +2319,7 @@ int camtape_set_compression(void *device, const bool enable_compression, struct 
  */
 int camtape_set_default(void *device)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	int rc;
 	unsigned char buf[TC_MP_READ_WRITE_CTRL_SIZE];
 	char *msg = NULL;
@@ -2347,7 +2347,7 @@ int camtape_set_default(void *device)
 
 	/* set SILI bit */
 	ltfsmsg(LTFS_DEBUG, 30592D, __FUNCTION__, "Setting SILI bit");
-	bzero(&sili_param, sizeof(sili_param));
+	memset(&sili_param, 0, sizeof(sili_param));
 	snprintf(sili_param.value_name, sizeof(sili_param.value_name), "sili");
 	sili_param.value_type = MT_PARAM_SET_SIGNED;
 	sili_param.value_len = sizeof(int);
@@ -2438,7 +2438,7 @@ static uint16_t perfstats[] = {
 
 int camtape_get_cartridge_health(void *device, struct tc_cartridge_health *cart_health)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	unsigned char logdata[LOGSENSEPAGE];
 	unsigned char buf[16];
 	int param_size, i;
@@ -2592,9 +2592,9 @@ int camtape_get_tape_alert(void *device, uint64_t *tape_alert)
 	int param_size, i;
 	int rc;
 	uint64_t ta;
-	struct camtape_data *priv = (struct camtape_data *) device;
+	struct camtape_data *softc = (struct camtape_data *) device;
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETTAPEALT));
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETTAPEALT));
 	/* Issue LogPage 0x2E */
 	ta = 0;
 	rc = camtape_logsense(device, LOG_TAPE_ALERT, logdata, LOGSENSEPAGE);
@@ -2613,10 +2613,10 @@ int camtape_get_tape_alert(void *device, uint64_t *tape_alert)
 		}
 	}
 
-	priv->tape_alert |= ta;
-	*tape_alert = priv->tape_alert;
+	softc->tape_alert |= ta;
+	*tape_alert = softc->tape_alert;
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETTAPEALT));
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETTAPEALT));
 	return rc;
 }
 
@@ -2628,10 +2628,10 @@ int camtape_get_tape_alert(void *device, uint64_t *tape_alert)
  */
 int camtape_clear_tape_alert(void *device, uint64_t tape_alert)
 {
-	struct camtape_data *priv = (struct camtape_data *) device;
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_CLRTAPEALT));
-	priv->tape_alert &= ~tape_alert;
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_CLRTAPEALT));
+	struct camtape_data *softc = (struct camtape_data *) device;
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_CLRTAPEALT));
+	softc->tape_alert &= ~tape_alert;
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_CLRTAPEALT));
 	return 0;
 }
 
@@ -2660,7 +2660,7 @@ struct camtape_status_item req_block_items[] = {
 uint32_t _camtape_get_block_limits(void *device)
 {
 	uint32_t length = 0;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	struct camtape_status_item block_items[CT_NUM_BLOCK_ITEMS];
 	struct mt_status_data mtinfo;
 	char *msg;
@@ -2668,9 +2668,9 @@ uint32_t _camtape_get_block_limits(void *device)
 
 	ltfsmsg(LTFS_DEBUG, 30592D, "read block limits", softc->drive_serial);
 
-	bzero(block_items, sizeof(block_items));
-	bzero(&mtinfo, sizeof(mtinfo));
-	bcopy(req_block_items, block_items, MIN(sizeof(block_items), sizeof(req_block_items)));
+	memset(block_items, 0, sizeof(block_items));
+	memset(&mtinfo, 0, sizeof(mtinfo));
+	memcpy(block_items, req_block_items, MIN(sizeof(block_items), sizeof(req_block_items)));
 
 	rc = camtape_getstatus(softc, &mtinfo, block_items, CT_NUM_BLOCK_ITEMS, &msg);
 
@@ -2697,7 +2697,7 @@ bailout:
 
 int camtape_get_parameters(void *device, struct tc_current_param *params)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	int rc = DEVICE_GOOD;
 	unsigned char buf[TC_MP_MEDIUM_SENSE_SIZE];
 
@@ -2809,7 +2809,7 @@ int camtape_get_device_list(struct tc_drive_info *buf, int count)
 		return (-EDEV_DEVICE_UNOPENABLE);
 	}
 
-	bzero(&ccb, sizeof(ccb));
+	memset(&ccb, 0, sizeof(ccb));
 	
 	ccb.ccb_h.path_id = CAM_XPT_PATH_ID;
 	ccb.ccb_h.target_id = CAM_TARGET_WILDCARD;
@@ -2826,7 +2826,7 @@ int camtape_get_device_list(struct tc_drive_info *buf, int count)
 
 	ccb.cdm.num_matches = 0;
 
-	bzero(patterns, sizeof(patterns));
+	memset(patterns, 0, sizeof(patterns));
 
 	ccb.cdm.num_patterns = 2;
 	ccb.cdm.pattern_buf_len = sizeof(patterns);
@@ -2942,7 +2942,7 @@ int camtape_setcap(void *device, uint16_t proportion)
 {
 	int rc;
 	char *msg = NULL;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	unsigned char buf[TC_MP_MEDIUM_SENSE_SIZE];
 	union ccb *ccb = NULL;
 
@@ -2976,7 +2976,7 @@ int camtape_setcap(void *device, uint16_t proportion)
 			goto bailout;
 		}
 
-		bzero(&(&ccb->ccb_h)[1],
+		memset(&(&ccb->ccb_h)[1], 0,
 			sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 		timeout = camtape_get_timeout(softc->timeouts, SET_CAPACITY);
@@ -3027,7 +3027,7 @@ int camtape_get_eod_status(void *device, int part)
 	 * to support logpage 17h correctly
 	 */
 
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	unsigned char logdata[LOGSENSEPAGE];
 	unsigned char buf[16] = {0};
 	int param_size, rc;
@@ -3089,7 +3089,7 @@ int camtape_get_eod_status(void *device, int part)
  */
 int camtape_get_xattr(void *device, const char *name, char **buf)
 {
-	struct camtape_data *priv = (struct camtape_data *) device;
+	struct camtape_data *softc = (struct camtape_data *) device;
 	unsigned char logdata[LOGSENSEPAGE];
 	unsigned char logbuf[16];
 	int param_size;
@@ -3097,14 +3097,14 @@ int camtape_get_xattr(void *device, const char *name, char **buf)
 	uint32_t value32;
 	struct ltfs_timespec now;
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETXATTR));
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETXATTR));
 	if (! strcmp(name, "ltfs.vendor.IBM.mediaCQsLossRate")) {
 		rc = DEVICE_GOOD;
 
 		/* If first fetch or cache value is too old and valuie is dirty, refetch value */
 		get_current_timespec(&now);
-		if ( priv->fetch_sec_acq_loss_w == 0 ||
-			 ((priv->fetch_sec_acq_loss_w + 60 < now.tv_sec) && priv->dirty_acq_loss_w)) {
+		if ( softc->fetch_sec_acq_loss_w == 0 ||
+			 ((softc->fetch_sec_acq_loss_w + 60 < now.tv_sec) && softc->dirty_acq_loss_w)) {
 			rc = camtape_logsense_page(device, LOG_PERFORMANCE, LOG_PERFORMANCE_CAPACITY_SUB,
 									   logdata, LOGSENSEPAGE);
 			if (rc)
@@ -3117,9 +3117,9 @@ int camtape_get_xattr(void *device, const char *name, char **buf)
 					switch(param_size) {
 					case sizeof(uint32_t):
 						value32 = (uint32_t)ltfs_betou32(logbuf);
-						priv->acq_loss_w = (float)value32 / 65536.0;
-						priv->fetch_sec_acq_loss_w = now.tv_sec;
-						priv->dirty_acq_loss_w = false;
+						softc->acq_loss_w = (float)value32 / 65536.0;
+						softc->fetch_sec_acq_loss_w = now.tv_sec;
+						softc->dirty_acq_loss_w = false;
 						break;
 					default:
 						ltfsmsg(LTFS_INFO, 30467I, param_size);
@@ -3132,7 +3132,7 @@ int camtape_get_xattr(void *device, const char *name, char **buf)
 
 		if(rc == DEVICE_GOOD) {
 			/* The buf allocated here shall be freed in xattr_get_virtual() */
-			rc = asprintf(buf, "%2.2f", priv->acq_loss_w);
+			rc = asprintf(buf, "%2.2f", softc->acq_loss_w);
 			if (rc < 0) {
 				rc = -LTFS_NO_MEMORY;
 				ltfsmsg(LTFS_INFO, 30468I, "getting active CQ loss write");
@@ -3140,10 +3140,10 @@ int camtape_get_xattr(void *device, const char *name, char **buf)
 			else
 				rc = DEVICE_GOOD;
 		} else
-			priv->fetch_sec_acq_loss_w = 0;
+			softc->fetch_sec_acq_loss_w = 0;
 	}
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETXATTR));
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETXATTR));
 	return rc;
 }
 
@@ -3159,7 +3159,7 @@ int camtape_set_xattr(void *device, const char *name, const char *buf, size_t si
 {
 	int rc = -LTFS_NO_XATTR;
 	char *null_terminated;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 
 	if (!size)
@@ -3299,8 +3299,8 @@ static int camtape_get_encryption_state(void *device, struct camtape_encryption_
 		rc = -EDEV_NO_MEMORY;
 		goto bailout;
 	}
-	bzero(buf, buf_size);
-	bzero(&es, sizeof(es));
+	memset(buf, 0, buf_size);
+	memset(&es, 0, sizeof(es));
 
 	/*
 	 * XXX KDM
@@ -3331,7 +3331,7 @@ static int camtape_get_encryption_state(void *device, struct camtape_encryption_
 		goto bailout;
 	}	
 
-	bzero(buf, buf_size);
+	memset(buf, 0, buf_size);
 
 	rc = camtape_modesense(device, CT_RWC_PAGE_CODE, TC_MP_PC_CURRENT, 0x00, buf, buf_size);
 
@@ -3343,7 +3343,7 @@ static int camtape_get_encryption_state(void *device, struct camtape_encryption_
 	 */
 	if ((rwc_mode_buf != NULL) && (rwc_buf_len > 0)) {
 		*rwc_fill_len = MIN(buf_size, rwc_buf_len);
-		bcopy(buf, rwc_mode_buf, *rwc_fill_len);
+		memcpy(rwc_mode_buf, buf, *rwc_fill_len);
 	}
 	
 	mode_hdr = (struct scsi_mode_header_10 *)buf;
@@ -3416,7 +3416,7 @@ static int camtape_set_encryption_state(struct camtape_data *softc,
 		rc = -EDEV_NO_MEMORY;
 		goto bailout;
 	}
-	bzero(buf, buf_size);
+	memset(buf, 0, buf_size);
 
 	rc = camtape_get_encryption_state(softc, &es, buf, buf_size, &buf_fill_len);
 	if (rc != DEVICE_GOOD)
@@ -3554,7 +3554,7 @@ static void camtape_fill_enc_subpage(struct camtape_ibm_enc_param_subpage *enc_s
 	enc_sp->byte79 = CT_ENC_PARAM_BYTE_79_VALUE;
 	enc_sp->byte80 = CT_ENC_PARAM_BYTE_80_VALUE;
 	enc_sp->byte83 = CT_ENC_PARAM_BYTE_83_VALUE;
-	bcopy(key, enc_sp->data_key, CT_ENC_PARAM_DATA_KEY_LEN);
+	memcpy(enc_sp->data_key, key, CT_ENC_PARAM_DATA_KEY_LEN);
 	enc_sp->byte116 = CT_ENC_PARAM_BYTE_116_VALUE;
 	if (key_index_set != 0)
 		enc_sp->byte119 = CT_ENC_PARAM_BYTE_119_VALUE_1;
@@ -3564,7 +3564,7 @@ static void camtape_fill_enc_subpage(struct camtape_ibm_enc_param_subpage *enc_s
 	enc_sp->byte124 = CT_ENC_PARAM_BYTE_124_VALUE;
 	if (key_index_set != 0) {
 		enc_sp->ki_or_not.ki_is_set.byte127 = CT_ENC_PARAM_BYTE127_KI_VALUE;
-		bcopy(key_index, enc_sp->ki_or_not.ki_is_set.key_index,
+		memcpy(enc_sp->ki_or_not.ki_is_set.key_index, key_index,
 			sizeof(enc_sp->ki_or_not.ki_is_set.key_index));
 		enc_sp->ki_or_not.ki_is_set.byte144 = CT_ENC_PARAM_BYTE144_KI_VALUE;
 	} else {
@@ -3574,7 +3574,7 @@ static void camtape_fill_enc_subpage(struct camtape_ibm_enc_param_subpage *enc_s
 
 int camtape_set_key(void *device, const unsigned char * const keyalias, const unsigned char * const key)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	camtape_encryption_state encryption_state = CT_ENC_STATE_OFF;
 	struct scsi_mode_header_10 *mode_hdr;
 	struct camtape_ibm_enc_param_subpage *enc_sp;
@@ -3597,7 +3597,7 @@ int camtape_set_key(void *device, const unsigned char * const keyalias, const un
 		rc = -EDEV_NO_MEMORY;
 		goto bailout;
 	}
-	bzero(buf, bufsize);
+	memset(buf, 0, bufsize);
 
 	if (keyalias != NULL) {
 		CHECK_ARG_NULL(key, -LTFS_NULL_ARG);
@@ -3683,7 +3683,7 @@ static void show_hex_dump(const char * const title, const unsigned char * const 
 
 int camtape_get_keyalias(void *device, unsigned char **keyalias) /* This is not IBM method but T10 method. */
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	struct tde_next_block_enc_status_page *status_page;
 	int page_header_length = 4;
 	int buffer_length = page_header_length;
@@ -3701,7 +3701,7 @@ int camtape_get_keyalias(void *device, unsigned char **keyalias) /* This is not 
 		ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETKEYALIAS));
 		return rc;
 	}
-	memset(((struct camtape_data*) device)->dki, 0, sizeof(((struct camtape_data*) device)->dki));
+	memset(softc->dki, 0, sizeof(softc->dki));
 	*keyalias = NULL;
 
 	ccb = cam_getccb(softc->cd);
@@ -3844,7 +3844,7 @@ struct ct_protect_info {
 
 int camtape_set_lbp(void *device, bool enable)
 {
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	struct mt_status_data mtinfo;
 	struct mt_status_entry *entry, *prot_entry;
 	struct ct_protect_info protect_list[CT_NUM_PROTECT_PARAMS];
@@ -3857,7 +3857,7 @@ int camtape_set_lbp(void *device, bool enable)
 	int rc = DEVICE_GOOD;
 	unsigned int i;
 
-	bzero(buf, sizeof(buf));
+	memset(buf, 0, sizeof(buf));
 
 	/* Check logical block protection capability */
 	rc = camtape_modesense(device, TC_MP_INIT_EXT, TC_MP_PC_CURRENT, 0x00, buf, sizeof(buf));
@@ -3873,7 +3873,7 @@ int camtape_set_lbp(void *device, bool enable)
 	/*
 	 * First grab all available parameter data.
 	 */
-	bzero(&mtinfo, sizeof(mtinfo));
+	memset(&mtinfo, 0, sizeof(mtinfo));
 	rc = camtape_get_mtinfo(softc, &mtinfo, /*params*/ 1, &msg);
 	if (rc != DEVICE_GOOD)
 		goto bailout;
@@ -3913,7 +3913,7 @@ int camtape_set_lbp(void *device, bool enable)
 	ltfsmsg(LTFS_DEBUG, 30593D, "LBP Enable", enable, "");
 	ltfsmsg(LTFS_DEBUG, 30593D, "LBP Method", lbp_method, "");
 
-	bcopy(ct_protect_list, protect_list, MIN(sizeof(protect_list), sizeof(ct_protect_list)));
+	memcpy(protect_list, ct_protect_list, MIN(sizeof(protect_list), sizeof(ct_protect_list)));
 
 	if (enable) {
 		protect_list[CT_PP_LBP_R].value = 1;
@@ -4002,7 +4002,7 @@ int camtape_is_mountable(void *device, const char *barcode, const unsigned char 
 						 const unsigned char density)
 {
 	int ret;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
         
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ISMOUNTABLE));
 
@@ -4020,7 +4020,7 @@ int camtape_is_mountable(void *device, const char *barcode, const unsigned char 
 bool camtape_is_readonly(void *device)
 {
 	int ret;
-	struct camtape_data *softc = device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ret = ibm_tape_is_mountable(softc->drive_type,
 							   NULL,
@@ -4038,11 +4038,11 @@ bool camtape_is_readonly(void *device)
 int camtape_get_worm_status(void *device, bool *is_worm)
 {
 	int rc = 0;
-	struct camtape_data *priv = ((struct camtape_data *) device);
+	struct camtape_data *softc = (struct camtape_data *) device;
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETWORMSTAT));
-	if (priv->loaded) {
-		*is_worm = priv->is_worm;
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETWORMSTAT));
+	if (softc->loaded) {
+		*is_worm = softc->is_worm;
 	}
 	else {
 		ltfsmsg(LTFS_INFO, 30489I);
@@ -4050,7 +4050,7 @@ int camtape_get_worm_status(void *device, bool *is_worm)
 		rc = -1;
 	}
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETWORMSTAT));
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETWORMSTAT));
 	return rc;
 }
 
@@ -4130,16 +4130,15 @@ const char *tape_dev_get_message_bundle_name(void **message_data)
  *  
  * @author Ryan Guthrie (ryang@spectralogic.com) (5/2/2013)
  * 
- * @param priv the IBM struct containing persistent information. 
+ * @param softc the struct containing persistent information. 
  *  						It is where the file descriptors for the pass
  *  						and SA are stored.
- * @param saDeviceName the SA (Sequential Access) device for the
- *  								   tape driver
+ * @param saDeviceName the SA (Sequential Access) device for the tape driver
  * 
  * @return int 0 on success, or a negative value on error 
  *  			 opening either the SA or PASS devices.
  */
-int open_sa_pass(struct camtape_data *priv, const char *saDeviceName)
+int open_sa_pass(struct camtape_data *softc, const char *saDeviceName)
 {
 	int ret = 0;
 
@@ -4153,26 +4152,26 @@ int open_sa_pass(struct camtape_data *priv, const char *saDeviceName)
 	char passDeviceName[MAXPATHLEN+1];
 	snprintf(passDeviceName, MAXPATHLEN, "/dev/%s%d", cd_pass->device_name, cd_pass->dev_unit_num);
 
-	ret = open_sa_device(priv, saDeviceName);
+	ret = open_sa_device(softc, saDeviceName);
 	if (ret) {
 		cam_close_device(cd_pass);
 		ltfsmsg(LTFS_INFO, 30425I, saDeviceName, errno);
 		return ret;
 	}
 
-	priv->cd = cd_pass;
+	softc->cd = cd_pass;
 
 	return 0;
 }
 
-int open_sa_device(struct camtape_data *priv, const char* saDeviceName)
+int open_sa_device(struct camtape_data *softc, const char* saDeviceName)
 {
 	int ret = 0;
 
-	priv->fd_sa = open(saDeviceName, O_RDWR | O_NDELAY);
-	if (priv->fd_sa < 0) {
-		priv->fd_sa = open(saDeviceName, O_RDONLY | O_NDELAY);
-		if (priv->fd_sa < 0) {
+	softc->fd_sa = open(saDeviceName, O_RDWR | O_NDELAY);
+	if (softc->fd_sa < 0) {
+		softc->fd_sa = open(saDeviceName, O_RDONLY | O_NDELAY);
+		if (softc->fd_sa < 0) {
 			if (errno == EAGAIN) {
 				ltfsmsg(LTFS_ERR, 30424E, saDeviceName);
 				ret = -EDEV_DEVICE_BUSY;
@@ -4188,18 +4187,18 @@ int open_sa_device(struct camtape_data *priv, const char* saDeviceName)
 	return ret;
 }
 
-void close_sa_device(struct camtape_data *priv)
+void close_sa_device(struct camtape_data *softc)
 {
-	if (priv->fd_sa > 0) {
-		close(priv->fd_sa);
-		priv->fd_sa = 0;
+	if (softc->fd_sa > 0) {
+		close(softc->fd_sa);
+		softc->fd_sa = 0;
 	}
 }
-void close_cd_pass_device(struct camtape_data *priv)
+void close_cd_pass_device(struct camtape_data *softc)
 {
-	if (priv->cd != NULL) {
-		cam_close_device(priv->cd);
-		priv->cd = NULL;
+	if (softc->cd != NULL) {
+		cam_close_device(softc->cd);
+		softc->cd = NULL;
 	}
 }
 
