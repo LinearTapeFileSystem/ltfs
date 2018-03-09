@@ -284,7 +284,6 @@ int camtape_open(const char *devname, void **handle)
 	ltfsmsg(LTFS_INFO, 30428I, product);
 	ltfsmsg(LTFS_INFO, 30429I, vendor);
 
-
 	/* Check the drive is supportable */
 	struct supported_device **cur = ibm_supported_drives;
 	while(*cur) {
@@ -297,7 +296,6 @@ int camtape_open(const char *devname, void **handle)
 		}
 		cur++;
 	}
-
 
 	if (drive_type != DRIVE_UNSUPPORTED) {
 		softc->drive_type = drive_type;
@@ -635,7 +633,6 @@ int camtape_write(void *device, const char *buf, size_t count, struct tc_positio
 			return DEVICE_GOOD;
 		}
 	}
-
 
 	/* Invoke _ioctl to Write */
 	if(global_data.crc_checking) {
@@ -1215,7 +1212,6 @@ static int camtape_get_block_in_buffer(void *device, uint32_t *block)
 		goto bailout;
 	}
 
-
 	/*
 	 * XXX KDM should we do any retries here?  Doing retries potentially hides sense data.
 	 */
@@ -1239,7 +1235,6 @@ static int camtape_get_block_in_buffer(void *device, uint32_t *block)
 		ltfsmsg(LTFS_DEBUG, 30398D, "blocks-in-buffer",
 				(unsigned long long) *block, 0, 0, softc->drive_serial);
 	}
-
 
 bailout:
 	if (ccb != NULL)
@@ -2080,7 +2075,6 @@ int camtape_read_attribute(void *device, const tape_partition_t part, const uint
 		rc = -EDEV_UNSUPPORETD_COMMAND;
 		goto bailout;
 	}
-
 
 	scsi_read_attribute(&ccb->csio,
 						/*retries*/ 1,
@@ -3759,7 +3753,6 @@ int camtape_get_keyalias(void *device, unsigned char **keyalias) /* This is not 
 		status_page = (struct tde_next_block_enc_status_page *)buf;
 		buffer_length = page_header_length + scsi_2btoul(status_page->page_length);
 	}
-
 	
 	enc_status = status_page->status & TDE_NBES_ENC_STATUS_MASK;
 	switch (enc_status) {
@@ -3868,7 +3861,6 @@ int camtape_set_lbp(void *device, bool enable)
 		lbp_method = CRC32C_CRC;
 	else
 		lbp_method = REED_SOLOMON_CRC;
-
 
 	/*
 	 * First grab all available parameter data.

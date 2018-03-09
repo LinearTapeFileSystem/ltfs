@@ -686,7 +686,6 @@ int camtape_getdump_drive(void *device, const char *fname)
 		/* update offset and num_transfers, free buffer */
 		buf_offset += transfer_size;
 		num_transfers -= 1;
-
 	}							/* end of while(num_transfers) */
 
 	free(dump_buf);
