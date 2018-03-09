@@ -60,7 +60,8 @@ The coarse message ID allocation is as follows.
   * 30600-30799: Tape backend for IBM scsi lib (Windows)
   * 30800-30999: iokit tape backend for IBM tape drives
   * 31000-31199: ITDT tape image backend
-  * 31200-39799: Reserved
+  * 31200-31399: Tape backend for the FreeBSD sa(4) driver.
+  * 31400-39799: Reserved
   * 39800-39999: Tape Driver common
   == Changer Drivers for LE (40000-49999) ==
   * 40000-49999: Permanently Reserved

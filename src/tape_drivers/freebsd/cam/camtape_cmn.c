@@ -182,7 +182,7 @@ int camtape_ioctlrc2err(void *device, int fd, struct scsi_sense_data *sense_data
 		 * if the non-control device (e.g. /dev/sa0, not /dev/sa0.ctl) was opened.
 		 */
 		if (sense_data->error_code == 0) {
-			ltfsmsg(LTFS_DEBUG, 30409D);
+			ltfsmsg(LTFS_DEBUG, 31209D);
 
 			if (msg) {
 				*msg = strdup("No Sense Information");
@@ -193,7 +193,7 @@ int camtape_ioctlrc2err(void *device, int fd, struct scsi_sense_data *sense_data
 
 			scsi_extract_sense_len(sense_data, sense_data_len, &error_code, &sense_key, &asc,
 				&ascq, /*show_errors*/ 1);
-			ltfsmsg(LTFS_DEBUG, 30406D, sense_key, asc, ascq);
+			ltfsmsg(LTFS_DEBUG, 31206D, sense_key, asc, ascq);
 			/*
 			 * XXX KDM we should figure out a better way to extract these vendor specific bits.
 			 * Do the IBM drives not support descriptor sense?
@@ -205,13 +205,13 @@ int camtape_ioctlrc2err(void *device, int fd, struct scsi_sense_data *sense_data
 			 */
 
 #if 0
-			ltfsmsg(LTFS_DEBUG, 30407D, sense_data->vendor[27], sense_data->vendor[28], sense_data->vendor[29], sense_data->vendor[30],
+			ltfsmsg(LTFS_DEBUG, 31207D, sense_data->vendor[27], sense_data->vendor[28], sense_data->vendor[29], sense_data->vendor[30],
 										((struct camtape_data *) device)->drive_serial);
 #endif
 			rc = camtape_sense2rc(device, sense_data, sense_data_len);
 		}
 	} else {
-		ltfsmsg(LTFS_INFO, 30412I, rc_sense);
+		ltfsmsg(LTFS_INFO, 31212I, rc_sense);
 		if (msg)
 			*msg = strdup("Cannot get sense information");
 
@@ -262,7 +262,7 @@ int _camtape_inquiry_page(void *device, unsigned char page, struct tc_inq_page *
 		goto bailout;
 	}
 
-	ltfsmsg(LTFS_DEBUG, 30593D, "inquiry", page, softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 31393D, "inquiry", page, softc->drive_serial);
 
 	scsi_inquiry(&ccb->csio,
 				 /*retries*/ 1,
@@ -414,7 +414,7 @@ int camtape_test_unit_ready(void *device)
 	union ccb *ccb = NULL;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_TUR));
-	ltfsmsg(LTFS_DEBUG3, 30592D, "test unit ready",
+	ltfsmsg(LTFS_DEBUG3, 31392D, "test unit ready",
 			softc->drive_serial);
 
 	timeout = camtape_get_timeout(softc->timeouts, TEST_UNIT_READY);
@@ -490,7 +490,7 @@ int camtape_reserve_unit(void *device)
 	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RESERVEUNIT));
-	ltfsmsg(LTFS_DEBUG, 30592D, "reserve unit (6)", softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 31392D, "reserve unit (6)", softc->drive_serial);
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_RESERVEUNIT));
 	/*
 	 * The FreeBSD tape driver issues a RESERVE UNIT command during the open process.  So a
@@ -510,7 +510,7 @@ int camtape_release_unit(void *device)
 	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RELEASEUNIT));
-	ltfsmsg(LTFS_DEBUG, 30592D, "release unit (6)", softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 31392D, "release unit (6)", softc->drive_serial);
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_RELEASEUNIT));
 	/*
 	 * The FreeBSD tape driver issues a RELEASE UNIT during the close process.  So a separate
@@ -537,7 +537,7 @@ int camtape_readbuffer(struct camtape_data *softc, int id, unsigned char *buf, s
 	union ccb *ccb;
 	int timeout;
 
-	ltfsmsg(LTFS_DEBUG, 30593D, "read buffer", id, softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 31393D, "read buffer", id, softc->drive_serial);
 
 	ccb = cam_getccb(softc->cd);
 	if (ccb == NULL) {
@@ -602,7 +602,7 @@ int camtape_getdump_drive(void *device, const char *fname)
 	unsigned char cap_buf[DUMP_HEADER_SIZE];
 	unsigned char *dump_buf;
 
-	ltfsmsg(LTFS_INFO, 30478I, fname);
+	ltfsmsg(LTFS_INFO, 31278I, fname);
 
 	/* Set transfer size */
 	transfer_size = DUMP_TRANSFER_SIZE;
@@ -627,7 +627,7 @@ int camtape_getdump_drive(void *device, const char *fname)
 	dumpfd = open(fname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (dumpfd < 0) {
 		rc = -errno;
-		ltfsmsg(LTFS_WARN, 30479W, rc);
+		ltfsmsg(LTFS_WARN, 31279W, rc);
 		free(dump_buf);
 		return rc;
 	}
@@ -639,13 +639,13 @@ int camtape_getdump_drive(void *device, const char *fname)
 		num_transfers += 1;
 
 	/* Total dump data length is %lld. Total number of transfers is %d. */
-	ltfsmsg(LTFS_DEBUG, 30480D, data_length);
-	ltfsmsg(LTFS_DEBUG, 30481D, num_transfers);
+	ltfsmsg(LTFS_DEBUG, 31280D, data_length);
+	ltfsmsg(LTFS_DEBUG, 31281D, num_transfers);
 
 	/* start to transfer data */
 	buf_offset = 0;
 	i = 0;
-	ltfsmsg(LTFS_DEBUG, 30482D);
+	ltfsmsg(LTFS_DEBUG, 31282D);
 	while (num_transfers) {
 		int length;
 
@@ -659,7 +659,7 @@ int camtape_getdump_drive(void *device, const char *fname)
 
 		rc = camtape_readbuffer(device, buf_id, dump_buf, buf_offset, length, 0x02);
 		if (rc) {
-			ltfsmsg(LTFS_WARN, 30483W, rc);
+			ltfsmsg(LTFS_WARN, 31283W, rc);
 			free(dump_buf);
 			close(dumpfd);
 			return rc;
@@ -669,15 +669,15 @@ int camtape_getdump_drive(void *device, const char *fname)
 		bytes = write(dumpfd, dump_buf, length);
 		if (bytes == -1) {
 			rc = -errno;
-			ltfsmsg(LTFS_WARN, 30484W, rc);
+			ltfsmsg(LTFS_WARN, 31284W, rc);
 			free(dump_buf);
 			close(dumpfd);
 			return rc;
 		}
 
-		ltfsmsg(LTFS_DEBUG, 30485D, i, bytes);
+		ltfsmsg(LTFS_DEBUG, 31285D, i, bytes);
 		if (bytes != length) {
-			ltfsmsg(LTFS_WARN, 30486W, bytes, length);
+			ltfsmsg(LTFS_WARN, 31286W, bytes, length);
 			free(dump_buf);
 			close(dumpfd);
 			return -EDEV_DUMP_EIO;
@@ -708,7 +708,7 @@ int camtape_forcedump_drive(struct camtape_data *softc)
 	char *msg;
 	int timeout;
 
-	ltfsmsg(LTFS_DEBUG, 30593D, "force dump", 0, softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 31393D, "force dump", 0, softc->drive_serial);
 
 	ccb = cam_getccb(softc->cd);
 	if (ccb == NULL) {
@@ -783,11 +783,11 @@ int camtape_takedump_drive(void *device, bool nonforced_dump)
 		strcpy(fname, fname_base);
 		strcat(fname, ".dmp");
 
-		ltfsmsg(LTFS_ERR, 30487I);
+		ltfsmsg(LTFS_INFO, 31287I);
 		camtape_getdump_drive(softc, fname);
 	}
 
-	ltfsmsg(LTFS_ERR, 30488I);
+	ltfsmsg(LTFS_INFO, 31288I);
 	camtape_forcedump_drive(device);
 	strcpy(fname, fname_base);
 	strcat(fname, "_f.dmp");

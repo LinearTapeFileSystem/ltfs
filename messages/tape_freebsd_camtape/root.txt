@@ -33,111 +33,92 @@
 //  OO_Copyright_END
 //
 
-// Messages for the FreeBSD camtape backend.
+// Messages for the FreeBSD CAM backend.
 // This backend shares IDs 12000-12999 with the file and iokit backends and the backend
 // interface functions, so be sure to make a note in messages/ltfs/root.txt whenever an
 // ID is allocated here.
 root:table {
 	messages:table {
-		start_id:int { 30400 }
-		end_id:int { 30599 }
+		start_id:int { 31200 }
+		end_id:int { 31399 }
 
-		30400I:string { "SIOC_PASS_THROUGH: command failed (%d) %s" }
-		30401D:string { "SIOC_PASS_THROUGH: no sense info: T%02x:M%02x:H%02x:D%02x %s" }
-		30402D:string { "SIOC_PASS_THROUGH: sense = %02x/%02x%02x" }
-		30403D:string { "SIOC_PASS_THROUGH: pos = 0x%02x%02x%02x%02x %s" }
-		30404I:string { "SIOC_PASS_THROUGH: cannot sense data from the drive" }
-		30405I:string { "SIOC_PASS_THROUGH: status info: T%02x:M%02x:H%02x:D%02x %s" }
-		30406D:string { "IOCTL: sense = %02x/%02x%02x" }
-		30407D:string { "IOCTL: pos = 0x%02x%02x%02x%02x %s" }
-		30408I:string { "IOCTL: %s %d returns %d (generic %d) %s" }
-		30409D:string { "IOCTL: no sense info" }
-		30410D:string { "IOCTL: %s %d expected error %d" }
-		30411D:string { "IOCTL: %s %d expected error %d. retry the operation."}
-		30412I:string { "Cannot get sense (%d)" }
-		30413I:string { "Error on %s: %s (%d) %s"}
-		30414E:string { "Error on %s: msg = NULL (%d) %s"}
-		30415W:string { "Cannot detect camtape version" }
-		30416I:string { "camtape version is %s" }
-		30417E:string { "Old camtape version is detected." }
-		30418I:string { "Parsing log page: buffer too small, copying %zu bytes from %lx" }
-		30419I:string { "Option parsing for the camtape backend failed (%d)" }
-		30420E:string { "Invalid scsi_lbprotect option: %s" }
-		30421W:string { "Drive firmware must be updated. Upgrading to %s or later is recommended." }
-		30422W:string { "Drive firmware level does not correctly detect the EOD status" }
-		30423I:string { "Opening a device through camtape driver (%s)" }
-		30424E:string { "%s: medium is already mounted or in use" }
-		30425I:string { "Cannot open device \'%s\' (%d)" }
-		30426W:string { "Device \'%s\' must be opened in read-only mode" }
-		30427I:string { "Cannot open device: inquiry failed (%d)" }
-		30428I:string { "Product ID is \'%s\'" }
-		30429I:string { "Vendor ID is %s" }
-		30430I:string { "Unsupported Drive \'%s\'" }
-		30431I:string { "Cannot open device: inquiry 0x%x failed (%d)" }
-		30432I:string { "Firmware revision is %s" }
-		30433I:string { "Drive serial is %s" }
-		30434I:string { "Pseudo-error on %s" }
-		30435I:string { "Pseudo-error on write. Good return code, but a record to emulate a write error did not get sent to the drive." }
+		31206D:string { "IOCTL: sense = %02x/%02x%02x" }
+		31207D:string { "IOCTL: pos = 0x%02x%02x%02x%02x %s" }
+		31208I:string { "IOCTL: %s %d returns %d (generic %d) %s" }
+		31209D:string { "IOCTL: no sense info" }
+		31211D:string { "IOCTL: %s %d expected error %d. retry the operation."}
+		31212I:string { "Cannot get sense (%d)" }
+		31213I:string { "Error on %s: %s (%d) %s"}
+		31214E:string { "Error on %s: msg = NULL (%d) %s"}
+		31218I:string { "Parsing log page: buffer too small, copying %zu bytes from %lx" }
+		31219I:string { "Option parsing for the CAM backend failed (%d)" }
+		31220E:string { "Invalid scsi_lbprotect option: %s" }
+		31223I:string { "Opening a device through CAM driver (%s)" }
+		31224E:string { "%s: medium is already mounted or in use" }
+		31225I:string { "Cannot open device \'%s\' (%d)" }
+		31226W:string { "Device \'%s\' must be opened in read-only mode" }
+		31228I:string { "Product ID is \'%s\'" }
+		31229I:string { "Vendor ID is %s" }
+		31230I:string { "Unsupported Drive \'%s\'" }
+		31232I:string { "Firmware revision is %s" }
+		31233I:string { "Drive serial is %s" }
+		31234I:string { "Pseudo-error on %s" }
+		31235I:string { "Pseudo-error on write. Good return code, but a record to emulate a write error did not get sent to the drive." }
 
-		30436D:string { "Read block: file mark detected" }
-		30437I:string { "Read block: overlength condition is detected. residual = %d, actual = %d" }
-		30438D:string { "Read block: underlength condition is detected. shortage = %d, actual = %d" }
-		30439E:string { "Logical block protection Error on read" }
-		30440W:string { "Detect ENOMEM in write() call. Wait 3 secs and retry (%d)"}
-		30441I:string { "Retrying write() call at (%u, %llu)"}
-		30442I:string { "Skip retrying write() call at (%u, %llu), because the record was already written"}
-		30443W:string { "Enexpected current position (%d). (%u, %llu), (%u, %llu) "}
-		30444W:string { "Position confirmation for write() call retry is failed (%d). (%u, %llu), (%u, %llu) "}
-		30445W:string { "Received low space warning (early warning) in %s" }
-		30446W:string { "Received low space warning (programmable early warning) in %s" }
-		30447E:string { "Logical block protection Error on write" }
-		30448D:string { "EOD detected (%s): ignore sense" }
-		30449I:string { "Unrecognized space type" }
-		30450I:string { "Cannot space: count value %d of the space command is too large" }
-		30451I:string { "A long data wipe is in progress. (%d minutes passed)" }
-		30452I:string { "A long data wipe is in progress. %d %%" }
-		30453W:string { "Failed to get medium type code: medium type check is skipped" }
-		// Reusable 30454
-		30455I:string { "Unsupported cartridge (0x%x, 0x%x)" }
-		30456I:string { "Invalid format mode (%d)" }
-		30457I:string { "Cannot get remaining capacity: get log page 0x%02x failed (%d)" }
-		30458I:string { "Cannot get remaining capacity: failed to parse the log page" }
-		30459I:string { "Cannot get remaining capacity: loop index error (%d)" }
-		30460I:string { "Cannot read attribute (%d)" }
-		30461I:string { "Cannot get log page 0x%02x (%d) in %s" }
-		30462I:string { "Cannot parse the log page 0x%02x in %s" }
-		30463E:string { "Failed to open file '%s' (%d)"}
-		30464W:string { "Cannot get EOD status: failed to get log page 0x%02x (%d)" }
-		30465W:string { "Cannot get EOD status: failed to parse the log page" }
-		30466W:string { "Cannot get EOD status: value length or partition number is wrong %d - (%d, %d)" }
-		30467I:string { "Unexpected parameter size for getting active CQ loss write (%d)" }
-		30468I:string { "Cannot allocate memory in %s" }
-		30469E:string { "Encryption method of the drive is not AME but %s (0x%02X)" }
-		30470E:string { "Encryption feature is not supported on the drive: %d" }
-		30471I:string { "Logical block protection is enabled" }
-		30472I:string { "Logical block protection is disabled" }
+		31236D:string { "Read block: file mark detected" }
+		31237I:string { "Read block: overlength condition is detected. residual = %d, actual = %d" }
+		31238D:string { "Read block: underlength condition is detected. shortage = %d, actual = %d" }
+		31239E:string { "Logical block protection Error on read" }
+		31245W:string { "Received low space warning (early warning) in %s" }
+		31246W:string { "Received low space warning (programmable early warning) in %s" }
+		31247E:string { "Logical block protection Error on write" }
+		31248D:string { "EOD detected (%s): ignore sense" }
+		31249I:string { "Unrecognized space type" }
+		31250I:string { "Cannot space: count value %d of the space command is too large" }
+		31251I:string { "A long data wipe is in progress. (%d minutes passed)" }
+		31252I:string { "A long data wipe is in progress. %d %%" }
+		31253W:string { "Failed to get medium type code: medium type check is skipped" }
+		// Reusable 31254
+		31255I:string { "Unsupported cartridge (0x%x, 0x%x)" }
+		31256I:string { "Invalid format mode (%d)" }
+		31257I:string { "Cannot get remaining capacity: get log page 0x%02x failed (%d)" }
+		31258I:string { "Cannot get remaining capacity: failed to parse the log page" }
+		31259I:string { "Cannot get remaining capacity: loop index error (%d)" }
+		31260I:string { "Cannot read attribute (%d)" }
+		31261I:string { "Cannot get log page 0x%02x (%d) in %s" }
+		31262I:string { "Cannot parse the log page 0x%02x in %s" }
+		31263E:string { "Failed to open file '%s' (%d)"}
+		31264W:string { "Cannot get EOD status: failed to get log page 0x%02x (%d)" }
+		31265W:string { "Cannot get EOD status: failed to parse the log page" }
+		31266W:string { "Cannot get EOD status: value length or partition number is wrong %d - (%d, %d)" }
+		31267I:string { "Unexpected parameter size for getting active CQ loss write (%d)" }
+		31268I:string { "Cannot allocate memory in %s" }
+		31269E:string { "Encryption method of the drive is not AME but %s (0x%02X)" }
+		31270E:string { "Encryption feature is not supported on the drive: %d" }
+		31271I:string { "Logical block protection is enabled" }
+		31272I:string { "Logical block protection is disabled" }
 
-		30478I:string { "Saving drive dump to %s" }
-		30479W:string { "Cannot retrieve drive dump: failed to create dump file (%d)" }
-		30480D:string { "Total dump data length is %lld." }
-		30481D:string { "Total number of transfers is %d." }
-		30482D:string { "Transferring dump data" }
-		30483W:string { "Cannot retrieve drive dump: failed to read buffer (%d)" }
-		30484W:string { "Cannot retrieve drive dump: failed to write to dump file (%d)" }
-		30485D:string { "Transfer %d: wrote %d bytes" }
-		30486W:string { "Cannot retrieve drive dump: wrote %d bytes out, expected %d" }
-		30487I:string { "Taking drive dump in buffer" }
-		30488I:string { "Forcing drive dump" }
-		30489I:string { "Failed to get cartridge status. The cartridge is not loaded."}
+		31278I:string { "Saving drive dump to %s" }
+		31279W:string { "Cannot retrieve drive dump: failed to create dump file (%d)" }
+		31280D:string { "Total dump data length is %lld." }
+		31281D:string { "Total number of transfers is %d." }
+		31282D:string { "Transferring dump data" }
+		31283W:string { "Cannot retrieve drive dump: failed to read buffer (%d)" }
+		31284W:string { "Cannot retrieve drive dump: failed to write to dump file (%d)" }
+		31285D:string { "Transfer %d: wrote %d bytes" }
+		31286W:string { "Cannot retrieve drive dump: wrote %d bytes out, expected %d" }
+		31287I:string { "Taking drive dump in buffer" }
+		31288I:string { "Forcing drive dump" }
+		31289I:string { "Failed to get cartridge status. The cartridge is not loaded."}
 
-		30592D:string { "Backend %s %s" }
-		30593D:string { "Backend %s: %d %s" }
-		30594D:string { "Backend %s: %llu %s" }
-		30595D:string { "Backend %s: %zu bytes %s" }
-		30596D:string { "Backend %s: %zu %s" }
-		30597D:string { "Backend %s: (%llu, %llu) %s" }
-		30598D:string { "Backend %s: (%llu, %llu) FM = %llu %s" }
-		30599I:string { "CAM backend options:\n"
+		31392D:string { "Backend %s %s" }
+		31393D:string { "Backend %s: %d %s" }
+		31394D:string { "Backend %s: %llu %s" }
+		31395D:string { "Backend %s: %zu bytes %s" }
+		31396D:string { "Backend %s: %zu %s" }
+		31397D:string { "Backend %s: (%llu, %llu) %s" }
+		31398D:string { "Backend %s: (%llu, %llu) FM = %llu %s" }
+		31399I:string { "CAM backend options:\n"
 						"    -o devname=<dev>           tape device (default=%s)\n"
 						"    -o autodump                enable autodump (default)\n"
 						"    -o noautodump              disable autodump\n"
