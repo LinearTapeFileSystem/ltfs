@@ -776,7 +776,7 @@ int camtape_takedump_drive(void *device, bool nonforced_dump)
 	/* Make base filename */
 	time(&now);
 	tm_now = localtime(&now);
-	sprintf(fname_base, "%s/ltfs_%s_%d_%02d%02d_%02d%02d%02d", ltfs_dump_dir, serial, tm_now->tm_year + 1900,
+	sprintf(fname_base, "/tmp/ltfs_%s_%d_%02d%02d_%02d%02d%02d", serial, tm_now->tm_year + 1900,
 			tm_now->tm_mon + 1, tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
 
 	if (nonforced_dump) {
