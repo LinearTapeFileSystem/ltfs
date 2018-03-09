@@ -1,6 +1,6 @@
 #
 #
-#  OO_Copyright_BEGIN
+#  OS_Copyright_BEGIN
 #
 #
 #  Copyright 2010, 2018 IBM Corp. All rights reserved.
@@ -31,7 +31,7 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 #
-#  OO_Copyright_END
+#  OS_Copyright_END
 #
 
 
