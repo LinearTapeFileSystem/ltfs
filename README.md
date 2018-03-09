@@ -97,9 +97,11 @@ make install
 
 ### Build and install on FreeBSD
 
+Note that on FreeBSD, the usual 3rd party man directory is /usr/local/man.  configure defaults to using /usr/local/share/man.  So, override it on the command line to avoid having man pages put in the wrong place.
+
 ```
 ./autogen.sh
-./configure
+./configure --prefix=/usr/local --mandir=/usr/local/man
 make
 make install
 ```
