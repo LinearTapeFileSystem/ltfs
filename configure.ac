@@ -239,7 +239,7 @@ AC_CHECK_LIB(rt, clock_gettime,,
 	[AC_MSG_ERROR([required library rt missing])])
 
 dnl
-dnl Check for libcam, libbsdxml (expat) and libmt on FreeBSD
+dnl Check for libcam, libbsdxml (expat), libmt and libexecinfo on FreeBSD
 dnl
 if test "x${host_freebsd}" = "xyes"
 then
@@ -249,6 +249,8 @@ then
 	    [AC_MSG_ERROR([required library bsdxml missing])])
     AC_CHECK_LIB(mt, mt_status_free,,
 	    [AC_MSG_ERROR([required library mt missing])])
+    AC_CHECK_LIB(execinfo, backtrace,,
+	    [AC_MSG_ERROR([required library execinfo missing])])
 
 fi
 dnl
