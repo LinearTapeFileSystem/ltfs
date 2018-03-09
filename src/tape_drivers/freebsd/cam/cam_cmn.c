@@ -62,7 +62,7 @@
 #include "ltfs_copyright.h"
 #include "ibm_tape.h"
 #include "libltfs/ltfslogging.h"
-#include "camtape_cmn.h"
+#include "cam_cmn.h"
 
 volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n";
 

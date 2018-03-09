@@ -11,7 +11,7 @@ PLAT_OPT += plugin tape iokit __LIBDIR__/ltfs/libtape-iokit-ibmtape.so
 endif
 
 if PLATFORM_FREEBSD
-PLAT_OPT += plugin tape camtape __LIBDIR__/ltfs/libtape-camtape-freebsd.so
+PLAT_OPT += plugin tape cam __LIBDIR__/ltfs/libtape-cam.so
 endif
 
 if ENABLE_LIN_TAPE

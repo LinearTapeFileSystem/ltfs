@@ -35,24 +35,24 @@
 #
 
 
-lib_LTLIBRARIES = libtape-camtape-freebsd.la
+lib_LTLIBRARIES = libtape-cam.la
 libdir = @libdir@/ltfs
 
 AM_LIBTOOLFLAGS = --tag=disable-static
 
-libtape_camtape_freebsd_la_SOURCES = camtape_cmn.c camtape_tc.c
-libtape_camtape_freebsd_la_DEPENDENCIES = ../../../../messages/tape_freebsd_camtape_dat.o libtape_camtape_freebsd_la-reed_solomon_crc.lo libtape_camtape_freebsd_la-crc32c_crc.lo libtape_camtape_freebsd_la-ibm_tape.lo
-libtape_camtape_freebsd_la_LIBADD = ../../../../messages/tape_freebsd_camtape_dat.o ./libtape_camtape_freebsd_la-reed_solomon_crc.lo ./libtape_camtape_freebsd_la-crc32c_crc.lo ./libtape_camtape_freebsd_la-ibm_tape.lo
-libtape_camtape_freebsd_la_LDFLAGS = -avoid-version -module
-libtape_camtape_freebsd_la_CPPFLAGS = @AM_CPPFLAGS@ -I ../../.. -I ../..
-libtape_camtape_freebsd_la-reed_solomon_crc.lo: ../../reed_solomon_crc.c
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_camtape_freebsd_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_camtape_freebsd_la-reed_solomon_crc.lo -MD -MP -c -o libtape_camtape_freebsd_la-reed_solomon_crc.lo ../../reed_solomon_crc.c
+libtape_cam_la_SOURCES = cam_cmn.c cam_tc.c
+libtape_cam_la_DEPENDENCIES = ../../../../messages/tape_freebsd_cam_dat.o libtape_cam_la-reed_solomon_crc.lo libtape_cam_la-crc32c_crc.lo libtape_cam_la-ibm_tape.lo
+libtape_cam_la_LIBADD = ../../../../messages/tape_freebsd_cam_dat.o ./libtape_cam_la-reed_solomon_crc.lo ./libtape_cam_la-crc32c_crc.lo ./libtape_cam_la-ibm_tape.lo
+libtape_cam_la_LDFLAGS = -avoid-version -module
+libtape_cam_la_CPPFLAGS = @AM_CPPFLAGS@ -I ../../.. -I ../..
+libtape_cam_la-reed_solomon_crc.lo: ../../reed_solomon_crc.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_cam_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_cam_la-reed_solomon_crc.lo -MD -MP -c -o libtape_cam_la-reed_solomon_crc.lo ../../reed_solomon_crc.c
 
-libtape_camtape_freebsd_la-crc32c_crc.lo: ../../crc32c_crc.c
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_camtape_freebsd_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_camtape_freebsd_la-crc32c_crc.lo -MD -MP -c -o libtape_camtape_freebsd_la-crc32c_crc.lo ../../crc32c_crc.c
+libtape_cam_la-crc32c_crc.lo: ../../crc32c_crc.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_cam_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_cam_la-crc32c_crc.lo -MD -MP -c -o libtape_cam_la-crc32c_crc.lo ../../crc32c_crc.c
 
-libtape_camtape_freebsd_la-ibm_tape.lo: ../../ibm_tape.c
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_camtape_freebsd_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_camtape_freebsd_la-ibm_tape.lo -MD -MP -c -o libtape_camtape_freebsd_la-ibm_tape.lo ../../ibm_tape.c
+libtape_cam_la-ibm_tape.lo: ../../ibm_tape.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_cam_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_cam_la-ibm_tape.lo -MD -MP -c -o libtape_cam_la-ibm_tape.lo ../../ibm_tape.c
 
 
 install-exec-hook:

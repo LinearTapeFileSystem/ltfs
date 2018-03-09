@@ -163,7 +163,7 @@ then
 	fi
 	if test "x${host_freebsd}" = "xyes"
 	then
-		DEFAULT_TAPE=camtape
+		DEFAULT_TAPE=cam
 	fi
 fi
 

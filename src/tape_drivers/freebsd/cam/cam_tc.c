@@ -80,7 +80,7 @@
 #include "tape_drivers/ibm_tape.h"
 
 #define TAPE_BACKEND /* Use static vriable definition in tape_drivers.h */
-#include "camtape_cmn.h"
+#include "cam_cmn.h"
 #include "reed_solomon_crc.h"
 #include "crc32c_crc.h"
 
@@ -4108,12 +4108,12 @@ struct tape_ops *tape_dev_get_ops(void)
 	return &camtape_drive_handler;
 }
 
-extern char tape_freebsd_camtape_dat[];
+extern char tape_freebsd_cam_dat[];
 
 const char *tape_dev_get_message_bundle_name(void **message_data)
 {
-	*message_data = tape_freebsd_camtape_dat;
-	return "tape_freebsd_camtape";
+	*message_data = tape_freebsd_cam_dat;
+	return "tape_freebsd_cam";
 }
 
 /**
