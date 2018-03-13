@@ -52,6 +52,10 @@ if PLATFORM_MAC
 PLAT_DRV += tape_drivers/osx/iokit-ibmtape
 endif
 
+if PLATFORM_FREEBSD
+PLAT_DRV += tape_drivers/freebsd/cam
+endif
+
 if ENABLE_LIN_TAPE
 PLAT_DRV += tape_drivers/linux/lin_tape
 endif

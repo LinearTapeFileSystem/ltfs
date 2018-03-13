@@ -59,4 +59,10 @@
 typedef void (*sighandler_t)(int);
 #endif
 
+#ifdef __FreeBSD__
+typedef sig_t ltfs_sighandler_t;
+#else
+typedef sighandler_t ltfs_sighandler_t;
+#endif
+
 #endif /* time_internal_h_ */

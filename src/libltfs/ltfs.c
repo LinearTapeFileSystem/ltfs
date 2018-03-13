@@ -200,7 +200,7 @@ int ltfs_set_signal_handlers(void)
 }
 #else
 {
-	sighandler_t ret;
+	ltfs_sighandler_t ret;
 
 	interrupted = false;
 
@@ -248,7 +248,7 @@ int ltfs_unset_signal_handlers(void)
 }
 #else
 {
-	sighandler_t rc;
+	ltfs_sighandler_t rc;
 	int ret = 0;
 
 	rc = signal(SIGINT, SIG_DFL);

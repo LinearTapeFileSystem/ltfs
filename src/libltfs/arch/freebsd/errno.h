@@ -1,9 +1,9 @@
 /*
 **
-**  OO_Copyright_BEGIN
+**  SS_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2018 IBM Corp. All rights reserved.
+**  Copyright (c) 2014-2018 Spectra Logic Corporation. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -30,61 +30,23 @@
 **  POSSIBILITY OF SUCH DAMAGE.
 **
 **
-**  OO_Copyright_END
+**  SS_Copyright_END
 **
 *************************************************************************************
 **
 ** COMPONENT NAME:  IBM Linear Tape File System
 **
-** FILE NAME:       xattr.h
+** FILE NAME:       errno.h
 **
-** DESCRIPTION:     Header for extended attribute routines.
+** DESCRIPTION:     LTFS errno mapping for FreeBSD
 **
-** AUTHORS:         Brian Biskeborn
-**                  IBM Almaden Research Center
-**                  bbiskebo@us.ibm.com
-**
-**                  Lucas C. Villa Real
-**                  IBM Almaden Research Center
-**                  lucasvr@us.ibm.com
-**
+** AUTHORS:         Ryan Guthrie
+**                  Spectra Logic Corporation
 *************************************************************************************
 */
+#ifndef LIBLTFS_ARCH_FREEBSD_ERRNO_H
+#define LIBLTFS_ARCH_FREEBSD_ERRNO_H
 
-#ifndef __xattr_h__
-#define __xattr_h__
+#define ENODATA EIO
 
-#ifdef __cplusplus
-extern "C" {
 #endif
-
-#ifdef __FreeBSD__
-#include "libltfs/arch/freebsd/xattr.h"
-#endif
-
-#include "ltfs.h"
-
-#define LTFS_PRIVATE_PREFIX "ltfs."
-
-int xattr_set(struct dentry *d, const char *name, const char *value, size_t size, int flags,
-	struct ltfs_volume *vol);
-int xattr_get(struct dentry *d, const char *name, char *value, size_t size,
-	struct ltfs_volume *vol);
-int xattr_list(struct dentry *d, char *list, size_t size, struct ltfs_volume *vol);
-int xattr_remove(struct dentry *d, const char *name, struct ltfs_volume *vol);
-
-int _xattr_get_string(const char *val, char **outval, const char *msg);
-int _xattr_get_u64(uint64_t val, char **outval, const char *msg);
-
-/** For internal use only */
-int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t size,
-	struct xattr_info *xattr);
-int xattr_do_remove(struct dentry *d, const char *name, bool force, struct ltfs_volume *vol);
-const char *_xattr_strip_name(const char *name);
-int xattr_set_mountpoint_length(struct dentry *d, const char* value, size_t size);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* __xattr_h__ */

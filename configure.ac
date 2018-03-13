@@ -57,6 +57,7 @@ dnl Detecting OS
 dnl
 host_linux=no
 host_mac=no
+host_freebsd=no
 
 case "${host_os}" in
 	linux*)
@@ -64,6 +65,9 @@ case "${host_os}" in
 		;;
 	darwin*)
 		host_mac=yes
+		;;
+	freebsd*)
+		host_freebsd=yes
 		;;
 	*)
 		AC_MSG_ERROR(["OS $host_os is not supported"])
@@ -157,6 +161,10 @@ then
 	then
 		DEFAULT_TAPE=iokit
 	fi
+	if test "x${host_freebsd}" = "xyes"
+	then
+		DEFAULT_TAPE=cam
+	fi
 fi
 
 if test "x${DEFAULT_TAPE}" = "xlin_tape"
@@ -222,6 +230,29 @@ else
 	PKG_CHECK_MODULES([UUID_MODULE], [uuid >= 1.36])
 fi
 
+dnl
+dnl Check for pthreads and clock_gettime
+dnl
+AC_CHECK_LIB(pthread, pthread_create,,
+	[AC_MSG_ERROR([required library pthread missing])])
+AC_CHECK_LIB(rt, clock_gettime,,
+	[AC_MSG_ERROR([required library rt missing])])
+
+dnl
+dnl Check for libcam, libbsdxml (expat), libmt and libexecinfo on FreeBSD
+dnl
+if test "x${host_freebsd}" = "xyes"
+then
+    AC_CHECK_LIB(cam, cam_open_device,,
+	    [AC_MSG_ERROR([required library cam missing])])
+    AC_CHECK_LIB(bsdxml, XML_ParserCreate,,
+	    [AC_MSG_ERROR([required library bsdxml missing])])
+    AC_CHECK_LIB(mt, mt_status_free,,
+	    [AC_MSG_ERROR([required library mt missing])])
+    AC_CHECK_LIB(execinfo, backtrace,,
+	    [AC_MSG_ERROR([required library execinfo missing])])
+
+fi
 dnl
 dnl Check for ICU
 dnl
@@ -310,6 +341,18 @@ if test "x$ac_cv_xml_huge" = "xyes"; then
    AC_DEFINE(HAVE_XML_PARSE_HUGE, [1], [Define to 1 if you have XML_PARSE_HUGE])
 fi
 
+AC_MSG_CHECKING([if compiling with clang])
+
+AC_COMPILE_IFELSE(
+[AC_LANG_PROGRAM([], [[
+#ifndef __clang__
+	not clang
+#endif
+]])],
+[CLANG=yes], [CLANG=no])
+
+AC_MSG_RESULT([$CLANG])
+
 dnl
 dnl Update flags
 dnl Sets CFLAGS to force optimization and debugging options, which isn't quite kosher
@@ -322,7 +365,10 @@ then
 	OPT_FLAGS="-D_FORTIFY_SOURCE=2 -O2 -g -fno-strict-aliasing"
 else
 	OPT_FLAGS="-D_FORTIFY_SOURCE=0 -O0 -ggdb"
-	AM_CFLAGS="${AM_CFLAGS} -fkeep-inline-functions -rdynamic"
+	if test "x$CLANG" = 'xno'
+	then
+		AM_CFLAGS="${AM_CFLAGS} -fkeep-inline-functions -rdynamic"
+	fi
 	if test "x$use_debug" = "xyes"
 	then
 		AM_CPPFLAGS="${AM_CPPFLAGS} -DDEBUG -DTRACE"
@@ -345,7 +391,7 @@ dnl
 AC_MSG_CHECKING([for SSE4.2])
 CRC_OPTIMIZE="-O2"
 
-if test "x$GCC" = 'xyes'
+if test "x$GCC" = 'xyes' -a "x$CLANG" = 'xno'
 then
 	GCC_VERSION=`$CC -dumpversion`
 	GCC_VERSION_MAJOR=$(echo $GCC_VERSION | cut -d'.' -f1)
@@ -360,7 +406,7 @@ then
 	if test "x${SSE42}" = "xyes"
 	then
 		case x"$target_cpu" in
-			xx86_64)
+			xx86_64 | xamd64)
 				AC_MSG_RESULT([yes, x86_64])
 				CRC_OPTIMIZE="-msse4.2 -O2 -D__SSE42__"
 				;;
@@ -375,6 +421,21 @@ then
 	else
 		AC_MSG_RESULT([no, gcc version])
 	fi
+elif test "x$CLANG" = 'xyes'
+then
+	case x"$target_cpu" in
+		xx86_64 | xamd64)
+			AC_MSG_RESULT([yes, x86_64])
+			CRC_OPTIMIZE="-msse4.2 -O2 -D__SSE42__"
+			;;
+		xi*86)
+			AC_MSG_RESULT([yes, x86])
+			CRC_OPTIMIZE="-msse4.2 -O2 -D__SSE42__"
+			;;
+		*)
+			AC_MSG_RESULT([no, unsupported cpu $target_cpu])
+			;;
+	esac
 else
 	AC_MSG_RESULT([no, non-gcc])
 fi
@@ -401,6 +462,7 @@ dnl
 AM_CONDITIONAL([PLATFORM_LINUX], [test "x${host_linux}" = "xyes"])
 AM_CONDITIONAL([ENABLE_LIN_TAPE], [test "x${lintape}" = "xyes"])
 AM_CONDITIONAL([PLATFORM_MAC], [test "x${host_mac}" = "xyes"])
+AM_CONDITIONAL([PLATFORM_FREEBSD], [test "x${host_freebsd}" = "xyes"])
 AM_CONDITIONAL([OSS], [true])
 AM_CONDITIONAL([CHK_MESSAGE], [test "x${use_msg_check}" = "xyes"])
 
@@ -427,6 +489,7 @@ AC_CONFIG_FILES([
 	src/tape_drivers/linux/lin_tape/Makefile
 	src/tape_drivers/linux/sg-ibmtape/Makefile
 	src/tape_drivers/osx/iokit-ibmtape/Makefile
+	src/tape_drivers/freebsd/cam/Makefile
 	src/iosched/Makefile
 	src/kmi/Makefile
 	src/utils/Makefile

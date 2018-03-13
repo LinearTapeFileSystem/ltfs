@@ -207,7 +207,7 @@ int itdtimage_parse_opts(void *vstate, void *opt_args)
 
 void itdtimage_help_message(void)
 {
-	ltfsresult(31199I);
+	ltfsresult(31199I, itdtimage_default_device);
 }
 
 int itdtimage_open(const char *name, void **handle)
@@ -1522,7 +1522,7 @@ unsigned long long _get_file_size(FILE *fStream)
 		ret|=p.LowPart;
 	}
 #else
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 	long long tmp = fseeko(fStream, 0LL, SEEK_END);
 	if(tmp != -1){
 		ret = ftello(fStream);
@@ -1566,7 +1566,7 @@ unsigned long long _seek_file(FILE *file, unsigned long long position)
 	}else
 		file->Seek(position, wxFromStart);
 #else
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 	long long tmp = fseeko(file, position, SEEK_SET);
 #else
 	long long tmp = fseeko64(file, position, SEEK_SET);

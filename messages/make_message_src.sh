@@ -15,6 +15,9 @@ if [ "$KERNEL_NAME" = "Darwin" ]; then
 		GENRB=genrb
 		PKGDATA=pkgdata
 	fi
+elif [ "$KERNEL_NAME" = "FreeBSD" ]; then
+	GENRB=genrb
+	PKGDATA=/usr/local/bin/pkgdata
 else
 	if [ -x /usr/bin/genrb ]; then
 		GENRB=/usr/bin/genrb
@@ -56,6 +59,14 @@ make_obj() {
 		MINGW32_NT*)
 			mv ${BASENAME}.dat ../../
 			;;
+		FreeBSD)
+			# pkgdata with -m static generates an ar(1) archive
+			# with several object files on FreeBSD.  To avoid
+			# reworking the makefiles for all OSes, just rename
+			# the archive to match the regular convention.  The
+			# linker handles it without a problem.
+			mv lib${BASENAME}.a ../../${BASENAME}_dat.o
+			;;
 		*)
 			mv ${BASENAME}_dat.o ../../
 			;;
@@ -68,7 +79,7 @@ make_obj() {
 
 # Check whether we need to do anything
 if [ -f "../$1" ]; then
-	for file in *; do
+	for file in *.txt; do
 		if [ "$file" -nt "../$1" ]; then
 			make_obj
 			exit 0

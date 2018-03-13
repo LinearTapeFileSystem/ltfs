@@ -162,7 +162,7 @@ struct function_entry {
 #define FS_FN_TRACE_ENTRIES    (FS_FN_TRACE_SIZE / FN_TRACE_ENTRY_SIZE)
 
 struct filesystem_function_trace {
-	struct MultiReaderSingleWriter trace_lock;      /**< Lock for trace data */
+	MultiReaderSingleWriter        trace_lock;      /**< Lock for trace data */
 	uint32_t                       max_index;
 	uint32_t                       cur_index;
 	struct function_entry          entries[FS_FN_TRACE_ENTRIES];
@@ -180,7 +180,7 @@ struct filesystem_trace_list {
 #define ADMIN_FN_TRACE_ENTRIES	256
 #define ADMIN_FN_TRACE_SIZE	(ADMIN_FN_TRACE_ENTRIES * FN_TRACE_ENTRY_SIZE)
 struct admin_function_trace {
-	struct MultiReaderSingleWriter trace_lock;      /**< Lock for trace data */
+	MultiReaderSingleWriter        trace_lock;      /**< Lock for trace data */
 	uint32_t                       max_index;
 	uint32_t                       cur_index;
 	struct function_entry          entries[ADMIN_FN_TRACE_ENTRIES];
@@ -200,7 +200,7 @@ struct admin_completed_function_trace {
 	TAILQ_ENTRY(admin_completed_function_trace) list;
 	uint32_t                       tid;
 	struct admin_function_trace    *fn_entry;
-	struct MultiReaderSingleWriter trace_lock;
+	MultiReaderSingleWriter        trace_lock;
 };
 
 /*

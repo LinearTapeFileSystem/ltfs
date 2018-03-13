@@ -35,6 +35,17 @@ These instructions will get you a copy of the project up and running on your loc
   * icu4c
   * gnu-sed
 
+- FreeBSD:
+  * FreeBSD 10.2 or 11.0 or later (for sa(4) driver changes)
+  * automake
+  * autoconf
+  * libtool
+  * fusefs-libs
+  * net-snmp
+  * e2fsprogs-libuuid
+  * libxml2
+  * icu
+
 ## Supported Tape Drives
 
   | Vendor | Drive Type | Minimum F/W Level |
@@ -83,6 +94,17 @@ make install
 ```
 
 `./configure --help` shows various options for build and install.
+
+### Build and install on FreeBSD
+
+Note that on FreeBSD, the usual 3rd party man directory is /usr/local/man.  configure defaults to using /usr/local/share/man.  So, override it on the command line to avoid having man pages put in the wrong place.
+
+```
+./autogen.sh
+./configure --prefix=/usr/local --mandir=/usr/local/man
+make
+make install
+```
 
 ## Contributing
 

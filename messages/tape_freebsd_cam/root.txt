@@ -1,0 +1,127 @@
+//
+//
+//  OO_Copyright_BEGIN
+//
+//
+//  Copyright 2010, 2018 IBM Corp. All rights reserved.
+//
+//  Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions
+//  are met:
+//  1. Redistributions of source code must retain the above copyright
+//     notice, this list of conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright
+//     notice, this list of conditions and the following disclaimer in the
+//  documentation and/or other materials provided with the distribution.
+//  3. Neither the name of the copyright holder nor the names of its
+//     contributors may be used to endorse or promote products derived from
+//     this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
+//
+//  OO_Copyright_END
+//
+
+// Messages for the FreeBSD CAM backend.
+// This backend shares IDs 12000-12999 with the file and iokit backends and the backend
+// interface functions, so be sure to make a note in messages/ltfs/root.txt whenever an
+// ID is allocated here.
+root:table {
+	messages:table {
+		start_id:int { 31200 }
+		end_id:int { 31399 }
+
+		31206D:string { "IOCTL: sense = %02x/%02x%02x" }
+		31207D:string { "IOCTL: pos = 0x%02x%02x%02x%02x %s" }
+		31208I:string { "IOCTL: %s %d returns %d (generic %d) %s" }
+		31209D:string { "IOCTL: no sense info" }
+		31211D:string { "IOCTL: %s %d expected error %d. retry the operation."}
+		31212I:string { "Cannot get sense (%d)" }
+		31213I:string { "Error on %s: %s (%d) %s"}
+		31214E:string { "Error on %s: msg = NULL (%d) %s"}
+		31218I:string { "Parsing log page: buffer too small, copying %zu bytes from %lx" }
+		31219I:string { "Option parsing for the CAM backend failed (%d)" }
+		31220E:string { "Invalid scsi_lbprotect option: %s" }
+		31223I:string { "Opening a device through CAM driver (%s)" }
+		31224E:string { "%s: medium is already mounted or in use" }
+		31225I:string { "Cannot open device \'%s\' (%d)" }
+		31226W:string { "Device \'%s\' must be opened in read-only mode" }
+		31228I:string { "Product ID is \'%s\'" }
+		31229I:string { "Vendor ID is %s" }
+		31230I:string { "Unsupported Drive \'%s\'" }
+		31232I:string { "Firmware revision is %s" }
+		31233I:string { "Drive serial is %s" }
+		31234I:string { "Pseudo-error on %s" }
+		31235I:string { "Pseudo-error on write. Good return code, but a record to emulate a write error did not get sent to the drive." }
+
+		31236D:string { "Read block: file mark detected" }
+		31237I:string { "Read block: overlength condition is detected. residual = %d, actual = %d" }
+		31238D:string { "Read block: underlength condition is detected. shortage = %d, actual = %d" }
+		31239E:string { "Logical block protection Error on read" }
+		31245W:string { "Received low space warning (early warning) in %s" }
+		31246W:string { "Received low space warning (programmable early warning) in %s" }
+		31247E:string { "Logical block protection Error on write" }
+		31248D:string { "EOD detected (%s): ignore sense" }
+		31249I:string { "Unrecognized space type" }
+		31250I:string { "Cannot space: count value %d of the space command is too large" }
+		31251I:string { "A long data wipe is in progress. (%d minutes passed)" }
+		31252I:string { "A long data wipe is in progress. %d %%" }
+		31253W:string { "Failed to get medium type code: medium type check is skipped" }
+		// Reusable 31254
+		31255I:string { "Unsupported cartridge (0x%x, 0x%x)" }
+		31256I:string { "Invalid format mode (%d)" }
+		31257I:string { "Cannot get remaining capacity: get log page 0x%02x failed (%d)" }
+		31258I:string { "Cannot get remaining capacity: failed to parse the log page" }
+		31259I:string { "Cannot get remaining capacity: loop index error (%d)" }
+		31260I:string { "Cannot read attribute (%d)" }
+		31261I:string { "Cannot get log page 0x%02x (%d) in %s" }
+		31262I:string { "Cannot parse the log page 0x%02x in %s" }
+		31263E:string { "Failed to open file '%s' (%d)"}
+		31264W:string { "Cannot get EOD status: failed to get log page 0x%02x (%d)" }
+		31265W:string { "Cannot get EOD status: failed to parse the log page" }
+		31266W:string { "Cannot get EOD status: value length or partition number is wrong %d - (%d, %d)" }
+		31267I:string { "Unexpected parameter size for getting active CQ loss write (%d)" }
+		31268I:string { "Cannot allocate memory in %s" }
+		31269E:string { "Encryption method of the drive is not AME but %s (0x%02X)" }
+		31270E:string { "Encryption feature is not supported on the drive: %d" }
+		31271I:string { "Logical block protection is enabled" }
+		31272I:string { "Logical block protection is disabled" }
+
+		31278I:string { "Saving drive dump to %s" }
+		31279W:string { "Cannot retrieve drive dump: failed to create dump file (%d)" }
+		31280D:string { "Total dump data length is %lld." }
+		31281D:string { "Total number of transfers is %d." }
+		31282D:string { "Transferring dump data" }
+		31283W:string { "Cannot retrieve drive dump: failed to read buffer (%d)" }
+		31284W:string { "Cannot retrieve drive dump: failed to write to dump file (%d)" }
+		31285D:string { "Transfer %d: wrote %d bytes" }
+		31286W:string { "Cannot retrieve drive dump: wrote %d bytes out, expected %d" }
+		31287I:string { "Taking drive dump in buffer" }
+		31288I:string { "Forcing drive dump" }
+		31289I:string { "Failed to get cartridge status. The cartridge is not loaded."}
+
+		31392D:string { "Backend %s %s" }
+		31393D:string { "Backend %s: %d %s" }
+		31394D:string { "Backend %s: %llu %s" }
+		31395D:string { "Backend %s: %zu bytes %s" }
+		31396D:string { "Backend %s: %zu %s" }
+		31397D:string { "Backend %s: (%llu, %llu) %s" }
+		31398D:string { "Backend %s: (%llu, %llu) FM = %llu %s" }
+		31399I:string { "CAM backend options:\n"
+						"    -o devname=<dev>           tape device (default=%s)\n"
+						"    -o autodump                enable autodump (default)\n"
+						"    -o noautodump              disable autodump\n"
+						"    -o scsi_lbprotect=<on|off> enable drive logical block protection (default=off)\n" }
+	}
+}

@@ -66,7 +66,8 @@ static inline void backtrace_info(void)
 }
 
 #include "arch/win/win_locking.h"
-#else
+
+#else /* ! mingw_PLATFORM */
 
 #include <pthread.h>
 #include <execinfo.h> /* For backtrace() */
@@ -148,7 +149,13 @@ static inline int ltfs_mutexattr_setpshared(ltfs_mutexattr_t *attr,
 {
 	return pthread_mutexattr_setpshared(attr, pshared);
 }
-#endif
+#endif /* ! mingw_PLATFORM */
+
+#ifdef __FreeBSD__
+
+#include "arch/freebsd/freebsd_locking.h"
+
+#else /* !__FreeBSD__ */
 
 typedef struct MultiReaderSingleWriter {
 	ltfs_mutex_t write_exclusive_mutex;
@@ -349,6 +356,8 @@ writetoread_mrsw(MultiReaderSingleWriter *mrsw)
 	//Release the write_exclusive_mutex, to allow others to write protect, and additional readers in.
 	ltfs_mutex_unlock(&mrsw->write_exclusive_mutex);
 }
+
+#endif /* ! __FreeBSD__ */
 
 #ifdef __cplusplus
 }

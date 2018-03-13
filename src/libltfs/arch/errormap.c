@@ -51,6 +51,10 @@
 #include "libltfs/arch/win/win_util.h"
 #endif
 
+#ifdef __FreeBSD__
+#include "libltfs/arch/freebsd/errno.h"
+#endif
+
 #include <stdlib.h>
 #include <errno.h>
 
