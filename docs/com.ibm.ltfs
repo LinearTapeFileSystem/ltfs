@@ -1,0 +1,3 @@
+# For LTFS
+> /var/log/ltfs.log mode=0640 compress format=std rotate=seq file_max=5M all_max=100M
+? [CA= Sender ltfs] file /var/log/ltfs.log
