@@ -54,7 +54,7 @@ make_obj() {
 	${GENRB} -d work -q *.txt
 	cd work
 	ls *.res >packagelist.txt
-	${PKGDATA} -p ${BASENAME} -m library -q packagelist.txt >/dev/null
+	${PKGDATA} -p ${BASENAME} -m static -q packagelist.txt >/dev/null
 
 	case $KERNEL_NAME in
 		MINGW32_NT*)
