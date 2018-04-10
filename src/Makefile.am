@@ -37,9 +37,10 @@ if OSS
 bin_PROGRAMS = ltfs
 
 ltfs_SOURCES = main.c ltfs_fuse.c
-ltfs_DEPENDENCIES = libltfs/libltfs.la ../messages/bin_ltfs_dat.o
+ltfs_DEPENDENCIES = libltfs/libltfs.la ../messages/libbin_ltfs_dat.a
 ltfs_CPPFLAGS = @AM_CPPFLAGS@ -I ../ltfs-sde/src
-ltfs_LDADD = libltfs/libltfs.la ../messages/bin_ltfs_dat.o
+ltfs_LDADD = libltfs/libltfs.la
+ltfs_LDFLAGS = @AM_LDFLAGS@ -L../messages -lbin_ltfs_dat
 endif
 
 PLAT_DRV =
@@ -68,7 +69,7 @@ GEN_DRV += tape_drivers/generic/itdtimg
 SUB += kmi
 endif
 
-SUBDIRS = $(GEN_DRV) $(PLAT_DRV) $(SUB) iosched libltfs utils
+SUBDIRS = libltfs $(GEN_DRV) $(PLAT_DRV) $(SUB) iosched utils
 
 noinst_HEADERS = \
 	libltfs/base64.h \

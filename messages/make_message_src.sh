@@ -36,7 +36,8 @@ if [ "$#" -ne "1" ]; then
 	exit 1
 fi
 
-BASENAME=`echo $1 | sed -e 's/_dat\.o$//'`
+BASENAME=`echo $1 | sed -e 's/_dat\.a$//'`
+BASENAME=`echo $BASENAME | sed -e 's/^lib//'`
 
 cd ${BASENAME}
 
@@ -65,10 +66,10 @@ make_obj() {
 			# reworking the makefiles for all OSes, just rename
 			# the archive to match the regular convention.  The
 			# linker handles it without a problem.
-			mv lib${BASENAME}.a ../../${BASENAME}_dat.o
+			mv lib${BASENAME}.a ../../lib${BASENAME}_dat.a
 			;;
 		*)
-			mv ${BASENAME}_dat.o ../../
+			mv ${BASENAME}_dat.o ../../lib${BASENAME}_dat.a
 			;;
 	esac
 

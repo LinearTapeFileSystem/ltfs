@@ -39,9 +39,9 @@ libdir = @libdir@/ltfs
 AM_LIBTOOLFLAGS = --tag=disable-static
 
 libtape_file_la_SOURCES = filedebug_tc.c filedebug_conf_tc.c ibm_tape.c
-libtape_file_la_DEPENDENCIES = ../../../../messages/tape_generic_file_dat.o
-libtape_file_la_LIBADD = ../../../../messages/tape_generic_file_dat.o
-libtape_file_la_LDFLAGS = -avoid-version -module
+libtape_file_la_DEPENDENCIES = ../../../../messages/libtape_generic_file_dat.a ../../../libltfs/libltfs.la
+libtape_file_la_LIBADD  =../../../libltfs/libltfs.la
+libtape_file_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages/ -ltape_generic_file_dat
 libtape_file_la_CPPFLAGS = @AM_CPPFLAGS@ -I ../../..
 
 ibm_tape.c:

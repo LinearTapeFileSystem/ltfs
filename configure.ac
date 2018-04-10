@@ -60,18 +60,18 @@ host_mac=no
 host_freebsd=no
 
 case "${host_os}" in
-	linux*)
-		host_linux=yes
-		;;
-	darwin*)
-		host_mac=yes
-		;;
-	freebsd*)
-		host_freebsd=yes
-		;;
-	*)
-		AC_MSG_ERROR(["OS $host_os is not supported"])
-		;;
+    linux*)
+        host_linux=yes
+        ;;
+    darwin*)
+        host_mac=yes
+        ;;
+    freebsd*)
+        host_freebsd=yes
+        ;;
+    *)
+        AC_MSG_ERROR(["OS $host_os is not supported"])
+        ;;
 esac
 
 dnl
@@ -79,9 +79,9 @@ dnl Handle --enable-debug (default:no)
 dnl
 AC_MSG_CHECKING([whether to compile in debug mode])
 AC_ARG_ENABLE([debug],
-	[AS_HELP_STRING([--enable-debug],[compile with extra debugging output])],
-	[use_debug=$enableval],
-	[use_debug=no]
+    [AS_HELP_STRING([--enable-debug],[compile with extra debugging output])],
+    [use_debug=$enableval],
+    [use_debug=no]
 )
 AC_MSG_RESULT([$use_debug])
 
@@ -90,9 +90,9 @@ dnl Handle --enable-message-checker (default:no)
 dnl
 AC_MSG_CHECKING([whether to compile in message checking mode])
 AC_ARG_ENABLE([message-checker],
-	[AS_HELP_STRING([--enable-message-checker],[compile in message checking mode (may be binary is defunct)])],
-	[use_msg_check=$enableval],
-	[use_msg_check=no]
+    [AS_HELP_STRING([--enable-message-checker],[compile in message checking mode (may be binary is defunct)])],
+    [use_msg_check=$enableval],
+    [use_msg_check=no]
 )
 AC_MSG_RESULT([$use_msg_check])
 
@@ -101,18 +101,18 @@ dnl Handle --enable-fast (default:no)
 dnl
 AC_MSG_CHECKING([whether to enable optimizations])
 AC_ARG_ENABLE([fast],
-	[AS_HELP_STRING([--enable-fast],[compile with optimization enabled])],
-	[use_fast=$enableval],
-	[use_fast=no]
+    [AS_HELP_STRING([--enable-fast],[compile with optimization enabled])],
+    [use_fast=$enableval],
+    [use_fast=no]
 )
 AC_MSG_RESULT([$use_fast])
 
 if test "x${use_fast}" != "xno"
 then
-	if test "x${use_debug}" != "xno"
-	then
-		AC_MSG_ERROR([Cannot specify --enable-fast and --enable-debug at the same time.])
-	fi
+    if test "x${use_debug}" != "xno"
+    then
+        AC_MSG_ERROR([Cannot specify --enable-fast and --enable-debug at the same time.])
+    fi
 fi
 
 dnl
@@ -120,9 +120,9 @@ dnl Handle --enable-livelink (default:yes)
 dnl
 AC_MSG_CHECKING([whether to enable livelink mode support [default=yes] ])
 AC_ARG_ENABLE([livelink],
-	[AS_HELP_STRING([--enable-livelink],[compile with livelink mode support [default=yes]])],
-	[livelink=$enableval],
-	[livelink=yes]
+    [AS_HELP_STRING([--enable-livelink],[compile with livelink mode support [default=yes]])],
+    [livelink=$enableval],
+    [livelink=yes]
 )
 AC_MSG_RESULT([$livelink])
 
@@ -131,9 +131,9 @@ dnl Handle --enable-snmp (default:yes)
 dnl
 AC_MSG_CHECKING([whether to enable snmp or not])
 AC_ARG_ENABLE([snmp],
-	[AS_HELP_STRING([--enable-snmp],[Support SNMP or not])],
-	[snmp=$enableval],
-	[snmp=yes]
+    [AS_HELP_STRING([--enable-snmp],[Support SNMP or not])],
+    [snmp=$enableval],
+    [snmp=yes]
 )
 AC_MSG_RESULT([$snmp])
 
@@ -142,9 +142,9 @@ dnl Handle --enable-lin-tape (default:no, Linux Only)
 dnl
 AC_MSG_CHECKING([whether to enable lin_tape or not (Linux Only)])
 AC_ARG_ENABLE([lintape],
-	[AS_HELP_STRING([--enable-lintape],[Support IBM's lin_tape driver or not])],
-	[lintape=$enableval],
-	[lintape=no]
+    [AS_HELP_STRING([--enable-lintape],[Support IBM's lin_tape driver or not])],
+    [lintape=$enableval],
+    [lintape=no]
 )
 AC_MSG_RESULT([$lintape])
 
@@ -153,34 +153,34 @@ dnl Handle default backends
 dnl
 if test -z "$DEFAULT_TAPE"
 then
-	if test "x${host_linux}" = "xyes"
-	then
-		DEFAULT_TAPE=sg
-	fi
-	if test "x${host_mac}" = "xyes"
-	then
-		DEFAULT_TAPE=iokit
-	fi
-	if test "x${host_freebsd}" = "xyes"
-	then
-		DEFAULT_TAPE=cam
-	fi
+    if test "x${host_linux}" = "xyes"
+    then
+        DEFAULT_TAPE=sg
+    fi
+    if test "x${host_mac}" = "xyes"
+    then
+        DEFAULT_TAPE=iokit
+    fi
+    if test "x${host_freebsd}" = "xyes"
+    then
+        DEFAULT_TAPE=cam
+    fi
 fi
 
 if test "x${DEFAULT_TAPE}" = "xlin_tape"
 then
-	if test "x${lintape}" != "xyes"
-	then
-		AC_MSG_ERROR([lin_tape is not enabled --enable-lintape is required.])
-	fi
+    if test "x${lintape}" != "xyes"
+    then
+        AC_MSG_ERROR([lin_tape is not enabled --enable-lintape is required.])
+    fi
 fi
 
 if test -z "$DEFAULT_IOSCHED" ; then
-	DEFAULT_IOSCHED=unified
+    DEFAULT_IOSCHED=unified
 fi
 
 if test -z "$DEFAULT_KMI" ; then
-	DEFAULT_KMI=none
+    DEFAULT_KMI=none
 fi
 
 AC_ARG_VAR([DEFAULT_TAPE], [default tape device plugin, e.g. sg])
@@ -192,11 +192,11 @@ dnl Check for pkg-config
 dnl
 if test -z "$PKG_CONFIG"
 then
-	AC_PATH_PROG(PKG_CONFIG, pkg-config, [no])
+    AC_PATH_PROG(PKG_CONFIG, pkg-config, [no])
 fi
 if test "x${PKG_CONFIG}" = "xno"
 then
-	AC_MSG_ERROR([pkg-config was not found])
+    AC_MSG_ERROR([pkg-config was not found])
 fi
 
 dnl
@@ -205,7 +205,7 @@ dnl
 AC_PATH_PROG(GENRB, genrb, no)
 if test "x${GENRB}" = "xno"
 then
-	AC_MSG_ERROR([genrb was not found])
+    AC_MSG_ERROR([genrb was not found])
 fi
 
 dnl
@@ -214,7 +214,7 @@ dnl
 AC_PATH_PROG(PKGDATA, pkgdata, no)
 if test "x${PKGDATA}" = "xno"
 then
-	AC_MSG_ERROR([pkgdata was not found])
+    AC_MSG_ERROR([pkgdata was not found])
 fi
 
 dnl
@@ -225,18 +225,22 @@ PKG_CHECK_MODULES([LIBXML2_MODULE], [libxml-2.0 >= 2.6.16])
 
 if test "x${host_mac}" = "xyes"
 then
-	PKG_CHECK_MODULES([UUID_MODULE], [uuid >= 1.6])
+    PKG_CHECK_MODULES([UUID_MODULE], [uuid >= 1.6])
 else
-	PKG_CHECK_MODULES([UUID_MODULE], [uuid >= 1.36])
+    PKG_CHECK_MODULES([UUID_MODULE], [uuid >= 1.36])
 fi
 
 dnl
 dnl Check for pthreads and clock_gettime
 dnl
 AC_CHECK_LIB(pthread, pthread_create,,
-	[AC_MSG_ERROR([required library pthread missing])])
-AC_CHECK_LIB(rt, clock_gettime,,
-	[AC_MSG_ERROR([required library rt missing])])
+    [AC_MSG_ERROR([required library pthread missing])])
+
+if test "x${host_mac}" = "xno"
+then
+    AC_CHECK_LIB(rt, clock_gettime,,
+        [AC_MSG_ERROR([required library rt missing])])
+fi
 
 dnl
 dnl Check for libcam, libbsdxml (expat), libmt and libexecinfo on FreeBSD
@@ -244,15 +248,16 @@ dnl
 if test "x${host_freebsd}" = "xyes"
 then
     AC_CHECK_LIB(cam, cam_open_device,,
-	    [AC_MSG_ERROR([required library cam missing])])
+        [AC_MSG_ERROR([required library cam missing])])
     AC_CHECK_LIB(bsdxml, XML_ParserCreate,,
-	    [AC_MSG_ERROR([required library bsdxml missing])])
+        [AC_MSG_ERROR([required library bsdxml missing])])
     AC_CHECK_LIB(mt, mt_status_free,,
-	    [AC_MSG_ERROR([required library mt missing])])
+        [AC_MSG_ERROR([required library mt missing])])
     AC_CHECK_LIB(execinfo, backtrace,,
-	    [AC_MSG_ERROR([required library execinfo missing])])
+        [AC_MSG_ERROR([required library execinfo missing])])
 
 fi
+
 dnl
 dnl Check for ICU
 dnl
@@ -260,7 +265,7 @@ ICU_MODULE_CFLAGS="`icu-config --cppflags 2> /dev/null`";
 ICU_MODULE_LIBS="`icu-config --ldflags 2> /dev/null`";
 if test -z "$ICU_MODULE_LIBS"
 then
-	PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
+    PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
 fi
 
 dnl
@@ -272,19 +277,19 @@ SNMP_MODULE_LIBS_A=""
 SNMP_MODULE_LIBS=""
 if test "x${snmp}" != "xno"
 then
-	SNMP_ENABLE="-D ENABLE_SNMP"
-	SNMP_MODULE_CFLAGS="`net-snmp-config --cflags 2> /dev/null`";
-	SNMP_MODULE_LIBS_A="`net-snmp-config --agent-libs` 2> /dev/null";
-	SNMP_MODULE_LIBS="`net-snmp-config --libs 2> /dev/null`";
-	if test -z "$SNMP_MODULE_LIBS_A"
-	then
-		PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
-	fi
+    SNMP_ENABLE="-D ENABLE_SNMP"
+    SNMP_MODULE_CFLAGS="`net-snmp-config --cflags 2> /dev/null`";
+    SNMP_MODULE_LIBS_A="`net-snmp-config --agent-libs` 2> /dev/null";
+    SNMP_MODULE_LIBS="`net-snmp-config --libs 2> /dev/null`";
+    if test -z "$SNMP_MODULE_LIBS_A"
+    then
+        PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
+    fi
 
-	if test -z "$SNMP_MODULE_LIBS"
-	then
-		PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
-	fi
+    if test -z "$SNMP_MODULE_LIBS"
+    then
+        PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
+    fi
 fi
 
 dnl
@@ -329,11 +334,11 @@ SAVE_CFLAGS=$CFLAGS
 CFLAGS="$CFLAGS ${LIBXML2_MODULE_CFLAGS}"
 AC_MSG_CHECKING(for XML_PARSE_HUGE)
 AC_CACHE_VAL(ac_cv_xml_huge,
-	AC_TRY_COMPILE([#include <libxml/parser.h>],
-				   [int foo = XML_PARSE_HUGE; return 0],
-				   ac_cv_xml_huge=yes,
-				   ac_cv_xml_huge=no
-				   ))
+    AC_TRY_COMPILE([#include <libxml/parser.h>],
+                   [int foo = XML_PARSE_HUGE; return 0],
+                   ac_cv_xml_huge=yes,
+                   ac_cv_xml_huge=no
+                   ))
 AC_MSG_RESULT($ac_cv_xml_huge)
 CFLAGS="$SAVE_CFLAGS"
 
@@ -346,7 +351,7 @@ AC_MSG_CHECKING([if compiling with clang])
 AC_COMPILE_IFELSE(
 [AC_LANG_PROGRAM([], [[
 #ifndef __clang__
-	not clang
+    not clang
 #endif
 ]])],
 [CLANG=yes], [CLANG=no])
@@ -362,17 +367,17 @@ AM_CFLAGS="-Wall -Wsign-compare -fsigned-char ${FUSE_MODULE_CFLAGS} ${UUID_MODUL
 
 if test "x$use_fast" = "xyes"
 then
-	OPT_FLAGS="-D_FORTIFY_SOURCE=2 -O2 -g -fno-strict-aliasing"
+    OPT_FLAGS="-D_FORTIFY_SOURCE=2 -O2 -g -fno-strict-aliasing"
 else
-	OPT_FLAGS="-D_FORTIFY_SOURCE=0 -O0 -ggdb"
-	if test "x$CLANG" = 'xno'
-	then
-		AM_CFLAGS="${AM_CFLAGS} -fkeep-inline-functions -rdynamic"
-	fi
-	if test "x$use_debug" = "xyes"
-	then
-		AM_CPPFLAGS="${AM_CPPFLAGS} -DDEBUG -DTRACE"
-	fi
+    OPT_FLAGS="-D_FORTIFY_SOURCE=0 -O0 -ggdb"
+    if test "x$CLANG" = 'xno'
+    then
+        AM_CFLAGS="${AM_CFLAGS} -fkeep-inline-functions -rdynamic"
+    fi
+    if test "x$use_debug" = "xyes"
+    then
+        AM_CPPFLAGS="${AM_CPPFLAGS} -DDEBUG -DTRACE"
+    fi
 fi
 
 if test "x$use_msg_check" = "xyes"
@@ -382,7 +387,7 @@ fi
 
 if test "x$livelink" = "xno"
 then
-	AM_CPPFLAGS="${AM_CPPFLAGS} -DPOSIXLINK_ONLY"
+    AM_CPPFLAGS="${AM_CPPFLAGS} -DPOSIXLINK_ONLY"
 fi
 
 dnl
@@ -393,51 +398,51 @@ CRC_OPTIMIZE="-O2"
 
 if test "x$GCC" = 'xyes' -a "x$CLANG" = 'xno'
 then
-	GCC_VERSION=`$CC -dumpversion`
-	GCC_VERSION_MAJOR=$(echo $GCC_VERSION | cut -d'.' -f1)
-	GCC_VERSION_MINOR=$(echo $GCC_VERSION | cut -d'.' -f2)
-	SSE42=no
+    GCC_VERSION=`$CC -dumpversion`
+    GCC_VERSION_MAJOR=$(echo $GCC_VERSION | cut -d'.' -f1)
+    GCC_VERSION_MINOR=$(echo $GCC_VERSION | cut -d'.' -f2)
+    SSE42=no
 
-	if test ${GCC_VERSION_MAJOR} -ge 4 -a ${GCC_VERSION_MINOR} -ge 3
-	then
-		SSE42=yes
-	fi
+    if test ${GCC_VERSION_MAJOR} -ge 4 -a ${GCC_VERSION_MINOR} -ge 3
+    then
+        SSE42=yes
+    fi
 
-	if test "x${SSE42}" = "xyes"
-	then
-		case x"$target_cpu" in
-			xx86_64 | xamd64)
-				AC_MSG_RESULT([yes, x86_64])
-				CRC_OPTIMIZE="-msse4.2 -O2 -D__SSE42__"
-				;;
-			xi*86)
-				AC_MSG_RESULT([yes, x86])
-				CRC_OPTIMIZE="-msse4.2 -O2 -D__SSE42__"
-				;;
-			*)
-				AC_MSG_RESULT([no, unsupported cpu])
-				;;
-		esac
-	else
-		AC_MSG_RESULT([no, gcc version])
-	fi
+    if test "x${SSE42}" = "xyes"
+    then
+        case x"$target_cpu" in
+            xx86_64 | xamd64)
+                AC_MSG_RESULT([yes, x86_64])
+                CRC_OPTIMIZE="-msse4.2 -O2 -D__SSE42__"
+                ;;
+            xi*86)
+                AC_MSG_RESULT([yes, x86])
+                CRC_OPTIMIZE="-msse4.2 -O2 -D__SSE42__"
+                ;;
+            *)
+                AC_MSG_RESULT([no, unsupported cpu])
+                ;;
+        esac
+    else
+        AC_MSG_RESULT([no, gcc version])
+    fi
 elif test "x$CLANG" = 'xyes'
 then
-	case x"$target_cpu" in
-		xx86_64 | xamd64)
-			AC_MSG_RESULT([yes, x86_64])
-			CRC_OPTIMIZE="-msse4.2 -O2 -D__SSE42__"
-			;;
-		xi*86)
-			AC_MSG_RESULT([yes, x86])
-			CRC_OPTIMIZE="-msse4.2 -O2 -D__SSE42__"
-			;;
-		*)
-			AC_MSG_RESULT([no, unsupported cpu $target_cpu])
-			;;
-	esac
+    case x"$target_cpu" in
+        xx86_64 | xamd64)
+            AC_MSG_RESULT([yes, x86_64])
+            CRC_OPTIMIZE="-msse4.2 -O2 -D__SSE42__"
+            ;;
+        xi*86)
+            AC_MSG_RESULT([yes, x86])
+            CRC_OPTIMIZE="-msse4.2 -O2 -D__SSE42__"
+            ;;
+        *)
+            AC_MSG_RESULT([no, unsupported cpu $target_cpu])
+            ;;
+    esac
 else
-	AC_MSG_RESULT([no, non-gcc])
+    AC_MSG_RESULT([no, non-gcc])
 fi
 
 dnl
@@ -445,16 +450,19 @@ dnl Configure standard options
 dnl
 if test -x /usr/local/bin/gsed
 then
-	SED='gsed'
+    SED='gsed'
 else
-	SED='sed'
+    SED='sed'
+fi
+
+if test "x${host_mac}" = "xno"
+then
+    MODULE_CHECK_LD='-Wl,--no-undefined,--as-needed'
 fi
 
 AM_CFLAGS=`echo ${AM_CFLAGS} | ${SED} 's|-D_FORTIFY_SOURCE=. ||g'`
-AM_LDFLAGS="${AM_LDFLAGS} ${FUSE_MODULE_LIBS} ${UUID_MODULE_LIBS} ${LIBXML2_MODULE_LIBS} ${ICU_MODULE_LIBS} ${SNMP_MODULE_LIBS_A} ${SNMP_MODULE_LIBS}"
+AM_LDFLAGS="${AM_LDFLAGS} ${MODULE_CHECK_LD} ${FUSE_MODULE_LIBS} ${UUID_MODULE_LIBS} ${LIBXML2_MODULE_LIBS} ${ICU_MODULE_LIBS} ${SNMP_MODULE_LIBS_A} ${SNMP_MODULE_LIBS}"
 CFLAGS="${CFLAGS} ${OPT_FLAGS}"
-
-
 
 dnl
 dnl Define options
@@ -477,23 +485,23 @@ dnl Output files
 dnl
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
-	Makefile
-	messages/Makefile
-	conf/Makefile
-	man/Makefile
-	init.d/Makefile
-	src/Makefile
-	src/libltfs/Makefile
-	src/tape_drivers/generic/file/Makefile
-	src/tape_drivers/generic/itdtimg/Makefile
-	src/tape_drivers/linux/lin_tape/Makefile
-	src/tape_drivers/linux/sg-ibmtape/Makefile
-	src/tape_drivers/osx/iokit-ibmtape/Makefile
-	src/tape_drivers/freebsd/cam/Makefile
-	src/iosched/Makefile
-	src/kmi/Makefile
-	src/utils/Makefile
-	ltfs.pc:ltfs.pc.in
+    Makefile
+    messages/Makefile
+    conf/Makefile
+    man/Makefile
+    init.d/Makefile
+    src/Makefile
+    src/libltfs/Makefile
+    src/tape_drivers/generic/file/Makefile
+    src/tape_drivers/generic/itdtimg/Makefile
+    src/tape_drivers/linux/lin_tape/Makefile
+    src/tape_drivers/linux/sg-ibmtape/Makefile
+    src/tape_drivers/osx/iokit-ibmtape/Makefile
+    src/tape_drivers/freebsd/cam/Makefile
+    src/iosched/Makefile
+    src/kmi/Makefile
+    src/utils/Makefile
+    ltfs.pc:ltfs.pc.in
 ])
 
 AC_OUTPUT

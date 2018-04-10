@@ -39,9 +39,9 @@ libdir = @libdir@/ltfs
 AM_LIBTOOLFLAGS = --tag=disable-static
 
 libtape_iokit_ibmtape_la_SOURCES = iokit_ibmtape.c iokit_scsi.c iokit_service.c ibm_tape.c
-libtape_iokit_ibmtape_la_DEPENDENCIES = ../../../../messages/tape_iokit_ibmtape_dat.o ./libtape_iokit_ibmtape_la-reed_solomon_crc.lo ./libtape_iokit_ibmtape_la-crc32c_crc.lo
-libtape_iokit_ibmtape_la_LIBADD = ../../../../messages/tape_iokit_ibmtape_dat.o ./libtape_iokit_ibmtape_la-reed_solomon_crc.lo ./libtape_iokit_ibmtape_la-crc32c_crc.lo
-libtape_iokit_ibmtape_la_LDFLAGS = -avoid-version -module
+libtape_iokit_ibmtape_la_DEPENDENCIES = ../../../../messages/libtape_iokit_ibmtape_dat.a ../../../libltfs/libltfs.la ./libtape_iokit_ibmtape_la-reed_solomon_crc.lo ./libtape_iokit_ibmtape_la-crc32c_crc.lo
+libtape_iokit_ibmtape_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_iokit_ibmtape_la-reed_solomon_crc.lo ./libtape_iokit_ibmtape_la-crc32c_crc.lo
+libtape_iokit_ibmtape_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_iokit_ibmtape_dat
 libtape_iokit_ibmtape_la_CPPFLAGS = @AM_CPPFLAGS@ -I ../../.. -I ../..
 
 ibm_tape.c:
