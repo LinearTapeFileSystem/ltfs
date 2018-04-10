@@ -39,9 +39,9 @@ libdir = @libdir@/ltfs
 AM_LIBTOOLFLAGS = --tag=disable-static
 
 libtape_itdtimg_la_SOURCES = itdtimg_tc.c
-libtape_itdtimg_la_DEPENDENCIES = ../../../../messages/tape_generic_itdtimg_dat.o
-libtape_itdtimg_la_LIBADD = ../../../../messages/tape_generic_itdtimg_dat.o
-libtape_itdtimg_la_LDFLAGS = -avoid-version -module
+libtape_itdtimg_la_DEPENDENCIES = ../../../../messages/libtape_generic_itdtimg_dat.a ../../../libltfs/libltfs.la
+libtape_itdtimg_la_LIBADD = ../../../libltfs/libltfs.la
+libtape_itdtimg_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_generic_itdtimg_dat
 libtape_itdtimg_la_CPPFLAGS = @AM_CPPFLAGS@ -I ../../..
 
 install-exec-hook:

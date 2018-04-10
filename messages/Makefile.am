@@ -47,22 +47,22 @@
 ######################################################################################
 
 RESOURCES = \
-	bin_mkltfs_dat.o \
-	bin_ltfsck_dat.o \
-	bin_ltfs_dat.o \
-	kmi_simple_dat.o \
-	kmi_flatfile_dat.o \
-	tape_generic_file_dat.o \
-	tape_generic_itdtimg_dat.o \
-	tape_linux_lin_tape_dat.o \
-	tape_linux_sg_ibmtape_dat.o \
-	tape_iokit_ibmtape_dat.o \
-	tape_freebsd_cam_dat.o \
-	iosched_fcfs_dat.o \
-	iosched_unified_dat.o \
-	libltfs_dat.o \
-	tape_common_dat.o \
-	internal_error_dat.o
+	libbin_mkltfs_dat.a \
+	libbin_ltfsck_dat.a \
+	libbin_ltfs_dat.a \
+	libkmi_simple_dat.a \
+	libkmi_flatfile_dat.a \
+	libtape_generic_file_dat.a \
+	libtape_generic_itdtimg_dat.a \
+	libtape_linux_lin_tape_dat.a \
+	libtape_linux_sg_ibmtape_dat.a \
+	libtape_iokit_ibmtape_dat.a \
+	libtape_freebsd_cam_dat.a \
+	libiosched_fcfs_dat.a \
+	libiosched_unified_dat.a \
+	liblibltfs_dat.a \
+	libtape_common_dat.a \
+	libinternal_error_dat.a
 
 .PHONY: all $(RESOURCES) clean-local
 if CHK_MESSAGE

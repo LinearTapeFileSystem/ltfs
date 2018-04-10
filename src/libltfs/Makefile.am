@@ -68,10 +68,10 @@ libltfs_la_SOURCES = \
 	arch/arch_info.c \
 	arch/errormap.c
 
-libltfs_la_DEPENDENCIES = ../../messages/libltfs_dat.o ../../messages/internal_error_dat.o ../../messages/tape_common_dat.o
-libltfs_la_LIBADD = ../../messages/libltfs_dat.o ../../messages/internal_error_dat.o ../../messages/tape_common_dat.o
+libltfs_la_DEPENDENCIES = ../../messages/liblibltfs_dat.a ../../messages/libinternal_error_dat.a ../../messages/libtape_common_dat.a
+libltfs_la_LIBADD =
 libltfs_la_CPPFLAGS = @AM_CPPFLAGS@ -I ..
-libltfs_la_LDFLAGS = @AM_LDFLAGS@
+libltfs_la_LDFLAGS = @AM_LDFLAGS@ -L../../messages -llibltfs_dat -linternal_error_dat -ltape_common_dat
 
 install-data-local:
 	if [ ! -d "$(DESTDIR)$(prefix)/share/snmp" ]; then \

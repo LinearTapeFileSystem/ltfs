@@ -39,9 +39,9 @@ libdir = @libdir@/ltfs
 AM_LIBTOOLFLAGS = --tag=disable-static
 
 libtape_lin_tape_la_SOURCES = lin_tape_ibmtape.c ibm_tape.c
-libtape_lin_tape_la_DEPENDENCIES = ../../../../messages/tape_linux_lin_tape_dat.o ./libtape_lin_tape_la-reed_solomon_crc.lo ./libtape_lin_tape_la-crc32c_crc.lo
-libtape_lin_tape_la_LIBADD = ../../../../messages/tape_linux_lin_tape_dat.o ./libtape_lin_tape_la-reed_solomon_crc.lo ./libtape_lin_tape_la-crc32c_crc.lo
-libtape_lin_tape_la_LDFLAGS = -avoid-version -module
+libtape_lin_tape_la_DEPENDENCIES = ../../../../messages/libtape_linux_lin_tape_dat.a ../../../libltfs/libltfs.la ./libtape_lin_tape_la-reed_solomon_crc.lo ./libtape_lin_tape_la-crc32c_crc.lo
+libtape_lin_tape_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_lin_tape_la-reed_solomon_crc.lo ./libtape_lin_tape_la-crc32c_crc.lo
+libtape_lin_tape_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_linux_lin_tape_dat
 libtape_lin_tape_la_CPPFLAGS = @AM_CPPFLAGS@ -I ../../.. -I ../..
 
 ibm_tape.c:

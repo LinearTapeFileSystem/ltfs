@@ -41,10 +41,11 @@ libdir = @libdir@/ltfs
 AM_LIBTOOLFLAGS = --tag=disable-static
 
 libtape_cam_la_SOURCES = cam_cmn.c cam_tc.c
-libtape_cam_la_DEPENDENCIES = ../../../../messages/tape_freebsd_cam_dat.o libtape_cam_la-reed_solomon_crc.lo libtape_cam_la-crc32c_crc.lo libtape_cam_la-ibm_tape.lo
-libtape_cam_la_LIBADD = ../../../../messages/tape_freebsd_cam_dat.o ./libtape_cam_la-reed_solomon_crc.lo ./libtape_cam_la-crc32c_crc.lo ./libtape_cam_la-ibm_tape.lo
-libtape_cam_la_LDFLAGS = -avoid-version -module
+libtape_cam_la_DEPENDENCIES = ../../../../messages/libtape_freebsd_cam_dat.a ../../../libltfs/libltfs.la libtape_cam_la-reed_solomon_crc.lo libtape_cam_la-crc32c_crc.lo libtape_cam_la-ibm_tape.lo
+libtape_cam_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_cam_la-reed_solomon_crc.lo ./libtape_cam_la-crc32c_crc.lo ./libtape_cam_la-ibm_tape.lo
+libtape_cam_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_freebsd_cam_dat
 libtape_cam_la_CPPFLAGS = @AM_CPPFLAGS@ -I ../../.. -I ../..
+
 libtape_cam_la-reed_solomon_crc.lo: ../../reed_solomon_crc.c
 	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_cam_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_cam_la-reed_solomon_crc.lo -MD -MP -c -o libtape_cam_la-reed_solomon_crc.lo ../../reed_solomon_crc.c
 
@@ -53,7 +54,6 @@ libtape_cam_la-crc32c_crc.lo: ../../crc32c_crc.c
 
 libtape_cam_la-ibm_tape.lo: ../../ibm_tape.c
 	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_cam_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_cam_la-ibm_tape.lo -MD -MP -c -o libtape_cam_la-ibm_tape.lo ../../ibm_tape.c
-
 
 install-exec-hook:
 	for f in $(lib_LTLIBRARIES); do rm -f $(libdir)/$$f; done
