@@ -183,7 +183,7 @@ int sg_issue_cdb_command(struct sg_tape *device, sg_io_hdr_t *req, char **msg)
 	uint32_t sense = 0;
 	unsigned short d_suggest = 0, d_status;
 	unsigned char masked_status = 0;
-	bool retry_count = 0;
+	unsigned int retry_count = 0;
 
 	CHECK_ARG_NULL(req, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(msg, -LTFS_NULL_ARG);
