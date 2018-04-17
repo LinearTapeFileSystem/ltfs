@@ -34,7 +34,7 @@
 #
 
 lib_LTLIBRARIES = libtape-lin_tape.la
-libdir = @libdir@/ltfs
+BASENAMES = libtape-lin_tape
 
 AM_LIBTOOLFLAGS = --tag=disable-static
 
@@ -57,4 +57,6 @@ libtape_lin_tape_la-crc32c_crc.lo: ../../crc32c_crc.c
 	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_lin_tape_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_lin_tape_la-crc32c_crc.lo -MD -MP -c -o libtape_lin_tape_la-crc32c_crc.lo $<
 
 install-exec-hook:
+	mkdir -p $(libdir)/ltfs
 	for f in $(lib_LTLIBRARIES); do rm -f $(libdir)/$$f; done
+	for f in $(BASENAMES); do mv $(libdir)/$$f* $(libdir)/ltfs; done

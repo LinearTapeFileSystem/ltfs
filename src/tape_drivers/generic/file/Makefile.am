@@ -34,7 +34,7 @@
 #
 
 lib_LTLIBRARIES = libtape-file.la
-libdir = @libdir@/ltfs
+BASENAMES = libtape-file
 
 AM_LIBTOOLFLAGS = --tag=disable-static
 
@@ -51,4 +51,6 @@ clean-local:
 	rm -f ibm_tape.c
 
 install-exec-hook:
+	mkdir -p $(libdir)/ltfs
 	for f in $(lib_LTLIBRARIES); do rm -f $(libdir)/$$f; done
+	for f in $(BASENAMES); do mv $(libdir)/$$f* $(libdir)/ltfs; done
