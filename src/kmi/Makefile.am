@@ -34,7 +34,7 @@
 #
 
 lib_LTLIBRARIES = libkmi-simple.la libkmi-flatfile.la
-libdir = @libdir@/ltfs
+BASENAMES = libkmi-simple libkmi-flatfile
 
 AM_LIBTOOLFLAGS = --tag=disable-static
 
@@ -51,4 +51,6 @@ libkmi_flatfile_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../message
 libkmi_flatfile_la_CPPFLAGS = @AM_CPPFLAGS@ -I ..
 
 install-exec-hook:
+	mkdir -p $(libdir)/ltfs
 	for f in $(lib_LTLIBRARIES); do rm -f $(libdir)/$$f; done
+	for f in $(BASENAMES); do mv $(libdir)/$$f* $(libdir)/ltfs; done

@@ -34,7 +34,7 @@
 #
 
 lib_LTLIBRARIES = libtape-itdtimg.la
-libdir = @libdir@/ltfs
+BASENAMES = libtape-itdtimg
 
 AM_LIBTOOLFLAGS = --tag=disable-static
 
@@ -45,4 +45,6 @@ libtape_itdtimg_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../m
 libtape_itdtimg_la_CPPFLAGS = @AM_CPPFLAGS@ -I ../../..
 
 install-exec-hook:
+	mkdir -p $(libdir)/ltfs
 	for f in $(lib_LTLIBRARIES); do rm -f $(libdir)/$$f; done
+	for f in $(BASENAMES); do mv $(libdir)/$$f* $(libdir)/ltfs; done
