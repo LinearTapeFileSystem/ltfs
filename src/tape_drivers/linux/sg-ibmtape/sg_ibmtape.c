@@ -95,6 +95,11 @@ struct sg_ibmtape_global_data global_data;
 
 #define DEFAULT_TIMEOUT (60)
 
+#define THREASHOLD_FORCE_WRITE_NO_WRITE (5)
+#define DEFAULT_WRITEPERM               (0)
+#define DEFAULT_READPERM                (0)
+#define DEFAULT_ERRORTYPE               (0)
+
 /* Forward references (For keep function order to struct tape_ops) */
 int sg_ibmtape_readpos(void *device, struct tc_position *pos);
 int sg_ibmtape_locate(void *device, struct tc_position dest, struct tc_position *pos);
@@ -1074,6 +1079,11 @@ int sg_ibmtape_open(const char *devname, void **handle)
 	ibm_tape_genkey(priv->key);
 	_register_key(priv, priv->key);
 
+	/* Initial setting of force perm */
+	priv->force_writeperm = DEFAULT_WRITEPERM;
+	priv->force_readperm  = DEFAULT_READPERM;
+	priv->force_errortype = DEFAULT_ERRORTYPE;
+
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_OPEN));
 
 	*handle = (void *)priv;
@@ -1427,6 +1437,18 @@ int sg_ibmtape_read(void *device, char *buf, size_t size,
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READ));
 	ltfsmsg(LTFS_DEBUG3, 30395D, "read", size, priv->drive_serial);
 
+	if (priv->force_readperm) {
+		priv->read_counter++;
+		if (priv->read_counter > priv->force_readperm) {
+			ltfsmsg(LTFS_INFO, 30274I, "read");
+			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READ));
+			if (priv->force_errortype)
+				return -EDEV_NO_SENSE;
+			else
+				return -EDEV_READ_PERM;
+		}
+	}
+
 	if(global_data.crc_checking) {
 		datacount = size + 4;
 		/* Never fall into this block, fail safe to adjust record length*/
@@ -1581,6 +1603,23 @@ int sg_ibmtape_write(void *device, const char *buf, size_t count, struct tc_posi
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITE));
 
 	ltfsmsg(LTFS_DEBUG3, 30395D, "write", count, priv->drive_serial);
+
+	if ( priv->force_writeperm ) {
+		priv->write_counter++;
+		if ( priv->write_counter > priv->force_writeperm ) {
+			ltfsmsg(LTFS_INFO, 30274I, "write");
+			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
+			if (priv->force_errortype)
+				return -EDEV_NO_SENSE;
+			else
+				return -EDEV_WRITE_PERM;
+		} else if ( priv->write_counter > (priv->force_writeperm - THREASHOLD_FORCE_WRITE_NO_WRITE) ) {
+			ltfsmsg(LTFS_INFO, 30275I);
+			pos->block++;
+			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
+			return DEVICE_GOOD;
+		}
+	}
 
 	if(global_data.crc_checking) {
 		if (priv->f_crc_enc)
@@ -1764,6 +1803,12 @@ int sg_ibmtape_rewind(void *device, struct tc_position *pos)
 	}
 
 	if(ret == DEVICE_GOOD) {
+		/* Clear force perm setting */
+		priv->force_writeperm = DEFAULT_WRITEPERM;
+		priv->force_readperm  = DEFAULT_READPERM;
+		priv->write_counter = 0;
+		priv->read_counter  = 0;
+
 		ret = sg_ibmtape_readpos(device, pos);
 
 		if(ret == DEVICE_GOOD) {
@@ -2156,6 +2201,12 @@ int sg_ibmtape_load(void *device, struct tc_position *pos)
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOAD));
 		return ret;
 	} else {
+		/* Clear force perm setting */
+		priv->force_writeperm = DEFAULT_WRITEPERM;
+		priv->force_readperm  = DEFAULT_READPERM;
+		priv->write_counter = 0;
+		priv->read_counter  = 0;
+
 		if(ret == DEVICE_GOOD) {
 			if(pos->early_warning)
 				ltfsmsg(LTFS_WARN, 30222W, "load");
@@ -3450,11 +3501,41 @@ int sg_ibmtape_get_xattr(void *device, const char *name, char **buf)
 
 int sg_ibmtape_set_xattr(void *device, const char *name, const char *buf, size_t size)
 {
+	int ret = -LTFS_NO_XATTR;
+	char *null_terminated;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
+	if (!size)
+		return -LTFS_BAD_ARG;
+
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SETXATTR));
+
+	null_terminated = malloc(size + 1);
+	if (! null_terminated) {
+		ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_set_xattr: null_term");
+		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETXATTR));
+		return -LTFS_NO_MEMORY;
+	}
+	memcpy(null_terminated, buf, size);
+	null_terminated[size] = '\0';
+
+	if (! strcmp(name, "ltfs.vendor.IBM.forceErrorWrite")) {
+		priv->force_writeperm = strtoull(null_terminated, NULL, 0);
+		if (priv->force_writeperm && priv->force_writeperm < THREASHOLD_FORCE_WRITE_NO_WRITE)
+			priv->force_writeperm = THREASHOLD_FORCE_WRITE_NO_WRITE;
+		ret = DEVICE_GOOD;
+	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
+		priv->force_errortype = strtol(null_terminated, NULL, 0);
+		ret = DEVICE_GOOD;
+	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorRead")) {
+		priv->force_readperm = strtoull(null_terminated, NULL, 0);
+		priv->read_counter = 0;
+		ret = DEVICE_GOOD;
+	}
+	free(null_terminated);
+
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETXATTR));
-	return -LTFS_NO_XATTR;
+	return ret;
 }
 
 #define BLOCKLEN_DATA_SIZE 6

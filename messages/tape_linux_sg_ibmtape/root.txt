@@ -113,6 +113,9 @@ root:table {
 		30271I:string { "Successfully reopen the drive %s with same path." }
 		30272I:string { "Drive %s is reserved successfully." }
 		30273I:string { "Cannot %s device flag (%d)." }
+		30274I:string { "Pseudo-error on %s." }
+		30275I:string { "Pseudo-error on write. Good return code, but a record to emulate a write error did not get sent to the drive." }
+
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }
