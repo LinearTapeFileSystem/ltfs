@@ -2426,7 +2426,7 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 	struct dirent *entry;
 	int deventries = 0;
 	char *ser= NULL, *pid = NULL, *tmp;
-	int i, len;
+	int i;
 
 	if (! original_pid) {
 		original_pid = (long)getpid();
@@ -2485,13 +2485,7 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 			snprintf(buf[deventries].vendor, TAPE_VENDOR_NAME_LEN_MAX, "DUMMY");
 			snprintf(buf[deventries].model, TAPE_MODEL_NAME_LEN_MAX, "%s", pid);
 			snprintf(buf[deventries].serial_number, TAPE_SERIAL_LEN_MAX, "%s", ser);
-			len = snprintf(buf[deventries].product_name, PRODUCT_NAME_LENGTH, " [%s]", pid);
-			/* Fit to the length defined as *supported_devices[] into ibmtape_cmn.c for identifier compatibility */
-			if (len < PRODUCT_NAME_REPORT_LENGTH) {
-				for (i = len; i < PRODUCT_NAME_REPORT_LENGTH; i++)
-					buf[deventries].product_name[i] = ' ';
-				buf[deventries].product_name[PRODUCT_NAME_REPORT_LENGTH] = '\0';
-			}
+			snprintf(buf[deventries].product_name, PRODUCT_NAME_LENGTH, "[%s]", pid);
 			ltfsmsg(LTFS_DEBUG, 30084D, buf[deventries].name, buf[deventries].vendor,
 					buf[deventries].model, buf[deventries].serial_number);
 
