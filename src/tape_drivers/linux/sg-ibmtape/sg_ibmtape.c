@@ -2213,6 +2213,8 @@ int sg_ibmtape_load(void *device, struct tc_position *pos)
 			else if(pos->programmable_early_warning)
 				ltfsmsg(LTFS_WARN, 30223W, "load");
 		}
+
+		priv->loaded = true;
 	}
 
 	priv->tape_alert = 0;
@@ -2257,9 +2259,12 @@ int sg_ibmtape_unload(void *device, struct tc_position *pos)
 		return ret;
 	}
 
-	pos->partition   = 0;
-	pos->block       = 0;
-	priv->tape_alert = 0;
+	priv->loaded       = false;
+	priv->cart_type    = 0;
+	priv->density_code = 0;
+	priv->tape_alert   = 0;
+	pos->partition     = 0;
+	pos->block         = 0;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_UNLOAD));
 
@@ -3652,13 +3657,17 @@ int sg_ibmtape_get_parameters(void *device, struct tc_current_param *params)
 			//TODO: Store is_crypto based on LP17:200h
 			*/
 		}
-	} else
-		ret = 0;
+	} else {
+		params->cart_type = priv->cart_type;
+		params->density   = priv->density_code;
+	}
 
 	if (global_data.crc_checking)
 		params->max_blksize = MIN(_cdb_read_block_limits(device), SG_MAX_BLOCK_SIZE - 4);
 	else
 		params->max_blksize = MIN(_cdb_read_block_limits(device), SG_MAX_BLOCK_SIZE);
+
+	ret = 0;
 
 out:
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETPARAM));

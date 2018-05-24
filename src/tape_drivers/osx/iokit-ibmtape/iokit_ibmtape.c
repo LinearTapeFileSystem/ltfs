@@ -1848,6 +1848,8 @@ int iokit_ibmtape_load(void *device, struct tc_position *pos)
 			else if(pos->programmable_early_warning)
 				ltfsmsg(LTFS_WARN, 30826W, "load");
 		}
+
+		priv->loaded = true;
 	}
 
 	priv->tape_alert = 0;
@@ -1886,9 +1888,12 @@ int iokit_ibmtape_unload(void *device, struct tc_position *pos)
 		return ret;
 	}
 
-	pos->partition   = 0;
-	pos->block       = 0;
-	priv->tape_alert = 0;
+	priv->loaded       = false;
+	priv->cart_type    = 0;
+	priv->density_code = 0;
+	priv->tape_alert   = 0;
+	pos->partition     = 0;
+	pos->block         = 0;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_UNLOAD));
 
@@ -3224,6 +3229,9 @@ int iokit_ibmtape_get_parameters(void *device, struct tc_current_param *params)
 			// TODO: Store is_crypto based on LP17:200h
 			*/
 		}
+	} else {
+		params->cart_type = priv->cart_type;
+		params->density   = priv->density_code;
 	}
 
 	if (global_data.crc_checking)
