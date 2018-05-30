@@ -51,6 +51,6 @@ libiosched_unified_la_LIBADD = ../libltfs/libltfs.la
 libiosched_unified_la_CPPFLAGS = @AM_CPPFLAGS@ -I ..
 
 install-exec-hook:
-	mkdir -p $(libdir)/ltfs
-	for f in $(lib_LTLIBRARIES); do rm -f $(libdir)/$$f; done
-	for f in $(BASENAMES); do mv $(libdir)/$$f* $(libdir)/ltfs; done
+	mkdir -p $(DESTDIR)$(libdir)/ltfs
+	for f in $(lib_LTLIBRARIES); do rm -f $(DESTDIR)$(libdir)/$$f; done
+	for f in $(BASENAMES); do mv $(DESTDIR)$(libdir)/$$f* $(DESTDIR)$(libdir)/ltfs; done
