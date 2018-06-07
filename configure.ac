@@ -149,6 +149,34 @@ AC_ARG_ENABLE([lintape],
 AC_MSG_RESULT([$lintape])
 
 dnl
+dnl Handle --enable-buggy-ifs (default:no, Linux/OSx Only)
+dnl
+AC_MSG_CHECKING([whether to enable handling of buggy I/Fs or not (Linux/OSx Only)])
+AC_ARG_ENABLE([buggy_ifs],
+    [AS_HELP_STRING([--enable-buggy-ifs],[Support handling of buggy I/Fs for tape drivers])],
+    [buggy_ifs=$enableval],
+    [buggy_ifs=no]
+)
+AC_MSG_RESULT([$buggy_ifs])
+
+dnl
+dnl Handle extra compile flags for tape driver
+dnl
+if test "x${buggy_ifs}" = "xyes"
+then
+    if test "x${host_linux}" = "xyes"
+    then
+        AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -DSUPPORT_BUGGY_IFS"
+	AC_ARG_VAR([buggy_ifs], [compile with SUPPORT_BUGGY_IFS enabled])
+    fi
+    if test "x${host_mac}" = "xyes"
+    then
+        AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -DSUPPORT_BUGGY_IFS"
+	AC_ARG_VAR([buggy_ifs], [compile with SUPPORT_BUGGY_IFS enabled])
+    fi
+fi
+
+dnl
 dnl Handle default backends
 dnl
 if test -z "$DEFAULT_TAPE"
@@ -390,6 +418,11 @@ then
     AM_CPPFLAGS="${AM_CPPFLAGS} -DPOSIXLINK_ONLY"
 fi
 
+if test "x$livelink" = "xno"
+then
+    AM_CPPFLAGS="${AM_CPPFLAGS} -DPOSIXLINK_ONLY"
+fi
+
 dnl
 dnl Specify CPU specific optimizer options for CRC calculation
 dnl
@@ -477,6 +510,7 @@ AM_CONDITIONAL([CHK_MESSAGE], [test "x${use_msg_check}" = "xyes"])
 AC_SUBST(CFLAGS)
 AC_SUBST(CRC_OPTIMIZE)
 AC_SUBST(AM_CPPFLAGS)
+AC_SUBST(AM_EXTRA_CPPFLAGS)
 AC_SUBST(AM_CFLAGS)
 AC_SUBST(AM_LDFLAGS)
 
