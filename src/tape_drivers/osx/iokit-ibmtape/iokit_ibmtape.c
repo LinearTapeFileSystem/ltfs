@@ -1147,7 +1147,7 @@ static int _cdb_read(void *device, char *buf, size_t size, boolean_t sili)
 						((int32_t)sense_data->INFORMATION_4);
 
 					if (!req.actual_xfered || diff_len != req.resid) {
-#if SUPPORT_BUGGY_IF
+#if SUPPORT_BUGGY_IFS
 						/*
 						 * A few I/Fs, like thunderbolt/SAS converter or USB/SAS converter,
 						 * cannot handle actual transfer length and residual length correctly
