@@ -57,13 +57,21 @@
 #include <ICU/unicode/ustring.h>
 #include <ICU/unicode/utypes.h>
 #include <ICU/unicode/ucnv.h>
+#ifdef ICU6x
+#include <ICU/unicode/unorm2.h>
+#else
 #include <ICU/unicode/unorm.h>
+#endif
 #else
 #include <unicode/uchar.h>
 #include <unicode/ustring.h>
 #include <unicode/utypes.h>
 #include <unicode/ucnv.h>
+#ifdef ICU6x
+#include <unicode/unorm2.h>
+#else
 #include <unicode/unorm.h>
+#endif
 #endif
 
 #include "ltfs.h"
@@ -509,7 +517,7 @@ int _pathname_format_icu(const char *src, char **dest, bool validate, bool allow
 	return 0;
 }
 
-int pathname_nfd_normaize(const char *name, char **new_name)
+int pathname_nfd_normalize(const char *name, char **new_name)
 {
 	int ret;
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
@@ -655,15 +663,28 @@ int _pathname_foldcase_icu(const UChar *src, UChar **dest)
 int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 {
 	UErrorCode err = U_ZERO_ERROR;
-	int32_t destlen;
 
 	/* Do a quick check to decide whether this string is already normalized. */
+#ifdef ICU6x
+	const UNormalizer2 *n2;
+	if (unorm2_quickCheck(n2, src, -1, &err) == UNORM_YES) {
+#else
 	if (unorm_quickCheck(src, -1, UNORM_NFC, &err) == UNORM_YES) {
+#endif
 		*dest = (UChar *)src;
 		return 0;
 	}
 	err = U_ZERO_ERROR;
 
+#ifdef ICU6x
+	unorm2_normalize(n2, src, -1, *dest, 1024, &err);
+	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
+		ltfsmsg(LTFS_ERR, 11238E, err);
+		return -LTFS_ICU_ERROR;
+	}
+	err = U_ZERO_ERROR;
+#else
+	int32_t destlen;
 	destlen = unorm_normalize(src, -1, UNORM_NFC, 0, NULL, 0, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
 		ltfsmsg(LTFS_ERR, 11238E, err);
@@ -684,6 +705,7 @@ int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 		*dest = NULL;
 		return -LTFS_ICU_ERROR;
 	}
+#endif
 
 	return 0;
 }
@@ -697,15 +719,64 @@ int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 {
 	UErrorCode err = U_ZERO_ERROR;
-	int32_t destlen;
+
+        /**
+	 * unorm2_quickCheck
+	 * Tests if the string is normalized.
+	 * Internally, in cases where the quickCheck() method would return "maybe"
+	 * (which is only possible for the two COMPOSE modes) this method
+	 * resolves to "yes" or "no" to provide a definitive result,
+	 * at the cost of doing more work in those cases.
+	 * @param norm2 UNormalizer2 instance
+	 * @param s input string
+	 * @param length length of the string, or -1 if NUL-terminated
+	 * @param pErrorCode Standard ICU error code. Its input value must
+	 *                   pass the U_SUCCESS() test, or else the function returns
+	 *                   immediately. Check for U_FAILURE() on output or use with
+	 *                   function chaining. (See User Guide for details.)
+	 * @return TRUE if s is normalized
+	 * @stable ICU 4.4
+	 */
+
+	/**
+	 * unorm2_normalize
+	 * Writes the normalized form of the source string to the destination string
+	 * (replacing its contents) and returns the length of the destination string.
+	 * The source and destination strings must be different buffers.
+	 * @param norm2 UNormalizer2 instance
+	 * @param src source string
+	 * @param length of the source string, or -1 if NUL-terminated
+	 * @param dest destination string; its contents is replaced with normalized src
+	 * @param capacity number of UChars that can be written to dest
+	 * @param pErrorCode Standard ICU error code. Its input value must
+	 *                   pass the U_SUCCESS() test, or else the function returns
+	 *                   immediately. Check for U_FAILURE() on output or use with
+	 *                   function chaining. (See User Guide for details.)
+	 * @return dest
+	 * @stable ICU 4.4
+	 */
 
 	/* Do a quick check to decide whether this string is already normalized. */
+#ifdef ICU6x
+	const UNormalizer2 *n2;
+	if (unorm2_quickCheck(n2, src, -1, &err) == UNORM_YES) {
+#else
 	if (unorm_quickCheck(src, -1, UNORM_NFD, &err) == UNORM_YES) {
+#endif
 		*dest = (UChar *)src;
 		return 0;
 	}
 	err = U_ZERO_ERROR;
 
+#ifdef ICU6x
+	unorm2_normalize(n2, src, -1, *dest, 1024, &err);
+	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
+		ltfsmsg(LTFS_ERR, 11240E, err);
+		return -LTFS_ICU_ERROR;
+	}
+	err = U_ZERO_ERROR;
+#else
+	int32_t destlen;
 	destlen = unorm_normalize(src, -1, UNORM_NFD, 0, NULL, 0, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
 		ltfsmsg(LTFS_ERR, 11240E, err);
@@ -726,6 +797,7 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 		*dest = NULL;
 		return -LTFS_ICU_ERROR;
 	}
+#endif
 
 	return 0;
 }

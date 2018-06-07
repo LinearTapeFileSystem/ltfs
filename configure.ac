@@ -296,6 +296,25 @@ then
     PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
 fi
 
+AC_MSG_CHECKING([use latest ICU])
+AC_ARG_ENABLE([icu_6x],
+    [AS_HELP_STRING([--enable-icu-6x],[Support handling of ICU 6x functions])],
+    [icu_6x=$enableval],
+    [icu_6x=no]
+)
+AC_MSG_RESULT([$icu_6x])
+
+if test "x${icu_6x}" = "xyes"
+then
+    AC_MSG_CHECKING(for ICU version)
+    ICU_MODULE_VERSION="`icu-config --version 2> /dev/null`";
+    if test "${ICU_MODULE_VERSION%%.*}" -ge "60"
+    then
+	AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -D ICU6x"
+    fi
+    AC_MSG_RESULT([$ICU_MODULE_VERSION])
+fi
+
 dnl
 dnl Check for SNMP
 dnl
