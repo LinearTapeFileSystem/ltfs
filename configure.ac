@@ -296,6 +296,13 @@ then
     PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
 fi
 
+AC_MSG_CHECKING(for ICU version)
+ICU_MODULE_VERSION="`icu-config --version 2> /dev/null`";
+AC_MSG_RESULT([$ICU_MODULE_VERSION])
+AX_COMPARE_VERSION([$ICU_MODULE_VERSION], [ge], [60.1],
+   [AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -DUNORM2"]
+)
+
 dnl
 dnl Check for SNMP
 dnl
