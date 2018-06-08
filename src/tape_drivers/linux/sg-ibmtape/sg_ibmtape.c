@@ -1376,8 +1376,24 @@ static int _cdb_read(void *device, char *buf, size_t size, bool sili)
 				if ((*(sense + 2)) & SK_ILI_SET) {
 					diff_len = ltfs_betou32(sense + 3);
 					if (!req.dxfer_len || diff_len != req.resid) {
+#if SUPPORT_BUGGY_IFS
+						/*
+						 * A few I/Fs, like thunderbolt/SAS converter or USB/SAS converter,
+						 * cannot handle actual transfer length and residual length correctly
+						 * In this case, LTFS will trust SCSI sense.
+						 */
+						if (diff_len < 0) {
+							ltfsmsg(LTFS_INFO, 30820I, diff_len, size - diff_len); // "Detect overrun condition"
+							ret = -EDEV_OVERRUN;
+						} else {
+							ltfsmsg(LTFS_DEBUG, 30821D, diff_len, size - diff_len); // "Detect underrun condition"
+							length = size - diff_len;
+							ret = DEVICE_GOOD;
+						}
+#else
 						ltfsmsg(LTFS_WARN, 30216W, req.dxfer_len, req.resid, diff_len);
 						return -EDEV_LENGTH_MISMATCH;
+#endif
 					} else {
 						if (diff_len < 0) {
 							/* Over-run condition */
@@ -3809,11 +3825,11 @@ int sg_ibmtape_get_device_list(struct tc_drive_info *buf, int count)
 		}
 
 		if (found < count && buf) {
-			snprintf(buf[found].name, TAPE_DEVNAME_LEN_MAX, "%s", devname);
-			snprintf(buf[found].vendor, TAPE_VENDOR_NAME_LEN_MAX, "%s", identifier.vendor_id);
-			snprintf(buf[found].model, TAPE_MODEL_NAME_LEN_MAX, "%s", identifier.product_id);
-			snprintf(buf[found].serial_number, TAPE_SERIAL_LEN_MAX, "%s", identifier.unit_serial);
-			snprintf(buf[found].product_name, PRODUCT_NAME_LENGTH, "%s", _generate_product_name(identifier.product_id));
+			snprintf(buf[found].name, TAPE_DEVNAME_LEN_MAX + 1, "%s", devname);
+			snprintf(buf[found].vendor, TAPE_VENDOR_NAME_LEN_MAX + 1, "%s", identifier.vendor_id);
+			snprintf(buf[found].model, TAPE_MODEL_NAME_LEN_MAX + 1, "%s", identifier.product_id);
+			snprintf(buf[found].serial_number, TAPE_SERIAL_LEN_MAX + 1, "%s", identifier.unit_serial);
+			snprintf(buf[found].product_name, PRODUCT_NAME_LENGTH + 1, "%s", _generate_product_name(identifier.product_id));
 		}
 		found++;
 
