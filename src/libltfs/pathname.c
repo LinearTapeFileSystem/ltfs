@@ -57,7 +57,7 @@
 #include <ICU/unicode/ustring.h>
 #include <ICU/unicode/utypes.h>
 #include <ICU/unicode/ucnv.h>
-#ifdef UNORM2
+#ifdef ICU6x
 #include <ICU/unicode/unorm.h>
 #else
 #include <ICU/unicode/unorm2.h>
@@ -67,7 +67,7 @@
 #include <unicode/ustring.h>
 #include <unicode/utypes.h>
 #include <unicode/ucnv.h>
-#ifdef UNORM2
+#ifdef ICU6x
 #include <unicode/unorm.h>
 #else
 #include <unicode/unorm2.h>
@@ -664,13 +664,8 @@ int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 {
 	UErrorCode err = U_ZERO_ERROR;
 	int32_t destlen;
-#ifdef UNORM2
+#ifdef ICU6x
 	const UNormalizer2 *n2;
-	UChar *dest;
-#endif
-
-	/* Do a quick check to decide whether this string is already normalized. */
-#ifdef UNORM2
 	if (unorm2_quickCheck(n2, src, -1, &err) == UNORM_YES) {
 #else
 	if (unorm_quickCheck(src, -1, UNORM_NFD, &err) == UNORM_YES) {
@@ -680,14 +675,15 @@ int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 	}
 	err = U_ZERO_ERROR;
 
-#ifdef UNORM2
-	destlen = unorm2_normalize(n2, src, -1, dest, NULL, &err);
+#ifdef ICU6x
+	unorm2_normalize(n2, src, -1, *dest, 1024, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
 		ltfsmsg(LTFS_ERR, 11238E, err);
 		return -LTFS_ICU_ERROR;
 	}
 	err = U_ZERO_ERROR;
 #else
+	int32_t destlen;
 	destlen = unorm_normalize(src, -1, UNORM_NFC, 0, NULL, 0, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
 		ltfsmsg(LTFS_ERR, 11238E, err);
@@ -722,7 +718,6 @@ int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 {
 	UErrorCode err = U_ZERO_ERROR;
-	int32_t destlen;
 
         /**
 	 * unorm2_quickCheck
@@ -741,8 +736,6 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 	 * @return TRUE if s is normalized
 	 * @stable ICU 4.4
 	 */
-	const UNormalizer2 *n2;
-	UChar *dest;
 
 	/**
 	 * unorm2_normalize
@@ -763,7 +756,8 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 	 */
 
 	/* Do a quick check to decide whether this string is already normalized. */
-#ifdef UNORM2
+#ifdef ICU6x
+	const UNormalizer2 *n2;
 	if (unorm2_quickCheck(n2, src, -1, &err) == UNORM_YES) {
 #else
 	if (unorm_quickCheck(src, -1, UNORM_NFD, &err) == UNORM_YES) {
@@ -773,14 +767,15 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 	}
 	err = U_ZERO_ERROR;
 
-#ifdef UNORM2
-	destlen = unorm2_normalize(n2, src, -1, dest, NULL, &err);
+#ifdef ICU6x
+	unorm2_normalize(n2, src, -1, *dest, 1024, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
 		ltfsmsg(LTFS_ERR, 11240E, err);
 		return -LTFS_ICU_ERROR;
 	}
 	err = U_ZERO_ERROR;
 #else
+	int32_t destlen;
 	destlen = unorm_normalize(src, -1, UNORM_NFD, 0, NULL, 0, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
 		ltfsmsg(LTFS_ERR, 11240E, err);
