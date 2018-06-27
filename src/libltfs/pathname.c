@@ -58,9 +58,9 @@
 #include <ICU/unicode/utypes.h>
 #include <ICU/unicode/ucnv.h>
 #ifdef ICU6x
-#include <ICU/unicode/unorm.h>
-#else
 #include <ICU/unicode/unorm2.h>
+#else
+#include <ICU/unicode/unorm.h>
 #endif
 #else
 #include <unicode/uchar.h>
@@ -68,9 +68,9 @@
 #include <unicode/utypes.h>
 #include <unicode/ucnv.h>
 #ifdef ICU6x
-#include <unicode/unorm.h>
-#else
 #include <unicode/unorm2.h>
+#else
+#include <unicode/unorm.h>
 #endif
 #endif
 
@@ -663,7 +663,7 @@ int _pathname_foldcase_icu(const UChar *src, UChar **dest)
 int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 {
 	UErrorCode err = U_ZERO_ERROR;
-	int32_t destlen;
+
 #ifdef ICU6x
 	const UNormalizer2 *n2;
 	if (unorm2_quickCheck(n2, src, -1, &err) == UNORM_YES) {
