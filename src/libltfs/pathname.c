@@ -652,6 +652,45 @@ int _pathname_foldcase_icu(const UChar *src, UChar **dest)
 }
 
 /**
+ * ICU5x/ICU6x handle: gets a reference to a singleton unorm2 object (ICU6x) or to a constant
+ * value that we can use to differentiate between NFC and NFD modes (ICU5x). Neither should be
+ * freed after use.
+ */
+static inline void *_unorm_handle(bool nfc, UErrorCode *err)
+{
+#ifdef ICU6x
+	*err = U_ZERO_ERROR;
+	return (void *) unorm2_getInstance(NULL, "nfc", nfc ? UNORM2_COMPOSE : UNORM2_DECOMPOSE, err);
+#else
+	return nfc ? (void *) 0xff : NULL;
+#endif
+}
+
+static inline UNormalizationCheckResult _unorm_quickCheck(void *handle, const UChar *src, UChar **dest, UErrorCode *err)
+{
+	*err = U_ZERO_ERROR;
+#ifdef ICU6x
+	const UNormalizer2 *n2 = (const UNormalizer2 *) handle;
+	return unorm2_quickCheck(n2, src, -1, err);
+#else
+	bool nfc = handle != NULL;
+	return unorm_quickCheck(src, -1, nfc ? UNORM_NFC : UNORM_NFD, err);
+#endif
+}
+
+static inline int32_t _unorm_normalize(void *handle, const UChar *src, UChar **dest, int32_t len, UErrorCode *err)
+{
+	*err = U_ZERO_ERROR;
+#ifdef ICU6x
+	const UNormalizer2 *n2 = (const UNormalizer2 *) handle;
+	return unorm2_normalize(n2, src, -1, dest ? *dest : NULL, len, err);
+#else
+	bool nfc = handle != NULL;
+	return unorm_normalize(src, -1, nfc ? UNORM_NFC : UNORM_NFD, 0, dest ? *dest : NULL, len, err);
+#endif
+}
+
+/**
  * Normalize a string in internal ICU representation to NFC.
  * @param src string to normalize
  * @param dest On success, points to a buffer containing the output string.
@@ -663,32 +702,19 @@ int _pathname_foldcase_icu(const UChar *src, UChar **dest)
 int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 {
 	UErrorCode err = U_ZERO_ERROR;
-#ifdef ICU6x
-	const UNormalizer2 *n2 = unorm2_getInstance(NULL, "nfc", UNORM2_DECOMPOSE, &err);
-	if (unorm2_quickCheck(n2, src, -1, &err) == UNORM_YES) {
-#else
-	if (unorm_quickCheck(src, -1, UNORM_NFD, &err) == UNORM_YES) {
-#endif
-		*dest = (UChar *)src;
+	void *handle = _unorm_handle(true, &err);
+	int32_t destlen;
+
+	if (_unorm_quickCheck(handle, src, dest, &err) == UNORM_YES) {
+		*dest = (UChar *) src;
 		return 0;
 	}
-	err = U_ZERO_ERROR;
 
-#ifdef ICU6x
-	unorm2_normalize(n2, src, -1, *dest, 1024, &err);
+	destlen = _unorm_normalize(handle, src, NULL, 0, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
 		ltfsmsg(LTFS_ERR, 11238E, err);
 		return -LTFS_ICU_ERROR;
 	}
-	err = U_ZERO_ERROR;
-#else
-	int32_t destlen;
-	destlen = unorm_normalize(src, -1, UNORM_NFC, 0, NULL, 0, &err);
-	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
-		ltfsmsg(LTFS_ERR, 11238E, err);
-		return -LTFS_ICU_ERROR;
-	}
-	err = U_ZERO_ERROR;
 
 	*dest = malloc((destlen + 1) * sizeof(UChar));
 	if (! *dest) {
@@ -696,14 +722,13 @@ int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 		return -LTFS_NO_MEMORY;
 	}
 
-	unorm_normalize(src, -1, UNORM_NFC, 0, *dest, destlen + 1, &err);
+	_unorm_normalize(handle, src, dest, destlen + 1, &err);
 	if (U_FAILURE(err)) {
 		ltfsmsg(LTFS_ERR, 11239E, err);
 		free(*dest);
 		*dest = NULL;
 		return -LTFS_ICU_ERROR;
 	}
-#endif
 
 	return 0;
 }
@@ -754,32 +779,19 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 
 	/* Do a quick check to decide whether this string is already normalized. */
 	UErrorCode err = U_ZERO_ERROR;
-#ifdef ICU6x
-	const UNormalizer2 *n2 = unorm2_getInstance(NULL, "nfc", UNORM2_DECOMPOSE, &err);
-	if (unorm2_quickCheck(n2, src, -1, &err) == UNORM_YES) {
-#else
-	if (unorm_quickCheck(src, -1, UNORM_NFD, &err) == UNORM_YES) {
-#endif
-		*dest = (UChar *)src;
+	void *handle = _unorm_handle(false, &err);
+	int32_t destlen;
+
+	if (_unorm_quickCheck(handle, src, dest, &err) == UNORM_YES) {
+		*dest = (UChar *) src;
 		return 0;
 	}
-	err = U_ZERO_ERROR;
 
-#ifdef ICU6x
-	unorm2_normalize(n2, src, -1, *dest, 1024, &err);
+	destlen = _unorm_normalize(handle, src, NULL, 0, &err);
 	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
 		ltfsmsg(LTFS_ERR, 11240E, err);
 		return -LTFS_ICU_ERROR;
 	}
-	err = U_ZERO_ERROR;
-#else
-	int32_t destlen;
-	destlen = unorm_normalize(src, -1, UNORM_NFD, 0, NULL, 0, &err);
-	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
-		ltfsmsg(LTFS_ERR, 11240E, err);
-		return -LTFS_ICU_ERROR;
-	}
-	err = U_ZERO_ERROR;
 
 	*dest = malloc((destlen + 1) * sizeof(UChar));
 	if (! *dest) {
@@ -787,14 +799,13 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 		return -LTFS_NO_MEMORY;
 	}
 
-	unorm_normalize(src, -1, UNORM_NFD, 0, *dest, destlen + 1, &err);
+	_unorm_normalize(handle, src, dest, destlen + 1, &err);
 	if (U_FAILURE(err)) {
 		ltfsmsg(LTFS_ERR, 11241E, err);
 		free(*dest);
 		*dest = NULL;
 		return -LTFS_ICU_ERROR;
 	}
-#endif
 
 	return 0;
 }
