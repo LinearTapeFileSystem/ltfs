@@ -663,9 +663,8 @@ int _pathname_foldcase_icu(const UChar *src, UChar **dest)
 int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 {
 	UErrorCode err = U_ZERO_ERROR;
-
 #ifdef ICU6x
-	const UNormalizer2 *n2;
+	const UNormalizer2 *n2 = unorm2_getInstance(NULL, "nfc", UNORM2_DECOMPOSE, &err);
 	if (unorm2_quickCheck(n2, src, -1, &err) == UNORM_YES) {
 #else
 	if (unorm_quickCheck(src, -1, UNORM_NFD, &err) == UNORM_YES) {
@@ -717,9 +716,7 @@ int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
  */
 int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 {
-	UErrorCode err = U_ZERO_ERROR;
-
-        /**
+	/**
 	 * unorm2_quickCheck
 	 * Tests if the string is normalized.
 	 * Internally, in cases where the quickCheck() method would return "maybe"
@@ -756,8 +753,9 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 	 */
 
 	/* Do a quick check to decide whether this string is already normalized. */
+	UErrorCode err = U_ZERO_ERROR;
 #ifdef ICU6x
-	const UNormalizer2 *n2;
+	const UNormalizer2 *n2 = unorm2_getInstance(NULL, "nfc", UNORM2_DECOMPOSE, &err);
 	if (unorm2_quickCheck(n2, src, -1, &err) == UNORM_YES) {
 #else
 	if (unorm_quickCheck(src, -1, UNORM_NFD, &err) == UNORM_YES) {
