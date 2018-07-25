@@ -213,7 +213,7 @@ void plugin_usage(const char *type, struct config_file *config)
 
 	backends = config_file_get_plugins(type, config);
 	if (! backends) {
-		if (! strcmp(type, "driver"))
+		if (! strcmp(type, "tape"))
 			ltfsresult(14403I); /* -o devname=<dev> */
 		return;
 	}
