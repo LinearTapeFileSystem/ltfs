@@ -91,7 +91,7 @@ static inline void backtrace_info(void)
 	char **funcs;
 	size_t back_num, i;
 
-	back_num = backtrace( address, 50);
+	back_num = backtrace(address, 50);
 	funcs = backtrace_symbols( address, back_num);
 
 	for( i = 0; i < back_num; ++i ) {
@@ -100,6 +100,8 @@ static inline void backtrace_info(void)
 		else
 			ltfsmsg(LTFS_INFO, 17194I, (int)i, address[i]);
 	}
+
+	if (funcs) free(funcs);
 
 	return;
 }
