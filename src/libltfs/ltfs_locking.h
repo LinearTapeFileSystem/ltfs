@@ -88,13 +88,13 @@ enum {
 static inline void backtrace_info(void)
 {
 	void *address[50];
-	char **funcs;
+	char **funcs = NULL;
 	size_t back_num, i;
 
 	back_num = backtrace(address, 50);
 	funcs = backtrace_symbols( address, back_num);
 
-	for( i = 0; i < back_num; ++i ) {
+	for(i = 0; i < back_num; ++i)  {
 		if (funcs && funcs[i])
 			ltfsmsg(LTFS_INFO, 17193I, (int)i, address[i], funcs[i]);
 		else
