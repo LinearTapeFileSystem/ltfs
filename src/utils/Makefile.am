@@ -41,10 +41,10 @@ mkltfs_SOURCES = mkltfs.c
 mkltfs_DEPENDENCIES = ../libltfs/libltfs.la ../../messages/libbin_mkltfs_dat.a
 mkltfs_LDADD = ../libltfs/libltfs.la
 mkltfs_LDFLAGS = @AM_LDFLAGS@ -L../../messages -lbin_mkltfs_dat
-mkltfs_CPPFLAGS = @AM_CPPFLAGS@ -I ..
+mkltfs_CPPFLAGS = @AM_CPPFLAGS@ -I .. -fPIC
 
 ltfsck_SOURCES = ltfsck.c
 ltfsck_DEPENDENCIES = ../libltfs/libltfs.la ../../messages/libbin_ltfsck_dat.a
 ltfsck_LDADD = ../libltfs/libltfs.la
 ltfsck_LDFLAGS = @AM_LDFLAGS@ -L../../messages -lbin_ltfsck_dat
-ltfsck_CPPFLAGS = @AM_CPPFLAGS@ -I ..
+ltfsck_CPPFLAGS = @AM_CPPFLAGS@ -I .. -fPIC
