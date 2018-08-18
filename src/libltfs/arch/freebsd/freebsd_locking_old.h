@@ -37,7 +37,7 @@
 **
 ** COMPONENT NAME:  IBM Linear Tape File System
 **
-** FILE NAME:       freebsd_locking.h
+** FILE NAME:       freebsd_locking_old.h
 **
 ** DESCRIPTION:     LTFS locking method imprementation
 **                  Multi-reader single-writer lock implementation for FreeBSD.
@@ -55,8 +55,8 @@
 **                  reidl@spectralogic.com
 *************************************************************************************
 */
-#ifndef __FREEBSD_LOCKING_H__
-#define __FREEBSD_LOCKING_H__
+#ifndef __FREEBSD_LOCKING_OLD_H__
+#define __FREEBSD_LOCKING_OLD_H__
 
 typedef pthread_rwlock_t MultiReaderSingleWriter;
 
@@ -151,4 +151,4 @@ writetoread_mrsw(MultiReaderSingleWriter *mrsw)
 	pthread_rwlock_rdlock(mrsw);
 }
 
-#endif /* __FREEBSD_LOCKING_H__ */
+#endif /* __FREEBSD_LOCKING_OLD_H__ */

@@ -138,6 +138,17 @@ AC_ARG_ENABLE([snmp],
 AC_MSG_RESULT([$snmp])
 
 dnl
+dnl Handle --enable-new-locking (default:yes)
+dnl
+AC_MSG_CHECKING([whether to enable new locking system or not])
+AC_ARG_ENABLE([new-locking],
+    [AS_HELP_STRING([--enable-new-locking],[Use new locking system or not])],
+    [use_new_locking=$enableval],
+    [use_new_locking=no]
+)
+AC_MSG_RESULT([$use_new_locking])
+
+dnl
 dnl Handle --enable-lin-tape (default:no, Linux Only)
 dnl
 AC_MSG_CHECKING([whether to enable lin_tape or not (Linux Only)])
@@ -149,9 +160,9 @@ AC_ARG_ENABLE([lintape],
 AC_MSG_RESULT([$lintape])
 
 dnl
-dnl Handle --enable-buggy-ifs (default:no, Linux/OSx Only)
+dnl Handle --enable-buggy-ifs (default:no, Linux/MacOS Only)
 dnl
-AC_MSG_CHECKING([whether to enable handling of buggy I/Fs or not (Linux/OSx Only)])
+AC_MSG_CHECKING([whether to enable handling of buggy I/Fs or not (Linux/MacOS Only)])
 AC_ARG_ENABLE([buggy_ifs],
     [AS_HELP_STRING([--enable-buggy-ifs],[Support handling of buggy I/Fs for tape drivers])],
     [buggy_ifs=$enableval],
@@ -167,12 +178,12 @@ then
     if test "x${host_linux}" = "xyes"
     then
         AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -DSUPPORT_BUGGY_IFS"
-	AC_ARG_VAR([buggy_ifs], [compile with SUPPORT_BUGGY_IFS enabled])
+        AC_ARG_VAR([buggy_ifs], [compile with SUPPORT_BUGGY_IFS enabled])
     fi
     if test "x${host_mac}" = "xyes"
     then
         AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -DSUPPORT_BUGGY_IFS"
-	AC_ARG_VAR([buggy_ifs], [compile with SUPPORT_BUGGY_IFS enabled])
+        AC_ARG_VAR([buggy_ifs], [compile with SUPPORT_BUGGY_IFS enabled])
     fi
 fi
 
@@ -310,7 +321,7 @@ then
     ICU_MODULE_VERSION="`icu-config --version 2> /dev/null`";
     if test "${ICU_MODULE_VERSION%%.*}" -ge "60"
     then
-	AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -D ICU6x"
+        AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -D ICU6x"
     fi
     AC_MSG_RESULT([$ICU_MODULE_VERSION])
 fi
@@ -432,6 +443,11 @@ then
     AM_CPPFLAGS="${AM_CPPFLAGS} -DMSG_CHECK"
 fi
 
+if test "x$use_new_locking" = "xyes"
+then
+    AM_CPPFLAGS="${AM_CPPFLAGS} -DUSE_NEW_LOCKING"
+fi
+
 if test "x$livelink" = "xno"
 then
     AM_CPPFLAGS="${AM_CPPFLAGS} -DPOSIXLINK_ONLY"
@@ -523,8 +539,8 @@ AM_CONDITIONAL([PLATFORM_LINUX], [test "x${host_linux}" = "xyes"])
 AM_CONDITIONAL([ENABLE_LIN_TAPE], [test "x${lintape}" = "xyes"])
 AM_CONDITIONAL([PLATFORM_MAC], [test "x${host_mac}" = "xyes"])
 AM_CONDITIONAL([PLATFORM_FREEBSD], [test "x${host_freebsd}" = "xyes"])
-AM_CONDITIONAL([OSS], [true])
 AM_CONDITIONAL([CHK_MESSAGE], [test "x${use_msg_check}" = "xyes"])
+AM_CONDITIONAL([OSS], [true])
 
 AC_SUBST(CFLAGS)
 AC_SUBST(CRC_OPTIMIZE)
