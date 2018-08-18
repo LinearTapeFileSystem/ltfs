@@ -75,6 +75,18 @@ make install
 
 You need to add `--enable-lintappe` as an argument of ./configure script if you want to build the backend for lin_tape. You also need to add `DEFAULT_TAPE=lin_tape` if you set the lin_tape backend as default backend.
 
+#### Buildable distributions
+
+  | Dist             | Arch    | Status      | 
+  |:-:               |:-:      |:-:          | 
+  | RHEL 7           | x86_64  | OK          |
+  | RHEL 7           | ppc64le | OK          |
+  | CentOS 7         | x86_64  | Probably OK |
+  | CentOS 7         | ppc64le | Probably OK |  
+  | Fedora 28        | x86_64  | OK          |
+  | Ubuntu 16.04 LTS | x86_64  | UNKNOWN     |
+  | Debian 9.5       | x86_64  | UNKNOWN     |
+
 ### Build and install on OSX (macOS)
 
 Before build on OSX (macOS), some include path adjustment is required.
@@ -95,6 +107,12 @@ make install
 
 `./configure --help` shows various options for build and install.
 
+#### Buildable systems
+
+  | OS          | Xcode | Package system | Status      | 
+  |:-:          |:-:    |:-:             |:-:          |
+  | macOS 10.13 | 9.4.1 | Homebrew       | OK          |
+
 ### Build and install on FreeBSD
 
 Note that on FreeBSD, the usual 3rd party man directory is /usr/local/man.  configure defaults to using /usr/local/share/man.  So, override it on the command line to avoid having man pages put in the wrong place.
@@ -105,6 +123,12 @@ Note that on FreeBSD, the usual 3rd party man directory is /usr/local/man.  conf
 make
 make install
 ```
+
+#### Buildable versions
+
+  | Version | Arch    | Status      | 
+  |:-:      |:-:      |:-:          | 
+  | 11      | x86_64  | OK          |
 
 ## Contributing
 
