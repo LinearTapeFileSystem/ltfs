@@ -129,4 +129,14 @@ enum {
 	TC_MP_JZ          = 0xA4,   /* IBM TS11x0 JZ cartridge */
 };
 
+#define IS_REFORMATTABLE_TAPE(t) \
+	( t == TC_MP_JB ||			 \
+	  t == TC_MP_JC ||			 \
+	  t == TC_MP_JD ||			 \
+	  t == TC_MP_JK ||			 \
+	  t == TC_MP_JL ||			 \
+	  t == TC_MP_JY ||			 \
+	  t == TC_MP_JZ ||			 \
+	  t == TC_MP_LTO7D_CART )
+
 #endif // __tape_drivers_h
