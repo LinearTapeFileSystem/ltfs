@@ -52,7 +52,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#endif /* __FreeBSD__ */ 
+#endif /* __FreeBSD__ */
 #include <netdb.h>
 #include <ifaddrs.h>
 #include <unistd.h>
@@ -1056,6 +1056,69 @@ static inline unsigned char _assume_cartridge_type(char product, char btype)
 	}
 
 	return ctype;
+}
+
+unsigned char ibm_tape_assume_cart_type(const char* type_name)
+{
+	unsigned char c_type = 0;
+
+	if (strlen(type_name) < 2)
+		return TC_MP_LTO5D_CART;
+
+	c_type = _assume_cartridge_type(type_name[0], type_name[1]);
+	if (!c_type)
+		c_type = TC_MP_LTO5D_CART;
+
+	return c_type;
+}
+
+char* ibm_tape_assume_cart_name(unsigned char type)
+{
+	char *name = NULL;
+
+	switch (type) {
+		case TC_MP_LTO5D_CART:
+			name = "L5";
+			break;
+		case TC_MP_LTO6D_CART:
+			name = "L6";
+			break;
+		case TC_MP_LTO7D_CART:
+			name = "L7";
+			break;
+		case TC_MP_LTO8D_CART:
+			name = "L8";
+			break;
+		case TC_MP_JB:
+			name = "JB";
+			break;
+		case TC_MP_JX:
+			name = "JX";
+			break;
+		case TC_MP_JC:
+			name = "JC";
+			break;
+		case TC_MP_JK:
+			name = "JK";
+			break;
+		case TC_MP_JY:
+			name = "JY";
+			break;
+		case TC_MP_JD:
+			name = "JD";
+			break;
+		case TC_MP_JL:
+			name = "JL";
+			break;
+		case TC_MP_JZ:
+			name = "JZ";
+			break;
+		default:
+			name = "L5";
+			break;
+	}
+
+	return name;
 }
 
 static inline int _is_mountable(const int drive_type,

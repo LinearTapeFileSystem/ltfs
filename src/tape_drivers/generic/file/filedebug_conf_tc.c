@@ -52,30 +52,13 @@
 #include "libltfs/ltfslogging.h"
 
 #include "tape_drivers/tape_drivers.h"
+#include "tape_drivers/ibm_tape.h"
 
 #include "filedebug_conf_tc.h"
 
-struct filedebug_tc_cart_type cart_type[]  =
-{
-	{ "L5", TC_MP_LTO5D_CART },
-	{ "L6", TC_MP_LTO6D_CART },
-	{ "L7", TC_MP_LTO7D_CART },
-	{ "L8", TC_MP_LTO8D_CART },
-	{ "JB", TC_MP_JB },
-	{ "JX", TC_MP_JX },
-	{ "JC", TC_MP_JC },
-	{ "JK", TC_MP_JK },
-	{ "JY", TC_MP_JY },
-	{ "JD", TC_MP_JD },
-	{ "JL", TC_MP_JL },
-	{ "JZ", TC_MP_JZ },
-};
-
-int cart_type_size = sizeof(cart_type) / sizeof(struct filedebug_tc_cart_type);
-
 static int _filedebug_tc_write_schema(xmlTextWriterPtr writer, const struct filedebug_conf_tc *conf)
 {
-	int ret, i;
+	int ret;
 
 	/* Create XML document */
 	ret = xmlTextWriterStartDocument(writer, NULL, "UTF-8", NULL);
@@ -101,14 +84,9 @@ static int _filedebug_tc_write_schema(xmlTextWriterPtr writer, const struct file
 											  BAD_CAST "capacity_mb",
 											  "%"PRIu64, conf->capacity_mb), -1);
 
-	for (i = 0; i < cart_type_size; i++) {
-		if (conf->cart_type == cart_type[i].type_code) {
-			xml_mktag(xmlTextWriterWriteFormatElement(writer,
-													  BAD_CAST "cart_type",
-													  "%s", cart_type[i].name), -1);
-			break;
-		}
-	}
+	xml_mktag(xmlTextWriterWriteFormatElement(writer,
+											  BAD_CAST "cart_type",
+											  "%s", ibm_tape_assume_cart_name(conf->cart_type)), -1);
 
 	xml_mktag(xmlTextWriterWriteFormatElement(writer,
 											  BAD_CAST "density_code",
@@ -209,9 +187,7 @@ static int _filedebug_tc_parse_schema(xmlTextReaderPtr reader, struct filedebug_
 {
 	int ret;
 	unsigned long long value_ll;
-	declare_parser_vars("filedebug_cartridge_config");
-
-	i = 0; /* Dummy access for compiler warning */
+	declare_parser_vars_noloop("filedebug_cartridge_config");
 
 	/* start the parser: find top-level "index" tag, check version and encoding */
 	ret = _filedebug_parser_init(reader, parent_tag);
@@ -249,14 +225,7 @@ static int _filedebug_tc_parse_schema(xmlTextReaderPtr reader, struct filedebug_
 
 		} else if (! strcmp(name, "cart_type")) {
 			get_tag_text();
-
-			for (i = 0; i < cart_type_size; i++) {
-				conf->cart_type = TC_MP_LTO5D_CART;
-				if (!strcmp(cart_type[i].name, value)) {
-					conf->cart_type = cart_type[i].type_code;
-					break;
-				}
-			}
+			conf->cart_type = ibm_tape_assume_cart_type(value);
 			check_tag_end("cart_type");
 
 		} else if (! strcmp(name, "density_code")) {
