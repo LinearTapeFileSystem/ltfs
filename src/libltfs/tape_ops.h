@@ -116,7 +116,7 @@ struct tc_inq_page {
 #define TC_INQ_PAGE_DRVSERIAL (0x80)
 
 struct tc_current_param {
-	/* Parameters for tape drive*/
+	/* Parameters for tape drive */
 	unsigned int  max_blksize;           /* Maximum block size */
 
 	/* Parameters for current loaded tape */

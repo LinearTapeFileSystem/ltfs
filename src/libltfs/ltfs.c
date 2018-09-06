@@ -2704,28 +2704,44 @@ int ltfs_write_label(tape_partition_t partition, struct ltfs_volume *vol)
 int ltfs_format_tape(struct ltfs_volume *vol, int density_code)
 {
 	int ret;
-	uint32_t tape_maxblk;
+	struct tc_current_param cart_param;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	INTERRUPTED_RETURN();
 
+	/* Sanitize write protected tape */
 	ret = ltfs_get_partition_readonly(ltfs_ip_id(vol), vol);
-	if (! ret || ret == -LTFS_NO_SPACE || ret == -LTFS_LESS_SPACE)
+	if (! ret || ret == -LTFS_NO_SPACE || ret == -LTFS_LESS_SPACE || ret == -LTFS_RDONLY_DEN_DRV)
 		ret = ltfs_get_partition_readonly(ltfs_dp_id(vol), vol);
-	if (ret < 0 && ret != -LTFS_NO_SPACE && ret != -LTFS_LESS_SPACE) {
+	if (ret < 0 && ret != -LTFS_NO_SPACE && ret != -LTFS_LESS_SPACE && ret == -LTFS_RDONLY_DEN_DRV) {
 		ltfsmsg(LTFS_ERR, 11095E);
 		return ret;
 	}
 
-	ret = tape_get_max_blocksize(vol->device, &tape_maxblk);
+	/* Check the tape can be (re-)format */
+	ret = tape_get_params(vol->device, &cart_param);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 17195E, "format", ret);
+		ltfsmsg(LTFS_ERR, 17253E, "format", ret);
 		return ret;
 	}
 
-	if (tape_maxblk < vol->label->blocksize) {
-		ltfsmsg(LTFS_ERR, 11096E, vol->label->blocksize, tape_maxblk);
+	ret = tape_is_reformattable(vol->device, cart_param.cart_type, density_code);
+	switch (ret) {
+		case MEDIUM_PERFECT_MATCH:
+		case MEDIUM_WRITABLE:
+		case MEDIUM_PROBABLY_WRITABLE:
+			/* May be reformattable, do nothing */
+			break;
+		default:
+			ltfsmsg(LTFS_ERR, 17254E, cart_param.cart_type, ret);
+			return -LTFS_RDONLY_DEN_DRV;
+			break;
+	}
+
+	/* Determine max block size */
+	if (cart_param.max_blksize < vol->label->blocksize) {
+		ltfsmsg(LTFS_ERR, 11096E, vol->label->blocksize, cart_param.max_blksize);
 		return -LTFS_LARGE_BLOCKSIZE;
 	}
 
