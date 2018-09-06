@@ -244,7 +244,7 @@ root:table {
 		I1191E:string{ "Failed to degate other nodes." }
 		I1192E:string{ "Failed to operate against a cluster-wide lock." }
 		I1193E:string{ "Received a request against an unmounted cartridge." }
-		I1194E:string{ "Read-only cartridge and drive generation combination." }
+		I1194E:string{ "Read only combination of density code and drive generation." }
 		I1195E:string{ "Drive selection is needed again." }
 		I1196E:string{ "Mutex is already locked." }
 		I1197E:string{ "This tape is already being used." }
