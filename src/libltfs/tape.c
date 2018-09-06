@@ -911,7 +911,7 @@ int tape_read_only(struct device_data *dev, tape_partition_t partition)
 
 	if (!ret) {
 		if (dev->backend->is_readonly(dev->backend_data))
-			ret = -LTFS_RDONLY_CART_DRV;
+			ret = -LTFS_RDONLY_DEN_DRV;
 	}
 
 	return ret;
@@ -3387,6 +3387,27 @@ int tape_is_mountable(struct device_data *dev, char *barcode,
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
 
 	ret = (*(dev->backend->is_mountable))(dev->backend_data, barcode,
+										  cart_type, density);
+
+	return ret;
+}
+
+/**
+ * Evaluate the tape can be mountable
+ * @param device a pointer to the tape device
+ * @param cart_type cartridge type in CM
+ * @param density current density code of the tape
+ * @return MEDIUM_ like MEDIUM_PERFECT_MATCH prefix enumerator on success,
+ * 	negative value on error
+ */
+int tape_is_reformattable(struct device_data *dev, unsigned char cart_type, unsigned char density)
+{
+	int ret = MEDIUM_CANNOT_ACCESS;
+
+	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
+
+	ret = (*(dev->backend->is_mountable))(dev->backend_data, NULL,
 										  cart_type, density);
 
 	return ret;

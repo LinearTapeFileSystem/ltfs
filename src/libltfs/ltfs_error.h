@@ -246,7 +246,7 @@
 #define LTFS_NODE_DEGATE_FAIL     1191  /* Failed to degate other nodes */
 #define LTFS_CLUSTER_MRSW_FAIL    1192  /* Failed to opetate against a cluster wide lock */
 #define LTFS_CART_NOT_MOUNTED     1193  /* Got a request against an unmounted cartridge */
-#define LTFS_RDONLY_CART_DRV      1194  /* Readonly cart & drive generation combination */
+#define LTFS_RDONLY_DEN_DRV       1194  /* Read only combination of density code and drive generation */
 #define LTFS_NEED_DRIVE_SELECTION 1195  /* Drive selection is needed again */
 #define LTFS_MUTEX_ALREADY_LOCKED 1196  /* Mutex is already locked */
 #define LTFS_TAPE_UNDER_PROCESS   1197  /* This tape is already under processing */

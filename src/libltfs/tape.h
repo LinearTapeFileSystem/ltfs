@@ -221,6 +221,7 @@ int update_tape_attribute (struct ltfs_volume *vol, const char *new_value, int t
 int read_tape_attribute (struct ltfs_volume *vol, char **val, const char *name);
 int tape_is_mountable(struct device_data *dev, char *barcode,
 					  unsigned char cart_type, unsigned char density);
+int tape_is_reformattable(struct device_data *dev, unsigned char cart_type, unsigned char density);
 int tape_set_profiler(struct device_data *dev, char *work_dir, bool enable);
 
 static inline char* tape_get_serialnumber(struct device_data *dev)
