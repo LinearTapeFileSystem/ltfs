@@ -133,6 +133,10 @@ make install
   |:-:      |:-:      |:-:          | 
   | 11      | x86_64  | OK          |
 
+## Next Step
+
+Goto [Wiki](https://github.com/LinearTapeFileSystem/ltfs/wiki) and enjoy the LTFS.
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](.github/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
