@@ -78,7 +78,7 @@ int pathname_validate_xattr_name(const char *name);
 int pathname_validate_xattr_value(const char *name, size_t size);
 int pathname_strlen(const char *name);
 int pathname_truncate(char *name, size_t size);
-int pathname_nfd_normaize(const char *name, char **new_name);
+int pathname_nfd_normalize(const char *name, char **new_name);
 #ifdef __cplusplus
 }
 #endif
