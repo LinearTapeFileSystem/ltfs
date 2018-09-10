@@ -843,7 +843,7 @@ int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
 #ifdef __APPLE__
 	free(new_name);
 
-	ret = pathname_nfd_normaize(name, &new_name);
+	ret = pathname_nfd_normalize(name, &new_name);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 14027E, "nfd", ret);
 		return ret;
