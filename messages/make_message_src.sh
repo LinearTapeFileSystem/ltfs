@@ -36,8 +36,15 @@ if [ "$#" -ne "1" ]; then
 	exit 1
 fi
 
-BASENAME=`echo $1 | sed -e 's/_dat\.a$//'`
-BASENAME=`echo $BASENAME | sed -e 's/^lib//'`
+case $KERNEL_NAME in
+	MINGW32_NT*)
+		BASENAME=`echo $1 | sed -e 's/_dat\.o$//'`
+		;;
+	*)
+		BASENAME=`echo $1 | sed -e 's/_dat\.a$//'`
+		BASENAME=`echo $BASENAME | sed -e 's/^lib//'`
+		;;
+esac
 
 cd ${BASENAME}
 
