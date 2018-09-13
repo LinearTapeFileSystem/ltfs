@@ -1173,6 +1173,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 			default:
 				/* Rollback mount is specified */
 				ltfsmsg(LTFS_INFO, 14072I, priv->rollback_gen);
+				is_ro = true;
 				break;
 		}
 
