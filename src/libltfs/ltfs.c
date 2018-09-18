@@ -2714,7 +2714,7 @@ int ltfs_format_tape(struct ltfs_volume *vol, int density_code)
 	ret = ltfs_get_partition_readonly(ltfs_ip_id(vol), vol);
 	if (! ret || ret == -LTFS_NO_SPACE || ret == -LTFS_LESS_SPACE || ret == -LTFS_RDONLY_DEN_DRV)
 		ret = ltfs_get_partition_readonly(ltfs_dp_id(vol), vol);
-	if (ret < 0 && ret != -LTFS_NO_SPACE && ret != -LTFS_LESS_SPACE && ret == -LTFS_RDONLY_DEN_DRV) {
+	if (ret < 0 && ret != -LTFS_NO_SPACE && ret != -LTFS_LESS_SPACE && ret != -LTFS_RDONLY_DEN_DRV) {
 		ltfsmsg(LTFS_ERR, 11095E);
 		return ret;
 	}
