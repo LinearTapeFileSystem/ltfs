@@ -393,6 +393,7 @@ struct camtape_data {
 	uint64_t      tape_alert;        /**< Latched tape alert flag */
 	bool          is_data_key_set;   /**< Is a valid data key set? */
 	unsigned char dki[12];           /**< key-alias */
+	bool          clear_by_pc;       /**< clear pseudo write perm by partition change */
 	uint64_t      force_writeperm;   /**< pseudo write perm threshold */
 	uint64_t      force_readperm;    /**< pseudo read perm threashold */
 	uint64_t      write_counter;     /**< write call counter for pseudo write perm */

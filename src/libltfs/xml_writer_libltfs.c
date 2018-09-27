@@ -318,7 +318,7 @@ static int _xml_write_file(xmlTextWriterPtr writer, struct dentry *file, struct 
 	} else {
 		/* Write file offset cache */
 		if (offset_c->fp) {
-			fprintf(offset_c->fp, "%s,%"PRIu64"\n", file->name.name, (uint64_t)0);
+			fprintf(offset_c->fp, "%s,0,0\n", file->name.name);
 			offset_c->count++;
 		}
 	}

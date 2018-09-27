@@ -58,6 +58,7 @@
 #include "libltfs/fs.h"
 #include "libltfs/ltfs_endian.h"
 #include "libltfs/arch/time_internal.h"
+#include "kmi/key_format_ltfs.h"
 
 /* Common header of backend */
 #include "reed_solomon_crc.h"
@@ -90,15 +91,7 @@ struct sg_ibmtape_global_data global_data;
 #define SG_MAX_BLOCK_SIZE (1 * MB)
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-#define DK_LENGTH 32
-#define DKI_LENGTH 12
-
-#define DEFAULT_TIMEOUT (60)
-
-#define THREASHOLD_FORCE_WRITE_NO_WRITE (5)
-#define DEFAULT_WRITEPERM               (0)
-#define DEFAULT_READPERM                (0)
-#define DEFAULT_ERRORTYPE               (0)
+#define TU_DEFAULT_TIMEOUT (60)
 
 /* Forward references (For keep function order to struct tape_ops) */
 int sg_ibmtape_readpos(void *device, struct tc_position *pos);
@@ -530,7 +523,7 @@ int _raw_tur(const int fd)
 
 	/* Build CDB */
 	cdb[0] = TEST_UNIT_READY;
-	timeout = DEFAULT_TIMEOUT;
+	timeout = TU_DEFAULT_TIMEOUT;
 
 	/* Build request */
 	req.dxfer_direction = SCSI_NO_DATA_TRANSFER;
@@ -1080,6 +1073,7 @@ int sg_ibmtape_open(const char *devname, void **handle)
 	_register_key(priv, priv->key);
 
 	/* Initial setting of force perm */
+	priv->clear_by_pc     = false;
 	priv->force_writeperm = DEFAULT_WRITEPERM;
 	priv->force_readperm  = DEFAULT_READPERM;
 	priv->force_errortype = DEFAULT_ERRORTYPE;
@@ -1820,10 +1814,11 @@ int sg_ibmtape_rewind(void *device, struct tc_position *pos)
 
 	if(ret == DEVICE_GOOD) {
 		/* Clear force perm setting */
+		priv->clear_by_pc     = false;
 		priv->force_writeperm = DEFAULT_WRITEPERM;
 		priv->force_readperm  = DEFAULT_READPERM;
-		priv->write_counter = 0;
-		priv->read_counter  = 0;
+		priv->write_counter   = 0;
+		priv->read_counter    = 0;
 
 		ret = sg_ibmtape_readpos(device, pos);
 
@@ -1852,12 +1847,25 @@ int sg_ibmtape_locate(void *device, struct tc_position dest, struct tc_position 
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOCATE";
 	char *msg = NULL;
+	bool pc = false;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOCATE));
 	ltfsmsg(LTFS_DEBUG, 30397D, "locate",
 			(unsigned long long)dest.partition,
 			(unsigned long long)dest.block,
 			priv->drive_serial);
+
+	if (pos->partition != dest.partition) {
+		if (priv->clear_by_pc) {
+			/* Clear force perm setting */
+			priv->clear_by_pc     = false;
+			priv->force_writeperm = DEFAULT_WRITEPERM;
+			priv->force_readperm  = DEFAULT_READPERM;
+			priv->write_counter   = 0;
+			priv->read_counter    = 0;
+		}
+		pc = true;
+	}
 
 	/* Zero out the CDB and the result buffer */
 	ret = init_sg_io_header(&req);
@@ -1869,7 +1877,8 @@ int sg_ibmtape_locate(void *device, struct tc_position dest, struct tc_position 
 
 	/* Build CDB */
 	cdb[0]  = LOCATE16;
-	cdb[1]  = 0x02; /* Set Change partition(CP) flag */
+	if (pc)
+		cdb[1]  = 0x02; /* Set Change partition(CP) flag */
 	cdb[3]  = (unsigned char)(dest.partition & 0xff);
 	ltfs_u64tobe(cdb + 4, dest.block);
 
@@ -2212,17 +2221,19 @@ int sg_ibmtape_load(void *device, struct tc_position *pos)
 	ltfsmsg(LTFS_DEBUG, 30392D, "load", priv->drive_serial);
 
 	ret = _cdb_load_unload(device, true);
+
+	/* Clear force perm setting */
+	priv->clear_by_pc     = false;
+	priv->force_writeperm = DEFAULT_WRITEPERM;
+	priv->force_readperm  = DEFAULT_READPERM;
+	priv->write_counter   = 0;
+	priv->read_counter    = 0;
+
 	sg_ibmtape_readpos(device, pos);
 	if (ret < 0) {
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOAD));
 		return ret;
 	} else {
-		/* Clear force perm setting */
-		priv->force_writeperm = DEFAULT_WRITEPERM;
-		priv->force_readperm  = DEFAULT_READPERM;
-		priv->write_counter = 0;
-		priv->read_counter  = 0;
-
 		if(ret == DEVICE_GOOD) {
 			if(pos->early_warning)
 				ltfsmsg(LTFS_WARN, 30222W, "load");
@@ -2269,6 +2280,14 @@ int sg_ibmtape_unload(void *device, struct tc_position *pos)
 	ltfsmsg(LTFS_DEBUG, 30392D, "unload", priv->drive_serial);
 
 	ret = _cdb_load_unload(device, false);
+
+	/* Clear force perm setting */
+	priv->clear_by_pc     = false;
+	priv->force_writeperm = DEFAULT_WRITEPERM;
+	priv->force_readperm  = DEFAULT_READPERM;
+	priv->write_counter   = 0;
+	priv->read_counter    = 0;
+
 	if (ret < 0) {
 		sg_ibmtape_readpos(device, pos);
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_UNLOAD));
@@ -3525,6 +3544,7 @@ int sg_ibmtape_set_xattr(void *device, const char *name, const char *buf, size_t
 	int ret = -LTFS_NO_XATTR;
 	char *null_terminated;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
+	int64_t perm_count = 0;
 
 	if (!size)
 		return -LTFS_BAD_ARG;
@@ -3541,15 +3561,30 @@ int sg_ibmtape_set_xattr(void *device, const char *name, const char *buf, size_t
 	null_terminated[size] = '\0';
 
 	if (! strcmp(name, "ltfs.vendor.IBM.forceErrorWrite")) {
-		priv->force_writeperm = strtoull(null_terminated, NULL, 0);
+		perm_count = strtoll(null_terminated, NULL, 0);
+		if (perm_count < 0) {
+			priv->force_writeperm = -perm_count;
+			priv->clear_by_pc     = true;
+		} else {
+			priv->force_writeperm = perm_count;
+			priv->clear_by_pc     = false;
+		}
 		if (priv->force_writeperm && priv->force_writeperm < THREASHOLD_FORCE_WRITE_NO_WRITE)
 			priv->force_writeperm = THREASHOLD_FORCE_WRITE_NO_WRITE;
+		priv->write_counter = 0;
 		ret = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
 		priv->force_errortype = strtol(null_terminated, NULL, 0);
 		ret = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorRead")) {
-		priv->force_readperm = strtoull(null_terminated, NULL, 0);
+		perm_count = strtoll(null_terminated, NULL, 0);
+		if (perm_count < 0) {
+			priv->force_readperm = -perm_count;
+			priv->clear_by_pc    = true;
+		} else {
+			priv->force_readperm = perm_count;
+			priv->clear_by_pc    = false;
+		}
 		priv->read_counter = 0;
 		ret = DEVICE_GOOD;
 	}

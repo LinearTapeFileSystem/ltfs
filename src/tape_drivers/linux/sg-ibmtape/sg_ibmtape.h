@@ -65,8 +65,9 @@ struct sg_ibmtape_data {
 	unsigned char        dki[12];              /**< key-alias */
 	bool                 use_sili;             /**< Default true, false for USB drives */
 	int                  drive_type;           /**< drive type defined by ltfs */
+	bool                 clear_by_pc;          /**< clear pseudo write perm by partition change */
 	uint64_t             force_writeperm;      /**< pseudo write perm threshold */
-	uint64_t             force_readperm;       /**< pseudo read perm threashold */
+	uint64_t             force_readperm;       /**< pseudo read perm threshold */
 	uint64_t             write_counter;        /**< write call counter for pseudo write perm */
 	uint64_t             read_counter;         /**< read call counter for pseudo write perm */
 	int                  force_errortype;      /**< 0 is R/W Perm, otherwise no sense */

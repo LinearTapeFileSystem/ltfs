@@ -78,6 +78,11 @@ typedef int   (*crc_check)(void *buf, size_t n);
 typedef void* (*memcpy_crc_enc)(void *dest, const void *src, size_t n);
 typedef int   (*memcpy_crc_check)(void *dest, const void *src, size_t n);
 
+#define THREASHOLD_FORCE_WRITE_NO_WRITE (5)
+#define DEFAULT_WRITEPERM               (0)
+#define DEFAULT_READPERM                (0)
+#define DEFAULT_ERRORTYPE               (0)
+
 struct timeout_tape {
 	int  op_code;     /**< SCSI op code */
 	int  timeout;     /**< SCSI timeout */

@@ -107,11 +107,6 @@ const char *filedebug_default_device = "/tmp/ltfs/tape";
 #define MISSING_EOD      (0xFFFFFFFFFFFFFFFFLL)
 #define CARTRIDGE_CONFIG  "filedebug_tc_conf.xml"
 
-#define THREASHOLD_FORCE_WRITE_NO_WRITE (5)
-#define DEFAULT_WRITEPERM               (0)
-#define DEFAULT_READPERM                (0)
-#define DEFAULT_ERRORTYPE               (0)
-
 /* For drive link feature */
 #ifdef mingw_PLATFORM
 #define DRIVE_LIST_DIR    "ltfs"
@@ -149,6 +144,7 @@ struct filedebug_data {
 	unsigned p1_warning;                   /**< Nonzero to provide early warning on partition 1 */
 	unsigned p0_p_warning;                 /**< Nonzero to provide programmable early warning on partition 0 */
 	unsigned p1_p_warning;                 /**< Nonzero to provide programmable early warning on partition 1 */
+	bool     clear_by_pc;                  /**< clear pseudo write perm by partition change */
 	uint64_t force_writeperm;              /**< pseudo write perm threshold */
 	uint64_t force_readperm;               /**< pseudo read perm threashold */
 	uint64_t write_counter;                /**< write call counter for pseudo write perm */
@@ -221,7 +217,7 @@ static struct fuse_opt filedebug_opts[] = {
 	FUSE_OPT_END
 };
 
-int null_parser(void *priv, const char *arg, int key, struct fuse_args *outargs)
+int null_parser(void *state, const char *arg, int key, struct fuse_args *outargs)
 {
 	return 1;
 }
@@ -478,6 +474,8 @@ int filedebug_open(const char *name, void **handle)
 	state->conf.cart_type        = TC_MP_LTO5D_CART;
 	state->conf.density_code     = 0x58;
 
+	/* Initial setting of force perm */
+	state->clear_by_pc     = false;
 	state->force_writeperm = DEFAULT_WRITEPERM;
 	state->force_readperm  = DEFAULT_READPERM;
 	state->force_errortype = DEFAULT_ERRORTYPE;
@@ -995,6 +993,7 @@ int filedebug_rewind(void *device, struct tc_position *pos)
 	/* Does rewinding reset the partition? */
 	state->current_position.block     = 0;
 	state->current_position.filemarks = 0;
+	state->clear_by_pc                = false;
 	state->force_writeperm            = DEFAULT_WRITEPERM;
 	state->force_readperm             = DEFAULT_READPERM;
 	state->write_counter              = 0;
@@ -1036,8 +1035,12 @@ int filedebug_locate(void *device, struct tc_position dest, struct tc_position *
 	}
 
 	if (state->current_position.partition != dest.partition) {
-		state->force_writeperm = 0;
-		state->force_readperm  = 0;
+		if (state->clear_by_pc) {
+			state->clear_by_pc     = false;
+			state->force_writeperm = DEFAULT_WRITEPERM;
+			state->force_readperm  = DEFAULT_READPERM;
+			state->force_errortype = DEFAULT_ERRORTYPE;
+		}
 	}
 
 	emulate_seek_wait(state, &dest);
@@ -1357,6 +1360,7 @@ int filedebug_load(void *device, struct tc_position *pos)
 		state->current_position.partition = 0;
 		state->current_position.block     = 0;
 		state->current_position.filemarks = 0;
+		state->clear_by_pc                = false;
 		state->force_writeperm            = DEFAULT_WRITEPERM;
 		state->force_readperm             = DEFAULT_READPERM;
 		state->write_counter              = 0;
@@ -1542,6 +1546,7 @@ int filedebug_unload(void *device, struct tc_position *pos)
 	state->current_position.partition = 0;
 	state->current_position.block     = 0;
 	state->current_position.filemarks = 0;
+	state->clear_by_pc                = false;
 	state->force_writeperm            = DEFAULT_WRITEPERM;
 	state->force_readperm             = DEFAULT_READPERM;
 	state->write_counter              = 0;
@@ -1749,6 +1754,7 @@ int filedebug_set_xattr(void *device, const char *name, const char *buf, size_t 
 	int ret = -LTFS_NO_XATTR;
 	uint64_t attr_val;
 	char *null_terminated;
+	int64_t perm_count = 0;
 
 	if (!size)
 		return -LTFS_BAD_ARG;
@@ -1761,15 +1767,30 @@ int filedebug_set_xattr(void *device, const char *name, const char *buf, size_t 
 	memcpy(null_terminated, buf, size);
 
 	if (! strcmp(name, "ltfs.vendor.IBM.forceErrorWrite")) {
-		state->force_writeperm = strtoull(null_terminated, NULL, 0);
+		perm_count = strtoll(null_terminated, NULL, 0);
+		if (perm_count < 0) {
+			state->force_writeperm = -perm_count;
+			state->clear_by_pc     = true;
+		} else {
+			state->force_writeperm = perm_count;
+			state->clear_by_pc     = false;
+		}
 		if (state->force_writeperm && state->force_writeperm < THREASHOLD_FORCE_WRITE_NO_WRITE)
 			state->force_writeperm = THREASHOLD_FORCE_WRITE_NO_WRITE;
+		state->write_counter = 0;
 		ret = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
 		state->force_errortype = strtol(null_terminated, NULL, 0);
 		ret = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorRead")) {
-		state->force_readperm = strtoull(null_terminated, NULL, 0);
+		perm_count = strtoll(null_terminated, NULL, 0);
+		if (perm_count < 0) {
+			state->force_readperm = -perm_count;
+			state->clear_by_pc    = true;
+		} else {
+			state->force_readperm = perm_count;
+			state->clear_by_pc    = false;
+		}
 		state->read_counter = 0;
 		ret = DEVICE_GOOD;
 	} else if (!strcmp(name, "ltfs.vendor.IBM.seekLatency")) {

@@ -93,6 +93,7 @@ struct lin_tape_ibmtape {
 	uint64_t            tape_alert;           /**< Latched tape alert flag */
 	bool                is_data_key_set;      /**< Is a valid data key set? */
 	unsigned char       dki[12];              /**< key-alias */
+	bool                clear_by_pc;          /**< clear pseudo write perm by partition change */
 	uint64_t            force_writeperm;      /**< pseudo write perm threshold */
 	uint64_t            force_readperm;       /**< pseudo read perm threashold */
 	uint64_t            write_counter;        /**< write call counter for pseudo write perm */
@@ -1077,6 +1078,7 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 	priv->loaded = false; /* Assume tape is not loaded until a successful load call. */
 	priv->devname = strdup(devname);
 
+	priv->clear_by_pc     = false;
 	priv->force_writeperm = DEFAULT_WRITEPERM;
 	priv->force_readperm  = DEFAULT_READPERM;
 	priv->force_errortype = DEFAULT_ERRORTYPE;
@@ -1606,6 +1608,7 @@ int lin_tape_ibmtape_rewind(void *device, struct tc_position *pos)
 		lin_tape_ibmtape_process_errors(device, rc, msg, "rewind", true);
 	}
 
+	priv->clear_by_pc     = false;
 	priv->force_writeperm = DEFAULT_WRITEPERM;
 	priv->force_readperm  = DEFAULT_READPERM;
 	priv->write_counter = 0;
@@ -1639,10 +1642,13 @@ int lin_tape_ibmtape_locate(void *device, struct tc_position dest, struct tc_pos
 		set_part.partition_number = dest.partition;
 		set_part.logical_block_id = dest.block;
 
-		priv->force_writeperm = DEFAULT_WRITEPERM;
-		priv->force_readperm  = DEFAULT_READPERM;
-		priv->write_counter = 0;
-		priv->read_counter  = 0;
+		if (priv->clear_by_pc) {
+			priv->clear_by_pc     = false;
+			priv->force_writeperm = DEFAULT_WRITEPERM;
+			priv->force_readperm  = DEFAULT_READPERM;
+			priv->write_counter = 0;
+			priv->read_counter  = 0;
+		}
 
 		rc = _sioc_stioc_command(device, STIOC_SET_ACTIVE_PARTITION, "LOCATE(PART)", &set_part, &msg);
 	}
@@ -1927,6 +1933,7 @@ int lin_tape_ibmtape_load(void *device, struct tc_position *pos)
 	priv->loaded        = true;
 	priv->is_worm       = false;
 
+	priv->clear_by_pc     = false;
 	priv->force_writeperm = DEFAULT_WRITEPERM;
 	priv->force_readperm  = DEFAULT_READPERM;
 	priv->write_counter = 0;
@@ -1964,6 +1971,7 @@ int lin_tape_ibmtape_unload(void *device, struct tc_position *pos)
 
 	rc = _lin_tape_ibmtape_load_unload(device, false, pos);
 
+	priv->clear_by_pc     = false;
 	priv->force_writeperm = DEFAULT_WRITEPERM;
 	priv->force_readperm  = DEFAULT_READPERM;
 	priv->write_counter = 0;
@@ -3418,6 +3426,7 @@ int lin_tape_ibmtape_set_xattr(void *device, const char *name, const char *buf, 
 	int rc = -LTFS_NO_XATTR;
 	char *null_terminated;
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
+	int64_t perm_count = 0;
 
 	if (!size)
 		return -LTFS_BAD_ARG;
@@ -3434,15 +3443,30 @@ int lin_tape_ibmtape_set_xattr(void *device, const char *name, const char *buf, 
 	null_terminated[size] = '\0';
 
 	if (! strcmp(name, "ltfs.vendor.IBM.forceErrorWrite")) {
-		priv->force_writeperm = strtoull(null_terminated, NULL, 0);
+		perm_count = strtoll(null_terminated, NULL, 0);
+		if (perm_count < 0) {
+			priv->force_writeperm = -perm_count;
+			priv->clear_by_pc     = true;
+		} else {
+			priv->force_writeperm = perm_count;
+			priv->clear_by_pc     = false;
+		}
 		if (priv->force_writeperm && priv->force_writeperm < THREASHOLD_FORCE_WRITE_NO_WRITE)
 			priv->force_writeperm = THREASHOLD_FORCE_WRITE_NO_WRITE;
+		priv->write_counter = 0;
 		rc = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
 		priv->force_errortype = strtol(null_terminated, NULL, 0);
 		rc = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorRead")) {
-		priv->force_readperm = strtoull(null_terminated, NULL, 0);
+		perm_count = strtoll(null_terminated, NULL, 0);
+		if (perm_count < 0) {
+			priv->force_readperm = -perm_count;
+			priv->clear_by_pc    = true;
+		} else {
+			priv->force_readperm = perm_count;
+			priv->clear_by_pc    = false;
+		}
 		priv->read_counter = 0;
 		rc = DEVICE_GOOD;
 	}
