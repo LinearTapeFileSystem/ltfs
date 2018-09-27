@@ -88,6 +88,8 @@ root:table {
 		30843E:string { "Invalid scsi_lbprotect option: %s." }
 		30844E:string { "Encryption method of the drive is not AME but %s (0x%02X)." }
 		30845E:string { "Encryption feature is not supported on the drive: %d." }
+		30846I:string { "Pseudo-error on %s." }
+		30847I:string { "Pseudo-error on write. Good return code, but a record to emulate a write error did not get sent to the drive." }
 		//unused 30846
 		//unused 30847
 		//unused 30848

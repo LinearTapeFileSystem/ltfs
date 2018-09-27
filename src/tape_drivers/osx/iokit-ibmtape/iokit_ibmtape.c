@@ -806,6 +806,12 @@ int iokit_ibmtape_open(const char *devname, void **handle)
 	ibm_tape_genkey(priv->key);
 	_register_key(priv, priv->key);
 
+	/* Initial setting of force perm */
+	priv->clear_by_pc     = false;
+	priv->force_writeperm = DEFAULT_WRITEPERM;
+	priv->force_readperm  = DEFAULT_READPERM;
+	priv->force_errortype = DEFAULT_ERRORTYPE;
+
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_OPEN));
 
 	*handle = (void *)priv;
@@ -1217,6 +1223,18 @@ int iokit_ibmtape_read(void *device, char *buf, size_t size,
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READ));
 	ltfsmsg(LTFS_DEBUG3, 30995D, "read", size, priv->drive_serial);
 
+	if (priv->force_readperm) {
+		priv->read_counter++;
+		if (priv->read_counter > priv->force_readperm) {
+			ltfsmsg(LTFS_INFO, 30846I, "read");
+			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READ));
+			if (priv->force_errortype)
+				return -EDEV_NO_SENSE;
+			else
+				return -EDEV_READ_PERM;
+		}
+	}
+
 	if (global_data.crc_checking) {
 		datacount = size + 4;
 		/* Never fall into this block, fail safe to adjust record length*/
@@ -1363,6 +1381,23 @@ int iokit_ibmtape_write(void *device, const char *buf, size_t count, struct tc_p
 
 	ltfsmsg(LTFS_DEBUG3, 30995D, "write", count, priv->drive_serial);
 
+	if ( priv->force_writeperm ) {
+		priv->write_counter++;
+		if ( priv->write_counter > priv->force_writeperm ) {
+			ltfsmsg(LTFS_INFO, 30846I, "write");
+			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
+			if (priv->force_errortype)
+				return -EDEV_NO_SENSE;
+			else
+				return -EDEV_WRITE_PERM;
+		} else if ( priv->write_counter > (priv->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE) ) {
+			ltfsmsg(LTFS_INFO, 30847I);
+			pos->block++;
+			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
+			return DEVICE_GOOD;
+		}
+	}
+
 	if(global_data.crc_checking) {
 		if (priv->f_crc_enc)
 			priv->f_crc_enc((void *)buf, count);
@@ -1502,6 +1537,13 @@ int iokit_ibmtape_rewind(void *device, struct tc_position *pos)
 	}
 
 	if(ret == DEVICE_GOOD) {
+		/* Clear force perm setting */
+		priv->clear_by_pc     = false;
+		priv->force_writeperm = DEFAULT_WRITEPERM;
+		priv->force_readperm  = DEFAULT_READPERM;
+		priv->write_counter   = 0;
+		priv->read_counter    = 0;
+
 		ret = iokit_ibmtape_readpos(device, pos);
 
 		if(ret == DEVICE_GOOD) {
@@ -1527,16 +1569,30 @@ int iokit_ibmtape_locate(void *device, struct tc_position dest, struct tc_positi
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOCATE";
 	char *msg = NULL;
+	bool pc = false;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOCATE));
 	ltfsmsg(LTFS_DEBUG, 30997D, "locate", dest.partition, dest.block, priv->drive_serial);
+
+	if (pos->partition != dest.partition) {
+		if (priv->clear_by_pc) {
+			/* Clear force perm setting */
+			priv->clear_by_pc     = false;
+			priv->force_writeperm = DEFAULT_WRITEPERM;
+			priv->force_readperm  = DEFAULT_READPERM;
+			priv->write_counter   = 0;
+			priv->read_counter    = 0;
+		}
+		pc = true;
+	}
 
 	// Zero out the CDB and the result buffer
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
 	cdb[0]  = LOCATE16;
-	cdb[1]  = 0x02; /* Set Change partition(CP) flag */
+	if (pc)
+		cdb[1]  = 0x02; /* Set Change partition(CP) flag */
 	cdb[3]  = (unsigned char)(dest.partition & 0xff);
 	ltfs_u64tobe(cdb + 4, dest.block);
 
@@ -1820,6 +1876,14 @@ static int _cdb_load_unload(void *device, bool load)
 	req.desc            = cmd_desc;
 
 	ret = iokit_issue_cdb_command(&priv->dev, &req, &msg);
+
+	/* Clear force perm setting */
+	priv->clear_by_pc     = false;
+	priv->force_writeperm = DEFAULT_WRITEPERM;
+	priv->force_readperm  = DEFAULT_READPERM;
+	priv->write_counter   = 0;
+	priv->read_counter    = 0;
+
 	if (ret < 0){
 		_process_errors(device, ret, msg, cmd_desc, true);
 	}
@@ -1837,6 +1901,14 @@ int iokit_ibmtape_load(void *device, struct tc_position *pos)
 	ltfsmsg(LTFS_DEBUG, 30992D, "load", priv->drive_serial);
 
 	ret = _cdb_load_unload(device, true);
+
+	/* Clear force perm setting */
+	priv->clear_by_pc     = false;
+	priv->force_writeperm = DEFAULT_WRITEPERM;
+	priv->force_readperm  = DEFAULT_READPERM;
+	priv->write_counter   = 0;
+	priv->read_counter    = 0;
+
 	iokit_ibmtape_readpos(device, pos);
 	if (ret < 0) {
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOAD));
@@ -3117,9 +3189,44 @@ int iokit_ibmtape_get_xattr(void *device, const char *name, char **buf)
 
 int iokit_ibmtape_set_xattr(void *device, const char *name, const char *buf, size_t size)
 {
+	int ret = -LTFS_NO_XATTR;
+	char *null_terminated;
 	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	int64_t wp_count = 0;
+
+	if (!size)
+		return -LTFS_BAD_ARG;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SETXATTR));
+
+	null_terminated = malloc(size + 1);
+	if (! null_terminated) {
+		ltfsmsg(LTFS_ERR, 10001E, "iokit_ibmtape_set_xattr: null_term");
+		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETXATTR));
+		return -LTFS_NO_MEMORY;
+	}
+	memcpy(null_terminated, buf, size);
+	null_terminated[size] = '\0';
+
+	if (! strcmp(name, "ltfs.vendor.IBM.forceErrorWrite")) {
+		wp_count = strtoll(null_terminated, NULL, 0);
+		if (wp_count < 0) {
+			priv->force_writeperm = -wp_count;
+			priv->clear_by_pc     = true;
+		}
+		if (priv->force_writeperm && priv->force_writeperm < THRESHOLD_FORCE_WRITE_NO_WRITE)
+			priv->force_writeperm = THRESHOLD_FORCE_WRITE_NO_WRITE;
+		ret = DEVICE_GOOD;
+	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
+		priv->force_errortype = strtol(null_terminated, NULL, 0);
+		ret = DEVICE_GOOD;
+	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorRead")) {
+		priv->force_readperm = strtoull(null_terminated, NULL, 0);
+		priv->read_counter = 0;
+		ret = DEVICE_GOOD;
+	}
+	free(null_terminated);
+
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETXATTR));
 	return -LTFS_NO_XATTR;
 }
