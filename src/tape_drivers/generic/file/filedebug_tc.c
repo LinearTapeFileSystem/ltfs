@@ -762,7 +762,7 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 				return -EDEV_NO_SENSE;
 			else
 				return -EDEV_WRITE_PERM;
-		} else if ( state->write_counter > (state->force_writeperm - THREASHOLD_FORCE_WRITE_NO_WRITE) ) {
+		} else if ( state->write_counter > (state->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE) ) {
 			ltfsmsg(LTFS_INFO, 30019I);
 			pos->block++;
 			return DEVICE_GOOD;
@@ -1775,8 +1775,8 @@ int filedebug_set_xattr(void *device, const char *name, const char *buf, size_t 
 			state->force_writeperm = perm_count;
 			state->clear_by_pc     = false;
 		}
-		if (state->force_writeperm && state->force_writeperm < THREASHOLD_FORCE_WRITE_NO_WRITE)
-			state->force_writeperm = THREASHOLD_FORCE_WRITE_NO_WRITE;
+		if (state->force_writeperm && state->force_writeperm < THRESHOLD_FORCE_WRITE_NO_WRITE)
+			state->force_writeperm = THRESHOLD_FORCE_WRITE_NO_WRITE;
 		state->write_counter = 0;
 		ret = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {

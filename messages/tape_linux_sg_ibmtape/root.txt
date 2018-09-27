@@ -116,7 +116,6 @@ root:table {
 		30274I:string { "Pseudo-error on %s." }
 		30275I:string { "Pseudo-error on write. Good return code, but a record to emulate a write error did not get sent to the drive." }
 
-
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }
 		30394D:string { "Backend %s: %zu %s." }

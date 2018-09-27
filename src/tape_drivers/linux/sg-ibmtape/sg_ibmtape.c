@@ -1623,7 +1623,7 @@ int sg_ibmtape_write(void *device, const char *buf, size_t count, struct tc_posi
 				return -EDEV_NO_SENSE;
 			else
 				return -EDEV_WRITE_PERM;
-		} else if ( priv->write_counter > (priv->force_writeperm - THREASHOLD_FORCE_WRITE_NO_WRITE) ) {
+		} else if ( priv->write_counter > (priv->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE) ) {
 			ltfsmsg(LTFS_INFO, 30275I);
 			pos->block++;
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
@@ -3569,8 +3569,8 @@ int sg_ibmtape_set_xattr(void *device, const char *name, const char *buf, size_t
 			priv->force_writeperm = perm_count;
 			priv->clear_by_pc     = false;
 		}
-		if (priv->force_writeperm && priv->force_writeperm < THREASHOLD_FORCE_WRITE_NO_WRITE)
-			priv->force_writeperm = THREASHOLD_FORCE_WRITE_NO_WRITE;
+		if (priv->force_writeperm && priv->force_writeperm < THRESHOLD_FORCE_WRITE_NO_WRITE)
+			priv->force_writeperm = THRESHOLD_FORCE_WRITE_NO_WRITE;
 		priv->write_counter = 0;
 		ret = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {

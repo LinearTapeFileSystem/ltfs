@@ -1223,6 +1223,18 @@ int iokit_ibmtape_read(void *device, char *buf, size_t size,
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READ));
 	ltfsmsg(LTFS_DEBUG3, 30995D, "read", size, priv->drive_serial);
 
+	if (priv->force_readperm) {
+		priv->read_counter++;
+		if (priv->read_counter > priv->force_readperm) {
+			ltfsmsg(LTFS_INFO, 30846I, "read");
+			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READ));
+			if (priv->force_errortype)
+				return -EDEV_NO_SENSE;
+			else
+				return -EDEV_READ_PERM;
+		}
+	}
+
 	if (global_data.crc_checking) {
 		datacount = size + 4;
 		/* Never fall into this block, fail safe to adjust record length*/
@@ -1368,6 +1380,23 @@ int iokit_ibmtape_write(void *device, const char *buf, size_t count, struct tc_p
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITE));
 
 	ltfsmsg(LTFS_DEBUG3, 30995D, "write", count, priv->drive_serial);
+
+	if ( priv->force_writeperm ) {
+		priv->write_counter++;
+		if ( priv->write_counter > priv->force_writeperm ) {
+			ltfsmsg(LTFS_INFO, 30846I, "write");
+			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
+			if (priv->force_errortype)
+				return -EDEV_NO_SENSE;
+			else
+				return -EDEV_WRITE_PERM;
+		} else if ( priv->write_counter > (priv->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE) ) {
+			ltfsmsg(LTFS_INFO, 30847I);
+			pos->block++;
+			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
+			return DEVICE_GOOD;
+		}
+	}
 
 	if(global_data.crc_checking) {
 		if (priv->f_crc_enc)
@@ -3185,8 +3214,8 @@ int iokit_ibmtape_set_xattr(void *device, const char *name, const char *buf, siz
 			priv->force_writeperm = -wp_count;
 			priv->clear_by_pc     = true;
 		}
-		if (priv->force_writeperm && priv->force_writeperm < THREASHOLD_FORCE_WRITE_NO_WRITE)
-			priv->force_writeperm = THREASHOLD_FORCE_WRITE_NO_WRITE;
+		if (priv->force_writeperm && priv->force_writeperm < THRESHOLD_FORCE_WRITE_NO_WRITE)
+			priv->force_writeperm = THRESHOLD_FORCE_WRITE_NO_WRITE;
 		ret = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
 		priv->force_errortype = strtol(null_terminated, NULL, 0);

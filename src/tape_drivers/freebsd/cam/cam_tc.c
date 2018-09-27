@@ -621,7 +621,7 @@ int camtape_write(void *device, const char *buf, size_t count, struct tc_positio
 				return -EDEV_NO_SENSE;
 			else
 				return -EDEV_WRITE_PERM;
-		} else if ( softc->write_counter > (softc->force_writeperm - THREASHOLD_FORCE_WRITE_NO_WRITE)) {
+		} else if ( softc->write_counter > (softc->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE)) {
 			ltfsmsg(LTFS_INFO, 31235I);
 			pos->block++;
 			ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
@@ -3173,8 +3173,8 @@ int camtape_set_xattr(void *device, const char *name, const char *buf, size_t si
 
 	if (! strcmp(name, "ltfs.vendor.IBM.forceErrorWrite")) {
 		softc->force_writeperm = strtoull(null_terminated, NULL, 0);
-		if (softc->force_writeperm && softc->force_writeperm < THREASHOLD_FORCE_WRITE_NO_WRITE)
-			softc->force_writeperm = THREASHOLD_FORCE_WRITE_NO_WRITE;
+		if (softc->force_writeperm && softc->force_writeperm < THRESHOLD_FORCE_WRITE_NO_WRITE)
+			softc->force_writeperm = THRESHOLD_FORCE_WRITE_NO_WRITE;
 		rc = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
 		softc->force_errortype = strtol(null_terminated, NULL, 0);

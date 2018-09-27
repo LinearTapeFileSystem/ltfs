@@ -136,8 +136,6 @@ volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGH
 #define DK_LENGTH 32
 #define DKI_LENGTH 12
 
-#define THREASHOLD_FORCE_WRITE_NO_WRITE (5)
-
 #define CRC32C_CRC (0x02)
 
 #define MAX_WRITE_RETRY (100)
@@ -1428,7 +1426,7 @@ int lin_tape_ibmtape_write(void *device, const char *buf, size_t count, struct t
 				return -EDEV_NO_SENSE;
 			else
 				return -EDEV_WRITE_PERM;
-		} else if ( priv->write_counter > (priv->force_writeperm - THREASHOLD_FORCE_WRITE_NO_WRITE) ) {
+		} else if ( priv->write_counter > (priv->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE) ) {
 			ltfsmsg(LTFS_INFO, 30435I);
 			pos->block++;
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
@@ -3451,8 +3449,8 @@ int lin_tape_ibmtape_set_xattr(void *device, const char *name, const char *buf, 
 			priv->force_writeperm = perm_count;
 			priv->clear_by_pc     = false;
 		}
-		if (priv->force_writeperm && priv->force_writeperm < THREASHOLD_FORCE_WRITE_NO_WRITE)
-			priv->force_writeperm = THREASHOLD_FORCE_WRITE_NO_WRITE;
+		if (priv->force_writeperm && priv->force_writeperm < THRESHOLD_FORCE_WRITE_NO_WRITE)
+			priv->force_writeperm = THRESHOLD_FORCE_WRITE_NO_WRITE;
 		priv->write_counter = 0;
 		rc = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
