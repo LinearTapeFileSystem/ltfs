@@ -2948,7 +2948,7 @@ int camtape_setcap(void *device, uint16_t proportion)
 		/* Scale media instead of setcap */
 		rc = camtape_modesense(device, TC_MP_MEDIUM_SENSE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 		if (rc < 0) {
-			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCAP));
+			ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCAP));
 			return rc;
 		}
 
