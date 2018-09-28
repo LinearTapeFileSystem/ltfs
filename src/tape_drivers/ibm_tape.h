@@ -228,6 +228,9 @@ enum pro_action {
 	PRO_ACT_REGISTER_MOVE   = 0x07
 };
 
+#define IS_SHORT_MEDIUM(m) (m == TC_MP_JK || m == TC_MP_JL)
+#define IS_WORM_MEDIUM(m)  (m == TC_MP_JY || m == TC_MP_JZ)
+
 extern DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density[];
 extern DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density_strict[];
 extern DRIVE_DENSITY_SUPPORT_MAP lto_drive_density[];

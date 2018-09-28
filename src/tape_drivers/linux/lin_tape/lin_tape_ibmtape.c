@@ -3223,13 +3223,18 @@ int lin_tape_ibmtape_setcap(void *device, uint16_t proportion)
 
 		/* Scale media instead of setcap */
 		rc = lin_tape_ibmtape_modesense(device, TC_MP_MEDIUM_SENSE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
+		if (rc < 0) {
+			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCAP));
+			return rc;
+		}
 
 		/* Check Cartridge type */
-		if (rc == 0 &&
-			(buf[2] == TC_MP_JK || buf[2] == TC_MP_JY || buf[2] == TC_MP_JL || buf[2] == TC_MP_JZ)) {
+		if (IS_SHORT_MEDIUM(buf[2]) || IS_WORM_MEDIUM(buf[2])) {
 			/* Short or WORM cartridge cannot be scaled */
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCAP));
 			return DEVICE_GOOD;
+		} else {
+			return rc;
 		}
 
 		buf[0]   = 0x00;

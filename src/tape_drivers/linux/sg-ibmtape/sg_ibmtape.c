@@ -2397,8 +2397,8 @@ int sg_ibmtape_setcap(void *device, uint16_t proportion)
 			return ret;
 		}
 
-		if (buf[2] == TC_MP_JK || buf[2] == TC_MP_JL) {
-			/* JK media cannot be scaled */
+		if (IS_SHORT_MEDIUM(buf[2]) || IS_WORM_MEDIUM(buf[2])) {
+			/* Short or WORM cartridge cannot be scaled */
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCAP));
 			return ret;
 		}
