@@ -263,7 +263,8 @@ static struct error_map fuse_error_list[] = {
 	{ LTFS_NO_DMAP_ENTRY,            "I1169E", ENOENT},
 	{ LTFS_RECOVERABLE_FILE_ERR,     "I1170E", EAGAIN},
 	{ LTFS_NO_DCACHE_SPC,            "I1171E", ENOSPC},
-	/* Unused 1175 - 1180 */
+	/* Unused 1175 - 1179 */
+	{ LTFS_CACHE_IO,                 "I1180E", EIO },
 	{ LTFS_CACHE_DISCARDED,          "I1181E", ENOENT },
 	{ LTFS_LONG_WRITE_LOCK,          "I1182E", EAGAIN },
 	{ LTFS_INCOMPATIBLE_CACHE,       "I1183E", EINVAL },
