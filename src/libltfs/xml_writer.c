@@ -226,6 +226,7 @@ int xml_output_fd_close_callback(void *context)
 	return 0;
 }
 
+#define COPY_BUF_SIZE (512 * KB)
 
 static int _copy_file_contents(int dest, int src)
 {
@@ -233,7 +234,7 @@ static int _copy_file_contents(int dest, int src)
 	size_t len_read, len_written;
 	char *buf = NULL;
 
-	buf = malloc(512 * KB);
+	buf = malloc(COPY_BUF_SIZE);
 	if (!buf) {
 		ltfsmsg(LTFS_ERR, 10001E, "_copy_file: buffer");
 		return -LTFS_NO_MEMORY;
@@ -260,7 +261,7 @@ static int _copy_file_contents(int dest, int src)
 		return -LTFS_CACHE_IO;
 	}
 
-	while ((len_read = read(src, buf, 512 * MB)) > 0) {
+	while ((len_read = read(src, buf, COPY_BUF_SIZE)) > 0) {
 		len_written = write(dest, buf, len_read);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 17246E, "_copy_file", errno);
