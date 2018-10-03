@@ -111,6 +111,10 @@ int xml_output_tape_write_callback(void *context, const char *buffer, int len)
 
 	if (len == 0)
 		return 0;
+
+	if (ctx->err_code || ctx->errno_fd)
+		return -1;
+
 	if (ctx->buf_used + len < ctx->buf_size) {
 		memcpy(ctx->buf + ctx->buf_used, buffer, len);
 		ctx->buf_used += len;
@@ -122,6 +126,7 @@ int xml_output_tape_write_callback(void *context, const char *buffer, int len)
 			ret = tape_write(ctx->device, ctx->buf, ctx->buf_size, true, true);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 17060E, (int)ret);
+				ctx->err_code = ret;
 				return -1;
 			}
 
@@ -129,6 +134,7 @@ int xml_output_tape_write_callback(void *context, const char *buffer, int len)
 				ret = write(ctx->fd, ctx->buf, ctx->buf_size);
 				if (ret < 0) {
 					ltfsmsg(LTFS_ERR, 17244E, (int)errno);
+					ctx->errno_fd = -LTFS_CACHE_IO;
 					return -1;
 				}
 			}
@@ -150,40 +156,35 @@ int xml_output_tape_write_callback(void *context, const char *buffer, int len)
  */
 int xml_output_tape_close_callback(void *context)
 {
-	int ret_t = 0, ret_d = 0, ret = 0;
+	int ret_t = 0, ret_d = 0, ret = 0, sret = 0;
 	struct xml_output_tape *ctx = context;
 
-	if (ctx->buf_used > 0) {
+	if (!ctx->err_code && !ctx->errno_fd && ctx->buf_used > 0) {
 		ret_t = tape_write(ctx->device, ctx->buf, ctx->buf_used, true, true);
-
-		if (ctx->fd >= 0)
-			ret_d = write(ctx->fd, ctx->buf, ctx->buf_used);
-
-		ret = (ret_t < 0 || ret_d < 0) ? -1 : 0;
+		if (ret_t < 0) {
+			ltfsmsg(LTFS_ERR, 17061E, (int)ret);
+			ctx->err_code = ret_t;
+			ret = -1;
+		} else {
+			if (ctx->fd >= 0)
+				ret_d = write(ctx->fd, ctx->buf, ctx->buf_used);
+			if (ret_d < 0) {
+				ltfsmsg(LTFS_ERR, 17245E, (int)errno);
+				ctx->errno_fd = -LTFS_CACHE_IO;
+				ret = -1;
+			}
+		}
 	} else
 		ret = 0;
 
-	if (!ret && ctx->fd >= 0) {
-		ret = fsync(ctx->fd);
-		xml_release_file_lock(ctx->fd);
-		ctx->fd = -1;
-		if (ret < 0) {
+	if (!ctx->errno_fd && ctx->fd >= 0) {
+		sret = fsync(ctx->fd);
+		if (sret < 0) {
 			ltfsmsg(LTFS_ERR, 17206E, "tape write callback (fsync)", errno, (unsigned long)ctx->buf_used);
 			return -1;
 		}
 	}
-	else if (ctx->fd >= 0) {
-		xml_release_file_lock(ctx->fd);
-		ctx->fd = -1;
-	}
 
-	if (ret_t < 0)
-		ltfsmsg(LTFS_ERR, 17061E, (int)ret_t);
-	if (ret_d < 0)
-		ltfsmsg(LTFS_ERR, 17245E, (int)errno);
-
-	free(ctx->buf);
-	free(ctx);
 	return ret;
 }
 
@@ -225,25 +226,98 @@ int xml_output_fd_close_callback(void *context)
 	return 0;
 }
 
+
+static int _copy_file_contents(int dest, int src)
+{
+	int ret = 0;
+	size_t len_read, len_written;
+	char *buf = NULL;
+
+	buf = malloc(512 * KB);
+	if (!buf) {
+		ltfsmsg(LTFS_ERR, 10001E, "_copy_file: buffer");
+		return -LTFS_NO_MEMORY;
+	}
+
+	ret = lseek(src, 0, SEEK_SET);
+	if (ret < 0){
+		ltfsmsg(LTFS_ERR, 17246E, "source seek", errno);
+		free(buf);
+		return -LTFS_CACHE_IO;
+	}
+
+	ret = lseek(dest, 0, SEEK_SET);
+	if (ret < 0){
+		ltfsmsg(LTFS_ERR, 17246E, "destination seek", errno);
+		free(buf);
+		return -LTFS_CACHE_IO;
+	}
+
+	ret = ftruncate(dest, 0);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 17246E, "destination truncate", errno);
+		free(buf);
+		return -LTFS_CACHE_IO;
+	}
+
+	while ((len_read = read(src, buf, 512 * MB)) > 0) {
+		len_written = write(dest, buf, len_read);
+		if (ret < 0) {
+			ltfsmsg(LTFS_ERR, 17246E, "_copy_file", errno);
+			free(buf);
+			return -LTFS_CACHE_IO;
+		} else if (len_written != len_read) {
+			ltfsmsg(LTFS_ERR, 17246E, "_copy_file unexpected len", errno);
+			free(buf);
+			return -LTFS_CACHE_IO;
+		}
+	}
+
+	free(buf);
+
+	if (len_read) {
+		ltfsmsg(LTFS_ERR, 17246E, "_copy_file unexpected read", errno);
+		return -LTFS_CACHE_IO;
+	}
+
+	ret = lseek(src, 0, SEEK_SET);
+	if (ret < 0){
+		ltfsmsg(LTFS_ERR, 17246E, "source seek (P)", errno);
+		return -LTFS_CACHE_IO;
+	}
+
+	ret = lseek(dest, 0, SEEK_SET);
+	if (ret < 0){
+		ltfsmsg(LTFS_ERR, 17246E, "destination seek (P)", errno);
+		return -LTFS_CACHE_IO;
+	}
+
+	return 0;
+}
+
 /**
  * Open a file and acquire its lock
  * @param file name to open with lock
  * @param write true if write lock
+ * @param bk backup fd to revert
  */
-int xml_acquire_file_lock(const char *file, bool is_write)
+int xml_acquire_file_lock(const char *file, int *fd, int *bk_fd, bool is_write)
 {
-	int fd;
-	int ret;
+	int ret = -LTFS_CACHE_IO;
+
 	int errno_save = 0;
+	char *backup_file = NULL;
 #ifndef mingw_PLATFORM /* There isn't flock in windows */
 	struct flock lock;
 #endif
 
+	*fd = *bk_fd = -1;
+
 	/* Open specified file to lock */
-	fd = open(file,
+	*fd = open(file,
 			  O_RDWR | O_CREAT | O_BINARY,
 			  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH );
-	if (fd < 0) {
+	if (*fd < 0) {
 		/* Failed to open the advisory lock '%s' (%d) */
 		errno_save = errno;
 		ltfsmsg(LTFS_WARN, 17241W, file, errno);
@@ -257,51 +331,101 @@ int xml_acquire_file_lock(const char *file, bool is_write)
 	lock.l_start = 0;
 	lock.l_len = 0;
 	lock.l_pid = 0;
-	ret = fcntl(fd, F_SETLKW, &lock);
+	ret = fcntl(*fd, F_SETLKW, &lock);
 	if (ret < 0) {
 		/* Failed to acquire the advisory lock '%s' (%d) */
 		errno_save = errno;
 		ltfsmsg(LTFS_WARN, 17242W, file, errno);
-		close(fd);
-		fd = -1;
+		close(*fd);
+		*fd = -1;
 		goto out;
 	}
 #endif
 
-	ret = lseek(fd, 0, SEEK_SET);
-	if (ret < 0){
+	/* Create backup file if required */
+	if (bk_fd) {
+		asprintf(&backup_file, "%s.%s", file, "bk");
+		if (!backup_file){
+			ltfsmsg(LTFS_ERR, 10001E, "xml_acquire_file_lock: backup name");
+			close(*fd);
+			*fd = -1;
+			goto out;
+		}
+		*bk_fd = open(backup_file,
+					  O_RDWR | O_CREAT | O_BINARY | O_TRUNC,
+					  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH );
+		if (*bk_fd < 0) {
+			ltfsmsg(LTFS_ERR, 17246E, "backup file creation", errno);
+			errno_save = errno;
+			close(*fd);
+			*fd = -1;
+			goto out;
+		}
+		free(backup_file);
+		backup_file = NULL;
+
+		ret = _copy_file_contents(*bk_fd, *fd);
+		if (ret < 0) {
+			errno_save = errno;
+			close(*fd);
+			*fd = -1;
+			close(*bk_fd);
+			*bk_fd = -1;
+			goto out;
+		}
+	}
+
+	ret = lseek(*fd, 0, SEEK_SET);
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17246E, "seek", errno);
 		errno_save = errno;
-		close(fd);
-		fd = -1;
+		close(*fd);
+		*fd = -1;
+		close(*bk_fd);
+		*bk_fd = -1;
 		goto out;
 	}
 
-	ret = ftruncate(fd, 0);
+	ret = ftruncate(*fd, 0);
 	if (ret < 0){
-		ltfsmsg(LTFS_ERR, 17246E, "seek", errno);
+		ltfsmsg(LTFS_ERR, 17246E, "truncate", errno);
 		errno_save = errno;
-		close(fd);
-		fd = -1;
+		close(*fd);
+		*fd = -1;
+		close(*bk_fd);
+		*bk_fd = -1;
 		goto out;
 	}
+
+	ret = 0;
 
 out:
     errno = errno_save;
-	return fd;
+	return ret;
 }
 
 /**
  * Release advisory lock and close
  * @param fd File descriptor to unlock and close
  */
-int xml_release_file_lock(int fd)
+int xml_release_file_lock(const char *file, int fd, int bk_fd, bool revert)
 {
 	int ret = 0;
 	int errno_save = 0;
+	char *backup_file = NULL;
 #ifndef mingw_PLATFORM /* There isn't flock in windows */
 	struct flock lock;
 #endif
+
+	if (bk_fd >= 0 && revert) {
+		ret = _copy_file_contents(fd, bk_fd);
+		if (ret < 0) {
+			ltfsmsg(LTFS_ERR, 17246E, "revert seek", errno);
+			close(bk_fd);
+			close(fd);
+			return -1;
+		}
+	}
 
 #ifndef mingw_PLATFORM /* There isn't flock in windows */
 	/* Release lock */
@@ -318,8 +442,18 @@ int xml_release_file_lock(int fd)
 	}
 #endif
 
-	close(fd);
+	if (fd >= 0) close(fd);
+	if (bk_fd >= 0) close(bk_fd);
     errno = errno_save;
+
+	asprintf(&backup_file, "%s.%s", file, "bk");
+	if (!backup_file){
+		ltfsmsg(LTFS_ERR, 10001E, "xml_release_file_lock: backup name");
+		ret = -LTFS_NO_MEMORY;
+	} else {
+		unlink(backup_file);
+		free(backup_file);
+	}
 
 	return ret;
 }

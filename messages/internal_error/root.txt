@@ -230,7 +230,7 @@ root:table {
 		// unused I1177E:string{ "." }
 		// unused I1178E:string{ "." }
 		// unused I1179E:string{ "." }
-		// unused I1180E:string{ "." }
+		I1180E:string{ "IO error on cache operation." }
 		I1181E:string{ "Cache files are corrupted and discarded." }
 		I1182E:string{ "Long write lock is acquired." }
 		I1183E:string{ "Incompatible cache file is detected." }

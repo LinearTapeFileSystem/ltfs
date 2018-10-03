@@ -232,7 +232,7 @@
 // 1177 unused
 // 1178 unused
 // 1179 unused
-// 1180 unused
+#define LTFS_CACHE_IO             1180  /* IO error on cache operation */
 #define LTFS_CACHE_DISCARDED      1181  /* Cache is corrupted and discarded */
 #define LTFS_LONG_WRITE_LOCK      1182  /* Long MRSW for write is aquired */
 #define LTFS_INCOMPATIBLE_CACHE   1183  /* Incompatible cache file is detected */

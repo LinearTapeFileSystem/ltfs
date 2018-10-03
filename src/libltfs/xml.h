@@ -76,17 +76,19 @@
  * I/O callback method.
  */
 struct xml_output_tape {
-	struct device_data *device; /**< Tape device data to out */
-	int fd;                     /**< File Descriptor for index cache if fd > 0 */
-	char *buf;                  /**< 1-block output buffer. */
-	uint32_t buf_size;          /**< Output buffer size. */
-	uint32_t buf_used;          /**< Current output buffer usage. */
+	struct device_data *device;  /**< Tape device data to out */
+	int                err_code; /**< Error code from tape backend */
+	int                fd;       /**< File Descriptor for index cache if fd > 0 */
+	int                errno_fd; /**< errno from the index cache */
+	char               *buf;     /**< 1-block output buffer. */
+	uint32_t           buf_size; /**< Output buffer size. */
+	uint32_t           buf_used; /**< Current output buffer usage. */
 };
 int xml_output_tape_write_callback(void *context, const char *buffer, int len);
 int xml_output_tape_close_callback(void *context);
 
-int xml_acquire_file_lock(const char *file, bool is_write);
-int xml_release_file_lock(int fd);
+int xml_acquire_file_lock(const char *file, int *fd, int *bk_fd, bool is_write);
+int xml_release_file_lock(const char *file, int fd, int bk_fd, bool revert);
 
 struct xml_output_fd {
 	int      fd;              /**< file descriptor to out */
