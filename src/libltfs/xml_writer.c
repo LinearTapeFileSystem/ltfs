@@ -275,6 +275,7 @@ static int _copy_file_contents(int dest, int src)
 	}
 
 	free(buf);
+	fsync(dest);
 
 	if (len_read) {
 		ltfsmsg(LTFS_ERR, 17246E, "_copy_file unexpected read", errno);

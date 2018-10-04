@@ -62,6 +62,11 @@
 #include "pathname.h"
 #include "arch/time_internal.h"
 
+/* O_BINARY is defined only in MinGW */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 /* Structure to control EE's file offset cache and sync file list */
 struct ltfsee_cache
 {
@@ -708,7 +713,7 @@ xmlBufferPtr xml_make_schema(const char *creator, const struct ltfs_index *idx)
 
 static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 {
-	int ret = 0;
+	int ret = 0, fd = -1;
 	char *offset_name = NULL, *sync_name = NULL;
 	char *offset_new = NULL, *sync_new = NULL;
 
@@ -720,6 +725,15 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 			if (ret > 0) {
 				unlink(offset_name);
 				rename(offset_new, offset_name);
+				fd = open(offset_name, O_RDWR | O_BINARY,
+						  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+				if (fd >= 0) {
+					fsync(fd);
+					close(fd);
+					fd = -1;
+				} else {
+					ltfsmsg(LTFS_INFO, 17255I, offset_name, errno);
+				}
 				free(offset_name);
 			}
 			free(offset_new);
@@ -731,6 +745,15 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 			if (ret > 0) {
 				unlink(sync_name);
 				rename(sync_new, sync_name);
+				fd = open(sync_name, O_RDWR | O_BINARY,
+						  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+				if (fd >= 0) {
+					fsync(fd);
+					close(fd);
+					fd = -1;
+				} else {
+					ltfsmsg(LTFS_INFO, 17255I, sync_name, errno);
+				}
 				free(sync_name);
 			}
 			free(sync_new);
