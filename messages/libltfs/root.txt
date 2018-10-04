@@ -791,6 +791,7 @@ root:table {
 		17252W:string { "Invalid value (%s) in the %s tag in UID %lld." }
 		17253E:string { "Cannot get tape parameters : %s (%d)." }
 		17254E:string { "This cartridge cannot be reformatted in the drive (0x%02x, %d)." }
+		17255I:string { "Cannot open %s cache for sync (%d)." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 
