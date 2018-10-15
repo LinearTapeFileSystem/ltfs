@@ -1649,8 +1649,7 @@ int lin_tape_ibmtape_locate(void *device, struct tc_position dest, struct tc_pos
 		}
 
 		rc = _sioc_stioc_command(device, STIOC_SET_ACTIVE_PARTITION, "LOCATE(PART)", &set_part, &msg);
-	}
-	else {
+	} else {
 		memset(&setpos, 0, sizeof(struct set_tape_position));
 		setpos.logical_id = dest.block;
 		setpos.logical_id_type = LOGICAL_ID_BLOCK_TYPE;
