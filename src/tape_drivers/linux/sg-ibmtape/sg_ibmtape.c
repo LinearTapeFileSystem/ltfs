@@ -1839,6 +1839,7 @@ int sg_ibmtape_locate(void *device, struct tc_position dest, struct tc_position 
 {
 	int ret = -EDEV_UNKNOWN;
 	int ret_ep = DEVICE_GOOD;
+	int ret_rp = DEVICE_GOOD;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 
 	sg_io_hdr_t req;
@@ -1907,13 +1908,15 @@ int sg_ibmtape_locate(void *device, struct tc_position dest, struct tc_position 
 		}
 	}
 
-	ret = sg_ibmtape_readpos(device, pos);
-
-	if(ret == DEVICE_GOOD) {
+	ret_rp = sg_ibmtape_readpos(device, pos);
+	if (ret_rp == DEVICE_GOOD) {
 		if(pos->early_warning)
 			ltfsmsg(LTFS_WARN, 30222W, "locate");
 		else if(pos->programmable_early_warning)
 			ltfsmsg(LTFS_WARN, 30223W, "locate");
+	} else {
+		if (!ret)
+			ret = ret_rp;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOCATE));
