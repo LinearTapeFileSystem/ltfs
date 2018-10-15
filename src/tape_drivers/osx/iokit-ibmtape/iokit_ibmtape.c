@@ -1562,7 +1562,6 @@ int iokit_ibmtape_rewind(void *device, struct tc_position *pos)
 int iokit_ibmtape_locate(void *device, struct tc_position dest, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
-	int ret_ep = DEVICE_GOOD;
 	int ret_rp = DEVICE_GOOD;
 	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
 
@@ -1617,9 +1616,7 @@ int iokit_ibmtape_locate(void *device, struct tc_position dest, struct tc_positi
 			ltfsmsg(LTFS_DEBUG, 30827D, "Locate");
 			ret = DEVICE_GOOD;
 		} else {
-			ret_ep = _process_errors(device, ret, msg, cmd_desc, true);
-			if (ret_ep < 0)
-				ret = ret_ep;
+			_process_errors(device, ret, msg, cmd_desc, true);
 		}
 	}
 
