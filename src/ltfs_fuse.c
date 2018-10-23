@@ -328,9 +328,9 @@ int ltfs_fuse_statfs(const char *path, struct statvfs *buf)
 	stats->f_blocks = blockstat.total_dp;           /* Total tape capacity */
 	stats->f_bfree = blockstat.remaining_dp;        /* Remaining tape capacity */
 	stats->f_bavail = stats->f_bfree;               /* Blocks available for normal user (ignored) */
-	stats->f_files = ltfs_get_file_count(priv->data);
 
-	stats->f_ffree = UINT32_MAX - stats->f_files;   /* Assuming file count fits in 32 bits. */
+	stats->f_files = UINT64_MAX;
+	stats->f_ffree = UINT64_MAX - ltfs_get_file_count(priv->data);
 	memcpy(buf, stats, sizeof(struct statvfs));
 
 #ifdef __APPLE__
