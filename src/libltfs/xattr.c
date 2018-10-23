@@ -1131,7 +1131,7 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 				ret = _xattr_get_vendorunique_xattr(&val, name, vol);
 			}
 		} else if (! strcmp(name, "ltfs.sync")) {
-			ret = -LTFS_RDONLY_XATTR;
+			ret = ltfs_sync_index(SYNC_EA, false, vol);
 		}
 	}
 
