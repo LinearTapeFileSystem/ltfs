@@ -1515,7 +1515,7 @@ int filedebug_load(void *device, struct tc_position *pos)
 		/* Assume 512KB per 1 record */
 		state->p0_warning = calc_p0_cap(state) * 2;
 		state->p1_warning = calc_p1_cap(state) * 2;
-		state->p0_p_warning = state->p0_warning * 2;
+		state->p0_p_warning = state->p0_warning / 2;
 		state->p1_p_warning = state->p1_warning - state->p0_p_warning;
 	} else {
 		state->p0_warning = calc_p0_cap(state) * 2;
@@ -1662,7 +1662,7 @@ int filedebug_format(void *device, TC_FORMAT_TYPE format)
 		/* Assume 512KB per 1 record */
 		state->p0_warning = calc_p0_cap(state) * 2;
 		state->p1_warning = calc_p1_cap(state) * 2;
-		state->p0_p_warning = state->p0_warning * 2;
+		state->p0_p_warning = state->p0_warning / 2;
 		state->p1_p_warning = state->p1_warning - state->p0_p_warning;
 	} else {
 		state->p0_warning = calc_p0_cap(state) * 2;
@@ -1817,6 +1817,7 @@ int filedebug_logsense(void *device, const uint8_t page, unsigned char *buf, con
 
 int filedebug_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc, const uint8_t subpage, unsigned char *buf, const size_t size)
 {
+	uint16_t pews = 0;
 	struct filedebug_data *state = (struct filedebug_data *)device;
 
 	memset(buf, 0, size);
@@ -1828,6 +1829,12 @@ int filedebug_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc
 		buf[8] = state->conf.density_code;
 	else if (page == TC_MP_MEDIUM_PARTITION && pc == TC_MP_PC_CURRENT && subpage == 0x00)
 		buf[2] = state->conf.cart_type;
+	else if (page == TC_MP_DEV_CONFIG_EXT && pc == TC_MP_PC_CURRENT && subpage == 0x01) {
+		pews = calc_p0_cap(state) / 2;
+		buf[17] = subpage;
+		buf[22] = (uint8_t)(pews >> 8 & 0xFF);
+		buf[23] = (uint8_t)(pews      & 0xFF);
+	}
 
 	return DEVICE_GOOD;
 }
@@ -1836,7 +1843,7 @@ int filedebug_modeselect(void *device, unsigned char *buf, const size_t size)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
 
-	if (buf[16]==TC_MP_READ_WRITE_CTRL && buf[26]!=0) {
+	if (buf[16] == TC_MP_READ_WRITE_CTRL && buf[26] != 0) {
 		/* Update density code, if specific value is set */
 		state->conf.density_code = buf[26];
 	}
