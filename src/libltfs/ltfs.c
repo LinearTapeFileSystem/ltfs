@@ -3310,6 +3310,9 @@ start:
 			ltfsmsg(LTFS_ERR, 17069E);
 
 		ltfsmsg(LTFS_INFO, 17070I, vol->label->barcode, ret, vol->device->serial_number);
+	} else {
+		/* Do nothing and return 0 when filesystem is not dirty */
+		ret = 0;
 	}
 
 	return ret;
