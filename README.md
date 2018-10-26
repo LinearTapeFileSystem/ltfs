@@ -4,7 +4,7 @@ Linear Tape File System (LTFS) is a filesystem to mount a LTFS formatted tape in
 
 Objective of this project is being the reference implementation of the LTFS format Specifications in SNIA (https://www.snia.org/tech_activities/standards/curr_standards/ltfs).
 
-At this time, the LTFS format specifications 2.4 is the target. The LTFS format specification 2.4 is now under public review (https://www.snia.org/tech_activities/publicreview#ltfs).
+At this time, the LTFS format specifications 2.4 (https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.4.0_TechPosition.pdf) is the target.
 
 ## Getting Started
 
