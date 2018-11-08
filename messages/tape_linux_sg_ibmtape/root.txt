@@ -115,6 +115,7 @@ root:table {
 		30273I:string { "Cannot %s device flag (%d)." }
 		30274I:string { "Pseudo-error on %s." }
 		30275I:string { "Pseudo-error on write. Good return code, but a record to emulate a write error did not get sent to the drive." }
+		30276I:string { "Raw capacity info of partition %d (%llu - %llu) %s." }
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }
