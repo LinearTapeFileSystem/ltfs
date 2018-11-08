@@ -2523,6 +2523,7 @@ int sg_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 	int32_t i;
 	uint32_t logcap;
 	int offset, length;
+	unsigned cap_offset = global_data.capacity_offset;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REMAINCAP));
 
@@ -2570,6 +2571,18 @@ int sg_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 					break;
 			}
 		}
+
+		if (global_data.capacity_offset) {
+			if (cap->remaining_p1 < global_data.capacity_offset)
+				cap_offset = cap->remaining_p1;
+
+			ltfsmsg(LTFS_INFO, 30276I, 1,
+					(unsigned long long)cap->remaining_p1,
+					(unsigned long long)global_data.capacity_offset,
+					priv->drive_serial);
+			cap->remaining_p1 -= cap_offset;
+		}
+
 		ret = DEVICE_GOOD;
 	} else {
 		/* Use LogPage 0x17 */
@@ -2610,6 +2623,17 @@ int sg_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 
 		if (offset + length <= (int)param_size) {
 			cap->remaining_p1 = ltfs_betou32(&buf[offset + PARTITIOIN_REC_HEADER_LEN]);
+		}
+
+		if (global_data.capacity_offset) {
+			if (cap->remaining_p1 < global_data.capacity_offset)
+				cap_offset = cap->remaining_p1;
+
+			ltfsmsg(LTFS_INFO, 30276I, 1,
+					(unsigned long long)cap->remaining_p1,
+					(unsigned long long)global_data.capacity_offset,
+					priv->drive_serial);
+			cap->remaining_p1 -= cap_offset;
 		}
 
 		/* Convert MB to MiB -- Need to consider about overflow when max cap reaches to 18EB */
@@ -3589,6 +3613,9 @@ int sg_ibmtape_set_xattr(void *device, const char *name, const char *buf, size_t
 			priv->clear_by_pc    = false;
 		}
 		priv->read_counter = 0;
+		ret = DEVICE_GOOD;
+	} else if (! strcmp(name, "ltfs.vendor.IBM.capOffset")) {
+		global_data.capacity_offset = strtoul(null_terminated, NULL, 0);
 		ret = DEVICE_GOOD;
 	}
 	free(null_terminated);

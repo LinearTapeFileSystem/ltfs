@@ -87,6 +87,7 @@ struct sg_ibmtape_global_data {
 	unsigned crc_checking;      /**< Is crc checking enabled? */
 	unsigned strict_drive;      /**< Is bar code length checked strictly? */
 	unsigned disable_auto_dump; /**< Is auto dump disabled? */
+	unsigned capacity_offset;   /**< Dummy capacity offset to create full tape earlier */
 };
 
 #endif // __sg_ibmtape_h
