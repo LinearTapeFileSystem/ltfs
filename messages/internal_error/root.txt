@@ -171,7 +171,7 @@ root:table {
 		I1118E:string{ "A function is called in invalid sequence." }
 		I1119E:string{ "Cannot update the root directory." }
 		I1120E:string{ "Conflicting symlink tag and extent tag in XML." }
-		I1121E:string{ "Failed to initialize the network connection for ltfsadmintool." }
+		I1121E:string{ "Failed to initialize the network connection of admin channel." }
 		I1122E:string{ "Insufficient number of drives available for the operation." }
 		I1123E:string{ "Invalid volume serial number." }
 		I1124E:string{ "Volume has no space to write a file." }
