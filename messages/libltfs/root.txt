@@ -789,7 +789,7 @@ root:table {
 		17250I:string { "Information of %lld files are written to the sync list." }
 		17251I:string { "File %s (%lld) was opened when this index was written." }
 		17252W:string { "Invalid value (%s) in the %s tag in UID %lld." }
-		17253E:string { "Cannot get tape parameters : %s (%d)." }
+		17253E:string { "Cannot get tape parameters: %s (%d)." }
 		17254E:string { "This cartridge cannot be reformatted in the drive (0x%02x, %d)." }
 		17255I:string { "Cannot open %s cache for sync (%d)." }
 
