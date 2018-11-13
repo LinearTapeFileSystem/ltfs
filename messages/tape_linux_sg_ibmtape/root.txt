@@ -108,10 +108,10 @@ root:table {
 		30266W:string { "The drive is already reserved: %s (%s)." }
 		30267W:string { "WWPID of reservation: x%02x%02x%02x%02x%02x%02x%02x%02x (%s)." }
 		30268I:string { "Retry to reserve from key registration (%s)." }
-		30269I:string { "Successfully reopen the drive %s with another path. Preempting reservation." }
-		30270I:string { "Power-On-Reset happened in the drive %s." }
-		30271I:string { "Successfully reopen the drive %s with same path." }
-		30272I:string { "Drive %s is reserved successfully." }
+		30269I:string { "Successfully reopened drive %s with another path. Preempting the reservation." }
+		30270I:string { "A power-on-reset happened on drive %s." }
+		30271I:string { "Successfully reopened drive %s with the same path." }
+		30272I:string { "Drive %s is successfully reserved." }
 		30273I:string { "Cannot %s device flag (%d)." }
 		30274I:string { "Pseudo-error on %s." }
 		30275I:string { "Pseudo-error on write. Good return code, but a record to emulate a write error did not get sent to the drive." }
