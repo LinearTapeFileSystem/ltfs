@@ -57,6 +57,7 @@ These instructions will get you a copy of the project up and running on your loc
   | IBM    | TS1140     | 3694              |
   | IBM    | TS1150     | None              |
   | IBM    | TS1155     | None              |
+  | IBM    | TS1160     | None              |
 
 ## Installing
 
