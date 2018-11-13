@@ -120,28 +120,40 @@ enum {
 	TC_MP_LTO6W_CART  = 0x6C,   /* LTO6 WORM cartridge */
 	TC_MP_LTO7W_CART  = 0x7C,   /* LTO7 WORM cartridge */
 	TC_MP_LTO8W_CART  = 0x8C,   /* LTO8 WORM cartridge */
+	/* 1st gen cart */
 	TC_MP_JA          = 0x91,   /* IBM TS11x0 JA cartridge */
 	TC_MP_JW          = 0xA1,   /* IBM TS11x0 JW cartridge */
 	TC_MP_JJ          = 0xB1,   /* IBM TS11x0 JJ cartridge */
 	TC_MP_JR          = 0xC1,   /* IBM TS11x0 JR cartridge */
+	/* 2nd gen cart */
 	TC_MP_JB          = 0x92,   /* IBM TS11x0 JB cartridge */
 	TC_MP_JX          = 0xA2,   /* IBM TS11x0 JX cartridge */
-	TC_MP_JK          = 0xB2,   /* IBM TS11x0 JK cartridge */
+	/* 3rd gen cart */
 	TC_MP_JC          = 0x93,   /* IBM TS11x0 JC cartridge */
 	TC_MP_JY          = 0xA3,   /* IBM TS11x0 JY cartridge */
-	TC_MP_JL          = 0xB3,   /* IBM TS11x0 JL cartridge */
+	TC_MP_JK          = 0xB2,   /* IBM TS11x0 JK cartridge */
+	/* 4th gen cart */
 	TC_MP_JD          = 0x94,   /* IBM TS11x0 JD cartridge */
 	TC_MP_JZ          = 0xA4,   /* IBM TS11x0 JZ cartridge */
+	TC_MP_JL          = 0xB3,   /* IBM TS11x0 JL cartridge */
+	/* 5th gen */
+	TC_MP_JE          = 0x95,   /* IBM TS11x0 JE cartridge */
+	TC_MP_JV          = 0xA5,   /* IBM TS11x0 JV cartridge */
+	TC_MP_JM          = 0xB4,   /* IBM TS11x0 JM cartridge */
 };
 
 #define IS_REFORMATTABLE_TAPE(t) \
 	( t == TC_MP_JB ||			 \
-	  t == TC_MP_JC ||			 \
-	  t == TC_MP_JD ||			 \
+	  t == TC_MP_JX ||			 \
 	  t == TC_MP_JK ||			 \
-	  t == TC_MP_JL ||			 \
+	  t == TC_MP_JC ||			 \
 	  t == TC_MP_JY ||			 \
+	  t == TC_MP_JL ||			 \
+	  t == TC_MP_JD ||			 \
 	  t == TC_MP_JZ ||			 \
+	  t == TC_MP_JE ||			 \
+	  t == TC_MP_JV ||			 \
+	  t == TC_MP_JM ||			 \
 	  t == TC_MP_LTO7D_CART )
 
 #endif // __tape_drivers_h

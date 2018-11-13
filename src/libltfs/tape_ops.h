@@ -116,7 +116,7 @@ struct tc_inq_page {
 #define TC_INQ_PAGE_DRVSERIAL (0x80)
 
 struct tc_current_param {
-	/* Parameters for tape drive */
+	/* Parameters for tape drive*/
 	unsigned int  max_blksize;           /* Maximum block size */
 
 	/* Parameters for current loaded tape */
@@ -154,12 +154,14 @@ enum {
 	TC_DC_JAG4    = 0x54,
 	TC_DC_JAG5    = 0x55,
 	TC_DC_JAG5A   = 0x56,
+	TC_DC_JAG6    = 0x57,
 	TC_DC_JAG1E   = 0x71,
 	TC_DC_JAG2E   = 0x72,
 	TC_DC_JAG3E   = 0x73,
 	TC_DC_JAG4E   = 0x74,
 	TC_DC_JAG5E   = 0x75,
 	TC_DC_JAG5AE  = 0x76,
+	TC_DC_JAG6E   = 0x77,
 };
 
 #define TEST_CRYPTO (0x20)

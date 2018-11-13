@@ -64,6 +64,32 @@
 #include "libltfs/ltfs_endian.h"
 
 DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density[] = {
+	/* TS1160 */
+	{ DRIVE_GEN_JAG6,  TC_MP_JE, TC_DC_JAG6,    MEDIUM_PERFECT_MATCH },
+	{ DRIVE_GEN_JAG6,  TC_MP_JE, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JV, TC_DC_JAG6,    MEDIUM_PERFECT_MATCH },
+	{ DRIVE_GEN_JAG6,  TC_MP_JV, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JM, TC_DC_JAG6,    MEDIUM_PERFECT_MATCH },
+	{ DRIVE_GEN_JAG6,  TC_MP_JM, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JD, TC_DC_JAG5A,   MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JD, TC_DC_JAG5,    MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JD, TC_DC_UNKNOWN, MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JL, TC_DC_JAG5A,   MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JL, TC_DC_JAG5,    MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JL, TC_DC_UNKNOWN, MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JZ, TC_DC_JAG5A,   MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JZ, TC_DC_JAG5,    MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JZ, TC_DC_UNKNOWN, MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JC, TC_DC_JAG5,    MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JC, TC_DC_JAG4,    MEDIUM_READONLY },
+	{ DRIVE_GEN_JAG6,  TC_MP_JC, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JK, TC_DC_JAG5,    MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JK, TC_DC_JAG4,    MEDIUM_READONLY },
+	{ DRIVE_GEN_JAG6,  TC_MP_JK, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JY, TC_DC_JAG5,    MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JY, TC_DC_JAG4,    MEDIUM_READONLY },
+	{ DRIVE_GEN_JAG6,  TC_MP_JY, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
+
 	/* TS1155 */
 	{ DRIVE_GEN_JAG5A, TC_MP_JD, TC_DC_JAG5A,   MEDIUM_PERFECT_MATCH },
 	{ DRIVE_GEN_JAG5A, TC_MP_JD, TC_DC_JAG5,    MEDIUM_WRITABLE },
@@ -115,6 +141,14 @@ DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density[] = {
 };
 
 DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density_strict[] = {
+	/* TS1160 */
+	{ DRIVE_GEN_JAG6,  TC_MP_JE, TC_DC_JAG6,    MEDIUM_PERFECT_MATCH },
+	{ DRIVE_GEN_JAG6,  TC_MP_JE, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JV, TC_DC_JAG6,    MEDIUM_PERFECT_MATCH },
+	{ DRIVE_GEN_JAG6,  TC_MP_JV, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
+	{ DRIVE_GEN_JAG6,  TC_MP_JM, TC_DC_JAG6,    MEDIUM_PERFECT_MATCH },
+	{ DRIVE_GEN_JAG6,  TC_MP_JM, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
+
 	/* TS1155 */
 	{ DRIVE_GEN_JAG5A, TC_MP_JD, TC_DC_JAG5A,   MEDIUM_PERFECT_MATCH },
 	{ DRIVE_GEN_JAG5A, TC_MP_JD, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
@@ -207,13 +241,18 @@ const unsigned char supported_cart[] = {
 	TC_MP_JK,
 	TC_MP_JY,
 	TC_MP_JL,
-	TC_MP_JZ
+	TC_MP_JZ,
+	TC_MP_JE,
+	TC_MP_JV,
+	TC_MP_JM,
 };
 
 const unsigned char supported_density[] = {
+	TC_DC_JAG6E,
 	TC_DC_JAG5AE,
 	TC_DC_JAG5E,
 	TC_DC_JAG4E,
+	TC_DC_JAG6,
 	TC_DC_JAG5A,
 	TC_DC_JAG5,
 	TC_DC_JAG4,
@@ -255,6 +294,7 @@ struct supported_device *ibm_supported_drives[] = {
 		TAPEDRIVE( IBM_VENDOR_ID, "03592E07",     DRIVE_TS1140,  "[03592E07]" ),     /* IBM TS1140 */
 		TAPEDRIVE( IBM_VENDOR_ID, "03592E08",     DRIVE_TS1150,  "[03592E08]" ),     /* IBM TS1150 */
 		TAPEDRIVE( IBM_VENDOR_ID, "0359255F",     DRIVE_TS1155,  "[0359255F]" ),     /* IBM TS1155 */
+		TAPEDRIVE( IBM_VENDOR_ID, "0359260F",     DRIVE_TS1160,  "[0359260F]" ),     /* IBM TS1160 */
 		/* End of supported_devices */
 		NULL
 };
@@ -841,41 +881,81 @@ static struct _timeout_tape timeout_11x0[] = {
 
 static struct _timeout_tape timeout_1140[] = {
 	{ XCOPY,                           -1    },
-	{ ERASE,                           21600 },
-	{ FORMAT_MEDIUM,                   1500  },
+	{ ERASE,                           36900 },
+	{ FORMAT_MEDIUM,                   3000  },
 	{ LOAD_UNLOAD,                     720   },
-	{ LOCATE10,                        840   },
-	{ LOCATE16,                        840   },
-	{ READ,                            1080  },
+	{ LOCATE10,                        2000  },
+	{ LOCATE16,                        2000  },
+	{ READ,                            2100  },
 	{ READ_BUFFER,                     300   },
 	{ REWIND,                          480   },
 	{ SEND_DIAGNOSTIC,                 2100  },
-	{ SPACE6,                          840   },
-	{ SPACE16,                         840   },
-	{ VERIFY,                          21600 },
-	{ WRITE,                           1080  },
-	{ WRITE_BUFFER,                    480   },
-	{ WRITE_FILEMARKS6,                1080  },
+	{ SPACE6,                          2000  },
+	{ SPACE16,                         2000  },
+	{ VERIFY,                          38100 },
+	{ WRITE,                           1200  },
+	{ WRITE_BUFFER,                    540   },
+	{ WRITE_FILEMARKS6,                1100  },
 	{-1, -1}
 };
 
 static struct _timeout_tape timeout_1150[] = {
 	{ XCOPY,                           18000 },
-	{ ERASE,                           46000 },
-	{ FORMAT_MEDIUM,                   3060  },
-	{ LOAD_UNLOAD,                     760   },
-	{ LOCATE10,                        1320  },
-	{ LOCATE16,                        1320  },
-	{ READ,                            1410  },
-	{ READ_BUFFER,                     470   },
+	{ ERASE,                           45800 },
+	{ FORMAT_MEDIUM,                   3100  },
+	{ LOAD_UNLOAD,                     900   },
+	{ LOCATE10,                        2300  },
+	{ LOCATE16,                        2300  },
+	{ READ,                            2400  },
+	{ READ_BUFFER,                     480   },
 	{ REWIND,                          560   },
-	{ SEND_DIAGNOSTIC,                 2200  },
-	{ SPACE6,                          1320  },
-	{ SPACE16,                         1320  },
-	{ VERIFY,                          46000 },
+	{ SEND_DIAGNOSTIC,                 2100  },
+	{ SPACE6,                          2300  },
+	{ SPACE16,                         2300  },
+	{ VERIFY,                          46700 },
+	{ WRITE,                           1500  },
+	{ WRITE_BUFFER,                    540   },
+	{ WRITE_FILEMARKS6,                1400  },
+	{-1, -1}
+};
+
+static struct _timeout_tape timeout_1155[] = {
+	{ XCOPY,                           68900 },
+	{ ERASE,                           68000 },
+	{ FORMAT_MEDIUM,                   3100  },
+	{ LOAD_UNLOAD,                     900   },
+	{ LOCATE10,                        2300  },
+	{ LOCATE16,                        2300  },
+	{ READ,                            2400  },
+	{ READ_BUFFER,                     480   },
+	{ REWIND,                          560   },
+	{ SEND_DIAGNOSTIC,                 2100  },
+	{ SPACE6,                          2300  },
+	{ SPACE16,                         2300  },
+	{ VERIFY,                          68900 },
+	{ WRITE,                           1500  },
+	{ WRITE_BUFFER,                    540   },
+	{ WRITE_FILEMARKS6,                1400  },
+	{-1, -1}
+};
+
+static struct _timeout_tape timeout_1160[] = {
+	{ XCOPY,                           68900 },
+	{ ERASE,                           64860 },
+	{ FORMAT_MEDIUM,                   3060  },
+	{ LOAD_UNLOAD,                     900   },
+	{ LOCATE10,                        2280  },
+	{ LOCATE16,                        2280  },
+	{ READ,                            2340  },
+	{ READ_BUFFER,                     480   },
+	{ REWIND,                          600   },
+	{ SEND_DIAGNOSTIC,                 2100  },
+	{ SPACE6,                          2380  },
+	{ SPACE16,                         2380  },
+	{ VERIFY,                          65820 },
 	{ WRITE,                           1440  },
 	{ WRITE_BUFFER,                    530   },
-	{ WRITE_FILEMARKS6,                1440  },
+	{ WRITE_FILEMARKS6,                1380  },
 	{-1, -1}
 };
 
@@ -949,7 +1029,10 @@ int ibm_tape_init_timeout(struct timeout_tape** table, int type)
 			ret = _create_table_tape(table, timeout_11x0, timeout_1150);
 			break;
 		case DRIVE_TS1155:
-			ret = _create_table_tape(table, timeout_11x0, timeout_1150);
+			ret = _create_table_tape(table, timeout_11x0, timeout_1155);
+			break;
+		case DRIVE_TS1160:
+			ret = _create_table_tape(table, timeout_11x0, timeout_1160);
 			break;
 		default:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto7_hh);
@@ -1024,6 +1107,15 @@ static inline unsigned char _assume_cartridge_type(char product, char btype)
 				break;
 			case 'Z':
 				ctype = TC_MP_JZ;
+				break;
+			case 'E':
+				ctype = TC_MP_JE;
+				break;
+			case 'V':
+				ctype = TC_MP_JV;
+				break;
+			case 'M':
+				ctype = TC_MP_JM;
 				break;
 			default:
 				break;
@@ -1112,6 +1204,15 @@ char* ibm_tape_assume_cart_name(unsigned char type)
 			break;
 		case TC_MP_JZ:
 			name = "JZ";
+			break;
+		case TC_MP_JE:
+			name = "JE";
+			break;
+		case TC_MP_JV:
+			name = "JV";
+			break;
+		case TC_MP_JM:
+			name = "JM";
 			break;
 		default:
 			name = "L5";
@@ -1401,6 +1502,7 @@ bool ibm_tape_is_supported_firmware(int drive_type, const unsigned char * const 
 	case DRIVE_LTO7:
 	case DRIVE_LTO7_HH:
 	case DRIVE_TS1150:
+	case DRIVE_TS1160:
 	default:
 		break;
 	}
