@@ -140,6 +140,7 @@ enum {
 	DRIVE_TS1140      = 0x1104, /* TS1140 */
 	DRIVE_TS1150      = 0x1105, /* TS1150 */
 	DRIVE_TS1155      = 0x5105, /* TS1155 */
+	DRIVE_TS1160      = 0x1106, /* TS1160 */
 };
 
 enum {
@@ -151,6 +152,7 @@ enum {
 	DRIVE_GEN_JAG4    = 0x1004,
 	DRIVE_GEN_JAG5    = 0x1005,
 	DRIVE_GEN_JAG5A   = 0x5005,
+	DRIVE_GEN_JAG6    = 0x1006,
 };
 
 typedef struct {
@@ -228,8 +230,8 @@ enum pro_action {
 	PRO_ACT_REGISTER_MOVE   = 0x07
 };
 
-#define IS_SHORT_MEDIUM(m) (m == TC_MP_JK || m == TC_MP_JL)
-#define IS_WORM_MEDIUM(m)  (m == TC_MP_JY || m == TC_MP_JZ)
+#define IS_SHORT_MEDIUM(m) (m == TC_MP_JK || m == TC_MP_JL || m == TC_MP_JM)
+#define IS_WORM_MEDIUM(m)  (m == TC_MP_JY || m == TC_MP_JZ || m == TC_MP_JV)
 
 extern DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density[];
 extern DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density_strict[];
