@@ -89,7 +89,7 @@ You need to add `--enable-lintappe` as an argument of ./configure script if you 
   | Debian 9.5           | x86_64  | NG          |
   | ArchLinux 2018.08.01 | x86_64  | OK          |
 
-In Debian9 (stretch), ICU 57.1 is used but the command `genrb` in this version causes crach while creating a resource bundle of LTFS. It is clearly a bug of ICU package and this problem was fixed into ICU 60 at least. May be we need to wait Debian10 (buster) because ICU 60 is used in Debian10 at this time (in the test phase of Debian10).
+In Debian9 (stretch), ICU 57.1 is used but the command `genrb` in this version causes crash while creating a resource bundle of LTFS. It is clearly a bug of ICU package and this problem was fixed into ICU 60 at least. May be we need to wait Debian10 (buster) because ICU 60 is used in Debian10 at this time (in the test phase of Debian10).
 
 ### Build and install on OSX (macOS)
 
@@ -119,7 +119,7 @@ make install
 
 ### Build and install on FreeBSD
 
-Note that on FreeBSD, the usual 3rd party man directory is /usr/local/man.  configure defaults to using /usr/local/share/man.  So, override it on the command line to avoid having man pages put in the wrong place.
+Note that on FreeBSD, the usual 3rd party man directory is /usr/local/man. Configure defaults to using /usr/local/share/man.  So, override it on the command line to avoid having man pages put in the wrong place.
 
 ```
 ./autogen.sh
