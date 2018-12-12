@@ -1,3 +1,2 @@
-install: make get-deps
 language: c
 script: ./autogen.sh && ./configure && make
