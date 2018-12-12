@@ -1,3 +1,8 @@
+![](https://img.shields.io/github/issues/lineartapefilesystem/ltfs.svg)
+[![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=v2.4.1)](https://travis-ci.org/LinearTapeFileSystem/ltfs)
+[![CodeFactor](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs/badge)](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs)
+[![BSD License](http://img.shields.io/badge/license-BSD-blue.svg?style=flat)](LICENSE)
+
 # Linear Tape File System (LTFS)
 
 Linear Tape File System (LTFS) is a filesystem to mount a LTFS formatted tape in a tape drive. Once LTFS mounts a LTFS formatted tape as filesystem, user can access to the tape via filesystem API.
