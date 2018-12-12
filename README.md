@@ -1,6 +1,6 @@
 ![](https://img.shields.io/github/issues/lineartapefilesystem/ltfs.svg)
 [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=v2.4.0)](https://travis-ci.org/LinearTapeFileSystem/ltfs)
-[![CodeFactor](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs/badge)](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs)
+[![CodeFactor](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs/badge/v2.4.0)](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs/overview/v2.4.0)
 [![BSD License](http://img.shields.io/badge/license-BSD-blue.svg?style=flat)](LICENSE)
 
 # Linear Tape File System (LTFS)
