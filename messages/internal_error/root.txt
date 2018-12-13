@@ -365,6 +365,8 @@ root:table {
 		D1721E:string{ "No reservation holder." }
 		D1722E:string{ "A path switch happened. Reissue the command." }
 		D1723E:string{ "A real power on reset is detected." }
+		D1724E:string{ "Buffer allocation error in a driver." }
+		D1725E:string{ "Retry the command again." }
 		D9998E:string{ "Unknown sense." }
 		D9999E:string{ "Vendor unique sense. ASC >= 0x80 or ASCQ >= 0x80." }
 	}

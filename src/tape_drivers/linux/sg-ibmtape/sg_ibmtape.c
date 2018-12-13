@@ -92,10 +92,12 @@ struct sg_ibmtape_global_data global_data;
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 #define TU_DEFAULT_TIMEOUT (60)
+#define MAX_RETRY          (100)
 
 /* Forward references (For keep function order to struct tape_ops) */
 int sg_ibmtape_readpos(void *device, struct tc_position *pos);
 int sg_ibmtape_locate(void *device, struct tc_position dest, struct tc_position *pos);
+int sg_ibmtape_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_position *pos);
 int sg_ibmtape_logsense(void *device, const unsigned char page, unsigned char *buf, const size_t size);
 int sg_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
 						 const unsigned char subpage, unsigned char *buf, const size_t size);
@@ -1436,6 +1438,65 @@ static int _cdb_read(void *device, char *buf, size_t size, bool sili)
 	return length;
 }
 
+static inline int _handle_block_allocation_failure(void *device, struct tc_position *pos,
+												   int *retry, char *op)
+{
+	int ret = 0;
+	struct tc_position tmp_pos = {0, 0};
+
+	/* Sleep 3 secs to wait garbage correction in kernel side and retry */
+	ltfsmsg(LTFS_WARN, 30277W, ++(*retry));
+	sleep(3);
+
+	ret = sg_ibmtape_readpos(device, &tmp_pos);
+	if (ret == DEVICE_GOOD && pos->partition == tmp_pos.partition) {
+		if (pos->block == tmp_pos.block) {
+			/* Command is not reached to the drive */
+			ltfsmsg(LTFS_INFO, 30278I, op,
+					(unsigned int)tmp_pos.partition, (unsigned long long)tmp_pos.block);
+			ret = -EDEV_RETRY;
+		} else if (pos->block == tmp_pos.block - 1) {
+			/* The drive received the command */
+			ltfsmsg(LTFS_INFO, 30279I, op,
+					(unsigned int)pos->partition, (unsigned long long)pos->block,
+					(unsigned int)tmp_pos.partition, (unsigned long long)tmp_pos.block);
+			ret = sg_ibmtape_space(device, 1, TC_SPACE_B, pos);
+			if (!ret) {
+				ret = sg_ibmtape_readpos(device, &tmp_pos);
+				if (!ret && pos->block == tmp_pos.block) {
+					/* Skip back was successfully done */
+					ret = -EDEV_RETRY;
+				} else if (!ret) {
+					/* Skip back was successfully done, but not a expected position */
+					ltfsmsg(LTFS_WARN, 30282W, op,
+							(unsigned int)pos->partition, (unsigned long long)pos->block,
+							(unsigned int)tmp_pos.partition, (unsigned long long)tmp_pos.block);
+					ret = -LTFS_BAD_LOCATE;
+				} else {
+					ltfsmsg(LTFS_WARN, 30281W, op, ret,
+							(unsigned int)pos->partition, (unsigned long long)pos->block,
+							(unsigned int)tmp_pos.partition, (unsigned long long)tmp_pos.block);
+				}
+			} else {
+				ltfsmsg(LTFS_WARN, 30283W, op, ret,
+							(unsigned int)pos->partition, (unsigned long long)pos->block,
+							(unsigned int)tmp_pos.partition, (unsigned long long)tmp_pos.block);
+			}
+		} else {
+			/* Unexpected position */
+			ltfsmsg(LTFS_WARN, 30280W, op, ret,
+					(unsigned int)pos->partition, (unsigned long long)pos->block,
+					(unsigned int)tmp_pos.partition, (unsigned long long)tmp_pos.block);
+			ret = -EDEV_BUFFER_ALLOCATE_ERROR;
+		}
+	} else
+		ltfsmsg(LTFS_WARN, 30281W, op, ret,
+				(unsigned int)pos->partition, (unsigned long long)pos->block,
+				(unsigned int)tmp_pos.partition, (unsigned long long)tmp_pos.block);
+
+	return ret;
+}
+
 int sg_ibmtape_read(void *device, char *buf, size_t size,
 					struct tc_position *pos, const bool unusual_size)
 {
@@ -1443,6 +1504,7 @@ int sg_ibmtape_read(void *device, char *buf, size_t size,
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 	size_t datacount = size;
 	struct tc_position pos_retry = {0, 0};
+	int retry_count = 0;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READ));
 	ltfsmsg(LTFS_DEBUG3, 30395D, "read", size, priv->drive_serial);
@@ -1466,7 +1528,7 @@ int sg_ibmtape_read(void *device, char *buf, size_t size,
 			datacount = SG_MAX_BLOCK_SIZE;
 	}
 
-read_retry:
+start_read:
 	ret = _cdb_read(device, buf, datacount, unusual_size);
 	if (ret == -EDEV_LENGTH_MISMATCH) {
 		if (pos_retry.partition || pos_retry.block) {
@@ -1482,7 +1544,7 @@ read_retry:
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READ));
 			return ret;
 		}
-		goto read_retry;
+		goto start_read;
 	} else if ( !(pos->block) && unusual_size && (unsigned int)ret == size) {
 		/*
 		 *  Try to read again without sili bit, because some I/F doesn't support SILION read correctly
@@ -1498,6 +1560,10 @@ read_retry:
 		}
 		priv->use_sili = false;
 		ret = _cdb_read(device, buf, datacount, unusual_size);
+	} else if (ret == -EDEV_BUFFER_ALLOCATE_ERROR && retry_count < MAX_RETRY) {
+		ret = _handle_block_allocation_failure(device, pos, &retry_count, "read");
+		if (ret == -EDEV_RETRY)
+			goto start_read;
 	}
 
 	if(ret == -EDEV_FILEMARK_DETECTED)
@@ -1609,6 +1675,7 @@ int sg_ibmtape_write(void *device, const char *buf, size_t count, struct tc_posi
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
 	struct tc_position cur_pos;
 	size_t datacount = count;
+	int retry_count = 0;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITE));
 
@@ -1637,6 +1704,7 @@ int sg_ibmtape_write(void *device, const char *buf, size_t count, struct tc_posi
 		datacount = count + 4;
 	}
 
+start_write:
 	ret = _cdb_write(device, (uint8_t *)buf, datacount, &ew, &pew);
 	if (ret == DEVICE_GOOD) {
 		pos->block++;
@@ -1654,6 +1722,10 @@ int sg_ibmtape_write(void *device, const char *buf, size_t count, struct tc_posi
 			} else
 				ret = -EDEV_POR_OR_BUS_RESET;
 		}
+	} else if (ret == -EDEV_BUFFER_ALLOCATE_ERROR && retry_count < MAX_RETRY) {
+		ret = _handle_block_allocation_failure(device, pos, &retry_count, "write");
+		if (ret == -EDEV_RETRY)
+			goto start_write;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));

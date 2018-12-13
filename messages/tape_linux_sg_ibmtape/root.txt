@@ -116,6 +116,13 @@ root:table {
 		30274I:string { "Pseudo-error on %s." }
 		30275I:string { "Pseudo-error on write. Good return code, but a record to emulate a write error did not get sent to the drive." }
 		30276I:string { "Raw capacity info of partition %d (%llu - %llu) %s." }
+		30277W:string { "Detect ENOMEM in ioctl() call. Wait 3 secs and retry (%d)." }
+		30278I:string { "Retrying %s operation at (%u, %llu)." }
+		30279I:string { "Retrying %s operation at (%u, %llu) with skip back, because the command was already executed (%u, %llu)." }
+		30280W:string { "Unexpected current position for %s operation (%d). (%u, %llu), (%u, %llu) ." }
+		30281W:string { "Position confirmation for %s operation retry is failed (%d). (%u, %llu), (%u, %llu)." }
+		30282W:string { "Unexpected position after skip back for %s operation. (%u, %llu), (%u, %llu)." }
+		30283W:string { "Skip back for %s operation is failed (%d). (%u, %llu), (%u, %llu)." }
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }
