@@ -77,6 +77,22 @@ make install
 
 `./configure --help` shows various options for build and install.
 
+#### Parameter settings of the sg driver
+
+LTFS uses the sg driver by default. You can improve performnce and reliability to change parameters of the sg driver below.
+
+```
+allow_dio=1
+def_reserved_size=1048576
+```
+
+In RHEL7, you can put following file as `/etc/modprobe.d/sg.conf`.
+
+```
+options sg def_reserved_size=1048576
+options sg allow_dio=1
+```
+
 #### IBM lin_tape driver support
 
 You need to add `--enable-lintappe` as an argument of ./configure script if you want to build the backend for lin_tape. You also need to add `DEFAULT_TAPE=lin_tape` if you set the lin_tape backend as default backend.
