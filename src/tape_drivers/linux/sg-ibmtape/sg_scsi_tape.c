@@ -195,6 +195,9 @@ start:
 		if (errno == ENODEV) {
 			if (msg) *msg = "No device found";
 			return -EDEV_CONNECTION_LOST;
+		} else if (errno == ENOMEM) {
+			if (msg) *msg = "ioctl ENOMEM error";
+			return -EDEV_BUFFER_ALLOCATE_ERROR;
 		} else {
 			if (msg) *msg = "ioctl error";
 			return -EDEV_INTERNAL_ERROR;
