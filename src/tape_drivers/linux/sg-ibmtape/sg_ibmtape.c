@@ -52,6 +52,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <sys/ioctl.h>
 
 #include "ltfs_copyright.h"
 #include "libltfs/ltfslogging.h"
@@ -1061,6 +1062,16 @@ int sg_ibmtape_open(const char *devname, void **handle)
 	ret = _raw_open(priv);
 	if (ret < 0)
 		goto free;
+
+	/* Configure reserved buffer to avoid ENOMEM if possible */
+	int reserved_size = 1 * MB;
+	ioctl(priv->dev.fd, SG_SET_RESERVED_SIZE, &reserved_size);
+	ret = ioctl(priv->dev.fd, SG_GET_RESERVED_SIZE, &reserved_size);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 30284E, devname);
+		goto free;
+	}
+	ltfsmsg(LTFS_INFO, 30285I, devname, reserved_size);
 
 	/* Setup IBM tape specific parameters */
 	standard_table = standard_tape_errors;

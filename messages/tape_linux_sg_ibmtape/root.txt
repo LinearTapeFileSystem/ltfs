@@ -123,6 +123,8 @@ root:table {
 		30281W:string { "Position confirmation for %s operation retry is failed (%d). (%u, %llu), (%u, %llu)." }
 		30282W:string { "Unexpected position after skip back for %s operation. (%u, %llu), (%u, %llu)." }
 		30283W:string { "Skip back for %s operation is failed (%d). (%u, %llu), (%u, %llu)." }
+		30284E:string { "Cannot get reserved buffer size of %s." }
+		30285I:string { "Reserved buffer size of %s is %d." }
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }
