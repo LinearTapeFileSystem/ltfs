@@ -77,7 +77,6 @@ root:table {
 		31196D:string { "Backend %s: %llu." }
 		31197D:string { "Backend %s: (%llu, %llu)." }
 		31198D:string { "Backend %s: (%llu, %llu) FM = %llu." }
-		31199I:string { "itdtimg backend options:\n"
-						"    -o devname=<dev>          tape device (default=%s)\n." }
+		31199I:string { "itdtimg backend options:\n    -o devname=<dev>          tape device (default=%s)\n." }
 	}
 }

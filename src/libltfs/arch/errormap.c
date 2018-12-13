@@ -402,6 +402,8 @@ static struct error_map fuse_error_list[] = {
 	{ EDEV_NO_RESERVATION_HOLDER,    "D1721E", EIO},
 	{ EDEV_NEED_FAILOVER,            "D1722E", EIO},
 	{ EDEV_REAL_POWER_ON_RESET,      "D1723E", EIO},
+	{ EDEV_BUFFER_ALLOCATE_ERROR,    "D1724E", EIO},
+	{ EDEV_RETRY,                    "D1725E", EIO},
 	{ -1, NULL, 0 }
 };
 

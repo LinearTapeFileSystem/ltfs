@@ -44,6 +44,10 @@
 **                  IBM Almaden Research Center
 **                  bbiskebo@us.ibm.com
 **
+**                  Atsushi Abe
+**                  IBM Tokyo Lab., Japan
+**                  piste@jp.ibm.com
+**
 *************************************************************************************
 */
 
@@ -410,6 +414,8 @@
 #define EDEV_NO_RESERVATION_HOLDER   21721  /* No reservation holder */
 #define EDEV_NEED_FAILOVER           21722  /* Path switch happens, need to reissue the command */
 #define EDEV_REAL_POWER_ON_RESET     21723  /* Real power on reset is detected */
+#define EDEV_BUFFER_ALLOCATE_ERROR   21724  /* Buffer allocation error in a driver */
+#define EDEV_RETRY                   21725  /* Retry the command again */
 
 /* Vendor Unique codes */
 #define EDEV_UNKNOWN                 29998  /* Unknown sense code */
