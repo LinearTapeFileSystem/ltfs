@@ -89,26 +89,55 @@ def_reserved_size=1048576
 In RHEL7, you can put following file as `/etc/modprobe.d/sg.conf`.
 
 ```
-options sg def_reserved_size=1048576
 options sg allow_dio=1
+options sg def_reserved_size=1048576
 ```
+
+You can check current configuration of sg driver to see the file `/proc/scsi/sg/debug` like
+
+```
+$ cat /proc/scsi/sg/debug
+max_active_device=44  def_reserved_size=32768
+ >>> device=sg25 1:0:10:0   em=0 sg_tablesize=1024 excl=0 open_cnt=1
+   FD(1): timeout=60000ms bufflen=524288 (res)sgat=16 low_dma=0
+   cmd_q=1 f_packid=0 k_orphan=0 closed=0
+     No requests active
+ >>> device=sg26 1:0:10:1   em=0 sg_tablesize=1024 excl=0 open_cnt=1
+   FD(1): timeout=60000ms bufflen=524288 (res)sgat=16 low_dma=0
+   cmd_q=1 f_packid=0 k_orphan=0 closed=0
+     No requests active
+```
+
+##### Note for the lpfc driver (Emulex Fibre HBAs)
+
+In the lpfc driver (for Emulex Fibre HBAs), the table size of the scutter-gather is 64 by default. This cofiguration may cause I/O errors intermittenly when `allow_dio=1` is set and scutter-gather table cannot be reserved. To avouid this error, you need to change the parameter `lpfc_sg_seg_cnt` to 256 or larger like below.
+
+```
+options lpfc lpfc_sg_seg_cnt=256 
+```
+
+In some versions of the lpfc driver (for Emulex Fibre HBAs), the table size of the scutter-gather cannot be changed correctly. You can check the value is changed or not in `sg_tablesize` value in `/proc/scsi/sg/debug`. If you don't have a correct value (256 or later) in `sg_tablesize`, removing `allow_dio=1` configuration of the sg driver is strongly recommended. 
 
 #### IBM lin_tape driver support
 
-You need to add `--enable-lintappe` as an argument of ./configure script if you want to build the backend for lin_tape. You also need to add `DEFAULT_TAPE=lin_tape` if you set the lin_tape backend as default backend.
+You need to add `--enable-lintape` as an argument of ./configure script if you want to build the backend for lin_tape. You also need to add `DEFAULT_TAPE=lin_tape` if you set the lin_tape backend as default backend.
 
 #### Buildable distributions
 
-  | Dist                 | Arch    | Status      | 
-  |:-:                   |:-:      |:-:          | 
-  | RHEL 7               | x86_64  | OK          |
-  | RHEL 7               | ppc64le | OK          |
-  | CentOS 7             | x86_64  | OK          |
-  | CentOS 7             | ppc64le | Probably OK |  
-  | Fedora 28            | x86_64  | OK          |
-  | Ubuntu 16.04 LTS     | x86_64  | OK          |
-  | Debian 9.5           | x86_64  | NG          |
-  | ArchLinux 2018.08.01 | x86_64  | OK          |
+  | Dist                          | Arch    | Status      | 
+  |:-:                            |:-:      |:-:          | 
+  | RHEL 7                        | x86_64  | OK          |
+  | RHEL 7                        | ppc64le | OK          |
+  | CentOS 7                      | x86_64  | OK          |
+  | CentOS 7                      | ppc64le | Probably OK |  
+  | Fedora 28                     | x86_64  | OK          |
+  | Ubuntu 16.04 LTS              | x86_64  | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
+  | Ubuntu 18.04 LTS              | x86_64  | OK          |
+  | Debian 9.5                    | x86_64  | NG          |
+  | ArchLinux 2018.08.01          | x86_64  | OK          |
+  | ArchLinux 2018.12.31 (rolling)| x86_64  | OK          |
+
+Currently, automatic build checking is working on Travis CI with Ubuntu 16.04 LTS.
 
 In Debian9 (stretch), ICU 57.1 is used but the command `genrb` in this version causes crash while creating a resource bundle of LTFS. It is clearly a bug of ICU package and this problem was fixed into ICU 60 at least. May be we need to wait Debian10 (buster) because ICU 60 is used in Debian10 at this time (in the test phase of Debian10).
 
@@ -155,7 +184,7 @@ make install
   |:-:      |:-:      |:-:          | 
   | 11      | x86_64  | OK          |
 
-## Next Step
+## How to use the LTFS
 
 Goto [Wiki](https://github.com/LinearTapeFileSystem/ltfs/wiki) and enjoy the LTFS.
 
