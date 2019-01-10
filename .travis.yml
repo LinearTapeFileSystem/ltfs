@@ -8,11 +8,12 @@ matrix:
       osx_image: xcode9.4
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew update          ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew reinstall libxml2 icu     ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew install ossp-uuid gnu-sed ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew link --force libxml2 ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew link --force icu4c   ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew install cask         ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew link --force libxml2      ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew link --force icu4c        ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew tap caskroom/cask         ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew brew install caskroom/cask/brew-cask ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew cask install osxfuse ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update                                      ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libfuse2 libfuse-dev             ; fi
