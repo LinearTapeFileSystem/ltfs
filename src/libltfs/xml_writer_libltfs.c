@@ -732,7 +732,8 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 					close(fd);
 					fd = -1;
 				} else {
-					ltfsmsg(LTFS_INFO, 17255I, offset_name, errno);
+					if (errno != ENOENT)
+						ltfsmsg(LTFS_INFO, 17255I, offset_name, errno);
 				}
 				free(offset_name);
 			}
@@ -752,7 +753,8 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 					close(fd);
 					fd = -1;
 				} else {
-					ltfsmsg(LTFS_INFO, 17255I, sync_name, errno);
+					if (errno != ENOENT)
+						ltfsmsg(LTFS_INFO, 17255I, sync_name, errno);
 				}
 				free(sync_name);
 			}
@@ -891,11 +893,11 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 			if (out_ctx->fd >= 0)
 				xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, true);
 		} else {
-			if (out_ctx->fd >= 0)
-				xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, false);
-
 			if (vol->index_cache_path)
 				_commit_offset_caches(vol->index_cache_path, vol->index);
+
+			if (out_ctx->fd >= 0)
+				xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, false);
 		}
 
 		/* Update the creator string */
