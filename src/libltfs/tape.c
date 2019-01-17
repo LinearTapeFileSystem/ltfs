@@ -1713,8 +1713,8 @@ int tape_get_cart_volume_lock_status(struct device_data *dev, int *status)
 
 int tape_set_cart_volume_lock_status(struct ltfs_volume *vol, int status)
 {
-	int ret, cur_stat;
-	char value[TC_MAM_VOLUME_LOCKED_SIZE+1];
+	int ret, cur_stat = -1;
+	char value[TC_MAM_VOLUME_LOCKED_SIZE];
 
 	tape_get_cart_volume_lock_status(vol->device, &cur_stat);
 
@@ -1732,7 +1732,6 @@ int tape_set_cart_volume_lock_status(struct ltfs_volume *vol, int status)
 	}
 
 	value[0] = status;
-	value[1] = '\0';
 
 	/* update CM MAM attribute */
 	ret = update_tape_attribute(vol, value, TC_MAM_VOLUME_LOCKED, TC_MAM_VOLUME_LOCKED_SIZE);

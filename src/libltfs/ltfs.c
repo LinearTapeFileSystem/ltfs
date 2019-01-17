@@ -1465,6 +1465,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 	bool is_worm_recovery_mount = false;
 	/* TODO: is_worm_recovery_mount should be set by user via option */
 	int vollock = VOLUME_UNLOCKED;
+	char *vl_print = NULL;
 
 	ltfsmsg(LTFS_INFO, 11005I);
 
@@ -1541,7 +1542,72 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 
 	/* check for consistency */
 	INTERRUPTED_GOTO(ret, out_unlock);
-	if (! force_full && volume_change_ref > 0
+	if (IS_SINGLE_WRITE_PERM(vollock) || vollock == VOLUME_WRITE_PERM_BOTH) {
+		bool read_ip = false;
+
+		/* Write permed cartridge is detected. Seek the newest index */
+		switch (vollock) {
+			case VOLUME_WRITE_PERM:
+				vl_print = "a partition";
+				break;
+			case VOLUME_WRITE_PERM_BOTH:
+				vl_print = "both partitions";
+				break;
+			case VOLUME_WRITE_PERM_IP:
+				vl_print = "IP";
+				break;
+			case VOLUME_WRITE_PERM_DP:
+				vl_print = "DP";
+				break;
+			default:
+				vl_print = "UNKNOWN";
+				break;
+		}
+		ltfsmsg(LTFS_INFO, 11333I, vl_print, (unsigned long long)vol->ip_coh.count, (unsigned long long)vol->dp_coh.count);
+
+		ltfs_mutex_lock(&vol->device->read_only_flag_mutex);
+		vol->device->write_error = true;
+		ltfs_mutex_unlock(&vol->device->read_only_flag_mutex);
+
+		if (vol->ip_coh.count < vol->dp_coh.count) {
+			seekpos.partition = ltfs_part_id2num(vol->label->partid_dp, vol);
+			seekpos.block = vol->dp_coh.set_id;
+		} else {
+			seekpos.partition = ltfs_part_id2num(vol->label->partid_ip, vol);
+			seekpos.block = vol->ip_coh.set_id;
+			read_ip = true;
+		}
+
+		ret = tape_seek(vol->device, &seekpos);
+		if (ret == -EDEV_EOD_DETECTED) {
+			INTERRUPTED_GOTO(ret, out_unlock);
+			/* MAM parameters could be corrupted, try a full consistency check */
+			ltfsmsg(LTFS_INFO, 11026I);
+			ret = ltfs_check_medium(true, deep_recovery, recover_extra, recover_symlink, vol);
+			if (ret < 0) {
+				ltfsmsg(LTFS_ERR, 11027E);
+				goto out_unlock;
+			}
+		} else if (ret < 0) {
+			if (read_ip)
+				ltfsmsg(LTFS_ERR, 11023E); /* seek to IP Index failed */
+			else
+				ltfsmsg(LTFS_ERR, 11020E); /* seek to DP Index failed */
+			goto out_unlock;
+		} else {
+			INTERRUPTED_GOTO(ret, out_unlock);
+			ret = ltfs_read_index(0, false, vol);
+			if (ret < 0) {
+				if (read_ip)
+					ltfsmsg(LTFS_ERR, 11024E); /* read IP Index failed */
+				else
+					ltfsmsg(LTFS_ERR, 11021E); /* read DP Index failed */
+				goto out_unlock;
+			}
+			else
+				ltfsmsg(LTFS_DEBUG, 11025D); /* volume is consistent */
+		}
+	} else if (! force_full && volume_change_ref > 0
 		&& volume_change_ref == vol->ip_coh.volume_change_ref
 		&& volume_change_ref == vol->dp_coh.volume_change_ref) {
 		if (vol->ip_coh.count < vol->dp_coh.count) {
@@ -1601,51 +1667,6 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 		}
 	} else if (is_worm_recovery_mount) {
 		/* Skip consistency check because of WORM recovery mount */
-	} else if (IS_SINGLE_WRITE_PERM(vollock) || vollock == VOLUME_WRITE_PERM_BOTH) {
-		bool read_ip = false;
-
-		/* Write permed cartridge is detected. Seek the newest index */
-		ltfsmsg(LTFS_INFO, 11333I, (unsigned long long)vol->ip_coh.count, (unsigned long long)vol->dp_coh.count);
-
-		if (vol->ip_coh.count < vol->dp_coh.count) {
-			seekpos.partition = ltfs_part_id2num(vol->label->partid_dp, vol);
-			seekpos.block = vol->dp_coh.set_id;
-		}
-		else {
-			seekpos.partition = ltfs_part_id2num(vol->label->partid_ip, vol);
-			seekpos.block = vol->ip_coh.set_id;
-			read_ip = true;
-		}
-
-		ret = tape_seek(vol->device, &seekpos);
-		if (ret == -EDEV_EOD_DETECTED) {
-			INTERRUPTED_GOTO(ret, out_unlock);
-			/* MAM parameters could be corrupted, try a full consistency check */
-			ltfsmsg(LTFS_INFO, 11026I);
-			ret = ltfs_check_medium(true, deep_recovery, recover_extra, recover_symlink, vol);
-			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, 11027E);
-				goto out_unlock;
-			}
-		} else if (ret < 0) {
-			if (read_ip)
-				ltfsmsg(LTFS_ERR, 11023E); /* seek to IP Index failed */
-			else
-				ltfsmsg(LTFS_ERR, 11020E); /* seek to DP Index failed */
-			goto out_unlock;
-		} else {
-			INTERRUPTED_GOTO(ret, out_unlock);
-			ret = ltfs_read_index(0, false, vol);
-			if (ret < 0) {
-				if (read_ip)
-					ltfsmsg(LTFS_ERR, 11024E); /* read IP Index failed */
-				else
-					ltfsmsg(LTFS_ERR, 11021E); /* read DP Index failed */
-				goto out_unlock;
-			}
-			else
-				ltfsmsg(LTFS_DEBUG, 11025D); /* volume is consistent */
-		}
 	} else {
 		/* do a full consistency check on the medium itself */
 		INTERRUPTED_GOTO(ret, out_unlock);
@@ -2174,7 +2195,7 @@ size_t ltfs_max_cache_size(struct ltfs_volume *vol)
  */
 int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 {
-	int ret;
+	int ret, ret_mam;
 	struct tape_offset old_selfptr, old_backptr;
 	struct ltfs_timespec modtime_old = { .tv_sec = 0, .tv_nsec = 0 };
 	bool generation_inc = false;
@@ -2182,12 +2203,29 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	bool immed = false;
 	char *cache_path_save = NULL;
 	bool write_perm = (strcmp(reason, SYNC_WRITE_PERM) == 0);
+	bool update_vollock = false;
+	int volstat = -1, new_volstat = 0;
+	char *bc_print = NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
+	ret = tape_get_cart_volume_lock_status(vol->device, &volstat);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 11341E, ret);
+		return ret;
+	}
+
+	if (vol->label->barcode[0] == ' ' || vol->label->barcode == NULL)
+		bc_print = LTFS_NO_BARCODE;
+	else
+		bc_print = vol->label->barcode;
+
 	if (write_perm) {
+		ltfsmsg(LTFS_INFO, 11343I, bc_print);
+
+		/* Temporary disable device->write_error flag to write an index on IP after WP on DP */
 		ltfs_mutex_lock(&vol->device->read_only_flag_mutex);
-		vol->device->write_error = false; /* disable write_error to write index @ IP */
+		vol->device->write_error = false;
 		ltfs_mutex_unlock(&vol->device->read_only_flag_mutex);
 
 		ltfs_mutex_lock(&vol->device->append_pos_mutex); /* Clear append position to avoid overwriting existing index */
@@ -2227,6 +2265,27 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		else if (IS_UNEXPECTED_MOVE(ret)) {
 			vol->reval = -LTFS_REVAL_FAILED;
 			return ret;
+		}
+
+		if (IS_WRITE_PERM(-ret)) {
+			ret = tape_get_cart_volume_lock_status(vol->device, &volstat);
+			if (ret < 0) {
+				ltfsmsg(LTFS_ERR, 11341E, ret);
+				return ret;
+			}
+
+			/* Temporary disable device->write_error flag to write an index on IP after WP on DP */
+			ltfs_mutex_lock(&vol->device->read_only_flag_mutex);
+			vol->device->write_error = false;
+			ltfs_mutex_unlock(&vol->device->read_only_flag_mutex);
+
+			/* Clear append position to avoid overwriting existing index */
+			ltfs_mutex_lock(&vol->device->append_pos_mutex);
+			vol->device->append_pos[ltfs_part_id2num(partition, vol)] = 0;
+			ltfs_mutex_unlock(&vol->device->append_pos_mutex);
+
+			write_perm = true;
+			reason = SYNC_WRITE_PERM;
 		}
 		/* ignore return value: we want to keep trying even if, e.g., the DP fills up */
 	}
@@ -2283,17 +2342,16 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 			}
 			vol->index->backptr = old_backptr;
 			vol->index->selfptr = old_selfptr;
+
+			if (IS_WRITE_PERM(-ret))
+				update_vollock = true;
+
 			goto out_write_perm;
 		}
 	}
 
-	if (vol->label->barcode[0] != ' ') {
-		ltfsmsg(LTFS_INFO, 17235I, vol->label->barcode, partition, reason,
-				(unsigned long long)vol->index->file_count, tape_get_serialnumber(vol->device));
-	} else {
-		ltfsmsg(LTFS_INFO, 17235I, LTFS_NO_BARCODE, partition, reason,
-				(unsigned long long)vol->index->file_count, tape_get_serialnumber(vol->device));
-	}
+	ltfsmsg(LTFS_INFO, 17235I, bc_print, partition, reason,
+			(unsigned long long)vol->index->file_count, tape_get_serialnumber(vol->device));
 
 	ret = tape_write_filemark(vol->device, 1, true, true, true);	// immediate WFM
 	if (ret < 0) {
@@ -2304,6 +2362,10 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		}
 		vol->index->backptr = old_backptr;
 		vol->index->selfptr = old_selfptr;
+
+		if (IS_WRITE_PERM(-ret))
+			update_vollock = true;
+
 		goto out_write_perm;
 	}
 
@@ -2317,6 +2379,10 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		}
 		vol->index->backptr = old_backptr;
 		vol->index->selfptr = old_selfptr;
+
+		if (IS_WRITE_PERM(-ret))
+			update_vollock = true;
+
 		goto out_write_perm;
 	}
 
@@ -2331,6 +2397,10 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		}
 		vol->index->backptr = old_backptr;
 		vol->index->selfptr = old_selfptr;
+
+		if (IS_WRITE_PERM(-ret))
+			update_vollock = true;
+
 		goto out_write_perm;
 	}
 
@@ -2344,13 +2414,7 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	 * ignore failures when updating MAM parameters. */
 	ltfs_update_cart_coherency(vol);
 
-	if (vol->label->barcode[0] != ' ') {
-		ltfsmsg(LTFS_INFO, 17236I, vol->label->barcode, partition,
-				tape_get_serialnumber(vol->device));
-	} else {
-		ltfsmsg(LTFS_INFO, 17236I, LTFS_NO_BARCODE, partition,
-				tape_get_serialnumber(vol->device));
-	}
+	ltfsmsg(LTFS_INFO, 17236I, bc_print, partition, tape_get_serialnumber(vol->device));
 
 	/* update append position */
 	if (partition == ltfs_ip_id(vol)) {
@@ -2369,9 +2433,27 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 
 out_write_perm:
 	if (write_perm) {
+		/* Restore device->write_error flag that is disabled to handle a write perm on DP */
 		ltfs_mutex_lock(&vol->device->read_only_flag_mutex);
-		vol->device->write_error = true;						// enable write_error to write index @ IP
+		vol->device->write_error = true;
 		ltfs_mutex_unlock(&vol->device->read_only_flag_mutex);
+	}
+
+	if (update_vollock) {
+		if (volstat == VOLUME_WRITE_PERM_DP && partition == ltfs_ip_id(vol))
+			new_volstat = VOLUME_WRITE_PERM_BOTH;
+		else if (volstat == VOLUME_WRITE_PERM_IP && partition == ltfs_dp_id(vol))
+			new_volstat = VOLUME_WRITE_PERM_BOTH;
+		else if (volstat == VOLUME_UNLOCKED && partition == ltfs_ip_id(vol))
+			new_volstat = VOLUME_WRITE_PERM_IP;
+		else if (volstat == VOLUME_UNLOCKED && partition == ltfs_dp_id(vol))
+			new_volstat = VOLUME_WRITE_PERM_DP;
+
+		if (new_volstat) {
+			ret_mam = tape_set_cart_volume_lock_status(vol, new_volstat);
+			if (ret_mam)
+				ret = ret_mam;
+		}
 	}
 
 	return ret;
@@ -3237,10 +3319,11 @@ out:
  */
 int ltfs_sync_index(char *reason, bool index_locking, struct ltfs_volume *vol)
 {
-	int ret = 0;
+	int ret = 0, ret_r = 0;
 	bool dirty;
 	char partition;
 	bool dp_index_file_end, ip_index_file_end;
+	char *bc_print = NULL;
 
 start:
 	ret = ltfs_get_partition_readonly(ltfs_dp_id(vol), vol);
@@ -3263,10 +3346,15 @@ start:
 		releaseread_mrsw(&vol->lock);
 
 	if (dirty) {
-		ltfsmsg(LTFS_INFO, 11338I, vol->label->barcode, vol->device->serial_number);
+		if (vol->label->barcode[0] == ' ' || vol->label->barcode == NULL)
+			bc_print = LTFS_NO_BARCODE;
+		else
+			bc_print = vol->label->barcode;
+
+		ltfsmsg(LTFS_INFO, 11338I, bc_print, vol->device->serial_number);
 
 		/* Force a new XML schema to be flushed to the tape */
-		ltfsmsg(LTFS_INFO, 17068I, vol->label->barcode, reason, vol->device->serial_number);
+		ltfsmsg(LTFS_INFO, 17068I, bc_print, reason, vol->device->serial_number);
 		/* If the DP ends in an index and the IP doesn't, then we're most likely positioned
 		 * at the end of the IP, and writing an index there is allowed without first putting
 		 * down a DP index. */
@@ -3295,6 +3383,16 @@ start:
 			return ret;
 		}
 		ret = ltfs_write_index(partition, reason, vol);
+		if (IS_WRITE_PERM(-ret) && partition == ltfs_dp_id(vol)) {
+			ret_r = ltfs_write_index(ltfs_ip_id(vol), SYNC_WRITE_PERM, vol);
+			if (!ret_r) {
+				ltfsmsg(LTFS_INFO, 11344I, bc_print);
+				ret = ret_r;
+			} else {
+				ltfsmsg(LTFS_ERR, 11345E, bc_print);
+				ltfsmsg(LTFS_ERR, 11346E, bc_print);
+			}
+		}
 		tape_device_unlock(vol->device);
 
 		if (IS_UNEXPECTED_MOVE(ret))
@@ -3309,7 +3407,7 @@ start:
 		if (ret)
 			ltfsmsg(LTFS_ERR, 17069E);
 
-		ltfsmsg(LTFS_INFO, 17070I, vol->label->barcode, ret, vol->device->serial_number);
+		ltfsmsg(LTFS_INFO, 17070I, bc_print, ret, vol->device->serial_number);
 	} else {
 		/* Do nothing and return 0 when filesystem is not dirty */
 		ret = 0;

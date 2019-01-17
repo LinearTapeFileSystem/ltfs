@@ -2258,6 +2258,9 @@ int _unified_write_index_after_perm(int write_ret, struct unified_data *priv)
 	}
 
 	ltfsmsg(LTFS_INFO, 13024I, write_ret);
+	ret = tape_set_cart_volume_lock_status(priv->vol, VOLUME_WRITE_PERM_DP);
+	if (ret < 0)
+		ltfsmsg(LTFS_ERR, 13026E, "update MAM", ret);
 
 	blocksize = ltfs_get_blocksize(priv->vol);
 	ret = tape_get_physical_block_position(priv->vol->device, &err_pos);
@@ -2274,16 +2277,7 @@ int _unified_write_index_after_perm(int write_ret, struct unified_data *priv)
 		return ret;
 	}
 
-	ret = ltfs_write_index(ltfs_ip_id(priv->vol), SYNC_WRITE_PERM, priv->vol) ;
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 13026E, "append index", ret);
-		ret = tape_set_cart_volume_lock_status(priv->vol, VOLUME_WRITE_PERM_BOTH);
-		return ret;
-	}
-
-	ret = tape_set_cart_volume_lock_status(priv->vol, VOLUME_WRITE_PERM_DP);
-	if (ret < 0)
-		ltfsmsg(LTFS_ERR, 13026E, "update MAM", ret);
+	ret = ltfs_write_index(ltfs_ip_id(priv->vol), SYNC_WRITE_PERM, priv->vol);
 
 	return ret;
 }

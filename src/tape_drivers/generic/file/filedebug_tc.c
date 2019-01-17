@@ -1908,8 +1908,12 @@ int filedebug_read_attribute(void *device, const tape_partition_t part, const ui
 	fd = open(fname, O_RDONLY | O_BINARY);
 	free(fname);
 	if (fd < 0) {
-		ltfsmsg(LTFS_WARN, 30062W, errno);
-		return -EDEV_CM_PERM;
+		if (errno == ENOENT) {
+			return -EDEV_INVALID_FIELD_CDB;
+		} else {
+			ltfsmsg(LTFS_WARN, 30062W, errno);
+			return -EDEV_CM_PERM;
+		}
 	}
 
 	/* TODO: return -EDEV_INVALID_ARG if buffer is too small to hold complete record? */
