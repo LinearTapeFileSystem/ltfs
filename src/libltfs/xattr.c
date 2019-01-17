@@ -1417,7 +1417,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 		lock = strtoull(v, &invalid_start, 0);
 		if( (*invalid_start == '\0') && v ) {
 			enum mam_advisory_lock_status new = VOLUME_UNLOCKED;
-			char status_mam[TC_MAM_VOLUME_LOCKED_SIZE+1];
+			char status_mam[TC_MAM_VOLUME_LOCKED_SIZE];
 
 			switch (vol->t_attr->vollock) {
 				case VOLUME_WRITE_PERM:
@@ -1455,7 +1455,6 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 			}
 
 			status_mam[0] = new;
-			status_mam[1] = '\0';
 
 			/* update MAM attribute */
 			ret =  update_tape_attribute(vol, status_mam, TC_MAM_VOLUME_LOCKED, TC_MAM_VOLUME_LOCKED_SIZE);
