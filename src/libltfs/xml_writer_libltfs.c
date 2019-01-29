@@ -79,11 +79,11 @@ static int encode_entry_name(char **new_name, const char *name)
 	UChar32 c;
 
 	/* Printable ASCII characters
-	 * !\"#$%&`'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+	 * !\"#$&`'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 	 *
-	 * In this encoding, only `:` is encoded in this printable character set
+	 * In this encoding, only `:` and `%` is encoded in this printable character set
 	 */
-	static char plain_chars[] = "!\"#$%&`'()*+,-./0123456789;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+	static char plain_chars[] = "!\"#$&`'()*+,-./0123456789;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 	char *tmp_name;
 	char buf_encode[3];
 	int i=0, count=0, prev=0, j=0;
