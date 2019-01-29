@@ -1739,7 +1739,7 @@ out_unlock:
 	else if (index && !vol->index)
 		vol->index = index;
 
-	if (ret && vol->index)
+	if (ret < 0 && vol->index)
 		ltfs_index_free(&vol->index);
 
 	return ret;
