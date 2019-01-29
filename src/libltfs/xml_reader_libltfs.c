@@ -112,11 +112,28 @@ static int decode_entry_name(char **new_name, const char *name)
 			buf_decode[1] = name[i+1];
 			tmp_name[j] = (int)strtol(buf_decode, NULL, 16);
 			encoded = false;
+
+			/* Allow '/' but replace to '%2f' for supporting bad manner writer */
+			if (tmp_name[j] == '/') {
+				tmp_name[j] = '%';
+				tmp_name[j+1] = '2';
+				tmp_name[j+2] = 'f';
+				j+=2;
+				ltfsmsg(LTFS_ERR, 17256I, name);
+			}
+
 			i+=2;
 		} else {
 			tmp_name[j] = name[i];
 			i++;
 		}
+
+		/* Allow '/' but replace to '_' for supporting bad manner writer */
+		if (tmp_name[j] == '/') {
+			tmp_name[j] = '_';
+			ltfsmsg(LTFS_ERR, 17257I, name);
+		}
+
 		j++;
 	}
 	tmp_name[j] = '\0';
@@ -142,6 +159,9 @@ static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, boo
 	} else {
 		n->percent_encode = false;
 	}
+
+	/* Free up encode attribute allocated by xmlTextReaderGetAttribute() */
+	if (encode) free(encode);
 
 	get_tag_text();
 
