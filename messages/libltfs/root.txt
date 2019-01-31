@@ -792,8 +792,8 @@ root:table {
 		17253E:string { "Cannot get tape parameters: %s (%d)." }
 		17254E:string { "This cartridge cannot be reformatted in the drive (0x%02x, %d)." }
 		17255I:string { "Cannot open %s cache for sync (%d)." }
-		17256I:string { "'%%2f', decoded to '/', is existed into encoded name object (%s): do not encode" }
-		17257I:string { "'/' is existed into name object (%s): replace to '_'" }
+		17256I:string { "'%%2f' or '%%1f' is existed into encoded name object (%s): Revert to the encoded character" }
+		17257I:string { "0x2f (/) or 0x1f (US) is existed into name object (%s): Replace to '_'" }
 
 		// For Debug 19999I:string { "%s %s %d." }
 
