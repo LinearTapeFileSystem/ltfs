@@ -390,7 +390,7 @@ out_free:
  */
 int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *vol)
 {
-	int ret;
+	int ret, ret_sym;
 	struct tc_position pos;
 	bool end_fm = true;
 
@@ -413,17 +413,17 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *
 	ret = xml_schema_from_tape(eod_pos, vol);
 	if ( vol->index->symerr_count ) {
 		if ( recover_symlink ) {
-			int rc;
-			rc = ltfs_split_symlink( vol );
-			if ( rc<0 ) ret=rc;
-			else if ( ret==-LTFS_SYMLINK_CONFLICT ) ret=0;
-		}
-		else
-		{
+			ret_sym = ltfs_split_symlink( vol );
+			if (ret_sym < 0) {
+				ret = ret_sym;
+			} else if (ret == -LTFS_SYMLINK_CONFLICT) {
+				ret = 0;
+			}
+		} else {
 			ltfsmsg(LTFS_ERR, 11321E);
 		}
 		free( vol->index->symlink_conflict );
-		vol->index->symerr_count=0;
+		vol->index->symerr_count = 0;
 	}
 
 	if (ret < 0) {
@@ -507,7 +507,7 @@ int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_e
 {
 	int ret;
 	struct tc_position eod, pos;
-	bool have_index;
+	bool have_index = false, keep_seeking = false;
 	struct tc_coherency *coh;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -531,7 +531,6 @@ int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_e
 	} else if (pos.block == eod.block - 1)
 		check_err(tape_spacefm(vol->device, -1), 11201E, out);
 
-	have_index = false;
 	while (! have_index) {
 		/* did we reach the end of the partition label? */
 		check_err(tape_get_position(vol->device, &pos), 11200E, out);
@@ -542,19 +541,44 @@ int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_e
 		/* try to read an index file */
 		check_err(tape_spacefm(vol->device, 1), 11202E, out);
 		ret = ltfs_read_index(*eod_pos, recover_symlink, vol);
+		if (ret < 0) { /* no index file found: go back 2 file marks and try again */
+			ltfsmsg(LTFS_DEBUG, 11204D);
 
-		if (ret == 0 || ret == 1) { /* found an index file */
+			keep_seeking = false;
+			switch (ret) {
+				/* Stop seeking index when specific error happens */
+				case -LTFS_NO_MEMORY:
+				case -LTFS_ICU_ERROR:
+				case -LTFS_INVALID_PATH:
+				case -LTFS_NAMETOOLONG:
+					ltfsmsg(LTFS_ERR, 17258E, ret);
+					break;
+				/* Keep seeking index when ignoring wring version index */
+				case -LTFS_UNSUPPORTED_INDEX_VERSION:
+					if (vol->ignore_wrong_version)
+						keep_seeking = true;
+					break;
+				/* Otherwise keep seeking index */
+				default:
+					keep_seeking = true;
+					break;
+			}
+
+			if (keep_seeking)
+				check_err(tape_spacefm(vol->device, -2), 11203E, out);
+			else
+				goto out;
+
+		} else if (ret == 0 || ret == 1) { /* found an index file */
 			have_index = true;
 			*fm_after = (ret == 0);
 			check_err(tape_get_position(vol->device, &pos), 11200E, out);
 			*index_end_pos = pos.block;
 			*blocks_after = ! (pos.block == eod.block);
-		} else { /* no index file found: go back 2 file marks and try again */
-			ltfsmsg(LTFS_DEBUG, 11204D);
-			if (!vol->ignore_wrong_version && ret == -LTFS_UNSUPPORTED_INDEX_VERSION)
-				goto out;
-			else
-				check_err(tape_spacefm(vol->device, -2), 11203E, out);
+		} else {
+			/* Unexpected return codes */
+			/* TODO: Need to add a message */
+			goto out;
 		}
 	}
 
@@ -981,7 +1005,6 @@ int _ltfs_make_lost_found(tape_block_t ip_eod, tape_block_t dp_eod,
  */
 int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_symlink, struct ltfs_volume *vol)
 {
-
 	int ret;
 	bool dp_have_index = false, ip_have_index = false;
 	bool dp_blocks_after, ip_blocks_after;
@@ -1129,23 +1152,16 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 				}
 			} else if (! ip_have_index && ip_eod > 4) {
 				ltfsmsg(LTFS_INFO, 11226I);
-				check_err(tape_set_append_position(vol->device, ip_num, 4), 11229E,out_unlock);
+				check_err(tape_set_append_position(vol->device, ip_num, 4), 11229E, out_unlock);
 			}
 
 			/* Set data partition append position. */
 			if (dp_have_index && dp_blocks_after) {
-				if (lastblock_d >= dp_endofidx && lastblock_d < dp_eod) {
-					ltfsmsg(LTFS_INFO, 11227I);
-					check_err(tape_set_append_position(vol->device, dp_num, lastblock_d),
-						11228E, out_unlock);
-				} else if (lastblock_d < dp_endofidx) {
-					ltfsmsg(LTFS_INFO, 11227I);
-					check_err(tape_set_append_position(vol->device, dp_num, dp_endofidx),
-						11228E, out_unlock);
-				}
+				ltfsmsg(LTFS_INFO, 11227I, dp_eod);
+				check_err(tape_set_append_position(vol->device, dp_num, dp_eod), 11228E, out_unlock);
 			} else if (! dp_have_index && dp_eod > 4) {
-				ltfsmsg(LTFS_INFO, 11227I);
-				check_err(tape_set_append_position(vol->device, dp_num, 4), 11228E,out_unlock);
+				ltfsmsg(LTFS_INFO, 11227I, dp_eod);
+				check_err(tape_set_append_position(vol->device, dp_num, dp_eod), 11228E, out_unlock);
 			}
 		}
 
@@ -1174,10 +1190,14 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 				}
 			}
 			/* write to data partition if it doesn't end in an index file */
-			if (! dp_have_index || dp_blocks_after)
+			if (! dp_have_index || dp_blocks_after) {
+				ltfsmsg(LTFS_INFO, 17259I, "DP", vol->index->selfptr.partition, vol->index->selfptr.block);
 				ret = ltfs_write_index(vol->label->partid_dp, SYNC_RECOVERY, vol);
-			if (!ret)
+			}
+			if (!ret) {
+				ltfsmsg(LTFS_INFO, 17259I, "IP", vol->index->selfptr.partition, vol->index->selfptr.block);
 				ltfs_write_index(vol->label->partid_ip, SYNC_RECOVERY, vol);
+			}
 		} else {
 			ltfsmsg(LTFS_ERR, 11231E);
 			ltfsmsg(LTFS_ERR, 11232E);
