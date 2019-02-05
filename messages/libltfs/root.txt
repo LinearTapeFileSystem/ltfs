@@ -321,7 +321,7 @@ root:table {
 		11224E:string { "Cannot restore medium consistency: failed to generate lost and found (%d)." }
 		11225E:string { "Cannot check medium: failed to allocate index data (%d)." }
 		11226I:string { "Erasing bad blocks from the index partition." }
-		11227I:string { "Erasing bad blocks from the data partition." }
+		11227I:string { "Preserve existing unreferred data blocks in the data partition, put the latest index at %llu." }
 		11228E:string { "Cannot restore medium consistency: failed to save data partition append position (%d)." }
 		11229E:string { "Cannot restore medium consistency: failed to save index partition append position (%d)." }
 		11230I:string { "Writing index(es) to restore consistency." }
@@ -573,8 +573,8 @@ root:table {
 		17027E:string { "XML parser: unsupported extended attribute type \'%s\'." }
 		17028E:string { "XML parser: base64 decoding failed." }
 		17029E:string { "XML parser: invalid UUID %s." }
-		17030E:string { "XML parser: failed to normalize name \'%s\'." }
-		17031E:string { "XML parser: invalid name \'%s\'." }
+		17030E:string { "XML parser: failed to normalize %s \'%s\'." }
+		17031E:string { "XML parser: invalid %s \'%s\'." }
 		17032E:string { "XML parser: compression must be \'true\' (1) or \'false\' (0)." }
 		17033E:string { "XML parser: invalid partition \'%s\'." }
 		17034E:string { "XML parser: invalid time \'%s\' (%d)." }
@@ -792,8 +792,10 @@ root:table {
 		17253E:string { "Cannot get tape parameters: %s (%d)." }
 		17254E:string { "This cartridge cannot be reformatted in the drive (0x%02x, %d)." }
 		17255I:string { "Cannot open %s cache for sync (%d)." }
-		17256I:string { "'%%2f' or '%%1f' is existed into encoded name object (%s): Revert to the encoded character" }
+		17256I:string { "Unexpected character is existed into decoded name object (%s): Revert to the encoded character" }
 		17257I:string { "0x2f (/) or 0x1f (US) is existed into name object (%s): Replace to '_'" }
+		17258E:string { "Critical error happened while parsing an index (%d). Stop seeking the latest index." }
+		17259I:string { "Recover an index on %s from (%c, %llu)." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 
