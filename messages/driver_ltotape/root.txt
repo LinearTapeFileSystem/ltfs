@@ -1,0 +1,142 @@
+//
+//  %Z% %I% %W% %G% %U%
+//
+//  ZZ_Copyright_BEGIN
+//
+//
+//  Licensed Materials - Property of Hewlett Packard Enterprise Development LP
+//
+//  HPE StoreOpen Standalone Version 2.0.1
+//
+//  (C) Copyright 2015 - 2017 Hewlett Packard Enterprise Development LP
+//
+//  This file is part of the HPE StoreOpen Standalone
+//
+//  The HPE StoreOpen Standalone is free software;
+//  you can redistribute it and/or modify it under the terms of the GNU Lesser
+//  General Public License as published by the Free Software Foundation,
+//  version 2.1 of the License.
+//
+//  The HPE StoreOpen Standalone is distributed in the
+//  hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+//  implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+//  See the GNU Lesser General Public License for more details.
+//
+//  You should have received a copy of the GNU Lesser General Public
+//  License along with this library; if not, write to the Free Software
+//  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+//  or download the license from <http://www.gnu.org/licenses/>.
+//
+//
+//  ZZ_Copyright_END
+//
+
+// Messages for the ltotape backend.
+// This backend uses IDs in the range 20000-20999.
+
+root:table {
+	messages:table {
+		start_id:int { 20000 }
+		end_id:int { 20999 }
+
+		// First ten slots reserved..
+
+		// Messages for the ltotape backend:
+		20010D:string { "SCSI request: [ %s] Requested length=%d" }
+		20011D:string { "SCSI outcome: Driver status=0x%02X SCSI status=0x%02X Actual length=%d" }
+		20012D:string { "SCSI sense  : %s" }
+		20013I:string { "Drive type is %s, serial number is %s" }
+		20014E:string { "Drive requires firmware update to enable LTFS (current=%s)" }
+		20015I:string { "Unable to read device serial number" }
+		20016W:string { "Cannot find valid snapshot log" }
+		20017D:string { "Cannot take snapshot log, drive type (%s) does not support feature" }
+		20018D:string { "Snapshot in process of creation, pausing before retry" }
+		20019E:string { "Internal program error: size %d too large in (%s)" }
+		20020D:string { "SG_RESERVED_SIZE (max block size) now set to %d bytes" }
+		20021D:string { "Cannot locate, tape appears to be uninitialized" }
+		20022I:string { "Tape has passed the Early Warning EOM point, so forcing to Read Only mode" }
+		20023E:string { "Backend SCSI subsystem error from %s (0x%0X)" }
+		20024W:string { "Cannot store attribute 0x%0X (%d)" }
+		20025D:string { "Stored EWSTATE attribute as %d" }
+		20026I:string { "Tape was previously formatted by application '%s'" }
+		20027E:string { "Failed to find specific device instance %d" }
+		20028D:string { "Found device class 0x%X at index %d" }
+		20029E:string { "Failed to create device interface - device may be busy?" }
+		20030E:string { "Failed to get exclusive access - device may be busy? (%d)" }
+		20031D:string { "Looking for sg device corresponding to %s" }
+		20032E:string { "Error remapping st device %s to sg : %s" }
+		20033E:string { "Unable to find matching sg device for %s" }
+		20034D:string { "Mapped %s to %s (%d.%d.%d.%d)" }
+		20035E:string { "Unable to lock device (%s)" }
+		20036E:string { "Parsing log page: buffer too small, copying %zu bytes from %lx" }
+		20037E:string { "Option parsing for the ltotape backend failed (%d)" }
+		20038D:string { "Read block: file mark detected" }
+		20039D:string { "Backend %s: %zu bytes" }
+		20040E:string { "EBUSY in %s" }
+		20041E:string { "EFAULT in %s" }
+		20042E:string { "EIO in %s" }
+		20043E:string { "ENOMEM in %s" }
+		20044E:string { "ENXIO in %s" }
+		20045E:string { "EPERM in %s" }
+		20046E:string { "ETIMEDOUT in %s" }
+		20047E:string { "EINVAL in %s" }
+		20048W:string { "Received low space warning in %s" }
+		20049E:string { "EACCES in %s" }
+		20050E:string { "EOVERFLOW in %s" }
+		20051E:string { "ENOSYS in %s" }
+		20052E:string { "EROFS in %s" }
+		20053E:string { "ENOMEDIUM in %s" }
+		20054E:string { "Unknown error in %s (%d)" }
+		20055E:string { "EAGAIN in %s" }
+		20056D:string { "Backend %s: %zu" }
+		20057D:string { "Backend %s: (%llu, %llu)" }
+		20058D:string { "Backend %s" }
+		20059D:string { "Backend %s: %llu" }
+		20060D:string { "Backend ReadPosition: Partition=%llu, LogObject=%llu, FMcount=%llu" }
+		20061D:string { "Backend %s: 0x%02X" }
+		20062E:string { "Unsupported cartridge type (%s)" }
+		20063D:string { "Locate encountered EOD : ignoring sense data" }
+		20064E:string { "Locate failed (%d)" }
+		20065E:string { "Space: unrecognized type (%d)" }
+		20066E:string { "Cannot read position (%d)" }
+		20067E:string { "Invalid format mode (%d)" }
+		20068E:string { "Format operation failed (%d)" }
+		20069E:string { "Cannot get remaining capacity: get log page 0x%02x failed (%d)" }
+		20070E:string { "Cannot get remaining capacity: failed to parse the log page" }
+		20071E:string { "Cannot get remaining capacity: loop index error (%d)" }
+		20072E:string { "Failed to read mode data (%d)" }
+		20073E:string { "Failed to set mode data (%d)" }
+		20074E:string { "Failed to read attribute 0x%X (%d)" }
+		20075E:string { "Failed to write attribute (%d)" }
+		20076I:string { "Triggering drive diagnostic dump" }
+		20077W:string { "Unable to generate drive dump" }
+		20078W:string { "Unable to read drive dump" }
+		20079W:string { "Unable to save drive dump to file" }
+		20080D:string { "Saved drive dump to %s" }
+		20081W:string { "Error saving drive dump: wrote %d bytes out, expected %d" }
+		20082W:string { "Error saving drive dump: unable to close %s" }
+		20083E:string { "Cannot open device: inquiry failed (%d)" }
+		20084D:string { "Drive identification is \'%s\'" }
+		20085E:string { "Unsupported drive \'%s\'" }
+		20086E:string { "%s: medium is already mounted or in use" }
+		20087E:string { "Cannot open device \'%s\' (%d)" }
+		20088W:string { "Had to open device \'%s\' in read-only mode" }
+		20089D:string { "Driver detail: %16s = 0x%X" }
+		20090W:string { "Unable to create dumpfile \'%s\' - %s" }
+		20091I:string { "Unable to get %s properties for \'%s\' - %s" }
+		20092D:string { "Found %d log snapshot files, oldest is \'%s\'" }
+		20093E:string { "Unable to delete file \'%s\' - %s" }
+		20094D:string { "Removed old snapshot file \'%s\'" }
+		20095D:string { "Snapshot directory set to \'%s\'" }
+		20096I:string { "Diagnostic dump complete" }
+		20097D:string { "Drive firmware update needed to enable EOD status check" }
+		20098D:string { "Attribute 0x%X not found" }
+		20099I:string { "Log snapshot cannot be used, \'%s\' is not available" }
+		20100E:string { "Memory allocation failed" }
+		20101D:string { "Device name %s modified to a non-rewind-on-close type %s" }
+		20102W:string { "Cannot create work directory (%d)" }
+		20103W:string { "Path \'%s\' exists, but is not a directory" }
+		20104W:string { "Invalid log-directory path \'%s\', setting back to default log-directory" }
+		20105E:string { "Attempting to write FM at BOP" }
+	}
+}

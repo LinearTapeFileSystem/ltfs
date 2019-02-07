@@ -57,6 +57,11 @@ if PLATFORM_FREEBSD
 PLAT_DRV += tape_drivers/freebsd/cam
 endif
 
+if PLATFORM_NETBSD
+PLAT_DRV += tape_drivers/netbsd/scsipi-ibmtape
+PLAT_DRV += tape_drivers/netbsd/ltotape
+endif
+
 if ENABLE_LIN_TAPE
 PLAT_DRV += tape_drivers/linux/lin_tape
 endif

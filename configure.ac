@@ -58,6 +58,7 @@ dnl
 host_linux=no
 host_mac=no
 host_freebsd=no
+host_netbsd=no
 
 case "${host_os}" in
     linux*)
@@ -68,6 +69,9 @@ case "${host_os}" in
         ;;
     freebsd*)
         host_freebsd=yes
+        ;;
+    netbsd*)
+        host_netbsd=yes
         ;;
     *)
         AC_MSG_ERROR(["OS $host_os is not supported"])
@@ -138,13 +142,22 @@ AC_ARG_ENABLE([snmp],
 AC_MSG_RESULT([$snmp])
 
 dnl
-dnl Handle --enable-new-locking (default:yes)
+dnl Handle --enable-new-locking (default: depend on platform)
+dnl NetBSD: old locking is broken, force new locking
+dnl others: default to old locking
 dnl
+if test "x${host_netbsd}" = "xyes"
+then
+    use_new_locking_default=yes
+else
+    use_new_locking_default=no
+fi
+
 AC_MSG_CHECKING([whether to enable new locking system or not])
 AC_ARG_ENABLE([new-locking],
     [AS_HELP_STRING([--enable-new-locking],[Use new locking system or not])],
     [use_new_locking=$enableval],
-    [use_new_locking=no]
+    [use_new_locking=$use_new_locking_default]
 )
 AC_MSG_RESULT([$use_new_locking])
 
@@ -203,6 +216,10 @@ then
     if test "x${host_freebsd}" = "xyes"
     then
         DEFAULT_TAPE=cam
+    fi
+    if test "x${host_netbsd}" = "xyes"
+    then
+        DEFAULT_TAPE=ltotape
     fi
 fi
 
@@ -292,6 +309,16 @@ then
         [AC_MSG_ERROR([required library bsdxml missing])])
     AC_CHECK_LIB(mt, mt_status_free,,
         [AC_MSG_ERROR([required library mt missing])])
+    AC_CHECK_LIB(execinfo, backtrace,,
+        [AC_MSG_ERROR([required library execinfo missing])])
+
+fi
+
+dnl
+dnl Check for libexecinfo on NetBSD
+dnl
+if test "x${host_netbsd}" = "xyes"
+then
     AC_CHECK_LIB(execinfo, backtrace,,
         [AC_MSG_ERROR([required library execinfo missing])])
 
@@ -539,6 +566,7 @@ AM_CONDITIONAL([PLATFORM_LINUX], [test "x${host_linux}" = "xyes"])
 AM_CONDITIONAL([ENABLE_LIN_TAPE], [test "x${lintape}" = "xyes"])
 AM_CONDITIONAL([PLATFORM_MAC], [test "x${host_mac}" = "xyes"])
 AM_CONDITIONAL([PLATFORM_FREEBSD], [test "x${host_freebsd}" = "xyes"])
+AM_CONDITIONAL([PLATFORM_NETBSD], [test "x${host_netbsd}" = "xyes"])
 AM_CONDITIONAL([CHK_MESSAGE], [test "x${use_msg_check}" = "xyes"])
 AM_CONDITIONAL([OSS], [true])
 
@@ -567,6 +595,8 @@ AC_CONFIG_FILES([
     src/tape_drivers/linux/sg-ibmtape/Makefile
     src/tape_drivers/osx/iokit-ibmtape/Makefile
     src/tape_drivers/freebsd/cam/Makefile
+    src/tape_drivers/netbsd/scsipi-ibmtape/Makefile
+    src/tape_drivers/netbsd/ltotape/Makefile
     src/iosched/Makefile
     src/kmi/Makefile
     src/utils/Makefile

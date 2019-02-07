@@ -133,7 +133,7 @@ void show_runtime_system_info(void)
 
 	return;
 }
-#elif defined(__APPLE__) || defined(__FreeBSD__)
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 {
 	int mib[2];
 	size_t len;

@@ -128,7 +128,11 @@ struct device_data;
 #define LTFS_MAX_XATTR_SIZE           4096
 
 #define LTFS_SUPER_MAGIC              0x7af3
+#ifdef __NetBSD__
+#define LTFS_DEFAULT_BLOCKSIZE        MAXPHYS
+#else
 #define LTFS_DEFAULT_BLOCKSIZE        (512*1024)
+#endif
 #define LTFS_MIN_BLOCKSIZE            4096
 #define LTFS_LABEL_MAX                4096
 

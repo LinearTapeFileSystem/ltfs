@@ -58,6 +58,7 @@ RESOURCES = \
 	libtape_linux_sg_ibmtape_dat.a \
 	libtape_iokit_ibmtape_dat.a \
 	libtape_freebsd_cam_dat.a \
+	driver_ltotape_dat.a \
 	libiosched_fcfs_dat.a \
 	libiosched_unified_dat.a \
 	liblibltfs_dat.a \
