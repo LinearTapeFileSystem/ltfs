@@ -186,9 +186,6 @@ int scsipi_issue_cdb_command(struct scsipi_tape *device, scsireq_t *req,
 	CHECK_ARG_NULL(req, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(msg, -LTFS_NULL_ARG);
 
-fprintf(stderr, "CDB [ ");
-for (int i = 0; i < req->cmdlen; i++) fprintf(stderr, "%02X ", req->cmd[i]);
-fprintf(stderr, "]\n");
 	status = ioctl (device->fd, SCIOCCOMMAND, req);
 
 	/*
