@@ -51,6 +51,17 @@ These instructions will get you a copy of the project up and running on your loc
   * libxml2
   * icu
 
+- NetBSD:
+  * NetBSD 7.0 or higher (ofor FUSE support)
+  * automake
+  * autoconf
+  * libtool
+  * libfuse 
+  * net-snmp
+  * libuuid
+  * libxml2
+  * icu
+
 ## Supported Tape Drives
 
   | Vendor | Drive Type | Minimum F/W Level |
@@ -183,6 +194,21 @@ make install
   | Version | Arch    | Status      | 
   |:-:      |:-:      |:-:          | 
   | 11      | x86_64  | OK          |
+
+### Build and install on NetBSD
+
+```
+./autogen.sh
+./configure
+make
+make install
+```
+
+#### Buildable versions
+
+  | Version | Arch    | Status      | 
+  |:-:      |:-:      |:-:          | 
+  | 8.0     | i386    | OK          |
 
 ## How to use the LTFS
 
