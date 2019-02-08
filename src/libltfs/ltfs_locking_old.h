@@ -149,7 +149,11 @@ static inline int ltfs_mutexattr_destroy(ltfs_mutexattr_t *attr)
 static inline int ltfs_mutexattr_setpshared(ltfs_mutexattr_t *attr,
 											int pshared)
 {
+#ifdef __NetBSD__
+	abort(); /* Not implemented */
+#else
 	return pthread_mutexattr_setpshared(attr, pshared);
+#endif
 }
 #endif /* ! mingw_PLATFORM */
 

@@ -208,14 +208,14 @@ static inline ltfs_thread_t ltfs_thread_self(void)
 
 static inline int ltfs_thread_yield(void)
 {
-#if defined (__APPLE__) || defined(__FreeBSD__)
+#if defined (__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 	return sched_yield();
 #else
 	return pthread_yield();
 #endif
 }
 
-#if defined(__APPLE__) || defined(__FreeBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 extern uint32_t ltfs_get_thread_id(void);
 #else
 static inline uint32_t ltfs_get_thread_id(void)

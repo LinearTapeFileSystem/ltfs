@@ -1522,7 +1522,7 @@ unsigned long long _get_file_size(FILE *fStream)
 		ret|=p.LowPart;
 	}
 #else
-#if defined(__APPLE__) || defined(__FreeBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 	long long tmp = fseeko(fStream, 0LL, SEEK_END);
 	if(tmp != -1){
 		ret = ftello(fStream);
@@ -1566,7 +1566,7 @@ unsigned long long _seek_file(FILE *file, unsigned long long position)
 	}else
 		file->Seek(position, wxFromStart);
 #else
-#if defined(__APPLE__) || defined(__FreeBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 	long long tmp = fseeko(file, position, SEEK_SET);
 #else
 	long long tmp = fseeko64(file, position, SEEK_SET);

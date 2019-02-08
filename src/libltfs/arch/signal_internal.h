@@ -55,7 +55,7 @@
 #endif
 #include <signal.h>
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__NetBSD__)
 typedef void (*sighandler_t)(int);
 #endif
 
