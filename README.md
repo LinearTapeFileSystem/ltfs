@@ -52,7 +52,7 @@ These instructions will get you a copy of the project up and running on your loc
   * icu
 
 - NetBSD:
-  * NetBSD 7.0 or higher (ofor FUSE support)
+  * NetBSD 7.0 or higher (for FUSE support)
   * automake
   * autoconf
   * libtool
