@@ -434,6 +434,7 @@ struct ltfs_volume {
 	int file_open_count;            /**< Number of opened files */
 
 	const char *work_directory;
+	bool formatting;		/**< formatting in progress */
 };
 
 struct ltfs_label {

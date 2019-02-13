@@ -488,10 +488,14 @@ int main(int argc, char **argv)
 	if (! opt.quiet)
 		fprintf(stderr, "\n");
 
+	newvol->formatting = true;
+
 	if(opt.unformat)
 		ret = unformat_tape(newvol, &opt, &args);
 	else
 		ret = format_tape(newvol, &opt, &args);
+
+	newvol->formatting = false;
 
 	free(opt.backend_path);
 	free(opt.kmi_backend_name);
@@ -669,7 +673,11 @@ int format_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *ar
 	/* Create partitions and write labels and indices to the tape */
 	ltfsmsg(LTFS_INFO, 15010I, DATA_PART_ID, DATA_PART_NUM);
 	ltfsmsg(LTFS_INFO, 15011I, INDEX_PART_ID, INDEX_PART_NUM);
+
+	vol->formatting = true;
 	ret = ltfs_format_tape(vol, 0);
+	vol->formatting = false;
+
 	if (ret < 0) {
 		if (ret == -LTFS_INTERRUPTED) {
 			ltfsmsg(LTFS_ERR, 15045E);

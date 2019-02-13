@@ -2215,7 +2215,10 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	ret = tape_get_cart_volume_lock_status(vol->device, &volstat);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 11341E, ret);
-		return ret;
+		if (vol->formatting)
+			ret = 0;
+		else
+			return ret;
 	}
 
 	if (vol->label->barcode[0] == ' ' || vol->label->barcode == NULL)
