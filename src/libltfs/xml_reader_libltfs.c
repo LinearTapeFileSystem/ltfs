@@ -66,7 +66,6 @@
 #include "pathname.h"
 #include "index_criteria.h"
 #include "arch/time_internal.h"
-#include "ltfsprintf.h"
 
 /* LTFS index version checks */
 #define IDX_VERSION_SPARSE     MAKE_LTFS_VERSION(2,0,0)

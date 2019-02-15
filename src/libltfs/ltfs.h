@@ -335,13 +335,14 @@ struct tape_attr {
 };
 
 enum mam_advisory_lock_status {
-	VOLUME_UNLOCKED,
-	VOLUME_LOCKED,          /* Advisory locked (Set VOL_LOCKED) */
-	VOLUME_WRITE_PERM,      /* Single write perm (Set VOL_PERM_WRITE_ERR) */
-	VOLUME_PERM_LOCKED,     /* Advisory perm locked (Set VOL_PERM_LOCKED) */
-	VOLUME_WRITE_PERM_DP,   /* Single write perm on DP (Set VOL_DP_PERM_ERR) */
-	VOLUME_WRITE_PERM_IP,   /* Single write perm on IP (Set VOL_IP_PERM__ERR) */
-	VOLUME_WRITE_PERM_BOTH, /* Double write perm (Set both VOL_DP_PERM_ERR and VOL_IP_PERM_ERR) */
+	VOLUME_UNLOCKED        = 0,
+	VOLUME_LOCKED          = 1,   /* Advisory locked (Set VOL_LOCKED) */
+	VOLUME_WRITE_PERM      = 2,   /* Single write perm (Set VOL_PERM_WRITE_ERR) */
+	VOLUME_PERM_LOCKED     = 3,   /* Advisory perm locked (Set VOL_PERM_LOCKED) */
+	VOLUME_WRITE_PERM_DP   = 4,   /* Single write perm on DP (Set VOL_DP_PERM_ERR) */
+	VOLUME_WRITE_PERM_IP   = 5,   /* Single write perm on IP (Set VOL_IP_PERM__ERR) */
+	VOLUME_WRITE_PERM_BOTH = 6,   /* Double write perm (Set both VOL_DP_PERM_ERR and VOL_IP_PERM_ERR) */
+	VOLUME_NOLOCK          = 128, /* From HPE LTFS NOLOCK_MAM */
 };
 
 #define IS_SINGLE_WRITE_PERM(stat)  (stat == VOLUME_WRITE_PERM || (stat == VOLUME_WRITE_PERM_DP || stat == VOLUME_WRITE_PERM_IP) )

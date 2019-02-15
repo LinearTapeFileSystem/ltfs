@@ -44,8 +44,6 @@ extern "C" {
 #include <stdbool.h>
 #include <inttypes.h>
 
-#include "ltfsprintf.h"
-
 enum ltfs_log_levels {
 	LTFS_NONE  = -1, /* Don't print any log (special use for mkltfs/ltfsck) */
 	LTFS_ERR    = 0,  /* Fatal error or operation failed unexpectedly */

@@ -59,7 +59,6 @@
 #include "pathname.h"
 #include "index_criteria.h"
 #include "arch/time_internal.h"
-#include "ltfsprintf.h"
 
 /**
  * Read a text node, returning the buffer provided by libxml2.

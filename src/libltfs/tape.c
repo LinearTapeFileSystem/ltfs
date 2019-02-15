@@ -432,8 +432,11 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 	pews += 10; /* 10MB is extra space not to miss PEW */
 
 	/* Update read only flags */
-	dev->write_protected = param.write_protected;
 	ltfs_mutex_lock(&dev->read_only_flag_mutex);
+	if (param.write_protected || param.logical_write_protect)
+		dev->write_protected = true;
+	else
+		dev->write_protected = false;
 	dev->write_error = false;
 	if (cap.max_p0 && cap.max_p1 && !cap.remaining_p0)
 		dev->partition_space[0] = PART_NO_SPACE;
