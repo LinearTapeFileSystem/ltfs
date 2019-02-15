@@ -182,6 +182,7 @@ enum {
 	VOLSTATS_PARTITION_CAP    = 0x0202,	/* < Native capacity of partitions */
 	VOLSTATS_PART_USED_CAP    = 0x0203,	/* < Used capacity of partitions */
 	VOLSTATS_PART_REMAIN_CAP  = 0x0204,	/* < Remaining capacity of partitions */
+	VOLSTATS_VU_PGFMTVER      = 0xF000,     /* < Vendor-unique PageFormatVersion */
 };
 
 enum {

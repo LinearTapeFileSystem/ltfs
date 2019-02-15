@@ -228,7 +228,7 @@
 #define LTFS_NO_DMAP_ENTRY        1169  /* No dmap entry */
 #define LTFS_RECOVERABLE_FILE_ERR 1170  /* Recoverable Error in file operation (mkdir, stat, rename, etc) */
 #define LTFS_NO_DCACHE_SPC        1171  /* Failed to expabd dcache space */
-// 1172 unused
+#define LTFS_POS_SUSPECT_BOP      1172  /* If a write FM is attempted at BOP partition 0 */
 // 1173 unused
 // 1174 unused
 // 1175 unused

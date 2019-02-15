@@ -112,6 +112,8 @@ nobase_pkginclude_HEADERS = \
 	libltfs/ltfs_types.h \
 	libltfs/ltfs_thread.h \
 	libltfs/ltfs_locking.h \
+	libltfs/ltfs_locking_old.h \
+	libltfs/ltfs_locking_new.h \
 	libltfs/queue.h \
 	libltfs/uthash.h \
 	libltfs/uthash_ext.h \
@@ -119,4 +121,8 @@ nobase_pkginclude_HEADERS = \
 	libltfs/tape.h \
 	libltfs/arch/signal_internal.h \
 	libltfs/arch/arch_info.h \
-	libltfs/arch/time_internal.h
+	libltfs/arch/time_internal.h \
+	tape_drivers/ibm_tape.h \
+	tape_drivers/spc_op_codes.h \
+	tape_drivers/ssc_op_codes.h \
+	tape_drivers/tape_drivers.h

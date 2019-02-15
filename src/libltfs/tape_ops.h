@@ -123,6 +123,7 @@ struct tc_current_param {
 	unsigned char cart_type;             /* Cartridge type in CM like TC_MP_JB */
 	unsigned char density;               /* Current density code */
 	unsigned int  write_protected;       /* Write protect status of the tape (use bit field of volumelock_status) */
+	unsigned int  logical_write_protect; /* Logical Write Protect */
 	/* TODO: Following field shall be handled by backend but currently they are not implemented yet */
 	//bool          is_encrypted;          /* Is encrypted tape ? */
 	//bool          is_worm;               /* Is worm tape? */
@@ -162,6 +163,21 @@ enum {
 	TC_DC_JAG5E   = 0x75,
 	TC_DC_JAG5AE  = 0x76,
 	TC_DC_JAG6E   = 0x77,
+};
+
+#define ALL_MEDIA_DENSITY      0
+#define CURRENT_MEDIA_DENSITY  1
+
+#define TC_MAX_DENSITY_REPORTS (8)
+
+struct tc_density_code {
+	unsigned char primary;
+	unsigned char secondary;
+};
+
+struct tc_density_report {
+	int size;
+	struct tc_density_code density[TC_MAX_DENSITY_REPORTS];
 };
 
 #define TEST_CRYPTO (0x20)
@@ -246,6 +262,9 @@ typedef enum {
 
 #define TEXT_LOCALIZATION_IDENTIFIER_ASCII (0x0)
 #define TEXT_LOCALIZATION_IDENTIFIER_UTF8 (0x81)
+
+#define TC_MAM_PAGE_ATTRIBUTE_ALL   0 /* Page code for all the attribute passed
+while formatting and mounting the volume */
 
 enum eod_status {
 	EOD_GOOD        = 0x00,
