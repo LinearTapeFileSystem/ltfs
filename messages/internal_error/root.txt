@@ -222,7 +222,7 @@ root:table {
 		I1169E:string{ "No dmap entry." }
 		I1170E:string{ "Host filesystem returns recoverable error." }
 		I1171E:string{ "No additional cache space." }
-		// unused I1172E:string{ "." }
+		I1172E:string{ "Write file mark attempt at BOP partition 0." }
 		// unused I1173E:string{ "." }
 		// unused I1174E:string{ "." }
 		// unused I1175E:string{ "." }
