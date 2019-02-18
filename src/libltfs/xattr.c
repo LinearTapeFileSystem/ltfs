@@ -952,24 +952,24 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 		if (vol->device) {
 			unsigned int lock = 0;
 			switch (vol->lock_status) {
-				case VOLUME_LOCKED:
+				case LOCKED_MAM:
 					lock |= VOL_LOCKED;
 					break;
-				case VOLUME_WRITE_PERM:
+				case PWE_MAM:
 					lock |= VOL_PERM_WRITE_ERR;
 					break;
-				case VOLUME_PERM_LOCKED:
+				case PERMLOCKED_MAM:
 					lock |= VOL_PERM_LOCKED;
 					break;
-				case VOLUME_WRITE_PERM_DP:
+				case PWE_MAM_DP:
 					lock |= VOL_PERM_WRITE_ERR;
 					lock |= VOL_DP_PERM_ERR;
 					break;
-				case VOLUME_WRITE_PERM_IP:
+				case PWE_MAM_IP:
 					lock |= VOL_PERM_WRITE_ERR;
 					lock |= VOL_IP_PERM_ERR;
 					break;
-				case VOLUME_WRITE_PERM_BOTH:
+				case PWE_MAM_BOTH:
 					lock |= VOL_PERM_WRITE_ERR;
 					lock |= VOL_DP_PERM_ERR;
 					lock |= VOL_IP_PERM_ERR;
@@ -1416,14 +1416,14 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 
 		lock = strtoull(v, &invalid_start, 0);
 		if( (*invalid_start == '\0') && v ) {
-			enum mam_advisory_lock_status new = VOLUME_UNLOCKED;
-			char status_mam[TC_MAM_VOLUME_LOCKED_SIZE];
+			mam_lockval new = UNLOCKED_MAM;
+			char status_mam[TC_MAM_LOCKED_MAM_SIZE];
 
 			switch (vol->t_attr->vollock) {
-				case VOLUME_WRITE_PERM:
-				case VOLUME_WRITE_PERM_DP:
-				case VOLUME_WRITE_PERM_IP:
-				case VOLUME_WRITE_PERM_BOTH:
+				case PWE_MAM:
+				case PWE_MAM_DP:
+				case PWE_MAM_IP:
+				case PWE_MAM_BOTH:
 					/* Write perm tape cannot be updated */
 					return -LTFS_XATTR_ERR;
 					break;
@@ -1432,7 +1432,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 					break;
 			}
 
-			if (vol->index->vollock == VOLUME_PERM_LOCKED) {
+			if (vol->index->vollock == PERMLOCKED_MAM) {
 				/* Advisory perm-locked tape cannot be updated */
 				return -LTFS_XATTR_ERR;
 			}
@@ -1443,11 +1443,11 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 			}
 
 			if (lock & VOL_LOCKED)
-				new = VOLUME_LOCKED;
+				new = LOCKED_MAM;
 			else if (lock & VOL_PERM_LOCKED)
-				new = VOLUME_PERM_LOCKED;
+				new = PERMLOCKED_MAM;
 			else
-				new = VOLUME_UNLOCKED;
+				new = UNLOCKED_MAM;
 
 			if (vol->file_open_count != 0) {
 				ltfsmsg(LTFS_DEBUG, 10021D, "_xattr_set_virtual", "file open", vol->file_open_count, 0);
@@ -1457,9 +1457,9 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 			status_mam[0] = new;
 
 			/* update MAM attribute */
-			ret =  update_tape_attribute(vol, status_mam, TC_MAM_VOLUME_LOCKED, TC_MAM_VOLUME_LOCKED_SIZE);
+			ret =  update_tape_attribute(vol, status_mam, TC_MAM_LOCKED_MAM, TC_MAM_LOCKED_MAM_SIZE);
 			if ( ret < 0 ) {
-				ltfsmsg(LTFS_WARN, 17199W, TC_MAM_VOLUME_LOCKED, "_xattr_set_virtual");
+				ltfsmsg(LTFS_WARN, 17199W, TC_MAM_LOCKED_MAM, "_xattr_set_virtual");
 				return ret;
 			}
 

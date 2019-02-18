@@ -875,7 +875,7 @@ int ltfs_clear_tape_alert(uint64_t tape_alert, struct ltfs_volume *vol)
 int ltfs_get_params_unlocked(struct device_param *params, struct ltfs_volume *vol)
 {
 	int ret = -LTFS_NO_DEVICE;
-	struct tc_current_param tc_params;
+	struct tc_drive_param tc_params;
 
 	CHECK_ARG_NULL(params, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -897,7 +897,7 @@ int ltfs_get_params_unlocked(struct device_param *params, struct ltfs_volume *vo
 			params->max_blksize           = tc_params.max_blksize;
 			params->cart_type             = tc_params.cart_type;
 			params->density               = tc_params.density;
-			params->write_protected       = tc_params.write_protected;
+			params->write_protected       = tc_params.write_protect;
 			/* TODO: Following field shall be implemented in the future */
 			//params->is_encrypted          = tc_params.is_encrypted;
 			//params->is_worm               = tc_params.is_worm;
@@ -1466,7 +1466,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 	struct ltfs_index *index = NULL;
 	bool is_worm_recovery_mount = false;
 	/* TODO: is_worm_recovery_mount should be set by user via option */
-	int vollock = VOLUME_UNLOCKED;
+	int vollock = UNLOCKED_MAM;
 	char *vl_print = NULL;
 
 	ltfsmsg(LTFS_INFO, 11005I);
@@ -1544,21 +1544,21 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 
 	/* check for consistency */
 	INTERRUPTED_GOTO(ret, out_unlock);
-	if (IS_SINGLE_WRITE_PERM(vollock) || vollock == VOLUME_WRITE_PERM_BOTH) {
+	if (IS_SINGLE_WRITE_PERM(vollock) || vollock == PWE_MAM_BOTH) {
 		bool read_ip = false;
 
 		/* Write permed cartridge is detected. Seek the newest index */
 		switch (vollock) {
-			case VOLUME_WRITE_PERM:
+			case PWE_MAM:
 				vl_print = "a partition";
 				break;
-			case VOLUME_WRITE_PERM_BOTH:
+			case PWE_MAM_BOTH:
 				vl_print = "both partitions";
 				break;
-			case VOLUME_WRITE_PERM_IP:
+			case PWE_MAM_IP:
 				vl_print = "IP";
 				break;
-			case VOLUME_WRITE_PERM_DP:
+			case PWE_MAM_DP:
 				vl_print = "DP";
 				break;
 			default:
@@ -1741,10 +1741,10 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 	if (vol->t_attr->vollock != vol->index->vollock) {
 		/* Handle write permed cartridge otherwise trust index */
 		switch(vol->t_attr->vollock) {
-			case VOLUME_WRITE_PERM:
-			case VOLUME_WRITE_PERM_DP:
-			case VOLUME_WRITE_PERM_IP:
-			case VOLUME_WRITE_PERM_BOTH:
+			case PWE_MAM:
+			case PWE_MAM_DP:
+			case PWE_MAM_IP:
+			case PWE_MAM_BOTH:
 				vol->lock_status = vol->t_attr->vollock;
 				break;
 			default:
@@ -1863,7 +1863,7 @@ int ltfs_unmount(char *reason, struct ltfs_volume *vol)
 {
 	int ret;
 	cartridge_health_info h;
-	int vollock = VOLUME_UNLOCKED;
+	int vollock = UNLOCKED_MAM;
 
 	ltfsmsg(LTFS_DEBUG, 11032D); /* Unmount the volume... */
 
@@ -1874,7 +1874,7 @@ start:
 
 		if (vol->rollback_mount == false
 			&& (ltfs_is_dirty(vol) || vol->index->selfptr.partition != ltfs_ip_id(vol))
-			&& (vollock != VOLUME_WRITE_PERM_IP && vollock != VOLUME_WRITE_PERM_BOTH)) {
+			&& (vollock != PWE_MAM_IP && vollock != PWE_MAM_BOTH)) {
 			ret = ltfs_write_index(ltfs_ip_id(vol), reason, vol);
 			if (NEED_REVAL(ret)) {
 				ret = ltfs_revalidate(true, vol);
@@ -2027,14 +2027,14 @@ int ltfs_get_tape_readonly(struct ltfs_volume *vol)
 
 	if (!ret) {
 		switch (vol->lock_status) {
-			case VOLUME_LOCKED:
-			case VOLUME_PERM_LOCKED:
+			case LOCKED_MAM:
+			case PERMLOCKED_MAM:
 				ret = -LTFS_WRITE_PROTECT;
 				break;
-			case VOLUME_WRITE_PERM:
-			case VOLUME_WRITE_PERM_DP:
-			case VOLUME_WRITE_PERM_IP:
-			case VOLUME_WRITE_PERM_BOTH:
+			case PWE_MAM:
+			case PWE_MAM_DP:
+			case PWE_MAM_IP:
+			case PWE_MAM_BOTH:
 				ret = -LTFS_WRITE_ERROR;
 				break;
 			default:
@@ -2445,14 +2445,14 @@ out_write_perm:
 	}
 
 	if (update_vollock) {
-		if (volstat == VOLUME_WRITE_PERM_DP && partition == ltfs_ip_id(vol))
-			new_volstat = VOLUME_WRITE_PERM_BOTH;
-		else if (volstat == VOLUME_WRITE_PERM_IP && partition == ltfs_dp_id(vol))
-			new_volstat = VOLUME_WRITE_PERM_BOTH;
-		else if (volstat == VOLUME_UNLOCKED && partition == ltfs_ip_id(vol))
-			new_volstat = VOLUME_WRITE_PERM_IP;
-		else if (volstat == VOLUME_UNLOCKED && partition == ltfs_dp_id(vol))
-			new_volstat = VOLUME_WRITE_PERM_DP;
+		if (volstat == PWE_MAM_DP && partition == ltfs_ip_id(vol))
+			new_volstat = PWE_MAM_BOTH;
+		else if (volstat == PWE_MAM_IP && partition == ltfs_dp_id(vol))
+			new_volstat = PWE_MAM_BOTH;
+		else if (volstat == UNLOCKED_MAM && partition == ltfs_ip_id(vol))
+			new_volstat = PWE_MAM_IP;
+		else if (volstat == UNLOCKED_MAM && partition == ltfs_dp_id(vol))
+			new_volstat = PWE_MAM_DP;
 
 		if (new_volstat) {
 			ret_mam = tape_set_cart_volume_lock_status(vol, new_volstat);
@@ -2791,7 +2791,7 @@ int ltfs_write_label(tape_partition_t partition, struct ltfs_volume *vol)
 int ltfs_format_tape(struct ltfs_volume *vol, int density_code)
 {
 	int ret;
-	struct tc_current_param cart_param;
+	struct tc_drive_param cart_param;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 

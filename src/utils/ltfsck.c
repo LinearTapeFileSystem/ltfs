@@ -218,9 +218,9 @@ void show_usage(char *appname, struct config_file *config, bool full)
 		ltfsresult(16424I);                   /*     --capture-index */
 		ltfsresult(16427I);                   /*     --salvage-rollback-points */
 		fprintf(stderr, "\n");
-		plugin_usage("driver", config);
+		plugin_usage(appname, "driver", config);
 		fprintf(stderr, "\n");
-		plugin_usage("kmi", config);
+		plugin_usage(appname, "kmi", config);
 	}
 	fprintf(stderr, "\n");
 }
@@ -658,7 +658,7 @@ out_unload_backend:
 int check_ltfs_volume(struct ltfs_volume *vol, struct other_check_opts *opt)
 {
 	int ret;
-	int vollock = VOLUME_UNLOCKED;
+	int vollock = UNLOCKED_MAM;
 
 	/* Load tape and read labels */
 	ret = load_tape(vol);
@@ -668,7 +668,7 @@ int check_ltfs_volume(struct ltfs_volume *vol, struct other_check_opts *opt)
 	}
 
 	ret = tape_get_cart_volume_lock_status(vol->device, &vollock);
-	if (vollock != VOLUME_UNLOCKED) {
+	if (vollock != UNLOCKED_MAM) {
 		ltfsmsg(LTFS_INFO, 16111I, vollock);
 	} else if (opt->deep_recovery) {
 		/* Performe EOD recovery, if deep_recovery option is set */

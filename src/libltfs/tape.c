@@ -198,6 +198,11 @@ int tape_device_open(struct device_data *device, const char *devname, struct tap
 
 	/* Validate the tape operations structure. */
 	for (i=0; i<sizeof(struct tape_ops)/sizeof(void *); ++i) {
+		/* It is fine to not define operation not used lib libltfs */
+		if ((void *)ops + i == (void *)&ops->loadunload ||
+		    (void *)ops + i == (void *)&ops->report_density ||
+		    (void *)ops + i == (void *)&ops->update_mam_attr)
+			continue;
 		if ((((void **)ops)[i]) == NULL) {
 			ltfsmsg(LTFS_ERR, 12004E);
 			return -LTFS_PLUGIN_INCOMPLETE;
@@ -344,7 +349,7 @@ int tape_device_is_connected(const char *devname, struct tape_ops *ops)
 int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 {
 	int ret;
-	struct tc_current_param param;
+	struct tc_drive_param param;
 	struct tc_remaining_cap cap;
 	uint16_t pews;
 
@@ -433,7 +438,7 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 
 	/* Update read only flags */
 	ltfs_mutex_lock(&dev->read_only_flag_mutex);
-	if (param.write_protected || param.logical_write_protect)
+	if (param.write_protect || param.logical_write_protect)
 		dev->write_protected = true;
 	else
 		dev->write_protected = false;
@@ -838,7 +843,7 @@ int tape_seek_append_position(struct device_data *dev, tape_partition_t prt, boo
  * @param param pointer of current tape drive and tape parameter
  * @return 0 on success or a negative value on error
  */
-int tape_get_params(struct device_data *dev, struct tc_current_param *param)
+int tape_get_params(struct device_data *dev, struct tc_drive_param *param)
 {
 	int ret;
 
@@ -862,7 +867,7 @@ int tape_get_params(struct device_data *dev, struct tc_current_param *param)
 int tape_get_max_blocksize(struct device_data *dev, unsigned int *size)
 {
 	int ret;
-	struct tc_current_param param;
+	struct tc_drive_param param;
 
 	CHECK_ARG_NULL(size, -LTFS_NULL_ARG);
 
@@ -1486,7 +1491,7 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 		);
 
 	/* Issue Format Medium (destroy all medium data and make 2-partitition medium) */
-	ret = dev->backend->format(dev->backend_data, TC_FORMAT_DEST_PART);
+	ret = dev->backend->format(dev->backend_data, TC_FORMAT_DEST_PART, NULL, NULL, NULL);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 12053E, ret);
 		return ret;
@@ -1518,7 +1523,7 @@ int tape_unformat(struct device_data *dev)
 	}
 
 	/* Issue Format Medium */
-	ret = dev->backend->format(dev->backend_data, TC_FORMAT_DEFAULT);
+	ret = dev->backend->format(dev->backend_data, TC_FORMAT_DEFAULT, NULL, NULL, NULL);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 12055E, ret);
 		return ret;
@@ -1677,14 +1682,14 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 int tape_get_cart_volume_lock_status(struct device_data *dev, int *status)
 {
 	int ret;
-	unsigned char attr_data[TC_MAM_VOLUME_LOCKED_SIZE + TC_MAM_PAGE_HEADER_SIZE];
+	unsigned char attr_data[TC_MAM_LOCKED_MAM_SIZE + TC_MAM_PAGE_HEADER_SIZE];
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(status, -LTFS_NULL_ARG);
 
 	ret = dev->backend->read_attribute(dev->backend_data,
 									   0,					/* partition */
-									   TC_MAM_VOLUME_LOCKED,
+									   TC_MAM_LOCKED_MAM,
 									   attr_data,
 									   sizeof(attr_data));
 
@@ -1692,11 +1697,11 @@ int tape_get_cart_volume_lock_status(struct device_data *dev, int *status)
 		uint16_t id = ltfs_betou16(attr_data);
 		uint16_t len = ltfs_betou16(attr_data + 3);
 
-		if (id != TC_MAM_VOLUME_LOCKED) {
+		if (id != TC_MAM_LOCKED_MAM) {
 			ltfsmsg(LTFS_WARN, 17196W, id);
 			return -LTFS_UNEXPECTED_VALUE;
 		}
-		if (len != TC_MAM_VOLUME_LOCKED_SIZE) {
+		if (len != TC_MAM_LOCKED_MAM_SIZE) {
 			ltfsmsg(LTFS_WARN, 17197W, len);
 			return -LTFS_UNEXPECTED_VALUE;
 		}
@@ -1706,10 +1711,10 @@ int tape_get_cart_volume_lock_status(struct device_data *dev, int *status)
 
 	} else if (ret == -EDEV_INVALID_FIELD_CDB) {
 		ltfsmsg(LTFS_INFO, 11336I);
-		*status = VOLUME_UNLOCKED;
+		*status = UNLOCKED_MAM;
 		ret = 0;
 	} else
-		ltfsmsg(LTFS_DEBUG, 17198D, TC_MAM_VOLUME_LOCKED, "tape_get_cart_volume_lock_status");
+		ltfsmsg(LTFS_DEBUG, 17198D, TC_MAM_LOCKED_MAM, "tape_get_cart_volume_lock_status");
 
 	return ret;
 }
@@ -1717,35 +1722,35 @@ int tape_get_cart_volume_lock_status(struct device_data *dev, int *status)
 int tape_set_cart_volume_lock_status(struct ltfs_volume *vol, int status)
 {
 	int ret, cur_stat = -1;
-	char value[TC_MAM_VOLUME_LOCKED_SIZE];
+	char value[TC_MAM_LOCKED_MAM_SIZE];
 
 	tape_get_cart_volume_lock_status(vol->device, &cur_stat);
 
 	if (cur_stat == status) {
 		/* Nothing to do because of same status */
 		return 0;
-	} else if (cur_stat == VOLUME_PERM_LOCKED) {
+	} else if (cur_stat == PERMLOCKED_MAM) {
 		/* perm locked cartridge cannot be updated */
-		ltfsmsg(LTFS_WARN, 17199W, TC_MAM_VOLUME_LOCKED, "tape_set_cart_volume_lock_status : perm locked");
+		ltfsmsg(LTFS_WARN, 17199W, TC_MAM_LOCKED_MAM, "tape_set_cart_volume_lock_status : perm locked");
 		return -LTFS_UNEXPECTED_VALUE;
-	} else if (status > VOLUME_WRITE_PERM_BOTH) {
+	} else if (status > PWE_MAM_BOTH) {
 		/* invalid status */
-		ltfsmsg(LTFS_WARN, 17199W, TC_MAM_VOLUME_LOCKED, "tape_set_cart_volume_lock_status : invalid stat");
+		ltfsmsg(LTFS_WARN, 17199W, TC_MAM_LOCKED_MAM, "tape_set_cart_volume_lock_status : invalid stat");
 		return -LTFS_UNEXPECTED_VALUE;
 	}
 
 	value[0] = status;
 
 	/* update CM MAM attribute */
-	ret = update_tape_attribute(vol, value, TC_MAM_VOLUME_LOCKED, TC_MAM_VOLUME_LOCKED_SIZE);
+	ret = update_tape_attribute(vol, value, TC_MAM_LOCKED_MAM, TC_MAM_LOCKED_MAM_SIZE);
 	if (ret < 0) {
-		ltfsmsg(LTFS_WARN, 17199W, TC_MAM_VOLUME_LOCKED, "tape_set_cart_volume_lock_status");
+		ltfsmsg(LTFS_WARN, 17199W, TC_MAM_LOCKED_MAM, "tape_set_cart_volume_lock_status");
 		return ret;
 	}
 
 	switch (status) {
-		case VOLUME_LOCKED:
-		case VOLUME_PERM_LOCKED:
+		case LOCKED_MAM:
+		case PERMLOCKED_MAM:
 			vol->index->vollock = status;
 			break;
 	}
@@ -2001,9 +2006,10 @@ int tape_get_device_list(struct tape_ops *ops, struct tc_drive_info *buf, int co
 
 /**
  * Print the backend's LTFS help message.
+ * @param prognamme the program name
  * @param ops tape operations for the backend
  */
-void tape_print_help_message(struct tape_ops *ops)
+void tape_print_help_message(const char *progname, struct tape_ops *ops)
 {
 	if (! ops) {
 		ltfsmsg(LTFS_WARN, 10006W, "ops", __FUNCTION__);
@@ -2011,7 +2017,7 @@ void tape_print_help_message(struct tape_ops *ops)
 	}
 
 	if (ops->help_message)
-		ops->help_message();
+		ops->help_message(progname);
 }
 
 int tape_parse_opts(struct device_data *dev, void *opt_args)
@@ -2879,7 +2885,7 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 	parse_vol(t_attr->app_format_ver, strlen(LTFS_INDEX_VERSION_STR), TC_MAM_APP_FORMAT_VERSION_SIZE);
 
 	/* VOLUME LOCKED set */
-	t_attr->vollock = VOLUME_UNLOCKED;
+	t_attr->vollock = UNLOCKED_MAM;
 
 	/* MEDIA POOL set */
 	memset(t_attr->media_pool, '\0', TC_MAM_MEDIA_POOL_SIZE + 1);
@@ -2925,8 +2931,8 @@ int tape_set_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr, 
 	} else if ( type == TC_MAM_APP_FORMAT_VERSION ) {
 		attr_size = TC_MAM_APP_FORMAT_VERSION_SIZE;
 		format = ASCII_FORMAT;
-	} else if ( type == TC_MAM_VOLUME_LOCKED ) {
-		attr_size = TC_MAM_VOLUME_LOCKED_SIZE;
+	} else if ( type == TC_MAM_LOCKED_MAM ) {
+		attr_size = TC_MAM_LOCKED_MAM_SIZE;
 		format = BINARY_FORMAT;
 	} else if ( type == TC_MAM_MEDIA_POOL ) {
 		attr_size = TC_MAM_MEDIA_POOL_SIZE;
@@ -2957,7 +2963,7 @@ int tape_set_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr, 
 		strncpy((char *)attr_data + 5, t_attr->barcode, attr_size);
 	} else if ( type == TC_MAM_APP_FORMAT_VERSION ) {
 		strncpy((char *)attr_data + 5, t_attr->app_format_ver, attr_size);
-	} else if ( type == TC_MAM_VOLUME_LOCKED ) {
+	} else if ( type == TC_MAM_LOCKED_MAM ) {
 		attr_data[5] =  t_attr->vollock;
 	} else if ( type == TC_MAM_MEDIA_POOL) {
 		strncpy((char *)attr_data + 5, t_attr->media_pool, attr_size);
@@ -3024,7 +3030,7 @@ int tape_format_attribute_to_cm(struct device_data *dev, struct tape_attr *t_att
 		ret_save = ret;
 
 	/* VOLUME LOCKED set */
-	ret = tape_set_attribute_to_cm(dev, t_attr, TC_MAM_VOLUME_LOCKED);
+	ret = tape_set_attribute_to_cm(dev, t_attr, TC_MAM_LOCKED_MAM);
 	if (ret < 0)
 		ret_save = ret;
 
@@ -3076,8 +3082,8 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 	case TC_MAM_APP_FORMAT_VERSION:
 		attr_len = TC_MAM_APP_FORMAT_VERSION_SIZE;
 		break;
-	case TC_MAM_VOLUME_LOCKED:
-		attr_len = TC_MAM_VOLUME_LOCKED_SIZE;
+	case TC_MAM_LOCKED_MAM:
+		attr_len = TC_MAM_LOCKED_MAM_SIZE;
 		break;
 	case TC_MAM_MEDIA_POOL:
 		attr_len = TC_MAM_MEDIA_POOL_SIZE;
@@ -3129,7 +3135,7 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 		} else if (type == TC_MAM_APP_FORMAT_VERSION) {
 			memcpy(t_attr->app_format_ver, attr_data + 5, attr_len);
 			t_attr->app_format_ver[attr_len] = '\0';
-		} else if (type == TC_MAM_VOLUME_LOCKED) {
+		} else if (type == TC_MAM_LOCKED_MAM) {
 			t_attr->vollock = attr_data[5];
 		} else if (type == TC_MAM_MEDIA_POOL) {
 			memcpy(t_attr->media_pool, attr_data + 5, attr_len);
@@ -3197,7 +3203,7 @@ void tape_load_all_attribute_from_cm(struct device_data *dev, struct tape_attr *
 		t_attr->app_format_ver[0] = '\0';
 
 	/* get VOLUME LOCKED */
-	ret = tape_get_attribute_from_cm(dev, t_attr, TC_MAM_VOLUME_LOCKED);
+	ret = tape_get_attribute_from_cm(dev, t_attr, TC_MAM_LOCKED_MAM);
 	if (ret < 0)
 		t_attr->vollock = '\0';
 
@@ -3236,7 +3242,7 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 
 	/* type check */
 	if (type != TC_MAM_USER_MEDIUM_LABEL && type != TC_MAM_BARCODE
-	 && type != TC_MAM_VOLUME_LOCKED && type != TC_MAM_MEDIA_POOL) {
+	 && type != TC_MAM_LOCKED_MAM && type != TC_MAM_MEDIA_POOL) {
 		ltfsmsg(LTFS_WARN, 17204W, type, "update_tape_attribute");
 		return -1;
 	}
@@ -3279,9 +3285,9 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 			strncpy(vol->t_attr->barcode, new_value, size);
 		}
 		parse_vol(vol->t_attr->barcode, strlen(new_value), TC_MAM_BARCODE_SIZE);
-	} else if (type == TC_MAM_VOLUME_LOCKED) {
-		if ( size > TC_MAM_VOLUME_LOCKED_SIZE) {
-			ltfsmsg(LTFS_WARN, 17226W, "VOLLOCK", TC_MAM_VOLUME_LOCKED_SIZE);
+	} else if (type == TC_MAM_LOCKED_MAM) {
+		if ( size > TC_MAM_LOCKED_MAM_SIZE) {
+			ltfsmsg(LTFS_WARN, 17226W, "VOLLOCK", TC_MAM_LOCKED_MAM_SIZE);
 			return -LTFS_LARGE_XATTR;
 		}
 

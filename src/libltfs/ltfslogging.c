@@ -375,14 +375,31 @@ void ltfsprintf_unload_plugin(void *handle)
 }
 
 /* Print a formatted message in the current system locale. */
-int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *id, ...)
+int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, ...)
 {
 	const UChar *format_uc = NULL;
 	int32_t prefix_len, format_len;
 	int32_t id_val;
+	char id[16];
+	size_t idlen;
 	UErrorCode err = U_ZERO_ERROR;
 	va_list argp;
 	struct plugin_bundle *entry;
+
+	/*
+	 * We accept quoted id used in HPE backend source,
+	 * hence we need to remove quotes first.
+	 */
+	idlen = strlen(_id);
+	if (idlen > sizeof(id) - 1)
+		goto internal_error;
+
+	if (idlen > 1 && _id[0] == '"' && _id[idlen - 1] == '"') {
+		strncpy(id, _id + 1, idlen - 2);
+		id[idlen - 2] = '\0';
+	} else {
+		strcpy(id, _id);
+	}
 
 	id_val = atol(id);
 

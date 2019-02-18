@@ -1592,9 +1592,12 @@ bailout:
  * Make/Unmake partition
  * @param device a pointer to the camtape backend
  * @param format specify type of format
+ * @param vol_name Volume name, unused by libtlfs (HPE extension)
+ * @param vol_name Barcode name, unused by libtlfs (HPE extension)
+ * @param vol_mam_uuid Volume UUID, unused by libtlfs (HPE extension)
  * @return 0 on success or a negative value on error
  */
-int camtape_format(void *device, TC_FORMAT_TYPE format)
+int camtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid);
 {
 	int rc, aux_rc;
 	char *msg = NULL;
@@ -2690,7 +2693,7 @@ bailout:
 	return length;
 }
 
-int camtape_get_parameters(void *device, struct tc_current_param *params)
+int camtape_get_parameters(void *device, struct tc_drive_param *params)
 {
 	struct camtape_data *softc = (struct camtape_data *)device;
 	int rc = DEVICE_GOOD;
@@ -2718,7 +2721,7 @@ int camtape_get_parameters(void *device, struct tc_current_param *params)
 		params->max_blksize = MIN(_camtape_get_block_limits(device), LINUX_MAX_BLOCK_SIZE);
 
 	if (softc->loaded) {
-		params->write_protected = 0;
+		params->write_protect = 0;
 
 		if (IS_ENTERPRISE(softc->drive_type)) {
 			rc = camtape_modesense(device, TC_MP_MEDIUM_SENSE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
@@ -2730,11 +2733,11 @@ int camtape_get_parameters(void *device, struct tc_current_param *params)
 			char wp_flag = buf[26];
 
 			if (wp_flag & 0x80) {
-				params->write_protected |= VOL_PHYSICAL_WP;
+				params->write_protect |= VOL_PHYSICAL_WP;
 			} else if (wp_flag & 0x01) {
-				params->write_protected |= VOL_PERM_WP;
+				params->write_protect |= VOL_PERM_WP;
 			} else if (wp_flag & 0x10) {
-				params->write_protected |= VOL_PERS_WP;
+				params->write_protect |= VOL_PERS_WP;
 			}
 		} else {
 			rc = camtape_modesense(device, 0x00, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
@@ -2744,7 +2747,7 @@ int camtape_get_parameters(void *device, struct tc_current_param *params)
 			}
 
 			if ( (buf[3] & 0x80) )
-				params->write_protected |= VOL_PHYSICAL_WP;
+				params->write_protect |= VOL_PHYSICAL_WP;
 		}
 
 		params->cart_type = softc->cart_type;
@@ -3193,7 +3196,7 @@ int camtape_set_xattr(void *device, const char *name, const char *buf, size_t si
 	return rc;
 }
 
-void camtape_help_message(void)
+void camtape_help_message(const char *progname)
 {
 	ltfsresult(31399I, camtape_default_device);
 }
