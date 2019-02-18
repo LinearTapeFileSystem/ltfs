@@ -547,10 +547,10 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 		char *value = NULL;
 
 		switch (idx->vollock) {
-			case VOLUME_LOCKED:
+			case LOCKED_MAM:
 				asprintf(&value, "locked");
 				break;
-			case VOLUME_PERM_LOCKED:
+			case PERMLOCKED_MAM:
 				asprintf(&value, "permlocked");
 				break;
 			default:

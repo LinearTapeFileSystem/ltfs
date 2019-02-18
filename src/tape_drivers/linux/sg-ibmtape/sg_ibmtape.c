@@ -2534,7 +2534,7 @@ int sg_ibmtape_setcap(void *device, uint16_t proportion)
 	return ret;
 }
 
-int sg_ibmtape_format(void *device, TC_FORMAT_TYPE format)
+int sg_ibmtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid)
 {
 	int ret = -EDEV_UNKNOWN, aux_ret;
 	int ret_ep = DEVICE_GOOD;
@@ -3765,7 +3765,7 @@ static int _cdb_read_block_limits(void *device) {
 	return ret;
 }
 
-int sg_ibmtape_get_parameters(void *device, struct tc_current_param *params)
+int sg_ibmtape_get_parameters(void *device, struct tc_drive_param *params)
 {
 	int ret = -EDEV_UNKNOWN;
 	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
@@ -3775,7 +3775,7 @@ int sg_ibmtape_get_parameters(void *device, struct tc_current_param *params)
 	if (priv->loaded) {
 		params->cart_type = priv->cart_type;
 		params->density   = priv->density_code;
-		params->write_protected = 0;
+		params->write_protect = 0;
 
 		if (IS_ENTERPRISE(priv->drive_type)) {
 			unsigned char buf[TC_MP_MEDIUM_SENSE_SIZE];
@@ -3787,11 +3787,11 @@ int sg_ibmtape_get_parameters(void *device, struct tc_current_param *params)
 			char wp_flag = buf[26];
 
 			if (wp_flag & 0x80) {
-				params->write_protected |= VOL_PHYSICAL_WP;
+				params->write_protect |= VOL_PHYSICAL_WP;
 			} else if (wp_flag & 0x01) {
-				params->write_protected |= VOL_PERM_WP;
+				params->write_protect |= VOL_PERM_WP;
 			} else if (wp_flag & 0x10) {
-				params->write_protected |= VOL_PERS_WP;
+				params->write_protect |= VOL_PERS_WP;
 			}
 
 			/* TODO: Following field shall be implemented in the future */
@@ -3810,7 +3810,7 @@ int sg_ibmtape_get_parameters(void *device, struct tc_current_param *params)
 				goto out;
 
 			if (buf[3] & 0x80) {
-				params->write_protected |= VOL_PHYSICAL_WP;
+				params->write_protect |= VOL_PHYSICAL_WP;
 			}
 
 			/* TODO: Following field shall be implemented in the future */
@@ -3990,7 +3990,7 @@ int sg_ibmtape_get_device_list(struct tc_drive_info *buf, int count)
 	return found;
 }
 
-void sg_ibmtape_help_message(void)
+void sg_ibmtape_help_message(const char *progname)
 {
 	ltfsresult(30399I, default_device);
 }

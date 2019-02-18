@@ -185,9 +185,11 @@ int plugin_unload(struct libltfs_plugin *pl)
 
 /**
  * Print the backend's LTFS help message.
+ * @param progname the program name
  * @param ops tape operations for the backend
+ * @param type Plugin type, must be "iosched", "kmi" or "driver"
  */
-static void print_help_message(void *ops, const char * const type)
+static void print_help_message(const char *progname, void *ops, const char * const type)
 {
 	if (! ops) {
 		ltfsmsg(LTFS_WARN, 10006W, "ops", __FUNCTION__);
@@ -200,12 +202,12 @@ static void print_help_message(void *ops, const char * const type)
 			ltfsmsg(LTFS_ERR, 11316E);
 		}
 	} else if (! strcmp(type, "tape"))
-		tape_print_help_message(ops);
+		tape_print_help_message(progname, ops);
 	else
 		ltfsmsg(LTFS_ERR, 11317E, type);
 }
 
-void plugin_usage(const char *type, struct config_file *config)
+void plugin_usage(const char* progname, const char *type, struct config_file *config)
 {
 	struct libltfs_plugin pl = {0};
 	char **backends;
@@ -222,7 +224,7 @@ void plugin_usage(const char *type, struct config_file *config)
 		ret = plugin_load(&pl, type, backends[i], config);
 		if (ret < 0)
 			continue;
-		print_help_message(pl.ops, type);
+		print_help_message(progname, pl.ops, type);
 		plugin_unload(&pl);
 	}
 

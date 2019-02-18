@@ -2053,9 +2053,12 @@ int lin_tape_ibmtape_readpos(void *device, struct tc_position *pos)
  * Make/Unmake partition
  * @param device a pointer to the ibmtape backend
  * @param format specify type of format
+ * @param vol_name Volume name, unused by libtlfs (HPE extension)
+ * @param vol_name Barcode name, unused by libtlfs (HPE extension)
+ * @param vol_mam_uuid Volume UUID, unused by libtlfs (HPE extension)
  * @return 0 on success or a negative value on error
  */
-int lin_tape_ibmtape_format(void *device, TC_FORMAT_TYPE format)
+int lin_tape_ibmtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid)
 {
 	struct sioc_pass_through spt;
 	int rc, aux_rc;
@@ -3060,7 +3063,7 @@ int lin_tape_ibmtape_clear_tape_alert(void *device, uint64_t tape_alert)
 	return length;
 }
 
-int lin_tape_ibmtape_get_parameters(void *device, struct tc_current_param *params)
+int lin_tape_ibmtape_get_parameters(void *device, struct tc_drive_param *params)
 {
 	int rc;
 	unsigned char buf[TC_MP_MEDIUM_SENSE_SIZE];
@@ -3068,7 +3071,7 @@ int lin_tape_ibmtape_get_parameters(void *device, struct tc_current_param *param
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETPARAM));
 
-	memset(params, 0x00, sizeof(struct tc_current_param));
+	memset(params, 0x00, sizeof(struct tc_drive_param));
 
 	if (global_data.crc_checking)
 		params->max_blksize = MIN(_lin_tape_ibmtape_get_block_limits(device),  LINUX_MAX_BLOCK_SIZE - 4);
@@ -3076,7 +3079,7 @@ int lin_tape_ibmtape_get_parameters(void *device, struct tc_current_param *param
 		params->max_blksize = MIN(_lin_tape_ibmtape_get_block_limits(device),  LINUX_MAX_BLOCK_SIZE);
 
 	if (priv->loaded) {
-		params->write_protected = 0;
+		params->write_protect = 0;
 
 		if (IS_ENTERPRISE(priv->drive_type)) {
 			rc = lin_tape_ibmtape_modesense(device, TC_MP_MEDIUM_SENSE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
@@ -3088,11 +3091,11 @@ int lin_tape_ibmtape_get_parameters(void *device, struct tc_current_param *param
 			char wp_flag = buf[26];
 
 			if (wp_flag & 0x80) {
-				params->write_protected |= VOL_PHYSICAL_WP;
+				params->write_protect |= VOL_PHYSICAL_WP;
 			} else if (wp_flag & 0x01) {
-				params->write_protected |= VOL_PERM_WP;
+				params->write_protect |= VOL_PERM_WP;
 			} else if (wp_flag & 0x10) {
-				params->write_protected |= VOL_PERS_WP;
+				params->write_protect |= VOL_PERS_WP;
 			}
 		} else {
 			rc = lin_tape_ibmtape_modesense(device, 0x00, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
@@ -3102,7 +3105,7 @@ int lin_tape_ibmtape_get_parameters(void *device, struct tc_current_param *param
 			}
 
 			if ( (buf[3] & 0x80) )
-				params->write_protected |= VOL_PHYSICAL_WP;
+				params->write_protect |= VOL_PHYSICAL_WP;
 		}
 
 		params->cart_type = priv->cart_type;
@@ -3478,7 +3481,7 @@ int lin_tape_ibmtape_set_xattr(void *device, const char *name, const char *buf, 
 	return rc;
 }
 
-void lin_tape_ibmtape_help_message(void)
+void lin_tape_ibmtape_help_message(const char *progname)
 {
 	ltfsresult(30599I, lin_tape_ibmtape_default_device);
 }

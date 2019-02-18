@@ -360,7 +360,7 @@ static void emulate_rewind_wait(struct filedebug_data *state)
 	emulate_seek_wait(state, &dest);
 }
 
-void filedebug_help_message(void)
+void filedebug_help_message(const char *progname)
 {
 	ltfsresult(30199I, filedebug_default_device);
 }
@@ -1605,7 +1605,7 @@ int filedebug_setcap(void *device, uint16_t proportion)
 	return DEVICE_GOOD;
 }
 
-int filedebug_format(void *device, TC_FORMAT_TYPE format)
+int filedebug_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
 	struct tc_position pos;
@@ -2007,7 +2007,7 @@ int filedebug_set_default(void *device)
 	return DEVICE_GOOD;
 }
 
-int filedebug_get_parameters(void *device, struct tc_current_param *params)
+int filedebug_get_parameters(void *device, struct tc_drive_param *params)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
 
@@ -2016,9 +2016,9 @@ int filedebug_get_parameters(void *device, struct tc_current_param *params)
 	params->cart_type             = state->conf.cart_type;
 	params->density               = state->conf.density_code;
 
-	params->write_protected       = 0;
+	params->write_protect       = 0;
 	if ( state->conf.emulate_readonly )
-			params->write_protected |= VOL_PHYSICAL_WP;
+			params->write_protect |= VOL_PHYSICAL_WP;
 
 	/* TODO: Following field shall be implemented in the future */
 	//params->is_encrypted          = false;

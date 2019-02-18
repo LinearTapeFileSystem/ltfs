@@ -81,10 +81,11 @@ int plugin_unload(struct libltfs_plugin *pl);
 
 /**
  * Show usage of a plugin (a shared library that implements a particular set of operations).
+ * @param progname The program name
  * @param type Plugin type, must be "iosched", "kmi" or "driver".
  * @param config Configuration structure to search for the plugin path.
  */
-void plugin_usage(const char *type, struct config_file *config);
+void plugin_usage(const char *progname, const char *type, struct config_file *config);
 
 #endif /* __PLUGIN_H__ */
 

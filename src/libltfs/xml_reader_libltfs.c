@@ -1495,11 +1495,11 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 			get_tag_text();
 
 			if (!strcmp(value, "unlocked")) {
-				idx->vollock = VOLUME_UNLOCKED;
+				idx->vollock = UNLOCKED_MAM;
 			} else if (!strcmp(value, "locked")) {
-				idx->vollock = VOLUME_LOCKED;
+				idx->vollock = LOCKED_MAM;
 			} else if (!strcmp(value, "permlocked")) {
-				idx->vollock = VOLUME_PERM_LOCKED;
+				idx->vollock = PERMLOCKED_MAM;
 			}
 			check_tag_end("volumelockstate");
 		} else if (idx->version >= IDX_VERSION_UID && ! strcmp(name, NEXTUID_TAGNAME)) {

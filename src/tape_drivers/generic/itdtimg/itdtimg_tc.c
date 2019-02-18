@@ -205,7 +205,7 @@ int itdtimage_parse_opts(void *vstate, void *opt_args)
 	return 0;
 }
 
-void itdtimage_help_message(void)
+void itdtimage_help_message(const char *progname)
 {
 	ltfsresult(31199I, itdtimage_default_device);
 }
@@ -763,7 +763,7 @@ int itdtimage_setcap(void *vstate, uint16_t proportion)
 	return DEVICE_GOOD;
 }
 
-int itdtimage_format(void *vstate, TC_FORMAT_TYPE format)
+int itdtimage_format(void *vstate, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid)
 {
 	struct itdtimage_data *state = (struct itdtimage_data *)vstate;
 	struct tc_position pos;
@@ -988,10 +988,10 @@ int itdtimage_set_default(void *device)
 	return DEVICE_GOOD;
 }
 
-int itdtimage_get_parameters(void *vstate, struct tc_current_param *params)
+int itdtimage_get_parameters(void *vstate, struct tc_drive_param *params)
 {
 	params->max_blksize = FILE_DEBUG_MAX_BLOCK_SIZE;
-	params->write_protected = VOL_PHYSICAL_WP;
+	params->write_protect = VOL_PHYSICAL_WP;
 	return DEVICE_GOOD;
 }
 const char *itdtimage_default_device_name(void)

@@ -115,14 +115,14 @@ struct tc_inq_page {
 
 #define TC_INQ_PAGE_DRVSERIAL (0x80)
 
-struct tc_current_param {
+struct tc_drive_param {
 	/* Parameters for tape drive*/
 	unsigned int  max_blksize;           /* Maximum block size */
 
 	/* Parameters for current loaded tape */
 	unsigned char cart_type;             /* Cartridge type in CM like TC_MP_JB */
 	unsigned char density;               /* Current density code */
-	unsigned int  write_protected;       /* Write protect status of the tape (use bit field of volumelock_status) */
+	unsigned int  write_protect;         /* Write protect status of the tape (use bit field of volumelock_status) */
 	unsigned int  logical_write_protect; /* Logical Write Protect */
 	/* TODO: Following field shall be handled by backend but currently they are not implemented yet */
 	//bool          is_encrypted;          /* Is encrypted tape ? */
@@ -249,12 +249,13 @@ typedef enum {
 #define TC_MAM_TEXT_LOCALIZATION_IDENTIFIER_SIZE (0x1)
 #define TC_MAM_BARCODE (0x0806)
 #define TC_MAM_BARCODE_SIZE (0x20)
+#define TC_MAM_BARCODE_LEN TC_MAM_BARCODE_SIZE /* HPE LTFS alias */
 #define TC_MAM_MEDIA_POOL (0x0808)
 #define TC_MAM_MEDIA_POOL_SIZE (0xA0)
 #define TC_MAM_APP_FORMAT_VERSION (0x080B)
 #define TC_MAM_APP_FORMAT_VERSION_SIZE (0x10)
-#define TC_MAM_VOLUME_LOCKED (0x1623)
-#define TC_MAM_VOLUME_LOCKED_SIZE (0x1)
+#define TC_MAM_LOCKED_MAM (0x1623)
+#define TC_MAM_LOCKED_MAM_SIZE (0x1)
 
 #define BINARY_FORMAT (0x0)
 #define ASCII_FORMAT (0x1)
@@ -280,6 +281,9 @@ enum {
 	MEDIUM_READONLY,
 	MEDIUM_CANNOT_ACCESS
 };
+
+/* Forward definition */
+typedef enum mam_advisory_lock_status mam_lockval;
 
 /* Structure of tape operations */
 struct tape_ops {
@@ -449,6 +453,23 @@ struct tape_ops {
 	int   (*rewind)(void *device, struct tc_position *pos);
 
 	/**
+	 * Load or unload medium to/from a device
+	 * Unused by libltfs (HPE extension)
+	 * HPE Change - CR 11358 - Add a more flexible means of loading and unload.
+	 * @param device Device handle returned by the backend's open().
+	 * @param pos Pointer to a tc_position structure. The backend must fill this structure with
+	 *            the final logical block position of the device, even on error.
+	 *            libltfs does not depend on any particular position being set here.
+	 * @param load Whether to load (TRUE) or unload (FALSE)
+	 * @param hold Whether to partially load/unload (TRUE) or fully (FALSE)
+	 * @return 0 on success or a negative value on error.
+	 *         If no medium is present in the device, the backend must return -EDEV_NO_MEDIUM.
+	 *         If the medium is unsupported (for example, does not support two partitions),
+	 *         the backend should return -LTFS_UNSUPPORTED_MEDIUM.
+	 */
+	int (*loadunload)(void *device, struct tc_position *pos, bool load, bool hold);
+
+	/**
 	 * Seek to the specified position on a device.
 	 * @param device Device handle returned by the backend's open().
 	 * @param dest Destination position, specified as a partition and logical block. The filemarks
@@ -560,9 +581,13 @@ struct tape_ops {
 	 * @param format Type of format to perform. Currently libltfs uses the following values.
 	 *               TC_FORMAT_DEFAULT: create a single partition on the medium.
 	 *               TC_FORMAT_DEST_PART: create two partitions on the medium.
+	 * @param vol_name Volume name, unused by libtlfs (HPE extension)
+	 * @param vol_name Volume barcode, unused by libtlfs (HPE extension)
+	 * @param vol_mam_uuid Volume UUID, unused by libtlfs (HPE extension)
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*format)(void *device, TC_FORMAT_TYPE format);
+	int   (*format)(void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid);
+
 
 	/**
 	 * Get capacity data from a device.
@@ -687,6 +712,18 @@ struct tape_ops {
 	int   (*allow_overwrite)(void *device, const struct tc_position pos);
 
 	/**
+	 * Issue a Report Density Support command to a device.
+	 * This command is not currently used by libltfs (HPE extension)
+	 * @param device Device handle returned by the backend's open().
+	 * @param rep On success, the backend must fill this with the density report data returned by
+	 *            the device.
+	 * @param medium set medium bit on
+	 * @return 0 on success or a negative value on error.
+	 */
+	int   (*report_density)(void *device, struct tc_density_report *rep, bool medium);
+
+
+	/**
 	 * Enable or disable compression on a device.
 	 * @param device Device handle returned by the backend's open().
 	 * @param enable_compression If true, turn on compression. Otherwise, turn it off.
@@ -761,7 +798,7 @@ struct tape_ops {
 	 *                    parameters.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*get_parameters)(void *device, struct tc_current_param *params);
+	int   (*get_parameters)(void *device, struct tc_drive_param *params);
 
 	/**
 	 * Get EOD status of a partition.
@@ -790,8 +827,9 @@ struct tape_ops {
 	 * Print a help message for the backend.
 	 * This function should print options specific to the backend. For example, the IBM
 	 * backends print their default device names.
+	 * @param progname The program name
 	 */
-	void  (*help_message)(void);
+	void  (*help_message)(const char *progname);
 
 	/**
 	 * Parse backend-specific options.
@@ -857,6 +895,23 @@ struct tape_ops {
 						  const char *barcode,
 						  const unsigned char cart_type,
 						  const unsigned char density);
+
+	/** 
+	 * Updating the MAM attributes.
+	 * Unused by libltfs (HPE extension)
+	 * @param device Pointer to ltotape backend.
+	 * @param FORMAT The format type
+	 * @param vol_name An optional volume name to the tape.
+	 * @param barcode_name The volume barcode name
+	 * @param lockbit volume lock state bit to be set in MAM     
+	 * @return 0 on success, a negative value on error. 
+	 */ 
+	int (*update_mam_attr) (void *device, 
+						  TC_FORMAT_TYPE format,
+						  const char *vol_name,
+						  unsigned int attribute_id,
+						  const char *barcode_name,
+						  mam_lockval lockbit);
 
 	/**
 	 * Check if the loaded carridge is WORM.

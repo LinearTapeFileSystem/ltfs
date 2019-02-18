@@ -183,9 +183,9 @@ void show_usage(char *appname, struct config_file *config, bool full)
 		ltfsresult(15417I);                         /* -x, --fulltrace */
 		ltfsresult(15424I);                         /* --long-wipe */
 		fprintf(stderr, "\n");
-		plugin_usage("driver", config);
+		plugin_usage(appname, "driver", config);
 		fprintf(stderr, "\n");
-		plugin_usage("kmi", config);
+		plugin_usage(appname, "kmi", config);
 	}
 
 	fprintf(stderr, "\n");

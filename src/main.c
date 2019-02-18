@@ -227,8 +227,8 @@ void usage(char *progname, struct ltfs_fuse_data *priv)
 		fprintf(stderr, "\n");
 		single_drive_advanced_usage(default_driver, priv);
 		fprintf(stderr, "\n");
-		plugin_usage("driver", priv->config);
-		plugin_usage("kmi", priv->config);
+		plugin_usage(progname, "driver", priv->config);
+		plugin_usage(progname, "kmi", priv->config);
 	}
 }
 

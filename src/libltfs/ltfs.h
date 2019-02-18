@@ -338,19 +338,19 @@ struct tape_attr {
 	char media_pool[TC_MAM_MEDIA_POOL_SIZE + 1];
 };
 
-enum mam_advisory_lock_status {
-	VOLUME_UNLOCKED        = 0,
-	VOLUME_LOCKED          = 1,   /* Advisory locked (Set VOL_LOCKED) */
-	VOLUME_WRITE_PERM      = 2,   /* Single write perm (Set VOL_PERM_WRITE_ERR) */
-	VOLUME_PERM_LOCKED     = 3,   /* Advisory perm locked (Set VOL_PERM_LOCKED) */
-	VOLUME_WRITE_PERM_DP   = 4,   /* Single write perm on DP (Set VOL_DP_PERM_ERR) */
-	VOLUME_WRITE_PERM_IP   = 5,   /* Single write perm on IP (Set VOL_IP_PERM__ERR) */
-	VOLUME_WRITE_PERM_BOTH = 6,   /* Double write perm (Set both VOL_DP_PERM_ERR and VOL_IP_PERM_ERR) */
-	VOLUME_NOLOCK          = 128, /* From HPE LTFS NOLOCK_MAM */
-};
+typedef enum mam_advisory_lock_status {
+	UNLOCKED_MAM   = 0,
+	LOCKED_MAM     = 1,   /* Advisory locked (Set VOL_LOCKED) */
+	PWE_MAM        = 2,   /* Single write perm (Set VOL_PERM_WRITE_ERR) */
+	PERMLOCKED_MAM = 3,   /* Advisory perm locked (Set VOL_PERM_LOCKED) */
+	PWE_MAM_DP     = 4,   /* Single write perm on DP (Set VOL_DP_PERM_ERR) */
+	PWE_MAM_IP     = 5,   /* Single write perm on IP (Set VOL_IP_PERM__ERR) */
+	PWE_MAM_BOTH   = 6,   /* Double write perm (Set both VOL_DP_PERM_ERR and VOL_IP_PERM_ERR) */
+	NOLOCK_MAM    = 128,  /* From HPE */
+} mam_lockval;
 
-#define IS_SINGLE_WRITE_PERM(stat)  (stat == VOLUME_WRITE_PERM || (stat == VOLUME_WRITE_PERM_DP || stat == VOLUME_WRITE_PERM_IP) )
-#define IS_DOUBLE_WRITE_PERM(stat)  (stat == VOLUME_WRITE_PERM_BOTH)
+#define IS_SINGLE_WRITE_PERM(stat)  (stat == PWE_MAM || (stat == PWE_MAM_DP || stat == PWE_MAM_IP) )
+#define IS_DOUBLE_WRITE_PERM(stat)  (stat == PWE_MAM_BOTH)
 
 enum volumelock_status {
 	VOL_UNLOCKED        = 0x00000000,
@@ -432,9 +432,7 @@ struct ltfs_volume {
 	char *mountpoint;              /**< Store mount point for Live Link (SDE) */
 	size_t mountpoint_len;         /**< Store mount point path length (SDE) */
 	struct tape_attr *t_attr;      /**< Tape Attribute data */
-	enum mam_advisory_lock_status lock_status;
-	                               /**< Total volume lock status from t_attr->vollock and index->vollock */
-
+	mam_lockval lock_status;       /**< Total volume lock status from t_attr->vollock and index->vollock */
 	struct ltfs_timespec first_locate; /**< Time to first locate */
 	int file_open_count;            /**< Number of opened files */
 
@@ -514,7 +512,7 @@ struct ltfs_index {
 	size_t symerr_count;                /**< Number of conflicted symlink dentries */
 	struct dentry **symlink_conflict;   /**< symlink/extent conflicted dentries */
 
-	enum mam_advisory_lock_status vollock; /**< volume lock status on index */
+	mam_lockval vollock;                /**< volume lock status on index */
 };
 
 struct ltfs_direntry {
