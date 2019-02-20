@@ -68,13 +68,13 @@ extern bool ltfs_print_thread_id;
 	do {										\
 		printf(LTFS ## id, ##__VA_ARGS__);		\
 	} while(0)
-#else /* MSG_CHECK */
+#else
 #define ltfsmsg(level, id, ...) \
 	do { \
 		if (level <= ltfs_log_level) \
 			ltfsmsg_internal(true, level, NULL, #id, ##__VA_ARGS__);	\
 	} while (0)
-#endif /* MSG_CHECK */
+#endif
 
 /* CAUTION: ltfsmsg_buffer takes message ID as a text literal */
 /* Wrapper for ltfsmsg_internal. It only invokes the message print function if the requested

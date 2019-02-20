@@ -198,11 +198,6 @@ int tape_device_open(struct device_data *device, const char *devname, struct tap
 
 	/* Validate the tape operations structure. */
 	for (i=0; i<sizeof(struct tape_ops)/sizeof(void *); ++i) {
-		/* It is fine to not define operation not used lib libltfs */
-		if ((void *)ops + i == (void *)&ops->loadunload ||
-		    (void *)ops + i == (void *)&ops->report_density ||
-		    (void *)ops + i == (void *)&ops->update_mam_attr)
-			continue;
 		if ((((void **)ops)[i]) == NULL) {
 			ltfsmsg(LTFS_ERR, 12004E);
 			return -LTFS_PLUGIN_INCOMPLETE;

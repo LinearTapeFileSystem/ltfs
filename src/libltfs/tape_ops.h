@@ -453,23 +453,6 @@ struct tape_ops {
 	int   (*rewind)(void *device, struct tc_position *pos);
 
 	/**
-	 * Load or unload medium to/from a device
-	 * Unused by libltfs (HPE extension)
-	 * HPE Change - CR 11358 - Add a more flexible means of loading and unload.
-	 * @param device Device handle returned by the backend's open().
-	 * @param pos Pointer to a tc_position structure. The backend must fill this structure with
-	 *            the final logical block position of the device, even on error.
-	 *            libltfs does not depend on any particular position being set here.
-	 * @param load Whether to load (TRUE) or unload (FALSE)
-	 * @param hold Whether to partially load/unload (TRUE) or fully (FALSE)
-	 * @return 0 on success or a negative value on error.
-	 *         If no medium is present in the device, the backend must return -EDEV_NO_MEDIUM.
-	 *         If the medium is unsupported (for example, does not support two partitions),
-	 *         the backend should return -LTFS_UNSUPPORTED_MEDIUM.
-	 */
-	int (*loadunload)(void *device, struct tc_position *pos, bool load, bool hold);
-
-	/**
 	 * Seek to the specified position on a device.
 	 * @param device Device handle returned by the backend's open().
 	 * @param dest Destination position, specified as a partition and logical block. The filemarks
@@ -712,18 +695,6 @@ struct tape_ops {
 	int   (*allow_overwrite)(void *device, const struct tc_position pos);
 
 	/**
-	 * Issue a Report Density Support command to a device.
-	 * This command is not currently used by libltfs (HPE extension)
-	 * @param device Device handle returned by the backend's open().
-	 * @param rep On success, the backend must fill this with the density report data returned by
-	 *            the device.
-	 * @param medium set medium bit on
-	 * @return 0 on success or a negative value on error.
-	 */
-	int   (*report_density)(void *device, struct tc_density_report *rep, bool medium);
-
-
-	/**
 	 * Enable or disable compression on a device.
 	 * @param device Device handle returned by the backend's open().
 	 * @param enable_compression If true, turn on compression. Otherwise, turn it off.
@@ -895,23 +866,6 @@ struct tape_ops {
 						  const char *barcode,
 						  const unsigned char cart_type,
 						  const unsigned char density);
-
-	/** 
-	 * Updating the MAM attributes.
-	 * Unused by libltfs (HPE extension)
-	 * @param device Pointer to ltotape backend.
-	 * @param FORMAT The format type
-	 * @param vol_name An optional volume name to the tape.
-	 * @param barcode_name The volume barcode name
-	 * @param lockbit volume lock state bit to be set in MAM     
-	 * @return 0 on success, a negative value on error. 
-	 */ 
-	int (*update_mam_attr) (void *device, 
-						  TC_FORMAT_TYPE format,
-						  const char *vol_name,
-						  unsigned int attribute_id,
-						  const char *barcode_name,
-						  mam_lockval lockbit);
 
 	/**
 	 * Check if the loaded carridge is WORM.
