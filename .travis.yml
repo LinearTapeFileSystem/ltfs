@@ -16,14 +16,14 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew cask install osxfuse ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update                                      ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libfuse2 libfuse-dev             ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libxml2 libxml2-dev		    ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libxml2 libxml2-dev              ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libicu55 libicu-dev icu-devtools ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libsnmp30 libsnmp-dev	    ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libsnmp30 libsnmp-dev            ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libuuid1 uuid-dev                ; fi
 
 script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then   ./autogen.sh && LDFLAGS="-framework CoreFoundation -framework IOKit" ./configure --disable-snmp && make ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./autogen.sh && ./configure --prefix=/tmp && make && make install; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd /tmp && git clone https://github.com/LinearTapeFileSystem/ltfs-backends.git && cd ltfs-backends; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/tmp/lib/pkgconfig; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./autogen.sh && ./configure && make; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./autogen.sh && ./configure --prefix=/tmp && make && make install                                       ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd /tmp && git clone https://github.com/LinearTapeFileSystem/ltfs-backends.git && cd ltfs-backends      ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/tmp/lib/pkgconfig                                            ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./autogen.sh && ./configure && make                                                                     ; fi
