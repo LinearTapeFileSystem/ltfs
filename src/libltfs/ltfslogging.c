@@ -463,17 +463,17 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	}
 
 #ifdef mingw_PLATFORM
-	va_start(argp, id);
+	va_start(argp, _id);
 	vsyslog(level, output_buf, argp);
 	va_end(argp);
 #else
-	va_start(argp, id);
+	va_start(argp, _id);
 	vfprintf(stderr, output_buf, argp);
 	va_end(argp);
 	fprintf(stderr, "\n");
 
 	if (level <= ltfs_syslog_level && ltfs_use_syslog) {
-		va_start(argp, id);
+		va_start(argp, _id);
 		if (level <= LTFS_ERR)
 			vsyslog(syslog_levels[LTFS_ERR], output_buf, argp);
 		else if (level >= LTFS_TRACE)
@@ -485,7 +485,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 #endif
 
 	if (msg_out) {
-		va_start(argp, id);
+		va_start(argp, _id);
 		vsprintf(msg_buf, output_buf, argp);
 		va_end(argp);
 		*msg_out = strdup(msg_buf);
@@ -496,7 +496,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		if (is_snmp_trapid(id) == true) {
 			/* Send a trap of Info (id and pos+1) */
 			char *pos;
-			va_start(argp, id);
+			va_start(argp, _id);
 			vsprintf(msg_buf, output_buf, argp);
 			va_end(argp);
 			pos = strstr(msg_buf, " ");
