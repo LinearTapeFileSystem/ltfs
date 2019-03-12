@@ -3,13 +3,30 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs/badge)](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs)
 [![BSD License](http://img.shields.io/badge/license-BSD-blue.svg?style=flat)](LICENSE)
 
+# LTFS Format Specification 2.5 is now under public review !!
+
+SNIA announced LTFS Format Specification 2.5 is now under public review in Mar 2019. You can check the new version [here]( https://www.snia.org/sites/default/files/technical_work/PublicReview/LTFS_Format_2%205%200_draft_rev_%201_190220.pdf). And also you can make any feedback from the SNIA site (http://snia.org/tech_activities/publicreview/#ltfs).
+
 # Linear Tape File System (LTFS)
 
 Linear Tape File System (LTFS) is a filesystem to mount a LTFS formatted tape in a tape drive. Once LTFS mounts a LTFS formatted tape as filesystem, user can access to the tape via filesystem API.
 
-Objective of this project is being the reference implementation of the LTFS format Specifications in SNIA (https://www.snia.org/tech_activities/standards/curr_standards/ltfs).
+Objective of this project is being the reference implementation of the LTFS format Specifications in [SNIA](https://www.snia.org/tech_activities/standards/curr_standards/ltfs).
 
-At this time, the LTFS format specifications 2.4 is the target (https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.4.0_TechPosition.pdf).
+At this time, the target of this project to meet is the LTFS format specifications 2.4. (https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.4.0_TechPosition.pdf).
+
+## LTFS Format Specifications
+
+LTFS Format Specification is specified data placement, shape of index and names of extended attributes for LTFS. This specification is defined in [SNIA](https://www.snia.org/tech_activities/standards/curr_standards/ltfs) first and then it is forwarded to [ISO](https://www.iso.org/home.html) as ISO/IEC 20919 from version 2.2.
+
+The table below show status of the LTFS format Specification 
+
+  | Version | Status of SNIA                   | Status of ISO   |
+  |:-:      |:-:                               |:-:              |
+  | 2.2     | Published the Technical Position | Published       |
+  | 2.3.1   | Published the Technical Position | -               |
+  | 2.4     | Published the Technical Position | On going        |
+  | 2.5     | Under public review              | Not started yes | 
 
 ## Getting Started
 
