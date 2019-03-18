@@ -3942,12 +3942,20 @@ bool iokit_ibmtape_is_readonly(void *device)
 
 int iokit_ibmtape_get_worm_status(void *device, bool *is_worm)
 {
+	int rc = 0;
 	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETWORMSTAT));
-	*is_worm = false;
+	if (priv->loaded) {
+		*is_worm = priv->is_worm;
+	} else {
+		ltfsmsg(LTFS_INFO, 30870I);
+		*is_worm = false;
+		rc = -1;
+	}
+
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETWORMSTAT));
-	return 0;
+	return rc;
 }
 
 int iokit_ibmtape_get_serialnumber(void *device, char **result)
