@@ -1332,7 +1332,7 @@ int ibm_tape_is_supported_tape(unsigned char type, unsigned char density, bool *
 
 	for (i = 0; i < num_supported_cart; ++i) {
 		if(type == supported_cart[i]) {
-			if (type == TC_MP_JY || type == TC_MP_JZ) {
+			if(IS_WORM_MEDIUM(type)) {
 				/* Detect WORM cartridge */
 				ltfsmsg(LTFS_DEBUG, 39809D);
 				*is_worm = true;
