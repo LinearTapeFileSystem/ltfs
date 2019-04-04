@@ -1334,6 +1334,28 @@ static inline int _sanitize_tape(struct filedebug_data *state)
 				ret = -EDEV_MEDIUM_FORMAT_ERROR;
 				break;
 		}
+	} else if (gen == DRIVE_GEN_JAG6) {
+		switch (state->conf.cart_type) {
+			case TC_MP_JC:
+			case TC_MP_JK:
+			case TC_MP_JD:
+			case TC_MP_JL:
+			case TC_MP_JE:
+			case TC_MP_JM:
+				state->is_worm = false;
+				break;
+			case TC_MP_JY:
+			case TC_MP_JZ:
+			case TC_MP_JV:
+				state->is_worm = true;
+				break;
+			default:
+				ltfsmsg(LTFS_INFO, 30086I, "TS1160", state->conf.cart_type);
+				state->is_worm = false;
+				state->unsupported_tape = true;
+				ret = -EDEV_MEDIUM_FORMAT_ERROR;
+				break;
+		}
 	} else {
 		ltfsmsg(LTFS_INFO, 30086I, "Unexpected Drive", state->conf.cart_type);
 		state->is_worm = false;
@@ -1532,6 +1554,8 @@ int filedebug_load(void *device, struct tc_position *pos)
 int filedebug_unload(void *device, struct tc_position *pos)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
+	char *config_file;
+	int ret;
 
 	/* Write EOD of DP here when dummy io mode is enabled */
 	if (state->conf.dummy_io) {
@@ -1555,6 +1579,18 @@ int filedebug_unload(void *device, struct tc_position *pos)
 	pos->partition = state->current_position.partition;
 	pos->block     = state->current_position.block;
 	pos->filemarks = state->current_position.filemarks;
+
+	/* Save configuration of cartridge */
+	ret = asprintf(&config_file, "%s/%s", state->dirname, CARTRIDGE_CONFIG );
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 30049E, ret);
+		return -EDEV_INTERNAL_ERROR;
+	}
+
+	filedebug_conf_tc_write_xml(config_file, &state->conf);
+
+	if (config_file)
+		free(config_file);
 
 	emulate_threading_wait(state);
 
@@ -1841,11 +1877,45 @@ int filedebug_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc
 
 int filedebug_modeselect(void *device, unsigned char *buf, const size_t size)
 {
+	int ret = 0;
 	struct filedebug_data *state = (struct filedebug_data *)device;
 
 	if (buf[16] == TC_MP_READ_WRITE_CTRL && buf[26] != 0) {
 		/* Update density code, if specific value is set */
 		state->conf.density_code = buf[26];
+
+		/* TODO: Create a function to update state for read-only handling */
+		/* Recalculate read-only condition */
+		state->unsupported_format = false;
+		ret = ibm_tape_is_mountable( state->drive_type,
+									 NULL,
+									 state->conf.cart_type,
+									 state->conf.density_code,
+									 false);
+		switch(ret) {
+			case MEDIUM_PERFECT_MATCH:
+			case MEDIUM_WRITABLE:
+				if (state->conf.emulate_readonly)
+					state->is_readonly = true;
+				else
+					state->is_readonly = false;
+				break;
+			case MEDIUM_READONLY:
+				state->is_readonly = true;
+				break;
+			case MEDIUM_CANNOT_ACCESS:
+				ltfsmsg(LTFS_INFO, 30088I, state->drive_type, state->conf.density_code);
+				state->unsupported_format = true;
+				if (IS_LTO(state->drive_type))
+					return -EDEV_MEDIUM_FORMAT_ERROR;
+				break;
+			case MEDIUM_UNKNOWN:
+			case MEDIUM_PROBABLY_WRITABLE:
+			default:
+				/* Unexpected condition */
+				return -LTFS_UNEXPECTED_VALUE;
+				break;
+		}
 	}
 
 	return DEVICE_GOOD;
