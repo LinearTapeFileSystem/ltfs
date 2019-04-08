@@ -802,6 +802,9 @@ v
 		17257I:string { "0x2f (/) or 0x1f (US) is existed into name object (%s): Replace to '_'" }
 		17258E:string { "Critical error happened while parsing an index (%d). Stop seeking the latest index." }
 		17259I:string { "Recover an index on %s from (%c, %llu)." }
+		17260I:string { "Sleep was interrupted by a signal while taking the advisory lock '%s'." }
+		17261I:string { "Kernel detected a false deadlock retry to acquire the advisory lock '%s' (%d)." }
+		17263I:string { "Sleep was failed while taking the advisory lock '%s' (%d, %d)." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 
