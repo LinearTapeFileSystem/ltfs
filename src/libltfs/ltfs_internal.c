@@ -1157,10 +1157,10 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 
 			/* Set data partition append position. */
 			if (dp_have_index && dp_blocks_after) {
-				ltfsmsg(LTFS_INFO, 11227I, dp_eod);
+				ltfsmsg(LTFS_INFO, 11227I, (unsigned long long)dp_eod);
 				check_err(tape_set_append_position(vol->device, dp_num, dp_eod), 11228E, out_unlock);
 			} else if (! dp_have_index && dp_eod > 4) {
-				ltfsmsg(LTFS_INFO, 11227I, dp_eod);
+				ltfsmsg(LTFS_INFO, 11227I, (unsigned long long)dp_eod);
 				check_err(tape_set_append_position(vol->device, dp_num, dp_eod), 11228E, out_unlock);
 			}
 		}
@@ -1191,11 +1191,11 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 			}
 			/* write to data partition if it doesn't end in an index file */
 			if (! dp_have_index || dp_blocks_after) {
-				ltfsmsg(LTFS_INFO, 17259I, "DP", vol->index->selfptr.partition, vol->index->selfptr.block);
+				ltfsmsg(LTFS_INFO, 17259I, "DP", vol->index->selfptr.partition, (unsigned long long)vol->index->selfptr.block);
 				ret = ltfs_write_index(vol->label->partid_dp, SYNC_RECOVERY, vol);
 			}
 			if (!ret) {
-				ltfsmsg(LTFS_INFO, 17259I, "IP", vol->index->selfptr.partition, vol->index->selfptr.block);
+				ltfsmsg(LTFS_INFO, 17259I, "IP", vol->index->selfptr.partition, (unsigned long long)vol->index->selfptr.block);
 				ltfs_write_index(vol->label->partid_ip, SYNC_RECOVERY, vol);
 			}
 		} else {

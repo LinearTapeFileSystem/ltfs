@@ -303,6 +303,9 @@ static int _copy_file_contents(int dest, int src)
  * @param write true if write lock
  * @param bk backup fd to revert
  */
+const struct timespec lock_wait = {0, 100000000}; /* 100ms */
+const struct timespec lock_zero = {0, 0};
+#define LOCK_RETRIES (12000) /* 100ms x 12,000 = 1200sec = 20 min */
 int xml_acquire_file_lock(const char *file, int *fd, int *bk_fd, bool is_write)
 {
 	int ret = -LTFS_CACHE_IO;
@@ -327,20 +330,59 @@ int xml_acquire_file_lock(const char *file, int *fd, int *bk_fd, bool is_write)
 	}
 
 #ifndef mingw_PLATFORM /* There isn't flock in windows */
+	int retry_count = 0;
+	struct timespec next_wait  = lock_wait;
+	struct timespec remaining = {0, 0};
+
+retry:
 	/* Acquire lock */
 	lock.l_type = is_write ? F_WRLCK : F_RDLCK;
 	lock.l_whence = SEEK_SET;
 	lock.l_start = 0;
 	lock.l_len = 0;
 	lock.l_pid = 0;
+
 	ret = fcntl(*fd, F_SETLKW, &lock);
 	if (ret < 0) {
-		/* Failed to acquire the advisory lock '%s' (%d) */
-		errno_save = errno;
-		ltfsmsg(LTFS_WARN, 17242W, file, errno);
-		close(*fd);
-		*fd = -1;
-		goto out;
+		if (errno == EDEADLK && retry_count < LOCK_RETRIES) {
+			if (retry_count % 600 == 0) {
+				ltfsmsg(LTFS_INFO, 17261I, file, retry_count);
+			}
+
+			next_wait = lock_wait;
+			while (next_wait.tv_sec != 0 || next_wait.tv_nsec != 0) {
+				errno = 0;
+				ret = nanosleep(&next_wait, &remaining);
+				if (ret < 0) {
+					if (errno == EINTR) {
+						/* Sleep again with remaining timer */
+						ltfsmsg(LTFS_INFO, 17260I, file);
+						next_wait = remaining;
+						remaining = lock_zero;
+					} else {
+						/* Sleep fails on unexpected error but retry to acquire the lock */
+						ltfsmsg(LTFS_INFO, 17263I, file, errno, retry_count);
+						next_wait = lock_zero;
+						remaining = lock_zero;
+					}
+				} else {
+					/* Sleep success, retry to acquire the lock */
+					next_wait = lock_zero;
+					remaining = lock_zero;
+				}
+			}
+
+			/* Retry to acquire the lock */
+			retry_count++;
+			goto retry;
+		} else {
+			/* Failed to acquire the advisory lock '%s' (%d) */
+			errno_save = errno;
+			ltfsmsg(LTFS_WARN, 17242W, file, errno);
+			close(*fd);
+			*fd = -1;
+			goto out;
+		}
 	}
 #endif
 

@@ -2214,7 +2214,7 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 
 	ret = tape_get_cart_volume_lock_status(vol->device, &volstat);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 11341E, ret);
+		ltfsmsg(LTFS_ERR, 11342E, ret);
 		return ret;
 	}
 
@@ -2273,7 +2273,7 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		if (IS_WRITE_PERM(-ret)) {
 			ret = tape_get_cart_volume_lock_status(vol->device, &volstat);
 			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, 11341E, ret);
+				ltfsmsg(LTFS_ERR, 11342E, ret);
 				return ret;
 			}
 
