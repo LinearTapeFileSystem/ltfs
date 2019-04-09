@@ -26,7 +26,7 @@ The table below show status of the LTFS format Specification
   | 2.2     | Published the Technical Position | Published       |
   | 2.3.1   | Published the Technical Position | -               |
   | 2.4     | Published the Technical Position | On going        |
-  | 2.5     | Under public review              | Not started yes | 
+  | 2.5     | Under public review              | Not started yet | 
 
 ## Getting Started
 
