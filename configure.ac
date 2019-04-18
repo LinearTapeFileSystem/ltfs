@@ -97,6 +97,17 @@ AC_ARG_ENABLE([message-checker],
 AC_MSG_RESULT([$use_msg_check])
 
 dnl
+dnl Check for warning treatment
+dnl
+AC_MSG_CHECKING([enable warnings as errors])
+AC_ARG_ENABLE([warning-as-error],
+    [AS_HELP_STRING([--enable-warning-as-error],[Treates warnings as errors])],
+    [warning_as_error=$enableval],
+    [warning_as_error=no]
+)
+AC_MSG_RESULT([$warning_as_error])
+
+dnl
 dnl Handle --enable-fast (default:no)
 dnl
 AC_MSG_CHECKING([whether to enable optimizations])
@@ -441,6 +452,11 @@ fi
 if test "x$use_msg_check" = "xyes"
 then
     AM_CPPFLAGS="${AM_CPPFLAGS} -DMSG_CHECK"
+fi
+
+if test "x$warning_as_error" = "xyes"
+then
+    AM_CFLAGS="${AM_CFLAGS} -Werror"
 fi
 
 if test "x$use_new_locking" = "xyes"
