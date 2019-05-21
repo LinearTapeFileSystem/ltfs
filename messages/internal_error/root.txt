@@ -305,6 +305,7 @@ root:table {
 		D0400E:string{ "All H/W errors." }
 		D0401E:string{ "Logical Block Guard Check Failed." }
 		D0402E:string{ "Logical Block Protection read error." }
+		D0403E:string{ "There is no connection to the device." }
 		D0499E:string{ "Maximum hardware error value." }
 		D0500E:string{ "All illegal request errors." }
 		D0501E:string{ "Invalid field in CDB." }

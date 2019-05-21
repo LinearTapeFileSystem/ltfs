@@ -622,7 +622,7 @@ static int _reconnect_device(void *device)
 	/* Open another device file found in the previous step */
 	if (!priv->devname) {
 		ltfsmsg(LTFS_INFO, 30247I, priv->drive_serial);
-		return -LTFS_NO_DEVICE;
+		return -EDEV_NO_CONNECTION;
 	}
 
 	ltfsmsg(LTFS_INFO, 30249I, priv->drive_serial, priv->devname);
@@ -676,6 +676,9 @@ static int _process_errors(struct sg_ibmtape_data *priv, int ret, char *msg, cha
 {
 	int ret_fo = 0; /* Error code while reconnecting process */
 	bool unforced_dump;
+
+	if (ret == -EDEV_NO_CONNECTION)
+		return ret;
 
 	if (print) {
 		if (msg != NULL) {

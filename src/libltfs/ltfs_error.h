@@ -331,6 +331,7 @@
 #define EDEV_HARDWARE_ERROR          20400  /* 04/xxxx Other H/W errors */
 #define EDEV_LBP_WRITE_ERROR         20401  /* 04/1001 Logical Block Guard Check Failed */
 #define EDEV_LBP_READ_ERROR          20402  /* ------- Logical Block Protection read error */
+#define EDEV_NO_CONNECTION           20403  /* There is no connection to the device */
 #define EDEV_HARDWARE_MAX            20499  /* Maximum hardware error value */
 
 #define IS_HARDWARE_ERROR(e)         ((e>=EDEV_HARDWARE_MIN)&&(e<=EDEV_HARDWARE_MAX))
