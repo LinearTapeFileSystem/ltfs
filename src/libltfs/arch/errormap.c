@@ -341,6 +341,7 @@ static struct error_map fuse_error_list[] = {
 	{ EDEV_HARDWARE_ERROR,           "D0400E", EIO},
 	{ EDEV_LBP_WRITE_ERROR,          "D0401E", EIO},
 	{ EDEV_LBP_READ_ERROR,           "D0402E", EIO},
+	{ EDEV_NO_CONNECTION,            "D0403E", EIO},
 	{ EDEV_ILLEGAL_REQUEST,          "D0500E", EILSEQ},
 	{ EDEV_INVALID_FIELD_CDB,        "D0501E", EILSEQ},
 	{ EDEV_DEST_FULL,                "D0502E", EIO},

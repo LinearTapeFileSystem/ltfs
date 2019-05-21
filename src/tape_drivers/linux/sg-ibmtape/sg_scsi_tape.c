@@ -192,6 +192,9 @@ int sg_issue_cdb_command(struct sg_tape *device, sg_io_hdr_t *req, char **msg)
 	CHECK_ARG_NULL(req, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(msg, -LTFS_NULL_ARG);
 
+	if (device->fd < 0)
+		return -EDEV_NO_CONNECTION;
+
 start:
 	ret = ioctl(device->fd, SG_IO, req);
 	if (ret < 0) {
