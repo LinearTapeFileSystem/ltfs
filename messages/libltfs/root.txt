@@ -623,7 +623,7 @@ v
 		17071I:string { "Unpartitioning the medium." }
 		17072E:string { "Cannot unformat: failed to unpartition the medium (%d)." }
 		17073I:string { "Tape Device list:." }
-		17074I:string { "Device Name = %s, Vender ID = %s, Product ID = %s, Serial Number = %s, Product Name =%s." }
+		17074I:string { "Device Name = %s, Vendor ID = %s, Product ID = %s, Serial Number = %s, Product Name =%s." }
 		17075E:string { "Traverse(%c): cannot read index from %d (%c)." }
 		17076E:string { "Traverse(%c): cannot locate to the next index position (%c)." }
 		17077I:string { "Traverse(%c): find target generation %d (%c)." }
