@@ -33,6 +33,7 @@ ltfs.conf: ltfs.conf.in
 	rm ltfs.conf.tmp
 
 install-data-local:
+	mkdir -p "$(DESTDIR)$(sysconfdir)"
 	if [ ! -f "$(DESTDIR)$(sysconfdir)/ltfs.conf.local" ]; then \
 		cp ltfs.conf.local "$(DESTDIR)$(sysconfdir)/ltfs.conf.local"; \
 	fi
