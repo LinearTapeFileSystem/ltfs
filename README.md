@@ -3,10 +3,6 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs/badge)](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs)
 [![BSD License](http://img.shields.io/badge/license-BSD-blue.svg?style=flat)](LICENSE)
 
-# LTFS Format Specification 2.5 is now under public review !!
-
-SNIA announced LTFS Format Specification 2.5 is now under public review in Mar 2019. You can check the new version [here]( https://www.snia.org/sites/default/files/technical_work/PublicReview/LTFS_Format_2%205%200_draft_rev_%201_190220.pdf). And also you can make any feedback from the SNIA site (http://snia.org/tech_activities/publicreview/#ltfs).
-
 # Linear Tape File System (LTFS)
 
 Linear Tape File System (LTFS) is a filesystem to mount a LTFS formatted tape in a tape drive. Once LTFS mounts a LTFS formatted tape as filesystem, user can access to the tape via filesystem API.
@@ -23,10 +19,10 @@ The table below show status of the LTFS format Specification
 
   | Version | Status of SNIA                   | Status of ISO   |
   |:-:      |:-:                               |:-:              |
-  | 2.2     | Published the Technical Position | Published       |
-  | 2.3.1   | Published the Technical Position | -               |
-  | 2.4     | Published the Technical Position | On going        |
-  | 2.5     | Under public review              | Not started yet | 
+  | 2.2     | [Published the Technical Position](http://snia.org/sites/default/files/LTFS_Format_2.2.0_Technical_Position.pdf) | Published       |
+  | 2.3.1   | [Published the Technical Position](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.3.1_TechPosition.pdf) | -               |
+  | 2.4     | [Published the Technical Position](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.4.0_TechPosition.pdf) | On going        |
+  | 2.5     | [Published the Technical Position](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_v2.5_Technical_Position.pdf) | Not started yet | 
 
 ## Getting Started
 
