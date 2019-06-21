@@ -35,6 +35,8 @@
 
 bin_PROGRAMS = mkltfs ltfsck
 
+nobase_bin_SCRIPTS = ltfsoacp
+
 noinst_HEADERS =
 
 mkltfs_SOURCES = mkltfs.c
