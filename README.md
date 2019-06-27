@@ -24,7 +24,13 @@ The table below show status of the LTFS format Specification
   | 2.4     | [Published the Technical Position](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.4.0_TechPosition.pdf) | On going        |
   | 2.5     | [Published the Technical Position](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_v2.5_Technical_Position.pdf) | Not started yet | 
 
-## Getting Started
+## How to use the LTFS (Quick start)
+
+This section is for person who already have a machine the LTFS is installed.
+
+Instruction how to use the LTFS is on [Wiki](https://github.com/LinearTapeFileSystem/ltfs/wiki). Please take a look!
+
+## Getting Started from GitHub project
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
@@ -222,10 +228,6 @@ make install
   | Version | Arch    | Status      | 
   |:-:      |:-:      |:-:          | 
   | 8.0     | i386    | OK          |
-
-## How to use the LTFS
-
-Goto [Wiki](https://github.com/LinearTapeFileSystem/ltfs/wiki) and enjoy the LTFS.
 
 ## Contributing
 
