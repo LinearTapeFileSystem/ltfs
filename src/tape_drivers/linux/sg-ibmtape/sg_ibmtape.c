@@ -1445,8 +1445,12 @@ static int _cdb_read(void *device, char *buf, size_t size, bool sili)
 				length = ret;
 		}
 	} else {
-		/* check condition is not set so we have a good read and can trust the length value */
-		length = req.dxfer_len;
+		if (sili) {
+			length = size - req.resid;
+		} else {
+			/* check condition is not set so we have a good read and can trust the length value */
+			length = size;
+		}
 	}
 
 	return length;
