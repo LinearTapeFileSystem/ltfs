@@ -2863,6 +2863,8 @@ int sg_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_PC_
 		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
 		if (ret_ep < 0)
 			ret = ret_ep;
+	} else {
+		ret = size - req.resid;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_MODESENSE));
@@ -2896,6 +2898,7 @@ int sg_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size)
 
 	/* Build CDB */
 	cdb[0] = MODE_SELECT10;
+	cdb[1] = 0x10; /* Set PF bit */
 	ltfs_u16tobe(cdb + 7, size);
 
 	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);

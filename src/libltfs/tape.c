@@ -425,7 +425,7 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 
 	/* Get programmable early warning size */
 	ret = tape_get_pews(dev, &pews);
-	if (ret < 0) {
+	if (ret < 0 && ret != -LTFS_UNSUPPORTED) {
 		ltfsmsg(LTFS_ERR, 17105E, ret);
 		return ret;
 	}
@@ -1435,7 +1435,7 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 	/* Issue Mode Sense (MP x11) */
 	memset(mp_medium_partition, 0, TC_MP_MEDIUM_PARTITION_SIZE+4);
 	ret = dev->backend->modesense(dev->backend_data, TC_MP_MEDIUM_PARTITION, TC_MP_PC_CURRENT, 0x00,
-		mp_medium_partition, TC_MP_MEDIUM_PARTITION_SIZE);
+								  mp_medium_partition, TC_MP_MEDIUM_PARTITION_SIZE);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 12051E, ret);
 		return ret;
@@ -1458,7 +1458,7 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 	mp_medium_partition[1]  = 0x00;
 	mp_medium_partition[19] = 0x01;
 	mp_medium_partition[20] = 0x20 | (mp_medium_partition[20] & 0x1F); /* Set FDP=0, SDP=0, IDP=1 ==> User Setting */
-	mp_medium_partition[22] = 0x00;
+	mp_medium_partition[22] = 0x09; /* Set partition unit as gigabytes (10^9) */
 	if (index_part == 1) {
 		mp_medium_partition[24] = 0xFF; /* Set Partition0 Capacity */
 		mp_medium_partition[25] = 0xFF;
@@ -2317,10 +2317,15 @@ int tape_set_pews(struct device_data *dev, bool set_value)
 	/* Issue Mode Sense (MP x10.01) */
 	memset(mp_dev_config_ext, 0, TC_MP_DEV_CONFIG_EXT_SIZE);
 	ret = dev->backend->modesense(dev->backend_data, TC_MP_DEV_CONFIG_EXT, TC_MP_PC_CURRENT, 0x01,
-		mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
+								  mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17102E, ret);
 		return ret;
+	}
+
+	if (ret && ret != TC_MP_DEV_CONFIG_EXT_SIZE) {
+		/* MP x10.01 has unexpected length. Cannot set PEW but return good */
+		return 0;
 	}
 
 	/* Set appropriate values to the page and Issue Mode Select */
@@ -2330,15 +2335,10 @@ int tape_set_pews(struct device_data *dev, bool set_value)
 	mp_dev_config_ext[22]  = (uint8_t)(pews >> 8 & 0xFF);
 	mp_dev_config_ext[23]  = (uint8_t)(pews      & 0xFF);
 
-	ret = dev->backend->modeselect(
-		dev->backend_data,
-		mp_dev_config_ext,
-		TC_MP_DEV_CONFIG_EXT_SIZE
-		);
-
+	ret = dev->backend->modeselect(dev->backend_data, mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
 	if (ret < 0)
 		ltfsmsg(LTFS_ERR, 17103E, ret);
-	return ret;
+	return 0;
 }
 
 /**
@@ -2360,13 +2360,22 @@ int tape_get_pews(struct device_data *dev, uint16_t *pews)
 	/* Issue Mode Sense (MP x10.01) */
 	memset(mp_dev_config_ext, 0, TC_MP_DEV_CONFIG_EXT_SIZE);
 	ret = dev->backend->modesense(dev->backend_data, TC_MP_DEV_CONFIG_EXT, TC_MP_PC_CURRENT, 0x01,
-		mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
+								  mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17104E, ret);
 		return ret;
 	}
 
+	if (ret && ret != TC_MP_DEV_CONFIG_EXT_SIZE) {
+		/*
+		 * Return error when modesense returns length
+		 * and it's not matched to the requested length
+		 */
+		return -LTFS_UNSUPPORTED;
+	}
+
 	*pews = mp_dev_config_ext[22] << 8 | mp_dev_config_ext[23];
+
 	return 0;
 }
 
@@ -2397,10 +2406,15 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable)
 	/* Issue Mode Sense (MP x10.01) */
 	memset(mp_dev_config_ext, 0, TC_MP_DEV_CONFIG_EXT_SIZE);
 	ret = dev->backend->modesense(dev->backend_data, TC_MP_DEV_CONFIG_EXT, TC_MP_PC_CURRENT, 0x01,
-		mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
+								  mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17154E, ret);
 		return ret;
+	}
+
+	if (ret && ret != TC_MP_DEV_CONFIG_EXT_SIZE) {
+		/* MP x10.01 has unexpected length. Cannot set append only mode */
+		return 0;
 	}
 
 	/* If cartridge is loaded and append-only mode is to be disabled,
@@ -2431,10 +2445,7 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable)
 	mp_dev_config_ext[21] &= 0x0F;
 	mp_dev_config_ext[21] |= enable ? 0x10 : 0x00;
 
-	ret = dev->backend->modeselect(
-		dev->backend_data,
-		mp_dev_config_ext,
-		TC_MP_DEV_CONFIG_EXT_SIZE);
+	ret = dev->backend->modeselect(dev->backend_data, mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17155E, ret);
 		return ret;
@@ -2472,13 +2483,19 @@ int tape_get_append_only_mode_setting(struct device_data *dev, bool *enabled)
 	/* Issue Mode Sense (MP x10.01) */
 	memset(mp_dev_config_ext, 0, TC_MP_DEV_CONFIG_EXT_SIZE);
 	ret = dev->backend->modesense(dev->backend_data, TC_MP_DEV_CONFIG_EXT, TC_MP_PC_CURRENT, 0x01,
-		mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
+								  mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17156E, ret);
 		return ret;
 	}
 
-	*enabled = (mp_dev_config_ext[21] >> 4) & 0x0F ? true : false;
+	if (ret && ret != TC_MP_DEV_CONFIG_EXT_SIZE) {
+		/* MP x10.01 has unexpected length. append only mode is not supported */
+		*enabled = false;
+	} else {
+		*enabled = (mp_dev_config_ext[21] >> 4) & 0x0F ? true : false;
+	}
+
 	dev->append_only_mode = *enabled;
 	return 0;
 }
@@ -2668,97 +2685,100 @@ int tape_takedump_drive(struct device_data *dev, bool nonforced_dump)
 	return dev->backend->takedump_drive(dev->backend_data, nonforced_dump);
 }
 
-const char *tape_get_media_encrypted(struct device_data *dev)
+#define CRYPTO_STATUS         (24)
+#define MEDIUM_SUPPORT_CRYPTO (0x01)
+
+char* tape_get_media_encrypted(struct device_data *dev)
 {
 	unsigned char buf[TC_MP_READ_WRITE_CTRL_SIZE] = {0};
-	const int rc = dev->backend->modesense(dev->backend_data, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0,
-		buf, sizeof(buf));
+	int ret = -EDEV_UNKNOWN;
+	char *encrypted = NULL;
 
-	const char *encrypted = NULL;
-
-	if (rc != 0)
+	ret = dev->backend->modesense(dev->backend_data, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT,
+								  0, buf, sizeof(buf));
+	if (ret < 0)
 		encrypted = "unknown";
-	else {
-		static const int encryption_status_1 = 24;
-		static const int medium_supports_encrypted_data = 0x01;
-
-		encrypted = (buf[16 + encryption_status_1] & medium_supports_encrypted_data) == 0 ? "false" : "true";
-	}
+	else
+		encrypted = (buf[16 + CRYPTO_STATUS] & MEDIUM_SUPPORT_CRYPTO) == 0 ? "false" : "true";
 
 	return encrypted;
 }
 
-const char *tape_get_drive_encryption_state(struct device_data *dev)
+#define CRYPTO_CONTROL        (20)
+#define CRYPTO_STATE_MASK     (0x03)
+
+char *tape_get_drive_encryption_state(struct device_data *dev)
 {
 	unsigned char buf[TC_MP_READ_WRITE_CTRL_SIZE] = {0};
-	const int rc = dev->backend->modesense(dev->backend_data, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0,
-		buf, sizeof(buf));
+	int ret = -EDEV_UNKNOWN;
+	char *state = NULL;
 
-	const char *state = NULL;
-
-	if (rc != 0)
+	ret = dev->backend->modesense(dev->backend_data, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT,
+								  0, buf, sizeof(buf));
+	if (ret < 0)
 		state = "unknown";
 	else {
 		static const int encryption_control_1 = 20;
 		static const int encryption_state = 0x03;
 
-		switch ((buf[16 + encryption_control_1] & encryption_state)) {
-		case 0x00:
-			state = "off";
-			break;
-		case 0x01:
-			state = "on";
-			break;
-		case 0x02:
-			state = "unknown";
-			break;
-		case 0x03:
-			state = "on";
-			break;
+		switch ((buf[16 + CRYPTO_CONTROL] & CRYPTO_STATE_MASK)) {
+			case 0x00:
+				state = "off";
+				break;
+			case 0x01:
+				state = "on";
+				break;
+			case 0x02:
+				state = "unknown";
+				break;
+			case 0x03:
+				state = "on";
+				break;
 		}
 	}
 
 	return state;
 }
 
-const char *tape_get_drive_encryption_method(struct device_data *dev)
+char *tape_get_drive_encryption_method(struct device_data *dev)
 {
 	unsigned char buf[TC_MP_READ_WRITE_CTRL_SIZE] = {0};
-	const int rc = dev->backend->modesense(dev->backend_data, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0,
-		buf, sizeof(buf));
+	int ret = -EDEV_UNKNOWN;
+	unsigned char encryption_method = 0;
+	char *method = NULL;
 
-	const char *method = NULL;
-
-	if (rc != 0)
+	ret = dev->backend->modesense(dev->backend_data, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT,
+								  0, buf, sizeof(buf));
+	if (ret< 0)
 		method = "Unknown";
 	else {
-		const unsigned char encryption_method = buf[16 + 27];
+		encryption_method = buf[16 + 27];
 
 		switch (encryption_method) {
-		case 0x00:
-			method = "No Method";
+			case 0x00:
+				method = "No Method";
+				break;
+			case 0x10:
+				method = "System Managed";
 			break;
-		case 0x10:
-			method = "System Managed";
-			break;
-		case 0x1F:
-			method = "Controller Managed";
-			break;
-		case 0x50:
-			method = "Application Managed";
-			break;
-		case 0x60:
-			method = "Library Managed";
-			break;
-		case 0x70:
-			method = "Internal";
-			break;
-		case 0xFF:
-			method = "Custom";
-			break;
-		default:
-			method = "Unknown";
-			break;
+			case 0x1F:
+				method = "Controller Managed";
+				break;
+			case 0x50:
+				method = "Application Managed";
+				break;
+			case 0x60:
+				method = "Library Managed";
+				break;
+			case 0x70:
+				method = "Internal";
+				break;
+			case 0xFF:
+				method = "Custom";
+				break;
+			default:
+				method = "Unknown";
+				break;
 		}
 	}
 

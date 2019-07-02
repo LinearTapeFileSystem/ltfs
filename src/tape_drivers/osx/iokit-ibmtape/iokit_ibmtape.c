@@ -2141,7 +2141,7 @@ int iokit_ibmtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_na
 
 	/* Check Cartridge type */
 	aux_ret = iokit_ibmtape_modesense(device, TC_MP_SUPPORTEDPAGE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
-	if (!aux_ret) {
+	if (aux_ret >= 0) {
 		priv->cart_type = buf[2];
 		priv->density_code = buf[8];
 	}
@@ -2372,6 +2372,8 @@ int iokit_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_
 	ret = iokit_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
 		_process_errors(device, ret, msg, cmd_desc, true);
+	} else {
+		ret = req.actual_xfered;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_MODESENSE));
@@ -2399,6 +2401,7 @@ int iokit_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size
 
 	/* Build CDB */
 	cdb[0] = MODE_SELECT10;
+	cdb[1] = 0x10; /* Set PF bit */
 	ltfs_u16tobe(cdb + 7, size);
 
 	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
