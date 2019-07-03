@@ -207,9 +207,9 @@ int tape_set_key(struct device_data *dev, const unsigned char *keyalias, const u
 int tape_clear_key(struct device_data *device, void * const kmi_handle);
 int tape_get_keyalias(struct device_data *dev, unsigned char **keyalias);
 int tape_takedump_drive(struct device_data *dev, bool nonforced_dump);
-const char *tape_get_media_encrypted(struct device_data *dev);
-const char *tape_get_drive_encryption_state(struct device_data *dev);
-const char *tape_get_drive_encryption_method(struct device_data *dev);
+char* tape_get_media_encrypted(struct device_data *dev);
+char* tape_get_drive_encryption_state(struct device_data *dev);
+char* tape_get_drive_encryption_method(struct device_data *dev);
 int tape_get_worm_status(struct device_data *dev, bool *is_worm);
 
 void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr);

@@ -604,8 +604,8 @@ struct tape_ops {
 	 * @param subpage Subpage of the specified mode page.
 	 * @param buf On success, the backend must fill this buffer with the mode page's value.
 	 * @param size Buffer size.
-	 * @return 0 on success or a negative value on error. Backends for which Mode Sense is
-	 *         meaningless should zero out the buffer and return 0.
+	 * @return positive value or 0 on success or a negative value on error. Backend can return 0
+	 *         on success or positive value on success as transfered length.
 	 */
 	int   (*modesense)(void *device, const uint8_t page, const TC_MP_PC_TYPE pc, const uint8_t subpage, unsigned char *buf, const size_t size);
 
