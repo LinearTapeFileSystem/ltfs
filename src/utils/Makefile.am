@@ -35,7 +35,7 @@
 
 bin_PROGRAMS = mkltfs ltfsck
 
-nobase_bin_SCRIPTS = ltfsoacp
+nobase_bin_SCRIPTS = ltfs_ordered_copy
 
 noinst_HEADERS =
 
