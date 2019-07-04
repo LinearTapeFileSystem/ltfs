@@ -53,26 +53,45 @@ class CopyItem:
         self.vuuid   = ''
         self.part    = ''
         self.start   = -1
+        self.size    = 0
 
     def eval(self):
         try:
             self.vuuid = xattr.get(self.src, self.vea_pre + 'ltfs.volumeUUID')
+        except Exception as e:
+            self.vuuid = ''
+            return (self.vuuid, self.part, self.start)
+
+        try:
             self.part  = xattr.get(self.src, self.vea_pre + 'ltfs.partition')
             start_str  = xattr.get(self.src, self.vea_pre + 'ltfs.startblock')
             self.start = int(start_str)
+            self.size  = os.path.getsize(self.src)
         except Exception as e:
-            self.vuuid = ''
+            sys.stderr.write("Failed to get attribute of {0}: {1}\n".format(self.src, str(str(e))))
 
         return (self.vuuid, self.part, self.start)
 
     def run(self):
-        if self.cp_attr:
-            shutil.copy2(self.src, self.dst)
-        else:
-            shutil.copy(self.src, self.dst)
+        try:
+            # TODO: Need to support verbosity
+            #if len(self.vuuid):
+            #    sys.stderr.write("Copying {0} ({1})\n".format(self.src, str(self.start)))
+            #else:
+            #    sys.stderr.write("Copying {0}\n".format(self.src))
+
+            if self.cp_attr:
+                shutil.copy2(self.src, self.dst)
+            else:
+                shutil.copy(self.src, self.dst)
+        except Exception as e:
+            sys.stderr.write("Failed to copy {0} to {1}: ${2}\n".format(self.src, self.dst, str(str(e))))
+            return
 
     def __repr__(self):
         return self.src + ":" + self.dst + ":" + self.vuuid + ":" + self.part + str(self.start)
+
+HalfMegaByte = 512 * 1024
 
 def add_copy_item(c, cpls, direct):
     (u, p, s) = c.eval()
@@ -85,7 +104,7 @@ def add_copy_item(c, cpls, direct):
         if u in cpls.keys():
             cpl = cpls[u]
             if not p in cpl.keys():
-                cpls[u][p] = cplp
+                cpls[u][p] = {}
             cplp = cpl[p]
         else:
             cpls[u] = {}
@@ -93,7 +112,14 @@ def add_copy_item(c, cpls, direct):
             cpl[p] = {}
             cplp = cpl[p]
 
-        cplp[s] = c
+        if s in cplp.keys():
+            tail = cplp[s][-1]
+            if tail.size >= HalfMegaByte:
+                cplp[s].append(c)
+            else:
+                cplp[s].insert(-1, c)
+        else:
+            cplp[s] = [c]
 
 def walk_dir(source, dest, direct, cpls, ds, cp_attr):
     (source_root, t) = os.path.split(source)
@@ -146,10 +172,10 @@ else:
     exit(1)
 
 # Start program here
-parser = argparse.ArgumentParser(description = 'Copy files from source to destination with LTFS optimization')
+parser = argparse.ArgumentParser(description = 'Copy files from source to destination with LTFS order optimization')
 parser.add_argument('SOURCE', help='source files', nargs='*')
 parser.add_argument('DEST', help='destination', nargs='?')
-parser.add_argument('-p', help='preserve attibutes', action='store_true')
+parser.add_argument('-p', help='preserve attributes with shutil.copy2()', action='store_true')
 parser.add_argument('-r', '--recursive', help='copy directories recursively', action='store_true')
 parser.add_argument('-t', '--target-directory', help='copy all SOURCE arguments into TARGET_DIRECTORY')
 #parser.add_argument('-z', '--zero', help='handle NULL delimited source list (assume input \'find -print0\')', action='store_true')
@@ -269,7 +295,9 @@ for cpl_key in cpls_list:
         cps = sorted(cplp.keys())
 
         sys.stderr.write("Copying files on {0} ({1})\n".format(cpl_key, cplp_key))
-        for cp in cps:
-            cplp[cp].run()
+        for s in cps:
+            cpsl = cplp[s]
+            for cp in cpsl:
+                cp.run()
 
 exit(0)
