@@ -4,6 +4,7 @@ man-clean:
 	rm $(man_MANS)
 
 man-rebuild:
-	docbook2man sgml/mkltfs.8
-	docbook2man sgml/ltfsck.8
-	docbook2man sgml/ltfs-sde.8
+	docbook2man sgml/mkltfs.sgml
+	docbook2man sgml/ltfsck.sgml
+	docbook2man sgml/ltfs-sde.sgml
+	rm -f manpage.*
