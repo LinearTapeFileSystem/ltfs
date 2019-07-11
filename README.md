@@ -193,9 +193,10 @@ make install
 
 #### Buildable systems
 
-  | OS          | Xcode | Package system | Status      | 
-  |:-:          |:-:    |:-:             |:-:          |
-  | macOS 10.13 | 9.4.1 | Homebrew       | OK          |
+  | OS            | Xcode  | Package system | Status      | 
+  |:-:            |:-:     |:-:             |:-:          |
+  | macOS 10.13   |  9.4.1 | Homebrew       | OK          |
+  | macOS 10.14.5 | 10.2.1 | Homebrew       | OK          |
 
 ### Build and install on FreeBSD
 
