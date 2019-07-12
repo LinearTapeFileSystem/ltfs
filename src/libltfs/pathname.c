@@ -277,9 +277,6 @@ int pathname_validate_target(const char *name)
 	namelen = pathname_strlen(name);
 	if (namelen < 0)
 		return namelen;
-	if (namelen > LTFS_FILENAME_MAX) {
-		return -LTFS_NAMETOOLONG;
-	}
 	ret = _pathname_validate(name, true);
 	return ret;
 }
