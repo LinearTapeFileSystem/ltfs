@@ -2718,9 +2718,6 @@ char *tape_get_drive_encryption_state(struct device_data *dev)
 	if (ret < 0)
 		state = "unknown";
 	else {
-		static const int encryption_control_1 = 20;
-		static const int encryption_state = 0x03;
-
 		switch ((buf[16 + CRYPTO_CONTROL] & CRYPTO_STATE_MASK)) {
 			case 0x00:
 				state = "off";
