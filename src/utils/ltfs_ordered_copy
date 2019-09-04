@@ -81,7 +81,14 @@ class CopyItem:
             #    sys.stderr.write("Copying {0}\n".format(self.src))
 
             if self.cp_attr:
+		src_attributes = {}
+		for key in xattr.list(self.src):
+			src_attributes[key] = xattr.get(self.src, key)
                 shutil.copy2(self.src, self.dst)
+		print(src_attributes)
+		(_, filename) = os.path.split(self.src)
+		for key in src_attributes:
+			xattr.set(os.path.join(self.dst, filename), key, src_attributes[key])
             else:
                 shutil.copy(self.src, self.dst)
         except Exception as e:
@@ -180,8 +187,13 @@ parser.add_argument('-r', '--recursive', help='copy directories recursively', ac
 parser.add_argument('-t', '--target-directory', help='copy all SOURCE arguments into TARGET_DIRECTORY')
 #parser.add_argument('-z', '--zero', help='handle NULL delimited source list (assume input \'find -print0\')', action='store_true')
 parser.add_argument('--keep-tree', help='Keep tree structure like recursive copy. Effective only stdin source')
+parser.add_argument('-a','-all', help='achieve files recursively and preserve attributes', action='store_true')
 
 args=parser.parse_args()
+
+if args.a:
+	args.p = True
+	args.recursive = True
 
 if args.target_directory:
     if args.DEST != None:
