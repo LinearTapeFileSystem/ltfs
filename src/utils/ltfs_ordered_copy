@@ -45,7 +45,7 @@ from collections import deque
 
 class CopyItem:
     """"""
-    def __init__(self, src, dst, vea_pre, cp_attr):
+    def __init__(self, src, dst, vea_pre, cp_attr): #initialization
         self.src     = src
         self.dst     = dst
         self.vea_pre = vea_pre
@@ -55,7 +55,7 @@ class CopyItem:
         self.start   = -1
         self.size    = 0
 
-    def eval(self):
+    def eval(self): #access to the extended attributes present in some operating systems/filesystems by xattr
         try:
             self.vuuid = xattr.get(self.src, self.vea_pre + 'ltfs.volumeUUID')
         except Exception as e:
@@ -80,16 +80,16 @@ class CopyItem:
             #else:
             #    sys.stderr.write("Copying {0}\n".format(self.src))
 
-            if self.cp_attr:
+            if self.cp_attr: #Copy data and metadata
 		src_attributes = {}
 		for key in xattr.list(self.src):
 			src_attributes[key] = xattr.get(self.src, key)
                 shutil.copy2(self.src, self.dst)
-		print(src_attributes)
+		#print(src_attributes)
 		(_, filename) = os.path.split(self.src)
 		for key in src_attributes:
 			xattr.set(os.path.join(self.dst, filename), key, src_attributes[key])
-            else:
+            else: #Only copy data
                 shutil.copy(self.src, self.dst)
         except Exception as e:
             sys.stderr.write("Failed to copy {0} to {1}: ${2}\n".format(self.src, self.dst, str(str(e))))
@@ -108,7 +108,7 @@ def add_copy_item(c, cpls, direct):
     else:
         cpl = {}
         cplp = {}
-        if u in cpls.keys():
+        if u in cpls.keys(): 
             cpl = cpls[u]
             if not p in cpl.keys():
                 cpls[u][p] = {}
@@ -313,3 +313,19 @@ for cpl_key in cpls_list:
                 cp.run()
 
 exit(0)
+#{  Here is "cpls"
+#	tape X:{  Here is "cpl"
+#		partition X:{  Here is "cpsl"
+#			start X:  Here is "cplp"
+#				[threadX]
+#		}
+#		partition Y:{
+#			start Y:[threadD, threadZ]
+#		}
+#	}
+#	tape F:{
+#		partition H:{
+#			start K:[threadR, threadS]
+#		}
+#	}
+#}
