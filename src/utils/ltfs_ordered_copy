@@ -45,11 +45,12 @@ from collections import deque
 
 class CopyItem:
     """"""
-    def __init__(self, src, dst, vea_pre, cp_attr): #initialization
+    def __init__(self, src, dst, vea_pre, cp_attr, cp_xattr): #initialization
         self.src     = src
         self.dst     = dst
         self.vea_pre = vea_pre
         self.cp_attr = cp_attr
+	self.cp_xattr = cp_xattr
         self.vuuid   = ''
         self.part    = ''
         self.start   = -1
@@ -81,14 +82,16 @@ class CopyItem:
             #    sys.stderr.write("Copying {0}\n".format(self.src))
 
             if self.cp_attr: #Copy data and metadata
-		src_attributes = {}
-		for key in xattr.list(self.src):
-			src_attributes[key] = xattr.get(self.src, key)
-                shutil.copy2(self.src, self.dst)
-		#print(src_attributes)
-		(_, filename) = os.path.split(self.src)
-		for key in src_attributes:
-			xattr.set(os.path.join(self.dst, filename), key, src_attributes[key])
+		shutil.copy2(self.src, self.dst)
+		if self.cp_xattr:
+			src_attributes = {}
+			for key in xattr.list(self.src):
+				src_attributes[key] = xattr.get(self.src, key)
+			#shutil.copy2(self.src, self.dst)
+			#print(src_attributes)
+			(_, filename) = os.path.split(self.src)
+			for key in src_attributes:
+				xattr.set(os.path.join(self.dst, filename), key, src_attributes[key])
             else: #Only copy data
                 shutil.copy(self.src, self.dst)
         except Exception as e:
@@ -100,35 +103,35 @@ class CopyItem:
 
 HalfMegaByte = 512 * 1024
 
-def add_copy_item(c, cpls, direct):
+def add_copy_item(c, tape_num, direct):
     (u, p, s) = c.eval()
     if u == '':
         # Source is not on LTFS
         direct.append(c)
     else:
-        cpl = {}
-        cplp = {}
-        if u in cpls.keys(): 
-            cpl = cpls[u]
-            if not p in cpl.keys():
-                cpls[u][p] = {}
-            cplp = cpl[p]
+        partation = {}
+        start_block = {}
+        if u in tape_num.keys():
+            partation = tape_num[u]
+            if not p in partation.keys():
+                tape_num[u][p] = {}
+            start_block = partation[p]
         else:
-            cpls[u] = {}
-            cpl = cpls[u]
-            cpl[p] = {}
-            cplp = cpl[p]
+            tape_num[u] = {}
+            partation = tape_num[u]
+            partation[p] = {}
+            start_block = partation[p]
 
-        if s in cplp.keys():
-            tail = cplp[s][-1]
+        if s in start_block.keys():
+            tail = start_block[s][-1]
             if tail.size >= HalfMegaByte:
-                cplp[s].append(c)
+                start_block[s].append(c)
             else:
-                cplp[s].insert(-1, c)
+                start_block[s].insert(-1, c)
         else:
-            cplp[s] = [c]
+            start_block[s] = [c]
 
-def walk_dir(source, dest, direct, cpls, ds, cp_attr):
+def walk_dir(source, dest, direct, tape_num, ds, cp_attr, cp_xattr=False):
     (source_root, t) = os.path.split(source)
     prefix_len = len(source_root)
     dst = dest + "/" + t
@@ -143,8 +146,8 @@ def walk_dir(source, dest, direct, cpls, ds, cp_attr):
         for d in dirs:
             ds.append(os.path.join(dst, d))
         for f in files:
-            c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX, cp_attr)
-            add_copy_item(c, cpls, direct)
+            c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX, cp_attr, cp_xattr)
+            add_copy_item(c, tape_num, direct)
 
     for d in ds:
         try:
@@ -295,37 +298,22 @@ if len(direct):
         th.join()
 
 # Copy files on LTFS
-cpls_list = sorted(cpls.keys())
-for cpl_key in cpls_list:
-    cpl = cpls[cpl_key]
-    cpl_list = sorted(cpl.keys())
-    for cplp_key in cpl_list:
-        sys.stderr.write("Processing tape {0}, Partition {1}\n".format(cpl_key, cplp_key))
-        cplp = cpl[cplp_key]
+tape_list = sorted(tape.keys())                 #List: tape number list
+for partition_key in tape_list:
+    partition = tape[partition_key]
+    partation_list = sorted(partition.keys())   #List: partition number list
 
-        sys.stderr.write("Sorting {}\n".format(len(cplp.keys())))
-        cps = sorted(cplp.keys())
+    for start_block_key in partation_list:
+        sys.stderr.write("Processing tape {0}, Partition {1}\n".format(partition_key, start_block_key))
+        start_block = partition[start_block_key]
 
-        sys.stderr.write("Copying files on {0} ({1})\n".format(cpl_key, cplp_key))
-        for s in cps:
-            cpsl = cplp[s]
-            for cp in cpsl:
+        sys.stderr.write("Sorting {}\n".format(len(start_block.keys())))
+        start_block_list = sorted(start_block.keys())  #List: start block number list
+        sys.stderr.write("Copying files on {0} ({1})\n".format(partition_key, start_block_key))
+
+        for file_ind_key in start_block_list:          #List: if multi-file in one block, file position will be write in here
+            file_ind = start_block[file_ind_key]
+            for cp in file_ind:
                 cp.run()
 
 exit(0)
-#{  Here is "cpls"
-#	tape X:{  Here is "cpl"
-#		partition X:{  Here is "cpsl"
-#			start X:  Here is "cplp"
-#				[threadX]
-#		}
-#		partition Y:{
-#			start Y:[threadD, threadZ]
-#		}
-#	}
-#	tape F:{
-#		partition H:{
-#			start K:[threadR, threadS]
-#		}
-#	}
-#}
