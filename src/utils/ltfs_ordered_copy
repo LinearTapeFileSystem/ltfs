@@ -45,17 +45,18 @@ from collections import deque
 
 class CopyItem:
     """"""
-    def __init__(self, src, dst, vea_pre, cp_attr):
+    def __init__(self, src, dst, vea_pre, cp_attr, cp_xattr): #initialization
         self.src     = src
         self.dst     = dst
         self.vea_pre = vea_pre
         self.cp_attr = cp_attr
+	self.cp_xattr = cp_xattr
         self.vuuid   = ''
         self.part    = ''
         self.start   = -1
         self.size    = 0
 
-    def eval(self):
+    def eval(self): #access to the extended attributes present in some operating systems/filesystems by xattr
         try:
             self.vuuid = xattr.get(self.src, self.vea_pre + 'ltfs.volumeUUID')
         except Exception as e:
@@ -80,9 +81,18 @@ class CopyItem:
             #else:
             #    sys.stderr.write("Copying {0}\n".format(self.src))
 
-            if self.cp_attr:
-                shutil.copy2(self.src, self.dst)
-            else:
+            if self.cp_attr: #Copy data and metadata
+		shutil.copy2(self.src, self.dst)
+		if self.cp_xattr:
+			src_attributes = {}
+			for key in xattr.list(self.src):
+				src_attributes[key] = xattr.get(self.src, key)
+			#shutil.copy2(self.src, self.dst)
+			#print(src_attributes)
+			(_, filename) = os.path.split(self.src)
+			for key in src_attributes:
+				xattr.set(os.path.join(self.dst, filename), key, src_attributes[key])
+            else: #Only copy data
                 shutil.copy(self.src, self.dst)
         except Exception as e:
             sys.stderr.write("Failed to copy {0} to {1}: ${2}\n".format(self.src, self.dst, str(str(e))))
@@ -93,35 +103,35 @@ class CopyItem:
 
 HalfMegaByte = 512 * 1024
 
-def add_copy_item(c, cpls, direct):
+def add_copy_item(c, tape_num, direct):
     (u, p, s) = c.eval()
     if u == '':
         # Source is not on LTFS
         direct.append(c)
     else:
-        cpl = {}
-        cplp = {}
-        if u in cpls.keys():
-            cpl = cpls[u]
-            if not p in cpl.keys():
-                cpls[u][p] = {}
-            cplp = cpl[p]
+        partation = {}
+        start_block = {}
+        if u in tape_num.keys():
+            partation = tape_num[u]
+            if not p in partation.keys():
+                tape_num[u][p] = {}
+            start_block = partation[p]
         else:
-            cpls[u] = {}
-            cpl = cpls[u]
-            cpl[p] = {}
-            cplp = cpl[p]
+            tape_num[u] = {}
+            partation = tape_num[u]
+            partation[p] = {}
+            start_block = partation[p]
 
-        if s in cplp.keys():
-            tail = cplp[s][-1]
+        if s in start_block.keys():
+            tail = start_block[s][-1]
             if tail.size >= HalfMegaByte:
-                cplp[s].append(c)
+                start_block[s].append(c)
             else:
-                cplp[s].insert(-1, c)
+                start_block[s].insert(-1, c)
         else:
-            cplp[s] = [c]
+            start_block[s] = [c]
 
-def walk_dir(source, dest, direct, cpls, ds, cp_attr):
+def walk_dir(source, dest, direct, tape_num, ds, cp_attr, cp_xattr=False):
     (source_root, t) = os.path.split(source)
     prefix_len = len(source_root)
     dst = dest + "/" + t
@@ -136,8 +146,8 @@ def walk_dir(source, dest, direct, cpls, ds, cp_attr):
         for d in dirs:
             ds.append(os.path.join(dst, d))
         for f in files:
-            c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX, cp_attr)
-            add_copy_item(c, cpls, direct)
+            c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX, cp_attr, cp_xattr)
+            add_copy_item(c, tape_num, direct)
 
     for d in ds:
         try:
@@ -180,8 +190,13 @@ parser.add_argument('-r', '--recursive', help='copy directories recursively', ac
 parser.add_argument('-t', '--target-directory', help='copy all SOURCE arguments into TARGET_DIRECTORY')
 #parser.add_argument('-z', '--zero', help='handle NULL delimited source list (assume input \'find -print0\')', action='store_true')
 parser.add_argument('--keep-tree', help='Keep tree structure like recursive copy. Effective only stdin source')
+parser.add_argument('-a','-all', help='achieve files recursively and preserve attributes', action='store_true')
 
 args=parser.parse_args()
+
+if args.a:
+	args.p = True
+	args.recursive = True
 
 if args.target_directory:
     if args.DEST != None:
@@ -252,7 +267,7 @@ for s in args.SOURCE:
             (new_d, t) = os.path.split(dst)
             if not os.path.exists(new_d):
                 os.makedirs(new_d)
-        c = CopyItem(s, dst, VEA_PREFIX, args.p)
+        c = CopyItem(s, dst, VEA_PREFIX, args.p, args.a)
         add_copy_item(c, cpls, direct)
     else:
         if args.recursive:
@@ -263,7 +278,7 @@ for s in args.SOURCE:
                 if not os.path.exists(new_d):
                    os.makedirs(new_d)
                 dst = new_d
-            walk_dir(s, dst, direct, cpls, dirs, args.p)
+            walk_dir(s, dst, direct, cpls, dirs, args.p, args.a)
         else:
             sys.stderr.write("omitting directory '{0}'\n".format(s))
 
@@ -283,21 +298,22 @@ if len(direct):
         th.join()
 
 # Copy files on LTFS
-cpls_list = sorted(cpls.keys())
-for cpl_key in cpls_list:
-    cpl = cpls[cpl_key]
-    cpl_list = sorted(cpl.keys())
-    for cplp_key in cpl_list:
-        sys.stderr.write("Processing tape {0}, Partition {1}\n".format(cpl_key, cplp_key))
-        cplp = cpl[cplp_key]
+tape_list = sorted(cpls.keys())                 #List: tape number dict
+for partition_key in tape_list:
+    partition = cpls[partition_key]
+    partation_list = sorted(partition.keys())   #List: partition number dict
 
-        sys.stderr.write("Sorting {}\n".format(len(cplp.keys())))
-        cps = sorted(cplp.keys())
+    for start_block_key in partation_list:
+        sys.stderr.write("Processing tape {0}, Partition {1}\n".format(partition_key, start_block_key))
+        start_block = partition[start_block_key]
 
-        sys.stderr.write("Copying files on {0} ({1})\n".format(cpl_key, cplp_key))
-        for s in cps:
-            cpsl = cplp[s]
-            for cp in cpsl:
+        sys.stderr.write("Sorting {}\n".format(len(start_block.keys())))
+        start_block_list = sorted(start_block.keys())  #List: start block number dict
+        sys.stderr.write("Copying files on {0} ({1})\n".format(partition_key, start_block_key))
+
+        for file_ind_key in start_block_list:          #List: if multi-file in one block, file position will be write in here
+            file_ind = start_block[file_ind_key]
+            for cp in file_ind:
                 cp.run()
 
 exit(0)
