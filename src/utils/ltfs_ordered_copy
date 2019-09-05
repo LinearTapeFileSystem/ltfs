@@ -298,20 +298,20 @@ if len(direct):
         th.join()
 
 # Copy files on LTFS
-tape_dict = sorted(cpls.keys())                 #List: tape number dict
-for partition_key in tape_dict:
+tape_list = sorted(cpls.keys())                 #List: tape number dict
+for partition_key in tape_list:
     partition = cpls[partition_key]
-    partation_dict = sorted(partition.keys())   #List: partition number dict
+    partation_list = sorted(partition.keys())   #List: partition number dict
 
-    for start_block_key in partation_dict:
+    for start_block_key in partation_list:
         sys.stderr.write("Processing tape {0}, Partition {1}\n".format(partition_key, start_block_key))
         start_block = partition[start_block_key]
 
         sys.stderr.write("Sorting {}\n".format(len(start_block.keys())))
-        start_block_dict = sorted(start_block.keys())  #List: start block number dict
+        start_block_list = sorted(start_block.keys())  #List: start block number dict
         sys.stderr.write("Copying files on {0} ({1})\n".format(partition_key, start_block_key))
 
-        for file_ind_key in start_block_dict:          #List: if multi-file in one block, file position will be write in here
+        for file_ind_key in start_block_list:          #List: if multi-file in one block, file position will be write in here
             file_ind = start_block[file_ind_key]
             for cp in file_ind:
                 cp.run()
