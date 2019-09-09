@@ -163,13 +163,11 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
   | Fedora 28                     | x86_64  | OK          |
   | Ubuntu 16.04 LTS              | x86_64  | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
   | Ubuntu 18.04 LTS              | x86_64  | OK          |
-  | Debian 9.5                    | x86_64  | NG          |
+  | Debian 9.10                   | x86_64  | OK          |
   | ArchLinux 2018.08.01          | x86_64  | OK          |
   | ArchLinux 2018.12.31 (rolling)| x86_64  | OK          |
 
 Currently, automatic build checking is working on Travis CI with Ubuntu 16.04 LTS.
-
-In Debian9 (stretch), ICU 57.1 is used but the command `genrb` in this version causes crash while creating a resource bundle of LTFS. It is clearly a bug of ICU package and this problem was fixed into ICU 60 at least. May be we need to wait Debian10 (buster) because ICU 60 is used in Debian10 at this time (in the test phase of Debian10).
 
 ### Build and install on OSX (macOS)
 
