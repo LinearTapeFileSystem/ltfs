@@ -80,6 +80,9 @@ static inline int _sense2errorcode(uint32_t sense, struct error_table *table, ch
 	if (msg)
 		*msg = NULL;
 
+	if (!table)
+		return rc;
+
 	if ( (sense & 0xFFFF00) == 0x044000 )
 		sense = 0x044000;
 	else if ( (sense & 0xFFF000) == 0x048000 ) /* 04/8xxx in TS3100/TS3200 */
