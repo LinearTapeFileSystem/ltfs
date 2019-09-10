@@ -439,7 +439,7 @@ int _pathname_validate(const char *name, bool allow_slash)
  */
 int _pathname_valid_in_xml(UChar32 c)
 {
-	if (c == 0 || c == 0x1f || (c >= 0xd800 && c <= 0xdfff) || c == 0xfeff || c == 0xfffe || c == 0xffff)
+	if (c == 0 || c == 0x1f || (c >= 0xd800 && c <= 0xdfff) || c == 0xfffe || c == 0xffff)
 		return 0;
 	else
 		return 1;
