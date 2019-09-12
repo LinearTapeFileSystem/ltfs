@@ -337,6 +337,7 @@ root:table {
 		D1100E:string{ "Other aborted command conditions." }
 		D1101E:string{ "Overlapping commands." }
 		D1102E:string{ "Initiator response timeout." }
+		D1103E:string{ "Aborted by communication issue." }
 		D1300E:string{ "The medium is full." }
 		D1600E:string{ "Other encryption-related errors." }
 		D1601E:string{ "Key service timeout or failure." }

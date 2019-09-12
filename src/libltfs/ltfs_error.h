@@ -380,6 +380,7 @@
 #define EDEV_ABORTED_COMMAND         21100  /* 0B/XXXX Other aborted command conditions */
 #define EDEV_OVERLAPPED              21101  /* 0B/4E00 Overlapped commands */
 #define EDEV_TIMEOUT                 21102  /* 0B/4B06 Initiator response timeout */
+#define EDEV_ABORT_WAIT_READY        21103  /* 0B/2907 0B/0800 0B/0801 on Library */
 
 /* Sense Key D Volume Overflow */
 #define EDEV_OVERFLOW                21300  /* 0D/XXXX The medium is overflowed */
