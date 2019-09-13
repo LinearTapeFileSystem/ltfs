@@ -109,17 +109,15 @@ make install
 
 #### Parameter settings of the sg driver
 
-LTFS uses the sg driver by default. You can improve performnce and reliability to change parameters of the sg driver below.
+LTFS uses the sg driver by default. You can improve reliability to change parameters of the sg driver below.
 
 ```
-allow_dio=1
 def_reserved_size=1048576
 ```
 
 In RHEL7, you can put following file as `/etc/modprobe.d/sg.conf`.
 
 ```
-options sg allow_dio=1
 options sg def_reserved_size=1048576
 ```
 
@@ -147,6 +145,29 @@ options lpfc lpfc_sg_seg_cnt=256
 ```
 
 In some versions of the lpfc driver (for Emulex Fibre HBAs), the table size of the scutter-gather cannot be changed correctly. You can check the value is changed or not in `sg_tablesize` value in `/proc/scsi/sg/debug`. If you don't have a correct value (256 or later) in `sg_tablesize`, removing `allow_dio=1` configuration of the sg driver is strongly recommended. 
+
+##### Performnce improvement of the sg device
+
+On some HBA's, you can improve reliability to change parameters of the sg driver below. But this option may cause IO error reported as #144.
+
+```
+allow_dio=1
+```
+
+In RHEL7, you can put following file as `/etc/modprobe.d/sg.conf`.
+
+```
+options sg allow_dio=1
+```
+
+At this time, following HBA's may work correctly.
+
+- QLogic 8Gb FC HBAs
+
+Anf following HBA's doen't work correctly.
+
+- ATTO ExpressSAS H680
+- Emulex FC HBAs
 
 #### IBM lin_tape driver support
 
