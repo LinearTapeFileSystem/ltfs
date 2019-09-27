@@ -329,11 +329,38 @@ void tape_device_close_raw(struct device_data *device)
  * @return 0 on success, indicating that the device is connected to the host,
  *  or a negative value on error.
  */
-int tape_device_is_connected(const char *devname, struct tape_ops *ops)
+int tape_device_is_connected(struct device_data *dev, struct tape_ops *ops)
 {
-	CHECK_ARG_NULL(devname, -LTFS_NULL_ARG);
+	int ret;
+	struct tc_drive_info info;
+
+	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(ops, -LTFS_NULL_ARG);
-	return ops->is_connected(devname);
+
+	ret = dev->backend->get_info(dev->backend_data, &info);
+	if (!ret) {
+		ret = ops->is_connected(info.name);
+	}
+
+	return ret;
+}
+
+/**
+ * get current device information
+ * @param devname device to get info
+ * @param info buffer to store the data
+ * @return 0 on success, or a negative value on error.
+ */
+int tape_get_info(struct device_data *dev, struct tc_drive_info *info)
+{
+	int ret;
+
+	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(info, -LTFS_NULL_ARG);
+
+	ret = dev->backend->get_info(dev->backend_data, info);
+
+	return ret;
 }
 
 /**

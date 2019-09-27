@@ -1419,6 +1419,20 @@ int itdtimage_get_serialnumber(void *vstate, char **result)
 	return DEVICE_GOOD;
 }
 
+int filedebug_get_info(void *device, struct tc_drive_info *info)
+{
+	/*
+	 * Return dummy data.
+	 * This logic is enough only for single drive supported code.
+	 */
+	info->host    = 0;
+	info->channel = 0;
+	info->target  = 0;
+	info->lun     = -1;
+
+	return 0;
+}
+
 int itdtimage_set_profiler(void *device, char *work_dir, bool enable)
 {
 	/* Do nohting: file backend does not support profiler */

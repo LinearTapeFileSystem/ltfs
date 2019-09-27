@@ -103,6 +103,7 @@ int sg_ibmtape_logsense(void *device, const unsigned char page, unsigned char *b
 int sg_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
 						 const unsigned char subpage, unsigned char *buf, const size_t size);
 int sg_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size);
+static const char *_generate_product_name(const char *product_id);
 
 /* Local functions */
 static inline int _parse_logPage(const unsigned char *logdata,
@@ -442,6 +443,7 @@ static int _raw_open(struct sg_ibmtape_data *priv)
 	int drive_type = DRIVE_UNSUPPORTED;
 
 	scsi_device_identifier id_data;
+	struct sg_scsi_id scsi_id;
 
 	/* Open device */
 	ret = _raw_dev_open(priv->devname);
@@ -496,10 +498,28 @@ static int _raw_open(struct sg_ibmtape_data *priv)
 	} else
 		strncpy(priv->drive_serial, id_data.unit_serial, sizeof(priv->drive_serial) - 1);
 
+	/* Get SCSI ID */
+	if (! ioctl(priv->dev.fd, SG_GET_SCSI_ID, &scsi_id)) {
+		priv->info.host    = scsi_id.host_no;
+		priv->info.channel = scsi_id.channel;
+		priv->info.target  = scsi_id.scsi_id;
+		priv->info.lun     = scsi_id.lun;
+		ltfsmsg(LTFS_INFO, 30250I, scsi_id.host_no, scsi_id.channel, scsi_id.scsi_id, scsi_id.lun, priv->devname);
+	} else {
+		ltfsmsg(LTFS_INFO, 30250I, 0, 0, 0, -1, priv->devname);
+	}
+
 	ltfsmsg(LTFS_INFO, 30207I, id_data.vendor_id);
 	ltfsmsg(LTFS_INFO, 30208I, id_data.product_id);
 	ltfsmsg(LTFS_INFO, 30214I, id_data.product_rev);
 	ltfsmsg(LTFS_INFO, 30215I, priv->drive_serial);
+
+	snprintf(priv->info.name, TAPE_DEVNAME_LEN_MAX + 1, "%s", priv->devname);
+	snprintf(priv->info.vendor, TAPE_VENDOR_NAME_LEN_MAX + 1, "%s", id_data.vendor_id);
+	snprintf(priv->info.model, TAPE_MODEL_NAME_LEN_MAX + 1, "%s", id_data.product_id);
+	snprintf(priv->info.serial_number, TAPE_SERIAL_LEN_MAX + 1, "%s", id_data.unit_serial);
+	snprintf(priv->info.product_rev, PRODUCT_REV_LENGTH + 1, "%s", id_data.product_rev);
+	snprintf(priv->info.product_name, PRODUCT_NAME_LENGTH + 1, "%s", _generate_product_name(id_data.product_id));
 
 	return 0;
 }
@@ -595,6 +615,11 @@ static int _reconnect_device(void *device)
 	if (priv->devname)
 		free(priv->devname);
 	priv->devname = NULL;
+
+	priv->info.host    = 0;
+	priv->info.channel = 0;
+	priv->info.target  = 0;
+	priv->info.lun     = -1;
 
 	/* Search another device files which has same serial number */
 	devs = sg_ibmtape_get_device_list(NULL, 0);
@@ -1037,6 +1062,9 @@ start:
 int sg_ibmtape_open(const char *devname, void **handle)
 {
 	int ret = -1;
+	struct stat stat_buf;
+	int i, devs = 0, info_devs = 0;
+	struct tc_drive_info *buf = NULL;
 
 	struct sg_ibmtape_data *priv;
 
@@ -1053,12 +1081,47 @@ int sg_ibmtape_open(const char *devname, void **handle)
 		return -EDEV_NO_MEMORY;
 	}
 
-	priv->devname = strdup(devname);
-	if (!priv->devname) {
-		ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: devname");
-		free(priv);
-		return -EDEV_NO_MEMORY;
+	ret = stat(devname, &stat_buf);
+	if (!ret) {
+		priv->devname = strdup(devname);
+		if (!priv->devname) {
+			ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: devname");
+			free(priv);
+			return -EDEV_NO_MEMORY;
+		}
+	} else {
+		/* Search device by serial number (Assume devname has a drive serial) */
+		ltfsmsg(LTFS_INFO, 30288I, devname);
+		devs = sg_ibmtape_get_device_list(NULL, 0);
+		if (devs) {
+			buf = (struct tc_drive_info *)calloc(devs * 2, sizeof(struct tc_drive_info));
+			if (! buf) {
+				ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+				return -LTFS_NO_MEMORY;
+			}
+			info_devs = sg_ibmtape_get_device_list(buf, devs * 2);
+		}
+
+		for (i = 0; i < info_devs; i++) {
+			if (! strncmp(buf[i].serial_number, devname, TAPE_SERIAL_LEN_MAX) ) {
+				priv->devname = strdup(buf[i].name);
+				if (!priv->devname) {
+					ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: devname");
+					if (buf) free(buf);
+					free(priv);
+					return -EDEV_NO_MEMORY;
+				}
+				break;
+			}
+		}
+
+		if (buf) {
+			free(buf);
+			buf = NULL;
+		}
 	}
+
+	priv->info.lun = -1;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_OPEN));
 
@@ -1087,6 +1150,15 @@ int sg_ibmtape_open(const char *devname, void **handle)
 	/* Register reservation key */
 	ibm_tape_genkey(priv->key);
 	_register_key(priv, priv->key);
+
+	/* Get SCSI ID */
+	struct sg_scsi_id scsi_id;
+	if (! ioctl(priv->dev.fd, SG_GET_SCSI_ID, &scsi_id)) {
+		priv->info.host    = scsi_id.host_no;
+		priv->info.channel = scsi_id.channel;
+		priv->info.target  = scsi_id.scsi_id;
+		priv->info.lun     = scsi_id.lun;
+	}
 
 	/* Initial setting of force perm */
 	priv->clear_by_pc     = false;
@@ -1283,7 +1355,6 @@ int sg_ibmtape_test_unit_ready(void *device)
 
 	/* Build CDB */
 	cdb[0] = TEST_UNIT_READY;
-
 	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
@@ -3940,6 +4011,7 @@ int sg_ibmtape_get_device_list(struct tc_drive_info *buf, int count)
 	struct sg_tape dev;
 	char devname[PATH_MAX];
 	scsi_device_identifier identifier;
+	struct sg_scsi_id scsi_id;
 
 	dp = opendir("/dev");
 	if (!dp) {
@@ -3987,7 +4059,16 @@ int sg_ibmtape_get_device_list(struct tc_drive_info *buf, int count)
 			snprintf(buf[found].vendor, TAPE_VENDOR_NAME_LEN_MAX + 1, "%s", identifier.vendor_id);
 			snprintf(buf[found].model, TAPE_MODEL_NAME_LEN_MAX + 1, "%s", identifier.product_id);
 			snprintf(buf[found].serial_number, TAPE_SERIAL_LEN_MAX + 1, "%s", identifier.unit_serial);
+			snprintf(buf[found].product_rev, PRODUCT_REV_LENGTH + 1, "%s", identifier.product_rev);
 			snprintf(buf[found].product_name, PRODUCT_NAME_LENGTH + 1, "%s", _generate_product_name(identifier.product_id));
+
+			if (! ioctl(dev.fd, SG_GET_SCSI_ID, &scsi_id)) {
+				buf[found].host    = scsi_id.host_no;
+				buf[found].channel = scsi_id.channel;
+				buf[found].target  = scsi_id.scsi_id;
+				buf[found].lun     = scsi_id.lun;
+			}
+
 		}
 		found++;
 
@@ -4513,6 +4594,15 @@ int sg_ibmtape_get_serialnumber(void *device, char **result)
 	return 0;
 }
 
+int sg_ibmtape_get_info(void *device, struct tc_drive_info *info)
+{
+	struct sg_ibmtape_data *priv = (struct sg_ibmtape_data*)device;
+
+	memcpy(info, &priv->info, sizeof(struct tc_drive_info));
+
+	return 0;
+}
+
 int sg_ibmtape_set_profiler(void *device, char *work_dir, bool enable)
 {
 	int rc = 0;
@@ -4670,6 +4760,7 @@ struct tape_ops sg_ibmtape_handler = {
 	.is_mountable           = sg_ibmtape_is_mountable,
 	.get_worm_status        = sg_ibmtape_get_worm_status,
 	.get_serialnumber       = sg_ibmtape_get_serialnumber,
+	.get_info               = sg_ibmtape_get_info,
 	.set_profiler           = sg_ibmtape_set_profiler,
 	.get_block_in_buffer    = sg_ibmtape_get_block_in_buffer,
 	.is_readonly            = sg_ibmtape_is_readonly,

@@ -80,11 +80,16 @@
 #define TAPE_SERIAL_LEN_MAX         (32)
 
 struct tc_drive_info {
-	char name[TAPE_DEVNAME_LEN_MAX + 1];           /* Device name like "/dev/IBMtape0" */
-	char vendor[TAPE_VENDOR_NAME_LEN_MAX + 1];     /* Vendor code "IBM" */
-	char model[TAPE_MODEL_NAME_LEN_MAX + 1];       /* Device identifier */
-	char serial_number[TAPE_SERIAL_LEN_MAX + 1];   /* Serial number of the drvice */
-	char product_name[PRODUCT_NAME_LENGTH + 1];    /* Product name like " [ULTRIUM-TD5]" */
+	char name[TAPE_DEVNAME_LEN_MAX + 1];         /**< Device name like "/dev/IBMtape0" */
+	char vendor[TAPE_VENDOR_NAME_LEN_MAX + 1];   /**< Vendor code "IBM" */
+	char model[TAPE_MODEL_NAME_LEN_MAX + 1];     /**< Device identifier */
+	char serial_number[TAPE_SERIAL_LEN_MAX + 1]; /**< Serial number of the drvice */
+	char product_name[PRODUCT_NAME_LENGTH + 1];  /**< Product name like " [ULTRIUM-TD5]" */
+	char product_rev[PRODUCT_REV_LENGTH + 1];    /**< Firmware revision */
+	char host;                                   /**< SCSI host */
+	char channel;                                /**< SCSI channel */
+	char target;                                 /**< SCSI target ID */
+	char lun;                                    /**< SCSI LUN */
 };
 
 typedef uint64_t tape_filemarks_t;
@@ -884,6 +889,15 @@ struct tape_ops {
 	 * @return 0 on success or a negative value on error
 	 */
 	int   (*get_serialnumber)(void *device, char **result);
+
+	/**
+	 * Get the tape device's information
+	 * This function must not issue any scsi command to the device.
+	 * @param device a pointer to the tape device
+	 * @param[out] info On success, contains device information.
+	 * @return 0 on success or a negative value on error
+	 */
+	int   (*get_info)(void *device, struct tc_drive_info *info);
 
 	/**
 	 * Enable profiler function

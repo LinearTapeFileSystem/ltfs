@@ -89,7 +89,7 @@ root:table {
 		30247I:string { "No alternate device is found for drive %s." }
 		30248I:string { "Drive serial is not matched. Actual: %s, Expected %s." }
 		30249I:string { "Opening another path for drive %s on %s." }
-		//unused (moved) 30250W:string { "Drive firmware level does not correctly detect the EOD status." }
+		30250I:string { "Opened SCSI tape device %d.%d.%d.%d (%s)." }
 		30251I:string { "Logical block protection is enabled." }
 		30252I:string { "Logical block protection is disabled." }
 		30253I:string { "Saving drive dump to %s." }
@@ -127,6 +127,7 @@ root:table {
 		30285I:string { "Reserved buffer size of %s is %d." }
 		30286I:string { "Failed to get cartridge status. The cartridge is not loaded." }
 		30287I:string { "Received an unknown sense code %06x." }
+		30288I:string { "Opening a tape device for drive serial %s." }
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }

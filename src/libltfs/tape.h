@@ -120,7 +120,8 @@ void _tape_device_close(struct device_data *device, void * const kmi_handle,
 void tape_device_close_raw(struct device_data *dev);
 #define tape_device_close(dev, kmi_handle, force) _tape_device_close(dev, kmi_handle, false, force)
 
-int tape_device_is_connected(const char *devname, struct tape_ops *ops);
+int tape_device_is_connected(struct device_data *dev, struct tape_ops *ops);
+int tape_get_info(struct device_data *dev, struct tc_drive_info *info);
 int tape_reserve_device(struct device_data *dev);
 void tape_release_device(struct device_data *dev);
 const char *tape_default_device_name(struct tape_ops *ops);

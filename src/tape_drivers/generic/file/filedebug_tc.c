@@ -152,6 +152,7 @@ struct filedebug_data {
 	int      force_errortype;              /**< 0 is R/W Perm, otherwise no sense */
 	int      drive_type;                   /**< drive type defined by ltfs */
 	char     *serial_number;               /**< Serial number of this dummy tape device */
+	struct tc_drive_info info;             /**< Device informaton (DUMMY) */
 	char     *product_id;                  /**< Product ID of this dummy tape device */
 	struct   filedebug_conf_tc conf;       /**< Bahavior option for this instance */
 };
@@ -168,6 +169,9 @@ static const char *rec_suffixes = "RFE";
 #define SUFFIX_RECORD   (0)
 #define SUFFIX_FILEMARK (1)
 #define SUFFIX_EOD      (2)
+
+/* Forward reference */
+int filedebug_get_device_list(struct tc_drive_info *buf, int count);
 
 /* local prototypes */
 int filedebug_search_eod(struct filedebug_data *state, int partition);
@@ -372,7 +376,11 @@ int filedebug_open(const char *name, void **handle)
 	char *tmp = NULL;
 	char *cur, *p;
 	char *pid = NULL, *ser = NULL;
-	int ret, i;
+	int ret;
+	char *devname = NULL;
+
+	int i, devs = 0, info_devs = 0;
+	struct tc_drive_info *buf = NULL;
 
 	ltfsmsg(LTFS_INFO, 30000I, name);
 
@@ -387,19 +395,56 @@ int filedebug_open(const char *name, void **handle)
 
 	/* check name is file or dir */
 	ret = stat(name, &d);
-	if (ret == 0 && S_ISREG(d.st_mode)) {
+	if (ret == 0 && S_ISDIR(d.st_mode)) {
+		ltfsmsg(LTFS_INFO, 30003I, name);
+		state->dirname = strdup(name);
+		if (!state->dirname) {
+			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirname");
+			free(state);
+			return -EDEV_NO_MEMORY;
+		}
+		state->product_id = "ULTRIUM-TD5";
+	} else {
+		devs = filedebug_get_device_list(NULL, 0);
+		if (devs) {
+			buf = (struct tc_drive_info *)calloc(devs * 2, sizeof(struct tc_drive_info));
+			if (! buf) {
+				ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+				return -LTFS_NO_MEMORY;
+			}
+			info_devs = filedebug_get_device_list(buf, devs * 2);
+		}
+
+		for (i = 0; i < info_devs; i++) {
+			if (! strncmp(buf[i].serial_number, name, TAPE_SERIAL_LEN_MAX) ) {
+				devname = strdup(buf[i].name);
+				if (!devname) {
+					ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: devname");
+					if (buf) free(buf);
+					free(state);
+					return -EDEV_NO_MEMORY;
+				}
+				break;
+			}
+		}
+
+		if (buf) {
+			free(buf);
+			buf = NULL;
+		}
+
 		/* Run on file mode */
-		ltfsmsg(LTFS_INFO, 30001I, name);
-		state->fd = open(name, O_RDWR | O_BINARY);
+		ltfsmsg(LTFS_INFO, 30001I, devname);
+		state->fd = open(devname, O_RDWR | O_BINARY);
 		if (state->fd < 0) {
-			ltfsmsg(LTFS_ERR, 30002E, name);
+			ltfsmsg(LTFS_ERR, 30002E, devname);
 			return -EDEV_INTERNAL_ERROR;
 		}
 
 		/* Parse pid and serial from filename */
-		cur = (char*)name;
-		cur += strlen(name) - 1;
-		for (i = 0; i < (int)strlen(name); i++) {
+		cur = (char*)devname;
+		cur += strlen(devname) - 1;
+		for (i = 0; i < (int)strlen(devname); i++) {
 			if (*cur == '.')
 				pid = cur + 1;
 			if (*cur == '_') {
@@ -427,7 +472,7 @@ int filedebug_open(const char *name, void **handle)
 		}
 
 		/* Store directory base */
-		tmp = strdup(name);
+		tmp = strdup(devname);
 		if (!tmp) {
 			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirbase tmp");
 			free(state);
@@ -446,22 +491,8 @@ int filedebug_open(const char *name, void **handle)
 		}
 		strcpy(state->dirbase, p);
 		free(tmp);
-	} else {
-		/* make sure directory exists */
-		ltfsmsg(LTFS_INFO, 30003I, name);
-		if (ret || !S_ISDIR(d.st_mode)) {
-			ltfsmsg(LTFS_ERR, 30004E, name);
-			free(state);
-			return -LTFS_INVALID_SRC_PATH;
-		}
-
-		state->dirname = strdup(name);
-		if (!state->dirname) {
-			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirname");
-			free(state);
-			return -EDEV_NO_MEMORY;
-		}
-		state->product_id = "ULTRIUM-TD5";
+		free(devname);
+		devname= NULL;
 	}
 
 	state->ready          = false;
@@ -496,6 +527,18 @@ int filedebug_open(const char *name, void **handle)
 		}
 		d_cur++;
 	}
+
+	snprintf(state->info.name, TAPE_DEVNAME_LEN_MAX + 1, "%s", name);
+	snprintf(state->info.vendor, TAPE_VENDOR_NAME_LEN_MAX + 1, "%s", "DUMMY");
+	snprintf(state->info.model, TAPE_MODEL_NAME_LEN_MAX + 1, "%s", state->product_id);
+	snprintf(state->info.serial_number, TAPE_SERIAL_LEN_MAX + 1, "%s", state->serial_number);
+	snprintf(state->info.product_rev, PRODUCT_REV_LENGTH + 1, "%s", "REVS");
+	snprintf(state->info.product_name, PRODUCT_NAME_LENGTH + 1, "[%s]", state->product_id);
+
+	state->info.host    = 0;
+	state->info.channel = 0;
+	state->info.target  = 0;
+	state->info.lun     = -1;
 
 	*handle = (void *) state;
 	return 0;
@@ -2588,6 +2631,12 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 			snprintf(buf[deventries].model, TAPE_MODEL_NAME_LEN_MAX, "%s", pid);
 			snprintf(buf[deventries].serial_number, TAPE_SERIAL_LEN_MAX, "%s", ser);
 			snprintf(buf[deventries].product_name, PRODUCT_NAME_LENGTH, "[%s]", pid);
+
+			buf[deventries].host    = 0;
+			buf[deventries].channel = 0;
+			buf[deventries].target  = 0;
+			buf[deventries].lun     = -1;
+
 			ltfsmsg(LTFS_DEBUG, 30084D, buf[deventries].name, buf[deventries].vendor,
 					buf[deventries].model, buf[deventries].serial_number);
 
@@ -2676,6 +2725,15 @@ int filedebug_get_serialnumber(void *device, char **result)
 	return DEVICE_GOOD;
 }
 
+int filedebug_get_info(void *device, struct tc_drive_info *info)
+{
+	struct filedebug_data *state = (struct filedebug_data *)device;
+
+	memcpy(info, &state->info, sizeof(struct tc_drive_info));
+
+	return 0;
+}
+
 int filedebug_set_profiler(void *device, char *work_dir, bool enable)
 {
 	/* Do nohting: file backend does not support profiler */
@@ -2739,6 +2797,7 @@ struct tape_ops filedebug_handler = {
 	.is_mountable           = filedebug_is_mountable,
 	.get_worm_status        = filedebug_get_worm_status,
 	.get_serialnumber       = filedebug_get_serialnumber,
+	.get_info               = filedebug_get_info,
 	.set_profiler           = filedebug_set_profiler,
 	.get_block_in_buffer    = filedebug_get_block_in_buffer,
 	.is_readonly            = filedebug_is_readonly,

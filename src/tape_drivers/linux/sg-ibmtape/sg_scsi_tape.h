@@ -47,6 +47,7 @@
 *************************************************************************************
 */
 
+#include <scsi/scsi.h>
 #include <scsi/sg.h>
 
 #include "tape_drivers/tape_drivers.h"
