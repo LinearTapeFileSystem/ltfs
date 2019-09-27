@@ -825,6 +825,27 @@ int camtape_get_serialnumber(void *device, char **result)
 }
 
 /**
+ * Get the tape device's information
+ * This function must not issue any scsi command to the device.
+ * @param device a pointer to the tape device
+ * @param[out] info On success, contains device information.
+ * @return 0 on success or a negative value on error
+ */
+int camtape_get_info(void *device, struct tc_drive_info *info)
+{
+	struct camtape_data *softc = (struct camtape_data *) device;
+
+	snprintf(info->name, TAPE_DEVNAME_LEN_MAX + 1, "%s", softc->devname);
+	snprintf(info->serial_number, TAPE_SERIAL_LEN_MAX + 1, "%s", softc->drive_serial);
+  	info->host    = 0;
+	info->channel = 0;
+	info->target  = 0;
+	info->lun     = -1;
+	
+	return 0;
+}
+
+/**
  * Enable profiler function
  * @param device a pointer to the tape device
  * @param work_dir work directory to store profiler data
