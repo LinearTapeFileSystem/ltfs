@@ -14,6 +14,10 @@ if PLATFORM_FREEBSD
 PLAT_OPT += plugin tape cam __LIBDIR__/ltfs/libtape-cam.so
 endif
 
+if PLATFORM_NETBSD
+PLAT_OPT += plugin tape scsipi-ibmtape __LIBDIR__/ltfs/libtape-scsipi-ibmtape.so
+endif
+
 if ENABLE_LIN_TAPE
 PLAT_OPT += \\nplugin tape lin_tape __LIBDIR__/ltfs/libtape-lin_tape.so
 endif

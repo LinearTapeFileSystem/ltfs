@@ -105,6 +105,7 @@ int scsipi_ibmtape_logsense(void *device, const unsigned char page, unsigned cha
 int scsipi_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
 						 const unsigned char subpage, unsigned char *buf, const size_t size);
 int scsipi_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size);
+static const char *_generate_product_name(const char *product_id);
 
 /* Local functions */
 static inline int _parse_logPage(const unsigned char *logdata,
@@ -500,6 +501,18 @@ static int _raw_open(struct scsipi_ibmtape_data *priv)
 	ltfsmsg(LTFS_INFO, 30208I, id_data.product_id);
 	ltfsmsg(LTFS_INFO, 30214I, id_data.product_rev);
 	ltfsmsg(LTFS_INFO, 30215I, priv->drive_serial);
+
+	snprintf(priv->info.name, TAPE_DEVNAME_LEN_MAX + 1, "%s", priv->devname);
+	snprintf(priv->info.vendor, TAPE_VENDOR_NAME_LEN_MAX + 1, "%s", id_data.vendor_id);
+	snprintf(priv->info.model, TAPE_MODEL_NAME_LEN_MAX + 1, "%s", id_data.product_id);
+	snprintf(priv->info.serial_number, TAPE_SERIAL_LEN_MAX + 1, "%s", id_data.unit_serial);
+	snprintf(priv->info.product_rev, PRODUCT_REV_LENGTH + 1, "%s", id_data.product_rev);
+	snprintf(priv->info.product_name, PRODUCT_NAME_LENGTH + 1, "%s", _generate_product_name(id_data.product_id));
+
+	priv->info.host    = 0;
+	priv->info.channel = 0;
+	priv->info.target  = 0;
+	priv->info.lun     = -1;
 
 	return 0;
 }
@@ -2234,14 +2247,14 @@ static int scsipi_ibmtape_medium_configuration(void *device)
 	case TC_DC_LTO7:
 		priv->cart_type = TC_MP_LTO7D_CART;
 		break;
-	case TC_DC_LTOM8: 
+	case TC_DC_LTOM8:
 	case TC_DC_LTO8:
 		priv->cart_type = TC_MP_LTO8D_CART;
 		break;
 	default:
 		break;
 	}
-	
+
 	return 0;
 }
 
@@ -4382,6 +4395,15 @@ int scsipi_ibmtape_get_serialnumber(void *device, char **result)
 	return 0;
 }
 
+int scsipi_ibmtape_get_info(void *device, struct tc_drive_info *info)
+{
+	struct scsipi_ibmtape_data *priv = (struct scsipi_ibmtape_data*)device;
+
+	memcpy(info, &priv->info, sizeof(struct tc_drive_info));
+
+	return 0;
+}
+
 int scsipi_ibmtape_set_profiler(void *device, char *work_dir, bool enable)
 {
 	int rc = 0;
@@ -4534,6 +4556,7 @@ struct tape_ops scsipi_ibmtape_handler = {
 	.is_mountable           = scsipi_ibmtape_is_mountable,
 	.get_worm_status        = scsipi_ibmtape_get_worm_status,
 	.get_serialnumber       = scsipi_ibmtape_get_serialnumber,
+	.get_info               = scsipi_ibmtape_get_info,
 	.set_profiler           = scsipi_ibmtape_set_profiler,
 	.get_block_in_buffer    = scsipi_ibmtape_get_block_in_buffer,
 	.is_readonly            = scsipi_ibmtape_is_readonly,
