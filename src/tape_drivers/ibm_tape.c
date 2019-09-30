@@ -48,7 +48,7 @@
 */
 
 #ifndef mingw_PLATFORM
-#ifdef __FreeBSD__
+#if defined (__FreeBSD__) || defined(__NetBSD__)
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
