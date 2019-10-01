@@ -105,7 +105,7 @@ int iokit_ibmtape_logsense(void *device, const unsigned char page, unsigned char
 int iokit_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
 							const unsigned char subpage, unsigned char *buf, const size_t size);
 int iokit_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size);
-
+static const char *_generate_product_name(const char *product_id);
 
 /* Local functions */
 static inline int _parse_logPage(const unsigned char *logdata,
@@ -719,7 +719,7 @@ int iokit_ibmtape_open(const char *devname, void **handle)
 {
 	char    *end;
 	int     drive_type = DRIVE_UNSUPPORTED;
-	int     ret = -1;
+	int     ret = -1, count = 0, i;
 	int32_t drive_number;
 
 	struct iokit_ibmtape_data *priv;
@@ -744,16 +744,37 @@ int iokit_ibmtape_open(const char *devname, void **handle)
 
 	errno = 0;
 	drive_number = strtoul(devname, &end, 10);
-	if(errno || (*end != '\0')) {
-		ltfsmsg(LTFS_INFO, 30811I, devname);
-		ret = -EDEV_DEVICE_UNOPENABLE;
-		goto free;
-	}
+	if(errno || (*end != '\0') || drive_number > 256) {
+		/* Find the drive by serial number */
+		bool found = false;
+		count = iokit_get_ssc_device_count();
+		for (i = 0; i < count; i++) {
+			ret = iokit_find_ssc_device(&priv->dev, i);
+			if(!ret) {
+				ret = iokit_get_drive_identifier(&priv->dev, &id_data);
+				if (!ret) {
+					if (!strncmp(devname, id_data.unit_serial, strlen(devname))) {
+						found = true;
+						priv->drive_number = i;
+						break;
+					}
+				}
+				iokit_free_device(&priv->dev);
+			}
+		}
 
-	ret = iokit_find_ssc_device(&priv->dev, drive_number);
-	if(ret < 0) {
-		ret = -EDEV_DEVICE_UNOPENABLE;
-		goto free;
+		if (!found) {
+			ltfsmsg(LTFS_INFO, 30811I, devname);
+			ret = -EDEV_DEVICE_UNOPENABLE;
+			goto free;
+		}
+	} else {
+		ret = iokit_find_ssc_device(&priv->dev, drive_number);
+		if(ret < 0) {
+			ret = -EDEV_DEVICE_UNOPENABLE;
+			goto free;
+		}
+		priv->drive_number = drive_number;
 	}
 
 	ret = iokit_obtain_exclusive_access(&priv->dev);
@@ -797,6 +818,17 @@ int iokit_ibmtape_open(const char *devname, void **handle)
 	ltfsmsg(LTFS_INFO, 30816I, id_data.product_rev);
 	ltfsmsg(LTFS_INFO, 30817I, priv->drive_serial);
 
+	snprintf(priv->info.name, TAPE_DEVNAME_LEN_MAX + 1, "%d", drive_number);
+	snprintf(priv->info.vendor, TAPE_VENDOR_NAME_LEN_MAX + 1, "%s", id_data.vendor_id);
+	snprintf(priv->info.model, TAPE_MODEL_NAME_LEN_MAX + 1, "%s", id_data.product_id);
+	snprintf(priv->info.serial_number, TAPE_SERIAL_LEN_MAX + 1, "%s", priv->drive_serial);
+	snprintf(priv->info.product_rev, PRODUCT_REV_LENGTH + 1, "%s", id_data.product_rev);
+	snprintf(priv->info.product_name, PRODUCT_NAME_LENGTH + 1, "%s", _generate_product_name(id_data.product_id));
+	priv->info.host    = 0;
+	priv->info.channel = 0;
+	priv->info.target  = 0;
+	priv->info.lun     = -1;
+
 	/* Setup IBM tape specific parameters */
 	standard_table = standard_tape_errors;
 	vendor_table   = ibm_tape_errors;
@@ -831,7 +863,6 @@ int iokit_ibmtape_reopen(const char *devname, void *device)
 	char    *end;
 	int     drive_type = DRIVE_UNSUPPORTED;
 	int     ret = -EDEV_UNKNOWN;
-	int32_t drive_number;
 
 	CHECK_ARG_NULL(device, -LTFS_NULL_ARG);
 
@@ -842,16 +873,7 @@ int iokit_ibmtape_reopen(const char *devname, void *device)
 
 	ltfsmsg(LTFS_INFO, 30818I, devname);
 
-	errno = 0;
-	drive_number = strtoul(devname, &end, 10);
-	if(errno || (*end != '\0')) {
-		ltfsmsg(LTFS_INFO, 30811I, devname);
-		ret = -EDEV_DEVICE_UNOPENABLE;
-		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REOPEN));
-		return ret;
-	}
-
-	ret = iokit_find_ssc_device(&priv->dev, drive_number);
+	ret = iokit_find_ssc_device(&priv->dev, priv->drive_number);
 	if(ret < 0){
 		ret = -EDEV_DEVICE_UNOPENABLE;
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REOPEN));
@@ -3472,6 +3494,10 @@ int iokit_ibmtape_get_device_list(struct tc_drive_info *buf, int count)
 					snprintf(buf[i].model, TAPE_MODEL_NAME_LEN_MAX, "%s", identifier.product_id);
 					snprintf(buf[i].serial_number, TAPE_SERIAL_LEN_MAX, "%s", identifier.unit_serial);
 					snprintf(buf[i].product_name, PRODUCT_NAME_LENGTH, "%s", _generate_product_name(identifier.product_id));
+					buf[i].host    = 0;
+					buf[i].channel = 0;
+					buf[i].target  = 0;
+					buf[i].lun     = -1;
 				}
 				found ++;
 			}
@@ -3982,6 +4008,15 @@ int iokit_ibmtape_get_serialnumber(void *device, char **result)
 	return 0;
 }
 
+int iokit_ibmtape_get_info(void *device, struct tc_drive_info *info)
+{
+	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+
+	memcpy(info, &priv->info, sizeof(struct tc_drive_info));
+
+	return 0;
+}
+
 int iokit_ibmtape_set_profiler(void *device, char *work_dir, bool enable)
 {
 	int rc = 0;
@@ -4130,6 +4165,7 @@ struct tape_ops iokit_ibmtape_handler = {
 	.is_mountable           = iokit_ibmtape_is_mountable,
 	.get_worm_status        = iokit_ibmtape_get_worm_status,
 	.get_serialnumber       = iokit_ibmtape_get_serialnumber,
+	.get_info               = iokit_ibmtape_get_info,
 	.set_profiler           = iokit_ibmtape_set_profiler,
 	.get_block_in_buffer    = iokit_ibmtape_get_block_in_buffer,
 	.is_readonly            = iokit_ibmtape_is_readonly,
