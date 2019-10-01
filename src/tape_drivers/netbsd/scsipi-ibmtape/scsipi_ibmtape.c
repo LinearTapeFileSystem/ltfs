@@ -3888,6 +3888,10 @@ int scsipi_ibmtape_get_device_list(struct tc_drive_info *buf, int count)
 			snprintf(buf[found].model, TAPE_MODEL_NAME_LEN_MAX + 1, "%s", identifier.product_id);
 			snprintf(buf[found].serial_number, TAPE_SERIAL_LEN_MAX + 1, "%s", identifier.unit_serial);
 			snprintf(buf[found].product_name, PRODUCT_NAME_LENGTH + 1, "%s", _generate_product_name(identifier.product_id));
+			buf[found].host    = 0;
+			buf[found].channel = 0;
+			buf[found].target  = 0;
+			buf[found].lun     = -1;
 		}
 		found++;
 
