@@ -79,6 +79,7 @@ struct scsipi_ibmtape_data {
 	crc_enc              f_crc_enc;            /**< Pointer to CRC encode function */
 	crc_check            f_crc_check;          /**< Pointer to CRC encode function */
 	struct timeout_tape  *timeouts;            /**< Timeout table */
+	struct tc_drive_info info;                 /**< Drive information */
 	FILE*                profiler;             /**< The file pointer for profiler */
 };
 

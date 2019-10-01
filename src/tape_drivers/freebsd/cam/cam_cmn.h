@@ -446,6 +446,7 @@ extern int camtape_readbuffer(struct camtape_data *softc, int id, unsigned char 
 							  size_t offset, size_t len, int type);
 extern int camtape_takedump_drive(void *device, bool nonforced_dump);
 extern int camtape_get_serialnumber(void *device, char **result);
+extern int camtape_get_info(void *device, struct tc_drive_info *info);
 extern int camtape_set_profiler(void *device, char *work_dir, bool enable);
 extern int camtape_get_timeout(struct timeout_tape *table, int op_code);
 

@@ -4061,12 +4061,21 @@ int ltfs_print_device_list(struct tape_ops *ops)
 	/* Print device list */
 	ltfsresult(17073I);
 	c = MIN(info_count, (count * 2));
-	for (i = 0; i < c; i++)
+	for (i = 0; i < c; i++) {
 		if (buf[i].name[0] && buf[i].vendor[0] &&
 			buf[i].model[0] && buf[i].serial_number[0] &&
-			buf[i].product_name[0])
-			ltfsresult(17074I, buf[i].name, buf[i].vendor,
-				buf[i].model, buf[i].serial_number, buf[i].product_name);
+			buf[i].product_name[0]) {
+
+			if (buf[i].lun == -1) {
+				ltfsresult(17074I, buf[i].name,
+						   buf[i].vendor, buf[i].model, buf[i].serial_number, buf[i].product_name);
+			} else {
+				ltfsresult(17098I, buf[i].name, buf[i].host, buf[i].channel, buf[i].target, buf[i].lun,
+						   buf[i].vendor, buf[i].model, buf[i].serial_number, buf[i].product_name);
+			}
+		}
+	}
+
 	ret = 0;
 
 	return ret;

@@ -647,7 +647,7 @@ v
 		17095W:string { "The index read from the tape uses an old version of the LTFS format. If this tape is modified, the index upgrades format version to %s from %d.%d.%d." }
 		17096W:string { "The index read from the tape uses a newer version of the LTFS format than the one supported by this software. Some functionality might be unavailable. If this tape is modified, the index downgrades format version to %s from %d.%d.%d." }
 		17097E:string { "XML parser: two extents overlap." }
-		//unused 17098E:string { "XML parser: invalid name pattern '%s\'." }
+		17098I:string { "Device Name = %s (%d.%d.%d.%d), Vendor ID = %s, Product ID = %s, Serial Number = %s, Product Name =%s." }
 		17099E:string { "Failed to spawn the periodic sync thread (%d)." }
 
 		17100E:string { "XML parser: UID on the root directory must be 1." }

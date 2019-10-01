@@ -21,6 +21,7 @@ ltfs.pc
 *.lo
 *.la
 .libs/
+messages/.lib
 .dirstamp
 # Files for development
 GPATH

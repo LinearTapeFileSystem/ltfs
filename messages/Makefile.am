@@ -82,3 +82,4 @@ endif
 clean-local:
 	rm -rf $(RESOURCES) */work
 	rm -f ../src/ltfsmsg.h
+	rm -f *.la

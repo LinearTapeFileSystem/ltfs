@@ -1597,7 +1597,7 @@ bailout:
  * @param vol_mam_uuid Volume UUID, unused by libtlfs (HPE extension)
  * @return 0 on success or a negative value on error
  */
-int camtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid);
+int camtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid)
 {
 	int rc, aux_rc;
 	char *msg = NULL;
@@ -2876,6 +2876,10 @@ int camtape_get_device_list(struct tc_drive_info *buf, int count)
 					snprintf(buf[buf_index].model, sizeof(buf[buf_index].model), "%s", product);
 					snprintf(buf[buf_index].product_name, sizeof(buf[buf_index].product_name), "%s",
 						generate_product_name((const char *)product));
+					buf[buf_index].host    = 0;
+					buf[buf_index].channel = 0;
+					buf[buf_index].target  = 0;
+					buf[buf_index].lun     = -1;
 				} else {
 					/*
 					 * XXX KDM what now?  We have a tape device that isn't SCSI??
@@ -2906,6 +2910,10 @@ int camtape_get_device_list(struct tc_drive_info *buf, int count)
 					    "%s", dev->serial_num);
 					snprintf(buf[buf_index].name, sizeof(buf[buf_index].name), "%s%d",
 						periph_result->periph_name, periph_result->unit_number);
+					buf[buf_index].host    = 0;
+					buf[buf_index].channel = 0;
+					buf[buf_index].target  = 0;
+					buf[buf_index].lun     = -1;					
 					cam_close_device(dev);
 				}
 				buf_index++;
@@ -4105,6 +4113,7 @@ struct tape_ops camtape_drive_handler = {
 	.is_mountable           = camtape_is_mountable,
 	.get_worm_status		= camtape_get_worm_status,
 	.get_serialnumber		= camtape_get_serialnumber,
+	.get_info               = camtape_get_info,	
 	.set_profiler			= camtape_set_profiler,
 	.get_block_in_buffer	= camtape_get_block_in_buffer,
 	.is_readonly			= camtape_is_readonly
