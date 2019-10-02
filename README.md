@@ -164,7 +164,7 @@ At this time, following HBA's may work correctly.
 
 - QLogic 8Gb FC HBAs
 
-Anf following HBA's doen't work correctly.
+And following HBA's doen't work correctly.
 
 - ATTO ExpressSAS H680
 - Emulex FC HBAs
@@ -247,8 +247,10 @@ make install
 
   | Version | Arch    | Status      | 
   |:-:      |:-:      |:-:          | 
+  | 8.1     | amd64   | OK          |
   | 8.0     | i386    | OK          |
-
+  | 7.2     | amd64   | OK          |
+  
 ## Contributing
 
 Please read [CONTRIBUTING.md](.github/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
