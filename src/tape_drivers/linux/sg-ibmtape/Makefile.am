@@ -38,7 +38,7 @@ BASENAMES = libtape-sg-ibmtape
 
 AM_LIBTOOLFLAGS = --tag=disable-static
 
-libtape_sg_ibmtape_la_SOURCES = sg_scsi_tape.c sg_ibmtape.c ibm_tape.c
+libtape_sg_ibmtape_la_SOURCES = sg_scsi_tape.c sg_ibmtape.c ibm_tape.c open_factor.c
 libtape_sg_ibmtape_la_DEPENDENCIES = ../../../../messages/libtape_linux_sg_ibmtape_dat.a ../../../libltfs/libltfs.la ./libtape_sg_ibmtape_la-reed_solomon_crc.lo ./libtape_sg_ibmtape_la-crc32c_crc.lo
 libtape_sg_ibmtape_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_sg_ibmtape_la-reed_solomon_crc.lo ./libtape_sg_ibmtape_la-crc32c_crc.lo
 libtape_sg_ibmtape_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_linux_sg_ibmtape_dat
@@ -47,8 +47,11 @@ libtape_sg_ibmtape_la_CPPFLAGS = @AM_CPPFLAGS@ @AM_EXTRA_CPPFLAGS@ -I ../../.. -
 ibm_tape.c:
 	ln -s ../../ibm_tape.c ./ibm_tape.c
 
+open_factor.c:
+	ln -s ../../open_factor.c ./open_factor.c
+
 clean-local:
-	rm -f ibm_tape.c
+	rm -f ibm_tape.c open_factor.c
 
 libtape_sg_ibmtape_la-reed_solomon_crc.lo: ../../reed_solomon_crc.c
 	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_sg_ibmtape_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_sg_ibmtape_la-reed_solomon_crc.lo -MD -MP -c -o libtape_sg_ibmtape_la-reed_solomon_crc.lo $<
