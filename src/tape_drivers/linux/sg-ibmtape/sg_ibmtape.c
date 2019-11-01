@@ -675,6 +675,7 @@ static int _reconnect_device(void *device)
 	if (priv->devname)
 		free(priv->devname);
 	priv->devname = NULL;
+	priv->info.name[0] = '\0';
 
 	decrement_openfactor(priv->info.host, priv->info.channel);
 
