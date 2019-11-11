@@ -128,6 +128,11 @@ root:table {
 		30286I:string { "Failed to get cartridge status. The cartridge is not loaded." }
 		30287I:string { "Received an unknown sense code %06x." }
 		30288I:string { "Opening a tape device for drive serial %s." }
+		30289I:string { "Cannot fetch the reservation key (%s, %d)." }
+		30290I:string { "Changer %s isn't reserved from any nodes." }
+		30291I:string { "Changer %s was reserved from this node and can be reserved from the current path." }
+		30292I:string { "Changer %s was reserved from this node but failed to reserve from the current path." }
+		30293I:string { "Changer %s was reserved from another node (%s)." }
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }
