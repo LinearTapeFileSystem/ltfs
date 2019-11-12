@@ -616,7 +616,7 @@ static int _create_open_order(struct tc_drive_info *buf, struct open_order *orde
 		if (! strncmp(buf[i].serial_number, serial, TAPE_SERIAL_LEN_MAX) ) {
 			order[count].devname = strdup(buf[i].name);
 			if (!order[count].devname) {
-				ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: devname");
+				ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: order");
 				return -EDEV_NO_MEMORY;
 			}
 			order[count].openfactor = get_openfactor(buf[i].host, buf[i].channel);
@@ -720,7 +720,7 @@ static int _reconnect_device(void *device)
 	for (i = 0; i < count; i++) {
 		priv->devname = strdup(order[i].devname);
 		if (!priv->devname) {
-			ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: devname");
+			ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: reconnect");
 			_order_free(&order, count);
 			free(priv);
 			return -EDEV_NO_MEMORY;
@@ -1217,19 +1217,68 @@ int sg_ibmtape_open(const char *devname, void **handle)
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_OPEN));
 
+	ibm_tape_genkey(priv->key);
+	struct reservation_info buf_key;
+
 	if (count) {
 		qsort(order, count, sizeof(struct open_order), _order_cmp);
 		for (i = 0; i < count; i++) {
 			priv->devname = strdup(order[i].devname);
 			if (!priv->devname) {
-				ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: devname");
+				ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: search");
 				free(priv);
 				_order_free(&order, count);
 				return -EDEV_NO_MEMORY;
 			}
 			ret = _raw_open(priv);
-			if (!ret)
+			if (ret < 0) {
+				free(priv->devname);
+				priv->devname = NULL;
+				continue;
+			}
+
+			/* Issue TURs to clear POR sense */
+			_clear_por(priv);
+
+			memset(&buf_key, 0, sizeof(struct reservation_info));
+			ret = _fetch_reservation_key(priv, &buf_key);
+			if (ret == -EDEV_NO_RESERVATION_HOLDER) {
+				/* This drive isn't reserved from anyone */
+				ltfsmsg(LTFS_INFO, 30290I, priv->devname);
+				ret = DEVICE_GOOD;
 				break;
+			} else if (ret < 0) {
+				ltfsmsg(LTFS_INFO, 30289I, priv->devname);
+				close(priv->dev.fd);
+				priv->dev.fd = -1;
+				free(priv->devname);
+				priv->devname = NULL;
+				continue;
+			}
+
+			if (!memcmp(buf_key.key, priv->key, KEYLEN)) {
+				/*
+				 * Reserved by this node. Try to reserve.
+				 * If it can be reserved successfully, this drive was reserved with same device file
+				 * on the previous session. If not, another instance is already reseerved.
+				 */
+				ret = _cdb_pro(priv, PRO_ACT_RESERVE, PRO_TYPE_EXCLUSIVE,
+							   priv->key, NULL);
+				if (!ret) {
+					ltfsmsg(LTFS_INFO, 30291I, priv->devname);
+					priv->is_reserved = true;
+					break;
+				} else {
+					ltfsmsg(LTFS_INFO, 30292I, priv->devname);
+				}
+			} else {
+				ltfsmsg(LTFS_INFO, 30293I, priv->devname, buf_key.hint);
+			}
+
+			close(priv->dev.fd);
+			priv->dev.fd = -1;
+			free(priv->devname);
+			priv->devname = NULL;
 		}
 
 		_order_free(&order, count);
@@ -1263,7 +1312,6 @@ int sg_ibmtape_open(const char *devname, void **handle)
 	_clear_por(priv);
 
 	/* Register reservation key */
-	ibm_tape_genkey(priv->key);
 	_register_key(priv, priv->key);
 
 	/* Initial setting of force perm */
@@ -1275,8 +1323,7 @@ int sg_ibmtape_open(const char *devname, void **handle)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_OPEN));
 
 	*handle = (void *)priv;
-
-	return ret;
+	return DEVICE_GOOD;
 
 free:
 	if (priv->devname)
