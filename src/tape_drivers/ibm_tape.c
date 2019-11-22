@@ -997,6 +997,9 @@ int ibm_tape_init_timeout(struct timeout_tape** table, int type)
 {
 	int ret = 0;
 
+	/* Clear the table if it is already created */
+	HASH_CLEAR(hh, *table);
+
 	switch (type) {
 		case DRIVE_LTO5:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto5);

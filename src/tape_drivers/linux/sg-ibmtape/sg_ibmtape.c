@@ -1236,6 +1236,7 @@ int sg_ibmtape_open(const char *devname, void **handle)
 				priv->devname = NULL;
 				continue;
 			}
+			ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
 
 			/* Issue TURs to clear POR sense */
 			_clear_por(priv);
