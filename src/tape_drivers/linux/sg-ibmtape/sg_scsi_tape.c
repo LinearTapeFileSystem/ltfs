@@ -280,8 +280,9 @@ start:
 				ret = -EDEV_CONNECTION_LOST;
 				break;
 			case HOST_NEXUS_FAIL:
-				if (msg) *msg = "SCSI nexus failure";
-				ret = -EDEV_CONNECTION_LOST;
+				/* See https://fossies.org/linux/sdparm/lib/sg_pt_linux.c */
+				if (msg) *msg = "SCSI nexus failure (reservation conflict)";
+				ret = -EDEV_RESERVATION_CONFLICT;
 				break;
 			default:
 				ltfsmsg(LTFS_INFO, 30244I, req->host_status, req->driver_status);
