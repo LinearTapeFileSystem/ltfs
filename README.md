@@ -15,14 +15,14 @@ At this time, the target of this project to meet is the LTFS format specificatio
 
 LTFS Format Specification is specified data placement, shape of index and names of extended attributes for LTFS. This specification is defined in [SNIA](https://www.snia.org/tech_activities/standards/curr_standards/ltfs) first and then it is forwarded to [ISO](https://www.iso.org/home.html) as ISO/IEC 20919 from version 2.2.
 
-The table below show status of the LTFS format Specification 
+The table below show status of the LTFS format Specification
 
   | Version | Status of SNIA                   | Status of ISO   |
   |:-:      |:-:                               |:-:              |
   | 2.2     | [Published the Technical Position](http://snia.org/sites/default/files/LTFS_Format_2.2.0_Technical_Position.pdf) | Published       |
   | 2.3.1   | [Published the Technical Position](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.3.1_TechPosition.pdf) | -               |
   | 2.4     | [Published the Technical Position](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.4.0_TechPosition.pdf) | On going        |
-  | 2.5     | [Published the Technical Position](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_v2.5_Technical_Position.pdf) | Not started yet | 
+  | 2.5     | [Published the Technical Position](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_v2.5_Technical_Position.pdf) | Not started yet |
 
 ## How to use the LTFS (Quick start)
 
@@ -75,7 +75,7 @@ These instructions will get you a copy of the project up and running on your loc
   * automake
   * autoconf
   * libtool
-  * libfuse 
+  * libfuse
   * net-snmp
   * libuuid
   * libxml2
@@ -138,15 +138,15 @@ max_active_device=44  def_reserved_size=32768
 
 ##### Note for the lpfc driver (Emulex Fibre HBAs)
 
-In the lpfc driver (for Emulex Fibre HBAs), the table size of the scutter-gather is 64 by default. This cofiguration may cause I/O errors intermittenly when `allow_dio=1` is set and scutter-gather table cannot be reserved. To avouid this error, you need to change the parameter `lpfc_sg_seg_cnt` to 256 or larger like below.
+In the lpfc driver (for Emulex Fibre HBAs), the table size of the scatter-gather is 64 by default. This configuration may cause I/O errors intermittently when `allow_dio=1` is set and scatter-gather table cannot be reserved. To avoid this error, you need to change the parameter `lpfc_sg_seg_cnt` to 256 or greater like below.
 
 ```
-options lpfc lpfc_sg_seg_cnt=256 
+options lpfc lpfc_sg_seg_cnt=256
 ```
 
-In some versions of the lpfc driver (for Emulex Fibre HBAs), the table size of the scutter-gather cannot be changed correctly. You can check the value is changed or not in `sg_tablesize` value in `/proc/scsi/sg/debug`. If you don't have a correct value (256 or later) in `sg_tablesize`, removing `allow_dio=1` configuration of the sg driver is strongly recommended. 
+In some versions of the lpfc driver (for Emulex Fibre HBAs), the table size of the scatter-gather cannot be changed correctly. You can check the value is changed or not in `sg_tablesize` value in `/proc/scsi/sg/debug`. If you don't have a correct value (256 or greater) in `sg_tablesize`, removing `allow_dio=1` configuration of the sg driver is strongly recommended.
 
-##### Performnce improvement of the sg device
+##### Performance improvement of the sg device
 
 On some HBA's, you can improve reliability to change parameters of the sg driver below. But this option may cause IO error reported as #144.
 
@@ -160,11 +160,11 @@ In RHEL7, you can put following file as `/etc/modprobe.d/sg.conf`.
 options sg allow_dio=1
 ```
 
-At this time, following HBA's may work correctly.
+At this time, we know following HBA's works correctly.
 
 - QLogic 8Gb FC HBAs
 
-And following HBA's doen't work correctly.
+And following HBA's doesn't work correctly.
 
 - ATTO ExpressSAS H680
 - Emulex FC HBAs
@@ -175,12 +175,12 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
 
 #### Buildable distributions
 
-  | Dist                          | Arch    | Status      | 
-  |:-:                            |:-:      |:-:          | 
+  | Dist                          | Arch    | Status      |
+  |:-:                            |:-:      |:-:          |
   | RHEL 7                        | x86_64  | OK          |
   | RHEL 7                        | ppc64le | OK          |
   | CentOS 7                      | x86_64  | OK          |
-  | CentOS 7                      | ppc64le | Probably OK |  
+  | CentOS 7                      | ppc64le | Probably OK |
   | Fedora 28                     | x86_64  | OK          |
   | Ubuntu 16.04 LTS              | x86_64  | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
   | Ubuntu 18.04 LTS              | x86_64  | OK          |
@@ -212,7 +212,7 @@ make install
 
 #### Buildable systems
 
-  | OS            | Xcode  | Package system | Status      | 
+  | OS            | Xcode  | Package system | Status      |
   |:-:            |:-:     |:-:             |:-:          |
   | macOS 10.13   |  9.4.1 | Homebrew       | OK          |
   | macOS 10.14.5 | 10.2.1 | Homebrew       | OK          |
@@ -230,8 +230,8 @@ make install
 
 #### Buildable versions
 
-  | Version | Arch    | Status      | 
-  |:-:      |:-:      |:-:          | 
+  | Version | Arch    | Status      |
+  |:-:      |:-:      |:-:          |
   | 11      | x86_64  | OK          |
 
 ### Build and install on NetBSD
@@ -245,12 +245,12 @@ make install
 
 #### Buildable versions
 
-  | Version | Arch    | Status      | 
-  |:-:      |:-:      |:-:          | 
+  | Version | Arch    | Status      |
+  |:-:      |:-:      |:-:          |
   | 8.1     | amd64   | OK          |
   | 8.0     | i386    | OK          |
   | 7.2     | amd64   | OK          |
-  
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](.github/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
