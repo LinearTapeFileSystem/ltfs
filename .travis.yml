@@ -12,6 +12,7 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew install libxml2 icu4c     ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew install ossp-uuid gnu-sed ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew cask install osxfuse ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then ln -s /usr/local/Cellar/icu4c/*/bin/genrb /usr/local/bin/genrb ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update                                      ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libfuse2 libfuse-dev             ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libxml2 libxml2-dev              ; fi
