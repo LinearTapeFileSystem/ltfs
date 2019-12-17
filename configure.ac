@@ -347,6 +347,7 @@ then
        PKG_CHECK_MODULES([ICU_UC_MODULE], [icu >= 0.21])
     else
        PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
+    fi
 fi
 
 if test "x${host_mac}" = "xyes"
