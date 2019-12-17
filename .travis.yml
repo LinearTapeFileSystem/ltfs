@@ -22,7 +22,7 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libuuid1 uuid-dev                ; fi
 
 script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then   ./autogen.sh && LDFLAGS="-framework CoreFoundation -framework IOKit" ./configure --disable-snmp && make ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then   ./autogen.sh && LDFLAGS="-framework CoreFoundation -framework IOKit" ./configure --enable-icu-6x --disable-snmp && make ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./autogen.sh && ./configure --prefix=/tmp && make && make install                                       ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd /tmp && git clone https://github.com/LinearTapeFileSystem/ltfs-backends.git && cd ltfs-backends      ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/tmp/lib/pkgconfig                                            ; fi
