@@ -192,6 +192,16 @@ Currently, automatic build checking is working on Travis CI with Ubuntu 16.04 LT
 
 ### Build and install on OSX (macOS)
 
+#### Recent Homedrew system
+Before build on macOS, you need to include path to `/usr/local/Cellar/icu4c/[ICU_VERSION]/bin`
+
+```
+./autogen.sh
+LDFLAGS="-framework CoreFoundation -framework IOKit" ./configure --enable-icu-6x --disable-snmp
+make
+```
+
+#### Old Homedrew system
 Before build on OSX (macOS), some include path adjustment is required.
 
 ```
