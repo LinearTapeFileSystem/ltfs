@@ -460,10 +460,12 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 
 	/* Update read only flags */
 	ltfs_mutex_lock(&dev->read_only_flag_mutex);
-	if (param.write_protect || param.logical_write_protect)
-		dev->write_protected = true;
-	else
-		dev->write_protected = false;
+
+	/* TODO: Need to handle logical write protect here */
+	dev->write_protected = 0;
+	if (param.write_protect)
+		dev->write_protected = param.write_protect;
+
 	dev->write_error = false;
 	if (cap.max_p0 && cap.max_p1 && !cap.remaining_p0)
 		dev->partition_space[0] = PART_NO_SPACE;
