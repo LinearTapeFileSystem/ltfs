@@ -342,7 +342,6 @@ ICU_MODULE_CFLAGS="`icu-config --cppflags 2> /dev/null`";
 ICU_MODULE_LIBS="`icu-config --ldflags 2> /dev/null`";
 if test -z "$ICU_MODULE_LIBS"
 then
-    if test "x${host_mac}" = "xyes"
     PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
 fi
 
