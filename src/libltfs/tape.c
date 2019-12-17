@@ -462,6 +462,7 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 	ltfs_mutex_lock(&dev->read_only_flag_mutex);
 
 	/* TODO: Need to handle logical write protect here */
+	dev->write_protected = 0;
 	if (param.write_protect)
 		dev->write_protected = param.write_protect;
 
