@@ -11,11 +11,9 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew update                    ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew install ossp-uuid gnu-sed ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew cask install osxfuse ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then ln -s /usr/local/Cellar/icu4c/*/bin/genrb   /usr/local/bin/genrb                                ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then ln -s /usr/local/Cellar/icu4c/*/bin/pkgdata /usr/local/bin/pkgdata                              ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then ln -s /usr/local/Cellar/icu4c/*/lib/pkgconfig/icu-uc.pc   /usr/local/lib/pkgconfig/icu-uc.pc    ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then ln -s /usr/local/Cellar/icu4c/*/lib/pkgconfig/icu-io.pc   /usr/local/lib/pkgconfig/icu-io.pc    ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then ln -s /usr/local/Cellar/icu4c/*/lib/pkgconfig/icu-i18n.pc /usr/local/lib/pkgconfig/icu-i18n.pc  ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then ln -s /usr/local/Cellar/icu4c/*/bin/genrb   /usr/local/bin/genrb         ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then ln -s /usr/local/Cellar/icu4c/*/bin/pkgdata /usr/local/bin/pkgdata       ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then ln -s /usr/local/Cellar/icu4c/*/bin/icu-config /usr/local/bin/icu-config ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update                                      ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libfuse2 libfuse-dev             ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libxml2 libxml2-dev              ; fi

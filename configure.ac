@@ -343,17 +343,7 @@ ICU_MODULE_LIBS="`icu-config --ldflags 2> /dev/null`";
 if test -z "$ICU_MODULE_LIBS"
 then
     if test "x${host_mac}" = "xyes"
-    then
-       PKG_CHECK_MODULES([ICU_UC_MODULE], [icu >= 0.21])
-    else
-       PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
-    fi
-fi
-
-if test "x${host_mac}" = "xyes"
-then
-    ICU_MODULE_CFLAGS="${ICU_UC_MODULE_CFLAGS}"
-    ICU_MODULE_LIBS="${ICU_UC_MODULE_LIBS}"
+    PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
 fi
 
 AC_MSG_CHECKING([use latest ICU])
