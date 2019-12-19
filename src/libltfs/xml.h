@@ -224,6 +224,12 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 	} \
 } while (0)
 
+#define get_tag_text_allow_zero_length() do { \
+	assert_not_empty(); \
+	if (xml_scan_text(reader, &value) < 0) \
+		return -1; \
+} while (0)
+
 /* get text from a tag. if successful, it reads the text into "value".
  * It does not consume the remainder of the tag. */
 #define get_tag_text_allow_empty() do { \

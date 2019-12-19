@@ -209,6 +209,60 @@ static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, boo
 	return ret;
 }
 
+static int _xml_parse_nametype_allow_zero_length(xmlTextReaderPtr reader, struct ltfs_name *n, bool target)
+{
+	const char name[] = "nametype", *value;
+	char *decoded_name, *encoded_name, *encode;
+	int empty, ret = -1;
+
+	encode = (char *)xmlTextReaderGetAttribute(reader, BAD_CAST "percentencoded");
+	if (encode && !strcmp(encode, "true")) {
+		n->percent_encode = true;
+	} else {
+		n->percent_encode = false;
+	}
+
+	/* Free up encode attribute allocated by xmlTextReaderGetAttribute() */
+	if (encode) free(encode);
+
+	get_tag_text_allow_zero_length();
+
+	if (!strlen(value)) {
+		n->name           = NULL;
+		n->percent_encode = false;
+		return 0;
+	}
+
+	encoded_name = strdup(value);
+	if (!encoded_name) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -LTFS_NO_MEMORY;
+	}
+
+	if (n->percent_encode) {
+		decode_entry_name(&decoded_name, encoded_name);
+		free(encoded_name);
+	} else {
+		decoded_name = encoded_name;
+	}
+
+	if (target)
+		ret = xml_parse_target(&n->name, decoded_name);
+	else
+		ret = xml_parse_filename(&n->name, decoded_name);
+
+	if (ret < 0) {
+		if (n->name) {
+			free(n->name);
+			n->name = NULL;
+		}
+	}
+
+	free(decoded_name);
+
+	return ret;
+}
+
 /**
  * Verify that a given string really does represent a partition (single character, a-z).
  */
@@ -1214,11 +1268,12 @@ static int _xml_parse_dirtree(xmlTextReaderPtr reader, struct dentry *parent,
 					idx->volume_name.percent_encode = false;
 					idx->volume_name.name = NULL;
 				} else {
-					ret = _xml_parse_nametype(reader, &idx->volume_name, false);
+					ret = _xml_parse_nametype_allow_zero_length(reader, &idx->volume_name, false);
 					if (ret < 0)
 						return ret;
 
-					check_tag_end("name");
+					if (idx->volume_name.name)
+						check_tag_end("name");
 				}
 			}
 
