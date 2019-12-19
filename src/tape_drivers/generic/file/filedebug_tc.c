@@ -434,6 +434,8 @@ int filedebug_open(const char *name, void **handle)
 		}
 
 		/* Run on file mode */
+		if (devname == NULL)
+			devname = strdup(name);
 		ltfsmsg(LTFS_INFO, 30001I, devname);
 		state->fd = open(devname, O_RDWR | O_BINARY);
 		if (state->fd < 0) {
