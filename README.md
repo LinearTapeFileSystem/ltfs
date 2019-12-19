@@ -192,16 +192,18 @@ Currently, automatic build checking is working on Travis CI with Ubuntu 16.04 LT
 
 ### Build and install on OSX (macOS)
 
-#### Recent Homedrew system
-Before build on macOS, you need to include path to `/usr/local/Cellar/icu4c/[ICU_VERSION]/bin`
+#### Recent Homedrew system setup
+
+Before build on macOS, you need to configure the environment like below.
 
 ```
-./autogen.sh
-LDFLAGS="-framework CoreFoundation -framework IOKit" ./configure --enable-icu-6x --disable-snmp
-make
+export ICU_PATH="/usr/local/opt/icu4c/bin"
+export LIBXML2_PATH="/usr/local/opt/libxml2/bin"
+export PKG_CONFIG_PATH="/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig"
+export PATH="$PATH:$ICU_PATH:$LIBXML2_PATH"
 ```
 
-#### Old Homedrew system
+#### Old Homedrew system setup
 Before build on OSX (macOS), some include path adjustment is required.
 
 ```
@@ -209,6 +211,7 @@ brew link --force icu4c
 brew link --force libxml2
 ```
 
+#### Building LTFS
 On OSX (macOS), snmp cannot be supported, you need to disable it on configure script. And may be, you need to specify LDFLAGS while running configure script to link some required frameworks, CoreFundation and IOKit.
 
 ```
@@ -224,8 +227,7 @@ make install
 
   | OS            | Xcode  | Package system | Status      |
   |:-:            |:-:     |:-:             |:-:          |
-  | macOS 10.13   |  9.4.1 | Homebrew       | OK          |
-  | macOS 10.14.5 | 10.2.1 | Homebrew       | OK          |
+  | macOS 10.14.6 | 11.3   | Homebrew       | OK          |
 
 ### Build and install on FreeBSD
 
