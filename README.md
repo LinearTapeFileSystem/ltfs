@@ -183,7 +183,9 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
   | CentOS 7                      | ppc64le | Probably OK |
   | Fedora 28                     | x86_64  | OK          |
   | Ubuntu 16.04 LTS              | x86_64  | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
-  | Ubuntu 18.04 LTS              | x86_64  | OK          |
+  | Ubuntu 16.04 LTS              | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|  
+  | Ubuntu 18.04 LTS              | x86_64  | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
+  | Ubuntu 18.04 LTS              | ppc64le  | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
   | Debian 9.10                   | x86_64  | OK          |
   | ArchLinux 2018.08.01          | x86_64  | OK          |
   | ArchLinux 2018.12.31 (rolling)| x86_64  | OK          |
