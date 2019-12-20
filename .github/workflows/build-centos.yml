@@ -4,10 +4,12 @@ on: [push, pull_request]
 
 jobs:
   build:
-
+    name: Build on ${{ matrix.container }}
     runs-on: ubuntu-latest
+    container: ${{ matrix.container }}
+    strategy:
+      matrix:
+        container: [ 'docker://centos:centos7' ]
 
     steps:
-      - name: Docker Run
-        uses: docker://centos:centos7
       - run: uname -a
