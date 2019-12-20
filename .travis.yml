@@ -4,6 +4,10 @@ matrix:
   include:
     - os: linux
       dist: xenial
+      arch: amd64
+    - os: linux
+      dist: xenial
+      arch: ppc64le
     - os: osx
       osx_image: xcode9.4
       env:
