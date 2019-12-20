@@ -32,7 +32,7 @@ before_install:
   - if [[ "$TRAVIS_DIST" == "bionic" ]]; then sudo apt-get update                                      ; fi
   - if [[ "$TRAVIS_DIST" == "bionic" ]]; then sudo apt-get install -y libfuse2 libfuse-dev             ; fi
   - if [[ "$TRAVIS_DIST" == "bionic" ]]; then sudo apt-get install -y libxml2 libxml2-dev              ; fi
-  - if [[ "$TRAVIS_DIST" == "bionic" ]]; then sudo apt-get install -y libicu libicu-dev icu-devtools   ; fi
+  - if [[ "$TRAVIS_DIST" == "bionic" ]]; then sudo apt-get install -y libicu60 libicu-dev icu-devtools ; fi
   - if [[ "$TRAVIS_DIST" == "bionic" ]]; then sudo apt-get install -y libsnmp30 libsnmp-dev            ; fi
   - if [[ "$TRAVIS_DIST" == "bionic" ]]; then sudo apt-get install -y libuuid1 uuid-dev                ; fi
 
