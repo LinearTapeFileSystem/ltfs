@@ -8,5 +8,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Docker Init
+      - name: Docker Run
         uses: docker://centos:centos7
+      - run: cat /etc/redhat-release
