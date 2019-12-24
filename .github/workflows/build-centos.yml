@@ -12,8 +12,6 @@ jobs:
         uses: actions/checkout@v1
       - name: Build LTFS
         id: build
-        uses: LinearTapeFileSystem/CentOS-Build@v0.5
+        uses: LinearTapeFileSystem/CentOS-Build@v0.6
         with:
           destination: '/tmp/ltfs'
-      - name: Get the output time
-        run: echo "The time was ${{ steps.build.outputs.time }}"
