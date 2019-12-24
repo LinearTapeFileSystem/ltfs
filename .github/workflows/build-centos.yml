@@ -13,7 +13,7 @@ jobs:
       - uses: ./ # Uses an action in the root directory
       - name: Hello world action step
         id: hello
-        uses: actions/CentOS-Build@v0.1
+        uses: LinearTapeFileSystem/CentOS-Build@v0.1
         with:
           who-to-greet: 'Mona the Octocat'
       - name: Get the output time
