@@ -12,6 +12,6 @@ jobs:
         uses: actions/checkout@v1
       - name: Build LTFS
         id: build
-        uses: LinearTapeFileSystem/Debian9-Build@v0.2
+        uses: LinearTapeFileSystem/Debian9-Build@v0.3
         with:
           destination: '/tmp/ltfs'
