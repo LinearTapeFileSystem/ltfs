@@ -179,11 +179,11 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
   |:-:                            |:-:      |:-:          |
   | RHEL 7                        | x86_64  | OK          |
   | RHEL 7                        | ppc64le | OK          |
-  | CentOS 7                      | x86_64  | OK          |
+  | CentOS 7                      | x86_64  | ![CentOS7 status](https://github.com/LinearTapeFileSystem/ltfs/workflows/build-centos7/badge.svg?branch=master)          |
   | CentOS 7                      | ppc64le | Probably OK |
   | Fedora 28                     | x86_64  | OK          |
   | Ubuntu 16.04 LTS              | x86_64  | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
-  | Ubuntu 16.04 LTS              | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|  
+  | Ubuntu 16.04 LTS              | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
   | Ubuntu 18.04 LTS              | x86_64  | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
   | Ubuntu 18.04 LTS              | ppc64le  | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
   | Debian 9.10                   | x86_64  | OK          |

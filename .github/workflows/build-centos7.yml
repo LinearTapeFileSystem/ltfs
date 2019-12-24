@@ -1,0 +1,17 @@
+name: CentOS7 Build Job
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build on CentOS7
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v1
+      - name: Build LTFS
+        id: build
+        uses: LinearTapeFileSystem/CentOS7-Build@v1.0
+        with:
+          destination: '/tmp/ltfs'
