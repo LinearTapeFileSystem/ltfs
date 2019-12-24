@@ -10,7 +10,6 @@ jobs:
     steps:
       - name: Set up Git repository
         uses: actions/checkout@v1
-      - uses: ./ # Uses an action in the root directory
       - name: Hello world action step
         id: hello
         uses: LinearTapeFileSystem/CentOS-Build@v0.2
