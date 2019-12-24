@@ -1,10 +1,10 @@
-name: CentOS Build Jobs
+name: CentOS7 Build Job
 
 on: [push, pull_request]
 
 jobs:
   build:
-    name: Build on CentOS
+    name: Build on CentOS7
     runs-on: ubuntu-latest
 
     steps:
