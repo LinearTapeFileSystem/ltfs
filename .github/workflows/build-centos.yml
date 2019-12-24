@@ -10,10 +10,10 @@ jobs:
     steps:
       - name: Set up Git repository
         uses: actions/checkout@v1
-      - name: Hello world action step
-        id: hello
-        uses: LinearTapeFileSystem/CentOS-Build@v0.2
+      - name: Build LTFS
+        id: build
+        uses: LinearTapeFileSystem/CentOS-Build@v0.3
         with:
           who-to-greet: 'Mona the Octocat'
       - name: Get the output time
-        run: echo "The time was ${{ steps.hello.outputs.time }}"
+        run: echo "The time was ${{ steps.build.outputs.time }}"
