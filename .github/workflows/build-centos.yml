@@ -4,12 +4,17 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: Build on ${{ matrix.container }}
+    name: Build on CentOS
     runs-on: ubuntu-latest
-    container: ${{ matrix.container }}
-    strategy:
-      matrix:
-        container: [ 'docker://centos:centos7' ]
 
     steps:
-      - run: uname -a
+      - name: Set up Git repository
+        uses: actions/checkout@v1
+      - uses: ./ # Uses an action in the root directory
+      - name: Hello world action step
+        id: hello
+        uses: actions/CentOS-Build@v0.1
+        with:
+          who-to-greet: 'Mona the Octocat'
+      - name: Get the output time
+        run: echo "The time was ${{ steps.hello.outputs.time }}"
