@@ -1,0 +1,17 @@
+name: Ubuntu 18.04 Build Job
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build on Ubuntu Bionic
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v1
+      - name: Build LTFS
+        id: build
+        uses: LinearTapeFileSystem/Ubuntu1804-Build@v0.1
+        with:
+          destination: '/tmp/ltfs'
