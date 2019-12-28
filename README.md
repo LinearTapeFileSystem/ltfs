@@ -182,9 +182,9 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
   | CentOS 7                      | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)|
   | CentOS 7                      | ppc64le | Probably OK |
   | Fedora 28                     | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)|
-  | Ubuntu 16.04 LTS              | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu1604%20Build%20Job/badge.svg?branch=master)|
+  | Ubuntu 16.04 LTS              | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master)|
   | Ubuntu 16.04 LTS              | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
-  | Ubuntu 18.04 LTS              | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu1804%20Build%20Job/badge.svg?branch=master)|
+  | Ubuntu 18.04 LTS              | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master)|
   | Ubuntu 18.04 LTS              | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
   | Debian 9                      | x86_64  |
   | ArchLinux 2018.08.01          | x86_64  | OK          |
