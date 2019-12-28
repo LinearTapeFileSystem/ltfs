@@ -5,13 +5,13 @@ on: [push, pull_request]
 jobs:
   build:
     name: Build on Ubuntu Xeneal
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
-    - name: package setup
-      run: apt -y update && apt -y upgrade && apt -y install libfuse-dev libxml2-dev
-    - name: configure
-      run: ./autogen.sh && ./configure
-    - name: make
-      run: make
+      - name: Set up Git repository
+        uses: actions/checkout@v1
+      - name: Build LTFS
+        id: build
+        uses: LinearTapeFileSystem/Ubuntu1604-Build@v1.0
+        with:
+          destination: '/tmp/ltfs'
