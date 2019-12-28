@@ -12,6 +12,6 @@ jobs:
         uses: actions/checkout@v1
       - name: Build LTFS
         id: build
-        uses: LinearTapeFileSystem/Ubuntu1604-Build@v0.1
+        uses: LinearTapeFileSystem/Ubuntu1604-Build@v1.0
         with:
           destination: '/tmp/ltfs'
