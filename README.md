@@ -1,5 +1,5 @@
 ![](https://img.shields.io/github/issues/lineartapefilesystem/ltfs.svg)
-[![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)
+![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)
 [![CodeFactor](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs/badge)](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs)
 [![BSD License](http://img.shields.io/badge/license-BSD-blue.svg?style=flat)](LICENSE)
 
@@ -182,11 +182,11 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
   | CentOS 7                      | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)|
   | CentOS 7                      | ppc64le | Probably OK |
   | Fedora 28                     | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)|
-  | Ubuntu 16.04 LTS              | x86_64  | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
+  | Ubuntu 16.04 LTS              | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu1604%20Build%20Job/badge.svg?branch=master)|
   | Ubuntu 16.04 LTS              | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
-  | Ubuntu 18.04 LTS              | x86_64  | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
-  | Ubuntu 18.04 LTS              | ppc64le  | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
-  | Debian 9                      | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)|
+  | Ubuntu 18.04 LTS              | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu1804%20Build%20Job/badge.svg?branch=master)|
+  | Ubuntu 18.04 LTS              | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs)|
+  | Debian 9                      | x86_64  |
   | ArchLinux 2018.08.01          | x86_64  | OK          |
   | ArchLinux 2018.12.31 (rolling)| x86_64  | OK          |
 

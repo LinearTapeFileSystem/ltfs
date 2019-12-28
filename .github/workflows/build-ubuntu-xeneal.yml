@@ -1,10 +1,10 @@
-name: CentOS7 Build Job
+name: Ubuntu 16.04 Build Job
 
 on: [push, pull_request]
 
 jobs:
   build:
-    name: Build on CentOS7
+    name: Build on Ubuntu Xeneal
     runs-on: ubuntu-latest
 
     steps:
@@ -12,6 +12,6 @@ jobs:
         uses: actions/checkout@v1
       - name: Build LTFS
         id: build
-        uses: LinearTapeFileSystem/CentOS7-Build@v1.2
+        uses: LinearTapeFileSystem/Ubuntu1604-Build@v1.0
         with:
           destination: '/tmp/ltfs'
