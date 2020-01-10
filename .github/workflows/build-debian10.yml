@@ -1,0 +1,17 @@
+name: Debian10 Build Job
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build on Debian10
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v1
+      - name: Build LTFS
+        id: build
+        uses: LinearTapeFileSystem/Debian10-Build@v0.1
+        with:
+          destination: '/tmp/ltfs'
