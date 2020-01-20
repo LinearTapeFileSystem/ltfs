@@ -183,9 +183,9 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
   | CentOS 7                      | ppc64le | Probably OK |
   | Fedora 28                     | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)|
   | Ubuntu 16.04 LTS              | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master)|
-  | Ubuntu 16.04 LTS              | ppc64le | Probably OK |
+  | Ubuntu 16.04 LTS              | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
   | Ubuntu 18.04 LTS              | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master)|
-  | Ubuntu 18.04 LTS              | ppc64le | Probably OK |
+  | Ubuntu 18.04 LTS              | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
   | Ubuntu 19.10 (Need icu-config)| x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2019.10%20Build%20Job/badge.svg?branch=master)|  
   | Debian 9                      | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)|
   | Debian 10 (Need icu-config)   | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian10%20Build%20Job/badge.svg?branch=master)|
@@ -233,7 +233,7 @@ make install
 
   | OS            | Xcode  | Package system | Status      |
   |:-:            |:-:     |:-:             |:-:          |
-  | macOS 10.14.6 | 11.3   | Homebrew       | OK          |
+  | macOS 10.14.6 | 11.3   | Homebrew       | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
 
 ### Build and install on FreeBSD
 
