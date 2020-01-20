@@ -17,11 +17,11 @@ matrix:
 #      arch: amd64
 #      env:
 #          BUILD="Ubuntu Bionic"
-#    - os: linux
-#      dist: bionic
-#      arch: ppc64le
-#      env:
-#          BUILD="Ubuntu Bionic"
+    - os: linux
+      dist: bionic
+      arch: ppc64le
+      env:
+          BUILD="Ubuntu Bionic"
     - os: osx
       osx_image: xcode11.3
       env:
@@ -31,9 +31,10 @@ matrix:
           PATH="$PATH:$ICU_PATH:$LIBXML2_PATH"
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew update                    ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew install ossp-uuid gnu-sed ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew cask install osxfuse ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update                    ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew upgrade                   ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install ossp-uuid gnu-sed ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew cask install osxfuse ; fi
   - if [[ "$TRAVIS_DIST" == "xenial" ]]; then sudo apt-get update                                      ; fi
   - if [[ "$TRAVIS_DIST" == "xenial" ]]; then sudo apt-get install -y libfuse2 libfuse-dev             ; fi
   - if [[ "$TRAVIS_DIST" == "xenial" ]]; then sudo apt-get install -y libxml2 libxml2-dev              ; fi
