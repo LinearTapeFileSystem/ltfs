@@ -31,8 +31,9 @@ matrix:
           PATH="$PATH:$ICU_PATH:$LIBXML2_PATH"
 
 before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then find /usr/local -name "genrb"  ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ls /usr/local/opt -l           ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update                    ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew upgrade                   ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install ossp-uuid gnu-sed ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew cask install osxfuse      ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew list                      ; fi
