@@ -136,19 +136,9 @@ max_active_device=44  def_reserved_size=32768
      No requests active
 ```
 
-##### Note for the lpfc driver (Emulex Fibre HBAs)
-
-In the lpfc driver (for Emulex Fibre HBAs), the table size of the scatter-gather is 64 by default. This configuration may cause I/O errors intermittently when `allow_dio=1` is set and scatter-gather table cannot be reserved. To avoid this error, you need to change the parameter `lpfc_sg_seg_cnt` to 256 or greater like below.
-
-```
-options lpfc lpfc_sg_seg_cnt=256
-```
-
-In some versions of the lpfc driver (for Emulex Fibre HBAs), the table size of the scatter-gather cannot be changed correctly. You can check the value is changed or not in `sg_tablesize` value in `/proc/scsi/sg/debug`. If you don't have a correct value (256 or greater) in `sg_tablesize`, removing `allow_dio=1` configuration of the sg driver is strongly recommended.
-
 ##### Performance improvement of the sg device
 
-On some HBA's, you can improve reliability to change parameters of the sg driver below. But this option may cause IO error reported as #144.
+You can improve performance to change parameters of the sg driver below. But this option may cause I/O error reported as #144 in some HBAs.
 
 ```
 allow_dio=1
@@ -167,7 +157,17 @@ At this time, we know following HBA's works correctly.
 And following HBA's doesn't work correctly.
 
 - ATTO ExpressSAS H680
-- Emulex FC HBAs
+- Emulex FC HBAs (Some drivers work but some drivers dont work, see this [section](#note-for-the-lpfc-driver-emulex-fibre-hbas))
+
+##### Note for the lpfc driver (Emulex Fibre HBAs)
+
+In the lpfc driver (for Emulex Fibre HBAs), the table size of the scatter-gather is 64 by default. This configuration may cause I/O errors intermittently when `allow_dio=1` is set and scatter-gather table cannot be reserved. To avoid this error, you need to change the parameter `lpfc_sg_seg_cnt` to 256 or greater like below.
+
+```
+options lpfc lpfc_sg_seg_cnt=256
+```
+
+In some versions of the lpfc driver (for Emulex Fibre HBAs), the table size of the scatter-gather cannot be changed correctly. You can check the value is changed or not in `sg_tablesize` value in `/proc/scsi/sg/debug`. If you don't have a correct value (256 or greater) in `sg_tablesize`, removing `allow_dio=1` configuration of the sg driver is strongly recommended.
 
 #### IBM lin_tape driver support
 
