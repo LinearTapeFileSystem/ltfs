@@ -106,7 +106,6 @@ static inline int init_sg_io_header(sg_io_hdr_t *req)
 	memset(req, 0, sizeof(sg_io_hdr_t));
 
 	req->interface_id = 'S';
-	req->flags        = SG_FLAG_LUN_INHIBIT;
 
 	return 0;
 }
