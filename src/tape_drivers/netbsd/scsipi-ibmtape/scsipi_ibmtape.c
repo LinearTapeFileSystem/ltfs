@@ -362,6 +362,7 @@ static int _get_dump(struct scsipi_ibmtape_data *priv, char *fname)
 
 	} /* end of while(num_transfers) */
 
+	free(dump_buf);
 	close(dumpfd);
 
 	return ret;

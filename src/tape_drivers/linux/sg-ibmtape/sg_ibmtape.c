@@ -368,6 +368,7 @@ static int _get_dump(struct sg_ibmtape_data *priv, char *fname)
 
 	} /* end of while(num_transfers) */
 
+	free(dump_buf);
 	close(dumpfd);
 
 	return ret;
@@ -1307,7 +1308,8 @@ int sg_ibmtape_open(const char *devname, void **handle)
 	/* Setup IBM tape specific parameters */
 	standard_table = standard_tape_errors;
 	vendor_table   = ibm_tape_errors;
-	ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
+	if (!priv->timeouts)
+		ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
 
 	/* Issue TURs to clear POR sense */
 	_clear_por(priv);
