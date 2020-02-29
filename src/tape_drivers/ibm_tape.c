@@ -967,22 +967,15 @@ static int _create_table_tape(struct timeout_tape **result,
 {
 	struct _timeout_tape* cur;
 	struct timeout_tape* entry;
+	struct timeout_tape *out = NULL;
 
 	entry = malloc(sizeof(struct timeout_tape));
-
-	entry->op_code  = base->op_code;
-	entry->timeout = base->timeout;
+	entry->op_code  = override->op_code;
+	entry->timeout = override->timeout;
 	HASH_ADD_INT(*result, op_code, entry);
 	if (! *result) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
-	}
-
-	for ( cur = base + 1; cur->op_code != -1; ++cur) {
-		entry = malloc(sizeof(struct timeout_tape));
-		entry->op_code  = cur->op_code;
-		entry->timeout = cur->timeout;
-		HASH_ADD_INT(*result, op_code, entry);
 	}
 
 	for ( cur = override; cur->op_code != -1; ++cur) {
@@ -990,6 +983,17 @@ static int _create_table_tape(struct timeout_tape **result,
 		entry->op_code  = cur->op_code;
 		entry->timeout = cur->timeout;
 		HASH_ADD_INT(*result, op_code, entry);
+	}
+
+	for ( cur = base; cur->op_code != -1; ++cur) {
+		out = NULL;
+		HASH_FIND_INT(*result, &cur->op_code, out);
+		if (!out) {
+			entry = malloc(sizeof(struct timeout_tape));
+			entry->op_code  = cur->op_code;
+			entry->timeout = cur->timeout;
+			HASH_ADD_INT(*result, op_code, entry);
+		}
 	}
 
 	return 0;
