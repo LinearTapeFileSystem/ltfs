@@ -297,6 +297,7 @@ struct supported_device *ibm_supported_drives[] = {
 		TAPEDRIVE( IBM_VENDOR_ID, "0359255E",     DRIVE_TS1155,  "[0359255E]" ),     /* IBM TS1155 */
 		TAPEDRIVE( IBM_VENDOR_ID, "0359260F",     DRIVE_TS1160,  "[0359260F]" ),     /* IBM TS1160 */
 		TAPEDRIVE( IBM_VENDOR_ID, "0359260E",     DRIVE_TS1160,  "[0359260E]" ),     /* IBM TS1160 */
+		TAPEDRIVE( IBM_VENDOR_ID, "0359260S",     DRIVE_TS1160,  "[0359260S]" ),     /* IBM TS1160 */
 		/* End of supported_devices */
 		NULL
 };
