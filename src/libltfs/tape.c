@@ -510,6 +510,10 @@ int tape_unload_tape(bool keep_on_drive, struct device_data *dev)
 	if (! keep_on_drive) {
 		do {
 			ret = dev->backend->unload(dev->backend_data, &dev->position);
+			if (ret == -EDEV_CLEANING_REQUIRED) {
+				/* Ignore cleaning sense */
+				ret = 0;
+			}
 		} while (NEED_REVAL(ret));
 	}
 
@@ -2450,6 +2454,11 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable)
 	   the cartridge has to be unloaded before sending mode select. */
 	if (loaded && !enable && (mp_dev_config_ext[21]& 0xF0) == 0x10) {
 		ret = dev->backend->unload(dev->backend_data, &dev->position);
+		if (ret == -EDEV_CLEANING_REQUIRED) {
+			/* Ignore cleaning sense */
+			ret = 0;
+		}
+
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 17151E, ret);
 			return ret;
