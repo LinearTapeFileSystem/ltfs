@@ -1329,10 +1329,10 @@ int sg_ibmtape_open(const char *devname, void **handle)
 	return DEVICE_GOOD;
 
 free:
+	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_OPEN));
 	if (priv->devname)
 		free(priv->devname);
 	free(priv);
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_OPEN));
 	return ret;
 }
 
