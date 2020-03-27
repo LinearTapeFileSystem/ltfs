@@ -185,14 +185,25 @@ static int _set_lbp(void *device, bool enable)
 	unsigned char lbp_method = LBP_DISABLE;
 
 	/* Check logical block protection capability */
-	ret = scsipi_ibmtape_modesense(device, TC_MP_INIT_EXT, TC_MP_PC_CURRENT, 0x00, buf_ext, sizeof(buf_ext));
-	if (ret < 0)
-		return ret;
+	if (IS_ENTERPRISE(priv->drive_type)) {
+		ret = scsipi_ibmtape_modesense(device, TC_MP_INIT_EXT, TC_MP_PC_CURRENT, 0x00, buf_ext, sizeof(buf_ext));
+		if (ret < 0)
+			return ret;
 
-	if (buf_ext[0x12] & TC_MP_INIT_EXT_LBP_CRC32C)
-		lbp_method = CRC32C_CRC;
-	else
-		lbp_method = REED_SOLOMON_CRC;
+		if (buf_ext[0x12] & TC_MP_INIT_EXT_LBP_CRC32C)
+			lbp_method = CRC32C_CRC;
+		else
+			lbp_method = REED_SOLOMON_CRC;
+	} else {
+		/*
+		 * LTO drive doesn't have a modepage to support CRC32C or not
+		 * So use CRC32C based on it's generation
+		 */
+		if (DRIVE_GEN(priv->drive_type) >= 0x07)
+			lbp_method = CRC32C_CRC;
+		else
+			lbp_method = REED_SOLOMON_CRC;
+	}
 
 	/* set logical block protection */
 	ltfsmsg(LTFS_DEBUG, 30393D, "LBP Enable", enable, "");
