@@ -104,7 +104,7 @@ struct supported_device {
 
 #define TAPEDRIVE(v, p, t, n) &(struct supported_device){ v, p, t, n }
 
-/* Cartridge type in mode page header */
+/* LTO cartridge type in mode page header */
 enum {
 	TC_MP_LTO1D_CART  = 0x18,   /* LTO1 Data cartridge */
 	TC_MP_LTO2D_CART  = 0x28,   /* LTO2 Data cartridge */
@@ -114,12 +114,18 @@ enum {
 	TC_MP_LTO6D_CART  = 0x68,   /* LTO6 Data cartridge */
 	TC_MP_LTO7D_CART  = 0x78,   /* LTO7 Data cartridge */
 	TC_MP_LTO8D_CART  = 0x88,   /* LTO8 Data cartridge */
+	TC_MP_LTO9D_CART  = 0x98,   /* LTO9 Data cartridge */
 	TC_MP_LTO3W_CART  = 0x3C,   /* LTO3 WORM cartridge */
 	TC_MP_LTO4W_CART  = 0x4C,   /* LTO4 WORM cartridge */
 	TC_MP_LTO5W_CART  = 0x5C,   /* LTO5 WORM cartridge */
 	TC_MP_LTO6W_CART  = 0x6C,   /* LTO6 WORM cartridge */
 	TC_MP_LTO7W_CART  = 0x7C,   /* LTO7 WORM cartridge */
 	TC_MP_LTO8W_CART  = 0x8C,   /* LTO8 WORM cartridge */
+	TC_MP_LTO9W_CART  = 0x9C,   /* LTO9 WORM cartridge */
+};
+
+/* Enterprise cartridge type in mode page header */
+enum {
 	/* 1st gen cart */
 	TC_MP_JA          = 0x91,   /* IBM TS11x0 JA cartridge */
 	TC_MP_JW          = 0xA1,   /* IBM TS11x0 JW cartridge */

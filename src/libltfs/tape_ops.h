@@ -142,7 +142,7 @@ struct tc_remaining_cap {
 	uint64_t max_p1;         /* Maxmum capacity of partition 1 */
 };
 
-/* Density codes */
+/* Density codes of LTO */
 enum {
 	TC_DC_UNKNOWN = 0x00,
 	TC_DC_LTO1    = 0x40,
@@ -154,6 +154,11 @@ enum {
 	TC_DC_LTO7    = 0x5C,
 	TC_DC_LTOM8   = 0x5D,
 	TC_DC_LTO8    = 0x5E,
+	TC_DC_LTO9    = 0x60,
+};
+
+/* Density codes of TS11x0 */
+enum {
 	TC_DC_JAG1    = 0x51,
 	TC_DC_JAG2    = 0x52,
 	TC_DC_JAG3    = 0x53,
