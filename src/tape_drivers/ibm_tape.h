@@ -140,6 +140,8 @@ enum {
 	DRIVE_LTO7_HH     = 0x2207, /* IBM Ultrium Gen 7 Half-High */
 	DRIVE_LTO8        = 0x2108, /* IBM Ultrium Gen 8 */
 	DRIVE_LTO8_HH     = 0x2208, /* IBM Ultrium Gen 8 Half-High */
+	DRIVE_LTO9        = 0x2109, /* IBM Ultrium Gen 9 */
+	DRIVE_LTO9_HH     = 0x2209, /* IBM Ultrium Gen 9 Half-High */
 	DRIVE_TS1140      = 0x1104, /* TS1140 */
 	DRIVE_TS1150      = 0x1105, /* TS1150 */
 	DRIVE_TS1155      = 0x5105, /* TS1155 */
@@ -152,6 +154,7 @@ enum {
 	DRIVE_GEN_LTO6    = 0x2006,
 	DRIVE_GEN_LTO7    = 0x2007,
 	DRIVE_GEN_LTO8    = 0x2008,
+	DRIVE_GEN_LTO9    = 0x2009,
 	DRIVE_GEN_JAG4    = 0x1004,
 	DRIVE_GEN_JAG5    = 0x1005,
 	DRIVE_GEN_JAG5A   = 0x5005,

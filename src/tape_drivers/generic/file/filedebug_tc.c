@@ -1312,13 +1312,24 @@ static inline int _sanitize_tape(struct filedebug_data *state)
 		}
 	} else if (gen == DRIVE_GEN_LTO8) {
 		switch (state->conf.cart_type) {
-			case TC_MP_LTO6D_CART:
 			case TC_MP_LTO7D_CART:
 			case TC_MP_LTO8D_CART:
 				/* Do nothing */
 				break;
 			default:
 				ltfsmsg(LTFS_INFO, 30086I, "LTO8", state->conf.cart_type);
+				state->unsupported_tape = true;
+				ret = -EDEV_MEDIUM_FORMAT_ERROR;
+				break;
+		}
+	} else if (gen == DRIVE_GEN_LTO9) {
+		switch (state->conf.cart_type) {
+			case TC_MP_LTO8D_CART:
+			case TC_MP_LTO9D_CART:
+				/* Do nothing */
+				break;
+			default:
+				ltfsmsg(LTFS_INFO, 30086I, "LTO9", state->conf.cart_type);
 				state->unsupported_tape = true;
 				ret = -EDEV_MEDIUM_FORMAT_ERROR;
 				break;
