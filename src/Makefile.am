@@ -46,11 +46,11 @@ endif
 PLAT_DRV =
 
 if PLATFORM_LINUX
-PLAT_DRV += tape_drivers/linux/sg-ibmtape
+PLAT_DRV += tape_drivers/linux/sg
 endif
 
 if PLATFORM_MAC
-PLAT_DRV += tape_drivers/osx/iokit-ibmtape
+PLAT_DRV += tape_drivers/osx/iokit
 endif
 
 if PLATFORM_FREEBSD

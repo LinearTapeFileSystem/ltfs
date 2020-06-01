@@ -36,9 +36,9 @@
 **
 ** COMPONENT NAME:  IBM Linear Tape File System
 **
-** FILE NAME:       tape_drivers/osx/iokit/iokit_ibmtape.h
+** FILE NAME:       tape_drivers/linux/sg/sg_tape.h
 **
-** DESCRIPTION:     Definitions of iokit ibmtape backend
+** DESCRIPTION:     Definitions of sg tape backend
 **
 ** AUTHORS:         Atsushi Abe
 **                  IBM Tokyo Lab., Japan
@@ -47,10 +47,10 @@
 *************************************************************************************
 */
 
-#ifndef __sg_ibmtape_h
-#define __sg_ibmtape_h
+#ifndef __sg_tape_h
+#define __sg_tape_h
 
-struct sg_ibmtape_data {
+struct sg_data {
 	struct sg_tape       dev;                  /**< device structure of sg */
 	bool                 loaded;               /**< Is cartridge loaded? */
 	bool                 loadfailed;           /**< Is load/unload failed? */
@@ -83,7 +83,7 @@ struct sg_ibmtape_data {
 	FILE*                profiler;             /**< The file pointer for profiler */
 };
 
-struct sg_ibmtape_global_data {
+struct sg_global_data {
 	char     *str_crc_checking; /**< option string for crc_checking */
 	unsigned crc_checking;      /**< Is crc checking enabled? */
 	unsigned strict_drive;      /**< Is bar code length checked strictly? */
@@ -91,4 +91,4 @@ struct sg_ibmtape_global_data {
 	unsigned capacity_offset;   /**< Dummy capacity offset to create full tape earlier */
 };
 
-#endif // __sg_ibmtape_h
+#endif // __sg_tape_h
