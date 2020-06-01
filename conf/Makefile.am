@@ -3,7 +3,7 @@ dist_sysconf_DATA = ltfs.conf
 PLAT_OPT =
 
 if PLATFORM_LINUX
-PLAT_OPT += plugin tape sg __LIBDIR__/ltfs/libtape-sg-ibmtape.so
+PLAT_OPT += plugin tape sg __LIBDIR__/ltfs/libtape-sg.so
 endif
 
 if PLATFORM_MAC

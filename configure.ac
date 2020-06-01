@@ -608,7 +608,7 @@ AC_CONFIG_FILES([
     src/tape_drivers/generic/file/Makefile
     src/tape_drivers/generic/itdtimg/Makefile
     src/tape_drivers/linux/lin_tape/Makefile
-    src/tape_drivers/linux/sg-ibmtape/Makefile
+    src/tape_drivers/linux/sg/Makefile
     src/tape_drivers/osx/iokit/Makefile
     src/tape_drivers/freebsd/cam/Makefile
     src/tape_drivers/netbsd/scsipi-ibmtape/Makefile

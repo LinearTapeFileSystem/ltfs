@@ -33,16 +33,16 @@
 #  OO_Copyright_END
 #
 
-lib_LTLIBRARIES = libtape-sg-ibmtape.la
-BASENAMES = libtape-sg-ibmtape
+lib_LTLIBRARIES = libtape-sg.la
+BASENAMES = libtape-sg
 
 AM_LIBTOOLFLAGS = --tag=disable-static
 
-libtape_sg_ibmtape_la_SOURCES = sg_scsi_tape.c sg_ibmtape.c ibm_tape.c open_factor.c
-libtape_sg_ibmtape_la_DEPENDENCIES = ../../../../messages/libtape_linux_sg_ibmtape_dat.a ../../../libltfs/libltfs.la ./libtape_sg_ibmtape_la-reed_solomon_crc.lo ./libtape_sg_ibmtape_la-crc32c_crc.lo
-libtape_sg_ibmtape_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_sg_ibmtape_la-reed_solomon_crc.lo ./libtape_sg_ibmtape_la-crc32c_crc.lo
-libtape_sg_ibmtape_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_linux_sg_ibmtape_dat
-libtape_sg_ibmtape_la_CPPFLAGS = @AM_CPPFLAGS@ @AM_EXTRA_CPPFLAGS@ -I ../../.. -I ../..
+libtape_sg_la_SOURCES = sg_scsi_tape.c sg_tape.c ibm_tape.c open_factor.c
+libtape_sg_la_DEPENDENCIES = ../../../../messages/libtape_linux_sg_dat.a ../../../libltfs/libltfs.la ./libtape_sg_la-reed_solomon_crc.lo ./libtape_sg_la-crc32c_crc.lo
+libtape_sg_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_sg_la-reed_solomon_crc.lo ./libtape_sg_la-crc32c_crc.lo
+libtape_sg_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_linux_sg_dat
+libtape_sg_la_CPPFLAGS = @AM_CPPFLAGS@ @AM_EXTRA_CPPFLAGS@ -I ../../.. -I ../..
 
 ibm_tape.c:
 	ln -s ../../ibm_tape.c ./ibm_tape.c
@@ -53,11 +53,11 @@ open_factor.c:
 clean-local:
 	rm -f ibm_tape.c open_factor.c
 
-libtape_sg_ibmtape_la-reed_solomon_crc.lo: ../../reed_solomon_crc.c
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_sg_ibmtape_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_sg_ibmtape_la-reed_solomon_crc.lo -MD -MP -c -o libtape_sg_ibmtape_la-reed_solomon_crc.lo $<
+libtape_sg_la-reed_solomon_crc.lo: ../../reed_solomon_crc.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_sg_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_sg_la-reed_solomon_crc.lo -MD -MP -c -o libtape_sg_la-reed_solomon_crc.lo $<
 
-libtape_sg_ibmtape_la-crc32c_crc.lo: ../../crc32c_crc.c
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_sg_ibmtape_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_sg_ibmtape_la-crc32c_crc.lo -MD -MP -c -o libtape_sg_ibmtape_la-crc32c_crc.lo $<
+libtape_sg_la-crc32c_crc.lo: ../../crc32c_crc.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_sg_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_sg_la-crc32c_crc.lo -MD -MP -c -o libtape_sg_la-crc32c_crc.lo $<
 
 install-exec-hook:
 	mkdir -p $(DESTDIR)$(libdir)/ltfs

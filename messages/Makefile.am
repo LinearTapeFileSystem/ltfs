@@ -55,7 +55,7 @@ RESOURCES = \
 	libtape_generic_file_dat.a \
 	libtape_generic_itdtimg_dat.a \
 	libtape_linux_lin_tape_dat.a \
-	libtape_linux_sg_ibmtape_dat.a \
+	libtape_linux_sg_dat.a \
 	libtape_iokit_dat.a \
 	libtape_freebsd_cam_dat.a \
 	libiosched_fcfs_dat.a \
