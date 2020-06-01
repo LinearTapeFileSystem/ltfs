@@ -50,7 +50,7 @@ PLAT_DRV += tape_drivers/linux/sg-ibmtape
 endif
 
 if PLATFORM_MAC
-PLAT_DRV += tape_drivers/osx/iokit-ibmtape
+PLAT_DRV += tape_drivers/osx/iokit
 endif
 
 if PLATFORM_FREEBSD

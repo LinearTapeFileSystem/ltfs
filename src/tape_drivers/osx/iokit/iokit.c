@@ -36,7 +36,7 @@
 **
 ** COMPONENT NAME:  IBM Linear Tape File System
 **
-** FILE NAME:       tape_drivers/osx/iokit/iokit_ibmtape.c
+** FILE NAME:       tape_drivers/osx/iokit/iokit.c
 **
 ** DESCRIPTION:     LTFS IBM tape drive backend implementation for OS X
 **
@@ -76,7 +76,7 @@
 #include "iokit_scsi.h"
 
 /* Definitions of this backend*/
-#include "iokit_ibmtape.h"
+#include "iokit.h"
 
 #include "libltfs/ltfs_fuse_version.h"
 #include <fuse.h>
@@ -88,7 +88,7 @@ volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGH
 const char *default_device = "0";
 
 // Global values
-struct iokit_ibmtape_global_data global_data;
+struct iokit_global_data global_data;
 
 // Definitions
 #define LOG_PAGE_HEADER_SIZE      (4)
@@ -99,12 +99,12 @@ struct iokit_ibmtape_global_data global_data;
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 /* Forward references (For keep function order to struct tape_ops) */
-int iokit_ibmtape_readpos(void *device, struct tc_position *pos);
-int iokit_ibmtape_locate(void *device, struct tc_position dest, struct tc_position *pos);
-int iokit_ibmtape_logsense(void *device, const unsigned char page, unsigned char *buf, const size_t size);
-int iokit_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
+int iokit_readpos(void *device, struct tc_position *pos);
+int iokit_locate(void *device, struct tc_position dest, struct tc_position *pos);
+int iokit_logsense(void *device, const unsigned char page, unsigned char *buf, const size_t size);
+int iokit_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
 							const unsigned char subpage, unsigned char *buf, const size_t size);
-int iokit_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size);
+int iokit_modeselect(void *device, unsigned char *buf, const size_t size);
 static const char *_generate_product_name(const char *product_id);
 
 /* Local functions */
@@ -152,15 +152,15 @@ out:
  * @return a pointer to the iokit backend on success or NULL on error
  */
 
-#define iokit_ibmtape_opt(templ,offset,value)							\
-	{ templ, offsetof(struct iokit_ibmtape_global_data, offset), value }
+#define iokit_opt(templ,offset,value)							\
+	{ templ, offsetof(struct iokit_global_data, offset), value }
 
-static struct fuse_opt iokit_ibmtape_global_opts[] = {
-	iokit_ibmtape_opt("scsi_lbprotect=%s", str_crc_checking, 0),
-	iokit_ibmtape_opt("strict_drive",      strict_drive, 1),
-	iokit_ibmtape_opt("nostrict_drive",    strict_drive, 0),
-	iokit_ibmtape_opt("autodump",          disable_auto_dump, 0),
-	iokit_ibmtape_opt("noautodump",        disable_auto_dump, 1),
+static struct fuse_opt iokit_global_opts[] = {
+	iokit_opt("scsi_lbprotect=%s", str_crc_checking, 0),
+	iokit_opt("strict_drive",      strict_drive, 1),
+	iokit_opt("nostrict_drive",    strict_drive, 0),
+	iokit_opt("autodump",          disable_auto_dump, 0),
+	iokit_opt("noautodump",        disable_auto_dump, 1),
 	FUSE_OPT_END
 };
 
@@ -179,7 +179,7 @@ static int null_parser(void *priv, const char *arg, int key, struct fuse_args *o
 static int _set_lbp(void *device, bool enable)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	unsigned char buf[TC_MP_SUB_DP_CTRL_SIZE];
 	unsigned char buf_ext[TC_MP_INIT_EXT_SIZE];
@@ -187,7 +187,7 @@ static int _set_lbp(void *device, bool enable)
 
 	/* Check logical block protection capability */
 	if (IS_ENTERPRISE(priv->drive_type)) {
-		ret = iokit_ibmtape_modesense(device, TC_MP_INIT_EXT, TC_MP_PC_CURRENT, 0x00, buf_ext, sizeof(buf_ext));
+		ret = iokit_modesense(device, TC_MP_INIT_EXT, TC_MP_PC_CURRENT, 0x00, buf_ext, sizeof(buf_ext));
 		if (ret < 0)
 			return ret;
 
@@ -209,7 +209,7 @@ static int _set_lbp(void *device, bool enable)
 	/* set logical block protection */
 	ltfsmsg(LTFS_DEBUG, 30993D, "LBP Enable", enable, "");
 	ltfsmsg(LTFS_DEBUG, 30993D, "LBP Method", lbp_method, "");
-	ret = iokit_ibmtape_modesense(device, TC_MP_CTRL, TC_MP_PC_CURRENT,
+	ret = iokit_modesense(device, TC_MP_CTRL, TC_MP_PC_CURRENT,
 								  TC_MP_SUB_DP_CTRL, buf, sizeof(buf));
 	if (ret < 0)
 		return ret;
@@ -226,7 +226,7 @@ static int _set_lbp(void *device, bool enable)
 		buf[22] = 0;
 	}
 
-	ret = iokit_ibmtape_modeselect(device, buf, sizeof(buf));
+	ret = iokit_modeselect(device, buf, sizeof(buf));
 
 	if (ret == DEVICE_GOOD) {
 		if (enable) {
@@ -255,7 +255,7 @@ static int _set_lbp(void *device, bool enable)
 	return ret;
 }
 
-static bool is_dump_required(struct iokit_ibmtape_data *priv, int ret, bool *capture_unforced)
+static bool is_dump_required(struct iokit_data *priv, int ret, bool *capture_unforced)
 {
 	bool ans = false;
 	int err = -ret;
@@ -273,9 +273,9 @@ static bool is_dump_required(struct iokit_ibmtape_data *priv, int ret, bool *cap
 #define DUMP_TRANSFER_SIZE (512 * KB)
 
 static int _cdb_read_buffer(void *device, int id, unsigned char *buf, size_t offset, size_t len, int type);
-static int _cdb_force_dump(struct iokit_ibmtape_data *priv);
+static int _cdb_force_dump(struct iokit_data *priv);
 
-static int _get_dump(struct iokit_ibmtape_data *priv, char *fname)
+static int _get_dump(struct iokit_data *priv, char *fname)
 {
 	int ret = 0;
 
@@ -380,7 +380,7 @@ static int _get_dump(struct iokit_ibmtape_data *priv, char *fname)
 	return ret;
 }
 
-static int _take_dump(struct iokit_ibmtape_data *priv, bool capture_unforced)
+static int _take_dump(struct iokit_data *priv, bool capture_unforced)
 {
 	char      fname_base[1024];
 	char      fname[1024];
@@ -419,7 +419,7 @@ static int _take_dump(struct iokit_ibmtape_data *priv, bool capture_unforced)
 	return 0;
 }
 
-static void _process_errors(struct iokit_ibmtape_data *priv, int ret, char *msg, char *cmd, bool take_dump)
+static void _process_errors(struct iokit_data *priv, int ret, char *msg, char *cmd, bool take_dump)
 {
 	bool unforced_dump;
 
@@ -440,7 +440,7 @@ static void _process_errors(struct iokit_ibmtape_data *priv, int ret, char *msg,
 static int _cdb_read_buffer(void *device, int id, unsigned char *buf, size_t offset, size_t len, int type)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB10_LEN];
@@ -488,7 +488,7 @@ static int _cdb_read_buffer(void *device, int id, unsigned char *buf, size_t off
 	return ret;
 }
 
-static int _cdb_force_dump(struct iokit_ibmtape_data *priv)
+static int _cdb_force_dump(struct iokit_data *priv)
 {
 	int ret = -EDEV_UNKNOWN;
 
@@ -545,7 +545,7 @@ static int _cdb_force_dump(struct iokit_ibmtape_data *priv)
 static int _cdb_pri(void *device, unsigned char *buf, int size)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB10_LEN];
@@ -645,7 +645,7 @@ static int _cdb_pro(void *device,
 					unsigned char *key, unsigned char *sakey)
 {
 	int ret = -EDEV_UNKNOWN, f_ret;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB10_LEN];
@@ -727,27 +727,27 @@ start:
 }
 
 /* Global functions */
-int iokit_ibmtape_open(const char *devname, void **handle)
+int iokit_open(const char *devname, void **handle)
 {
 	char    *end;
 	int     drive_type = DRIVE_UNSUPPORTED;
 	int     ret = -1, count = 0, i;
 	int32_t drive_number;
 
-	struct iokit_ibmtape_data *priv;
+	struct iokit_data *priv;
 	scsi_device_identifier id_data;
 
 	ltfsmsg(LTFS_INFO, 30810I, devname);
 
-	priv = calloc(1, sizeof(struct iokit_ibmtape_data));
+	priv = calloc(1, sizeof(struct iokit_data));
 	if(!priv) {
-		ltfsmsg(LTFS_ERR, 10001E, "iokit_ibmtape_open: private data");
+		ltfsmsg(LTFS_ERR, 10001E, "iokit_open: private data");
 		return -EDEV_NO_MEMORY;
 	}
 
 	priv->devname = strdup(devname);
 	if (!priv->devname) {
-		ltfsmsg(LTFS_ERR, 10001E, "iokit_ibmtape_open: devname");
+		ltfsmsg(LTFS_ERR, 10001E, "iokit_open: devname");
 		free(priv);
 		return -EDEV_NO_MEMORY;
 	}
@@ -870,7 +870,7 @@ free:
 	return ret;
 }
 
-int iokit_ibmtape_reopen(const char *devname, void *device)
+int iokit_reopen(const char *devname, void *device)
 {
 	char    *end;
 	int     drive_type = DRIVE_UNSUPPORTED;
@@ -878,7 +878,7 @@ int iokit_ibmtape_reopen(const char *devname, void *device)
 
 	CHECK_ARG_NULL(device, -LTFS_NULL_ARG);
 
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 	scsi_device_identifier id_data;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REOPEN));
@@ -932,10 +932,10 @@ int iokit_ibmtape_reopen(const char *devname, void *device)
 	return ret;
 }
 
-int iokit_ibmtape_close(void *device)
+int iokit_close(void *device)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_CLOSE));
 
@@ -964,10 +964,10 @@ int iokit_ibmtape_close(void *device)
 	return ret;
 }
 
-int iokit_ibmtape_close_raw(void *device)
+int iokit_close_raw(void *device)
 {
 	int ret = 0;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	/* This operation is called only after resource is forked. */
 	/* On OSX environment, this operation is not required      */
@@ -977,7 +977,7 @@ int iokit_ibmtape_close_raw(void *device)
 	return ret;
 }
 
-int iokit_ibmtape_is_connected(const char *devname)
+int iokit_is_connected(const char *devname)
 {
 	/*
 	 * Temporary return false here.
@@ -989,10 +989,10 @@ int iokit_ibmtape_is_connected(const char *devname)
 	return false;
 }
 
-int iokit_ibmtape_inquiry_page(void *device, unsigned char page, struct tc_inq_page *inq)
+int iokit_inquiry_page(void *device, unsigned char page, struct tc_inq_page *inq)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -1039,14 +1039,14 @@ int iokit_ibmtape_inquiry_page(void *device, unsigned char page, struct tc_inq_p
 	return ret;
 }
 
-int iokit_ibmtape_inquiry(void *device, struct tc_inq *inq)
+int iokit_inquiry(void *device, struct tc_inq *inq)
 {
 	int ret = -EDEV_UNKNOWN;
 	int vendor_length = 0;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 	struct tc_inq_page inq_page;
 
-	ret = iokit_ibmtape_inquiry_page(device, 0x00, &inq_page);
+	ret = iokit_inquiry_page(device, 0x00, &inq_page);
 	if (ret < 0)
 		return ret;
 
@@ -1068,10 +1068,10 @@ int iokit_ibmtape_inquiry(void *device, struct tc_inq *inq)
 	return ret;
 }
 
-int iokit_ibmtape_test_unit_ready(void *device)
+int iokit_test_unit_ready(void *device)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -1137,7 +1137,7 @@ int iokit_ibmtape_test_unit_ready(void *device)
 static int _cdb_read(void *device, char *buf, size_t size, boolean_t sili)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -1246,11 +1246,11 @@ static int _cdb_read(void *device, char *buf, size_t size, boolean_t sili)
 	return length;
 }
 
-int iokit_ibmtape_read(void *device, char *buf, size_t size,
+int iokit_read(void *device, char *buf, size_t size,
 					   struct tc_position *pos, const bool unusual_size)
 {
 	int32_t ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 	size_t datacount = size;
 	struct tc_position pos_retry = {0, 0};
 
@@ -1281,13 +1281,13 @@ read_retry:
 	if (ret == -EDEV_LENGTH_MISMATCH) {
 		if (pos_retry.partition || pos_retry.block) {
 			/* Return error when retry is already executed */
-			iokit_ibmtape_readpos(device, pos);
+			iokit_readpos(device, pos);
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READ));
 			return ret;
 		}
 		pos_retry.partition = pos->partition;
 		pos_retry.block     = pos->block;
-		ret = iokit_ibmtape_locate(device, pos_retry, pos);
+		ret = iokit_locate(device, pos_retry, pos);
 		if (ret) {
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READ));
 			return ret;
@@ -1304,7 +1304,7 @@ read_retry:
 		 *  is completed successfully, the iokit backend uses SILI off read always.
 		 */
 		pos_retry.partition = pos->partition;
-		ret = iokit_ibmtape_locate(device, pos_retry, pos);
+		ret = iokit_locate(device, pos_retry, pos);
 		if (ret) {
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READ));
 			return ret;
@@ -1338,7 +1338,7 @@ read_retry:
 static int _cdb_write(void *device, uint8_t *buf, size_t size, bool *ew, bool *pew)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -1404,11 +1404,11 @@ static int _cdb_write(void *device, uint8_t *buf, size_t size, bool *ew, bool *p
 	return ret;
 }
 
-int iokit_ibmtape_write(void *device, const char *buf, size_t count, struct tc_position *pos)
+int iokit_write(void *device, const char *buf, size_t count, struct tc_position *pos)
 {
 	int ret;
 	bool ew = false, pew = false;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 	size_t datacount = count;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITE));
@@ -1450,10 +1450,10 @@ int iokit_ibmtape_write(void *device, const char *buf, size_t count, struct tc_p
 	return ret;
 }
 
-int iokit_ibmtape_writefm(void *device, size_t count, struct tc_position *pos, bool immed)
+int iokit_writefm(void *device, size_t count, struct tc_position *pos, bool immed)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -1518,7 +1518,7 @@ int iokit_ibmtape_writefm(void *device, size_t count, struct tc_position *pos, b
 	}
 
 	if(ret == DEVICE_GOOD) {
-		ret = iokit_ibmtape_readpos(device, pos);
+		ret = iokit_readpos(device, pos);
 		if(ret == DEVICE_GOOD) {
 			if (ew && !pos->early_warning)
 				pos->early_warning = ew;
@@ -1532,10 +1532,10 @@ int iokit_ibmtape_writefm(void *device, size_t count, struct tc_position *pos, b
 	return ret;
 }
 
-int iokit_ibmtape_rewind(void *device, struct tc_position *pos)
+int iokit_rewind(void *device, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -1578,7 +1578,7 @@ int iokit_ibmtape_rewind(void *device, struct tc_position *pos)
 		priv->write_counter   = 0;
 		priv->read_counter    = 0;
 
-		ret = iokit_ibmtape_readpos(device, pos);
+		ret = iokit_readpos(device, pos);
 
 		if(ret == DEVICE_GOOD) {
 			if(pos->early_warning)
@@ -1593,11 +1593,11 @@ int iokit_ibmtape_rewind(void *device, struct tc_position *pos)
 	return ret;
 }
 
-int iokit_ibmtape_locate(void *device, struct tc_position dest, struct tc_position *pos)
+int iokit_locate(void *device, struct tc_position dest, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
 	int ret_rp = DEVICE_GOOD;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB16_LEN];
@@ -1654,7 +1654,7 @@ int iokit_ibmtape_locate(void *device, struct tc_position dest, struct tc_positi
 		}
 	}
 
-	ret_rp = iokit_ibmtape_readpos(device, pos);
+	ret_rp = iokit_readpos(device, pos);
 	if(ret_rp == DEVICE_GOOD) {
 		if(pos->early_warning)
 			ltfsmsg(LTFS_WARN, 30825W, "locate");
@@ -1670,10 +1670,10 @@ int iokit_ibmtape_locate(void *device, struct tc_position dest, struct tc_positi
 	return ret;
 }
 
-int iokit_ibmtape_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_position *pos)
+int iokit_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB16_LEN];
@@ -1742,7 +1742,7 @@ int iokit_ibmtape_space(void *device, size_t count, TC_SPACE_TYPE type, struct t
 	}
 
 	if(ret == DEVICE_GOOD)
-		ret = iokit_ibmtape_readpos(device, pos);
+		ret = iokit_readpos(device, pos);
 
 	if(ret == DEVICE_GOOD) {
 		if(pos->early_warning)
@@ -1759,7 +1759,7 @@ int iokit_ibmtape_space(void *device, size_t count, TC_SPACE_TYPE type, struct t
 static int _cdb_request_sense(void *device, unsigned char *buf, unsigned char size)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -1797,10 +1797,10 @@ static int _cdb_request_sense(void *device, unsigned char *buf, unsigned char si
 	return ret;
 }
 
-int iokit_ibmtape_erase(void *device, struct tc_position *pos, bool long_erase)
+int iokit_erase(void *device, struct tc_position *pos, bool long_erase)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -1883,7 +1883,7 @@ int iokit_ibmtape_erase(void *device, struct tc_position *pos, bool long_erase)
 static int _cdb_load_unload(void *device, bool load)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -1928,10 +1928,10 @@ static int _cdb_load_unload(void *device, bool load)
 	return ret;
 }
 
-int iokit_ibmtape_load(void *device, struct tc_position *pos)
+int iokit_load(void *device, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 	unsigned char buf[TC_MP_SUPPORTEDPAGE_SIZE];
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOAD));
@@ -1946,7 +1946,7 @@ int iokit_ibmtape_load(void *device, struct tc_position *pos)
 	priv->write_counter   = 0;
 	priv->read_counter    = 0;
 
-	iokit_ibmtape_readpos(device, pos);
+	iokit_readpos(device, pos);
 	if (ret < 0) {
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOAD));
 		return ret;
@@ -1964,7 +1964,7 @@ int iokit_ibmtape_load(void *device, struct tc_position *pos)
 	priv->tape_alert = 0;
 
 	/* Check Cartridge type */
-	ret = iokit_ibmtape_modesense(device, TC_MP_SUPPORTEDPAGE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
+	ret = iokit_modesense(device, TC_MP_SUPPORTEDPAGE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 	if (ret < 0) {
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOAD));
 		return ret;
@@ -1982,10 +1982,10 @@ int iokit_ibmtape_load(void *device, struct tc_position *pos)
 	return ret;
 }
 
-int iokit_ibmtape_unload(void *device, struct tc_position *pos)
+int iokit_unload(void *device, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_UNLOAD));
 	ltfsmsg(LTFS_DEBUG, 30992D, "unload", priv->drive_serial);
@@ -2009,10 +2009,10 @@ int iokit_ibmtape_unload(void *device, struct tc_position *pos)
 	return ret;
 }
 
-int iokit_ibmtape_readpos(void *device, struct tc_position *pos)
+int iokit_readpos(void *device, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -2065,10 +2065,10 @@ int iokit_ibmtape_readpos(void *device, struct tc_position *pos)
 	return ret;
 }
 
-int iokit_ibmtape_setcap(void *device, uint16_t proportion)
+int iokit_setcap(void *device, uint16_t proportion)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -2083,7 +2083,7 @@ int iokit_ibmtape_setcap(void *device, uint16_t proportion)
 		unsigned char buf[TC_MP_MEDIUM_SENSE_SIZE];
 
 		/* scale media instead of setcap */
-		ret = iokit_ibmtape_modesense(device, TC_MP_MEDIUM_SENSE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
+		ret = iokit_modesense(device, TC_MP_MEDIUM_SENSE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 		if (ret < 0) {
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCAP));
 			return ret;
@@ -2100,7 +2100,7 @@ int iokit_ibmtape_setcap(void *device, uint16_t proportion)
 		buf[27] |= 0x01;
 		buf[28]  = 0x00;
 
-		ret = iokit_ibmtape_modeselect(device, buf, sizeof(buf));
+		ret = iokit_modeselect(device, buf, sizeof(buf));
 	} else {
 		// Zero out the CDB and the result buffer
 		memset(cdb, 0, sizeof(cdb));
@@ -2133,10 +2133,10 @@ int iokit_ibmtape_setcap(void *device, uint16_t proportion)
 	return ret;
 }
 
-int iokit_ibmtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid)
+int iokit_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid)
 {
 	int ret = -EDEV_UNKNOWN, aux_ret;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 	unsigned char buf[TC_MP_SUPPORTEDPAGE_SIZE];
 
 	struct iokit_scsi_request req;
@@ -2174,7 +2174,7 @@ int iokit_ibmtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_na
 	}
 
 	/* Check Cartridge type */
-	aux_ret = iokit_ibmtape_modesense(device, TC_MP_SUPPORTEDPAGE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
+	aux_ret = iokit_modesense(device, TC_MP_SUPPORTEDPAGE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 	if (aux_ret >= 0) {
 		priv->cart_type = buf[2];
 		priv->density_code = buf[8];
@@ -2185,10 +2185,10 @@ int iokit_ibmtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_na
 	return ret;
 }
 
-int iokit_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
+int iokit_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	unsigned char buffer[LOGSENSEPAGE];       /* Buffer for logsense */
 	unsigned char buf[LOG_TAPECAPACITY_SIZE]; /* Buffer for parsing logsense data */
@@ -2203,7 +2203,7 @@ int iokit_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 
 	if (IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) {
 		/* Use LogPage 0x31 */
-		ret = iokit_ibmtape_logsense(device, (uint8_t)LOG_TAPECAPACITY, (void *)buffer, LOGSENSEPAGE);
+		ret = iokit_logsense(device, (uint8_t)LOG_TAPECAPACITY, (void *)buffer, LOGSENSEPAGE);
 		if(ret < 0)
 		{
 			ltfsmsg(LTFS_INFO, 30832I, LOG_VOLUMESTATS, ret);
@@ -2246,7 +2246,7 @@ int iokit_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 		ret = DEVICE_GOOD;
 	} else {
 		/* Use LogPage 0x17 */
-		ret = iokit_ibmtape_logsense(device, LOG_VOLUMESTATS, (void *)buffer, LOGSENSEPAGE);
+		ret = iokit_logsense(device, LOG_VOLUMESTATS, (void *)buffer, LOGSENSEPAGE);
 		if(ret < 0)
 		{
 			ltfsmsg(LTFS_INFO, 30832I, LOG_VOLUMESTATS, ret);
@@ -2308,7 +2308,7 @@ static int _cdb_logsense(void *device, const unsigned char page, const unsigned 
 						 unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB10_LEN];
@@ -2353,7 +2353,7 @@ static int _cdb_logsense(void *device, const unsigned char page, const unsigned 
 	return ret;
 }
 
-int iokit_ibmtape_logsense(void *device, const unsigned char page, unsigned char *buf, const size_t size)
+int iokit_logsense(void *device, const unsigned char page, unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
 
@@ -2363,11 +2363,11 @@ int iokit_ibmtape_logsense(void *device, const unsigned char page, unsigned char
 	return ret;
 }
 
-int iokit_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
+int iokit_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
 							const unsigned char subpage, unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB10_LEN];
@@ -2415,10 +2415,10 @@ int iokit_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_
 	return ret;
 }
 
-int iokit_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size)
+int iokit_modeselect(void *device, unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB10_LEN];
@@ -2463,10 +2463,10 @@ int iokit_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size
 	return ret;
 }
 
-int iokit_ibmtape_reserve(void *device)
+int iokit_reserve(void *device)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 #ifdef USE_RESERVE6
 	struct iokit_scsi_request req;
@@ -2535,10 +2535,10 @@ start:
 	return ret;
 }
 
-int iokit_ibmtape_release(void *device)
+int iokit_release(void *device)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 #ifdef USE_RESERVE6
 	struct iokit_scsi_request req;
@@ -2595,7 +2595,7 @@ int iokit_ibmtape_release(void *device)
 static int _cdb_prevent_allow_medium_removal(void *device, bool prevent)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -2632,10 +2632,10 @@ static int _cdb_prevent_allow_medium_removal(void *device, bool prevent)
 	return ret;
 }
 
-int iokit_ibmtape_prevent_medium_removal(void *device)
+int iokit_prevent_medium_removal(void *device)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_PREVENTM));
 	ltfsmsg(LTFS_DEBUG, 30992D, "prevent medium removal", priv->drive_serial);
@@ -2645,10 +2645,10 @@ int iokit_ibmtape_prevent_medium_removal(void *device)
 	return ret;
 }
 
-int iokit_ibmtape_allow_medium_removal(void *device)
+int iokit_allow_medium_removal(void *device)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ALLOWMREM));
 	ltfsmsg(LTFS_DEBUG, 30992D, "allow medium removal", priv->drive_serial);
@@ -2658,11 +2658,11 @@ int iokit_ibmtape_allow_medium_removal(void *device)
 	return ret;
 }
 
-int iokit_ibmtape_write_attribute(void *device, const tape_partition_t part,
+int iokit_write_attribute(void *device, const tape_partition_t part,
 								  const unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB16_LEN];
@@ -2724,11 +2724,11 @@ int iokit_ibmtape_write_attribute(void *device, const tape_partition_t part,
 	return ret;
 }
 
-int iokit_ibmtape_read_attribute(void *device, const tape_partition_t part,
+int iokit_read_attribute(void *device, const tape_partition_t part,
 								 const uint16_t id, unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB16_LEN];
@@ -2801,10 +2801,10 @@ int iokit_ibmtape_read_attribute(void *device, const tape_partition_t part,
 	return ret;
 }
 
-int iokit_ibmtape_allow_overwrite(void *device, const struct tc_position pos)
+int iokit_allow_overwrite(void *device, const struct tc_position pos)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB16_LEN];
@@ -2852,17 +2852,17 @@ int iokit_ibmtape_allow_overwrite(void *device, const struct tc_position pos)
 	return ret;
 }
 
-int iokit_ibmtape_set_compression(void *device, const bool enable_compression, struct tc_position *pos)
+int iokit_set_compression(void *device, const bool enable_compression, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	unsigned char buf[TC_MP_COMPRESSION_SIZE];
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SETCOMPRS));
 
 	/* Capture compression setting */
-	ret = iokit_ibmtape_modesense(device, TC_MP_COMPRESSION, TC_MP_PC_CURRENT, 0x00, buf, sizeof(buf));
+	ret = iokit_modesense(device, TC_MP_COMPRESSION, TC_MP_PC_CURRENT, 0x00, buf, sizeof(buf));
 	if (ret < 0)
 		return ret;
 
@@ -2874,17 +2874,17 @@ int iokit_ibmtape_set_compression(void *device, const bool enable_compression, s
 	else
 		buf[18] = buf[18] & 0x7E;
 
-	ret = iokit_ibmtape_modeselect(device, buf, sizeof(buf));
+	ret = iokit_modeselect(device, buf, sizeof(buf));
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCOMPRS));
 
 	return ret;
 }
 
-int iokit_ibmtape_set_default(void *device)
+int iokit_set_default(void *device)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	priv->use_sili = true;
 
@@ -2894,7 +2894,7 @@ int iokit_ibmtape_set_default(void *device)
 	if (IS_ENTERPRISE(priv->drive_type)) {
 		unsigned char buf[TC_MP_READ_WRITE_CTRL_SIZE];
 		ltfsmsg(LTFS_DEBUG, 30992D, __FUNCTION__, "Disabling read across EOD");
-		ret = iokit_ibmtape_modesense(device, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
+		ret = iokit_modesense(device, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 		if (ret < 0) {
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETDEFAULT));
 			return ret;
@@ -2904,7 +2904,7 @@ int iokit_ibmtape_set_default(void *device)
 		buf[1]  = 0x00;
 		buf[24] = 0x0C;
 
-		ret = iokit_ibmtape_modeselect(device, buf, sizeof(buf));
+		ret = iokit_modeselect(device, buf, sizeof(buf));
 		if (ret < 0) {
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETDEFAULT));
 			return ret;
@@ -2961,10 +2961,10 @@ static uint16_t perfstats[] = {
 	PERF_CART_CONDITION,
 };
 
-int iokit_ibmtape_get_cartridge_health(void *device, struct tc_cartridge_health *cart_health)
+int iokit_get_cartridge_health(void *device, struct tc_cartridge_health *cart_health)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	unsigned char logdata[LOGSENSEPAGE];
 	unsigned char buf[16];
@@ -2976,7 +2976,7 @@ int iokit_ibmtape_get_cartridge_health(void *device, struct tc_cartridge_health 
 
 	/* Issue LogPage 0x37 */
 	cart_health->tape_efficiency  = UNSUPPORTED_CARTRIDGE_HEALTH;
-	ret = iokit_ibmtape_logsense(device, LOG_PERFORMANCE, logdata, LOGSENSEPAGE);
+	ret = iokit_logsense(device, LOG_PERFORMANCE, logdata, LOGSENSEPAGE);
 	if (ret)
 		ltfsmsg(LTFS_INFO, 30837I, LOG_PERFORMANCE, ret, "get cart health");
 	else {
@@ -3031,7 +3031,7 @@ int iokit_ibmtape_get_cartridge_health(void *device, struct tc_cartridge_health 
 	cart_health->read_mbytes      = UNSUPPORTED_CARTRIDGE_HEALTH;
 	cart_health->passes_begin     = UNSUPPORTED_CARTRIDGE_HEALTH;
 	cart_health->passes_middle    = UNSUPPORTED_CARTRIDGE_HEALTH;
-	ret = iokit_ibmtape_logsense(device, LOG_VOLUMESTATS, logdata, LOGSENSEPAGE);
+	ret = iokit_logsense(device, LOG_VOLUMESTATS, logdata, LOGSENSEPAGE);
 	if (ret < 0)
 		ltfsmsg(LTFS_INFO, 30837I, LOG_VOLUMESTATS, ret, "get cart health");
 	else {
@@ -3112,10 +3112,10 @@ int iokit_ibmtape_get_cartridge_health(void *device, struct tc_cartridge_health 
 	return 0;
 }
 
-int iokit_ibmtape_get_tape_alert(void *device, uint64_t *tape_alert)
+int iokit_get_tape_alert(void *device, uint64_t *tape_alert)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	unsigned char logdata[LOGSENSEPAGE];
 	unsigned char buf[16];
@@ -3127,7 +3127,7 @@ int iokit_ibmtape_get_tape_alert(void *device, uint64_t *tape_alert)
 
 	/* Issue LogPage 0x2E */
 	ta = 0;
-	ret = iokit_ibmtape_logsense(device, LOG_TAPE_ALERT, logdata, LOGSENSEPAGE);
+	ret = iokit_logsense(device, LOG_TAPE_ALERT, logdata, LOGSENSEPAGE);
 	if (ret < 0)
 		ltfsmsg(LTFS_INFO, 30837I, LOG_TAPE_ALERT, ret, "get tape alert");
 	else {
@@ -3150,9 +3150,9 @@ int iokit_ibmtape_get_tape_alert(void *device, uint64_t *tape_alert)
 	return ret;
 }
 
-int iokit_ibmtape_clear_tape_alert(void *device, uint64_t tape_alert)
+int iokit_clear_tape_alert(void *device, uint64_t tape_alert)
 {
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_CLRTAPEALT));
 	priv->tape_alert &= ~tape_alert;
@@ -3160,10 +3160,10 @@ int iokit_ibmtape_clear_tape_alert(void *device, uint64_t tape_alert)
 	return 0;
 }
 
-int iokit_ibmtape_get_xattr(void *device, const char *name, char **buf)
+int iokit_get_xattr(void *device, const char *name, char **buf)
 {
 	int ret = -LTFS_NO_XATTR;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	unsigned char logdata[LOGSENSEPAGE];
 	unsigned char logbuf[16];
@@ -3227,11 +3227,11 @@ int iokit_ibmtape_get_xattr(void *device, const char *name, char **buf)
 	return ret;
 }
 
-int iokit_ibmtape_set_xattr(void *device, const char *name, const char *buf, size_t size)
+int iokit_set_xattr(void *device, const char *name, const char *buf, size_t size)
 {
 	int ret = -LTFS_NO_XATTR;
 	char *null_terminated;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 	int64_t wp_count = 0;
 
 	if (!size)
@@ -3241,7 +3241,7 @@ int iokit_ibmtape_set_xattr(void *device, const char *name, const char *buf, siz
 
 	null_terminated = malloc(size + 1);
 	if (! null_terminated) {
-		ltfsmsg(LTFS_ERR, 10001E, "iokit_ibmtape_set_xattr: null_term");
+		ltfsmsg(LTFS_ERR, 10001E, "iokit_set_xattr: null_term");
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETXATTR));
 		return -LTFS_NO_MEMORY;
 	}
@@ -3275,7 +3275,7 @@ int iokit_ibmtape_set_xattr(void *device, const char *name, const char *buf, siz
 
 static int _cdb_read_block_limits(void *device) {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -3321,10 +3321,10 @@ static int _cdb_read_block_limits(void *device) {
 	return ret;
 }
 
-int iokit_ibmtape_get_parameters(void *device, struct tc_drive_param *params)
+int iokit_get_parameters(void *device, struct tc_drive_param *params)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETPARAM));
 
@@ -3335,7 +3335,7 @@ int iokit_ibmtape_get_parameters(void *device, struct tc_drive_param *params)
 		if (IS_ENTERPRISE(priv->drive_type)) {
 			unsigned char buf[TC_MP_MEDIUM_SENSE_SIZE];
 
-			ret = iokit_ibmtape_modesense(device, TC_MP_MEDIUM_SENSE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
+			ret = iokit_modesense(device, TC_MP_MEDIUM_SENSE, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 			if (ret < 0)
 				goto out;
 
@@ -3360,7 +3360,7 @@ int iokit_ibmtape_get_parameters(void *device, struct tc_drive_param *params)
 		} else {
 			unsigned char buf[MODE_DEVICE_CONFIG_SIZE];
 
-			ret = iokit_ibmtape_modesense(device, MODE_DEVICE_CONFIG, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
+			ret = iokit_modesense(device, MODE_DEVICE_CONFIG, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 			if (ret < 0)
 				goto out;
 
@@ -3397,10 +3397,10 @@ out:
 #define LOG_VOL_USED_CAPACITY      (0x203)
 #define LOG_VOL_PART_HEADER_SIZE   (4)
 
-int iokit_ibmtape_get_eod_status(void *device, int part)
+int iokit_get_eod_status(void *device, int part)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	/*
 	 * This feature requires new tape drive firmware
@@ -3415,7 +3415,7 @@ int iokit_ibmtape_get_eod_status(void *device, int part)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETEODSTAT));
 
 	/* Issue LogPage 0x17 */
-	ret = iokit_ibmtape_logsense(device, LOG_VOLUMESTATS, logdata, LOGSENSEPAGE);
+	ret = iokit_logsense(device, LOG_VOLUMESTATS, logdata, LOGSENSEPAGE);
 	if (ret) {
 		ltfsmsg(LTFS_WARN, 30840W, LOG_VOLUMESTATS, ret);
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETEODSTAT));
@@ -3475,7 +3475,7 @@ static const char *_generate_product_name(const char *product_id)
 	return product_name;
 }
 
-int iokit_ibmtape_get_device_list(struct tc_drive_info *buf, int count)
+int iokit_get_device_list(struct tc_drive_info *buf, int count)
 {
 	int i, ret;
 	int found = 0;
@@ -3520,19 +3520,19 @@ int iokit_ibmtape_get_device_list(struct tc_drive_info *buf, int count)
 	return found;
 }
 
-void iokit_ibmtape_help_message(const char *progname)
+void iokit_help_message(const char *progname)
 {
 	ltfsresult(30999I, default_device);
 }
 
-int iokit_ibmtape_parse_opts(void *device, void *opt_args)
+int iokit_parse_opts(void *device, void *opt_args)
 {
 	struct fuse_args *args = (struct fuse_args *) opt_args;
 	int ret;
 
 	CHECK_ARG_NULL(device, -LTFS_NULL_ARG);
 
-	ret = fuse_opt_parse(args, &global_data, iokit_ibmtape_global_opts, null_parser);
+	ret = fuse_opt_parse(args, &global_data, iokit_global_opts, null_parser);
 	if (ret < 0) {
 		return ret;
 	}
@@ -3553,7 +3553,7 @@ int iokit_ibmtape_parse_opts(void *device, void *opt_args)
 	return 0;
 }
 
-const char *iokit_ibmtape_default_device_name(void)
+const char *iokit_default_device_name(void)
 {
 	const char *devname;
 	devname = default_device;
@@ -3563,7 +3563,7 @@ const char *iokit_ibmtape_default_device_name(void)
 static int _cdb_spin(void *device, const uint16_t sps, unsigned char **buffer, size_t * const size)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB12_LEN];
@@ -3617,7 +3617,7 @@ int _cdb_spout(void *device, const uint16_t sps,
 			   unsigned char* const buffer, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB12_LEN];
@@ -3675,7 +3675,7 @@ static void ltfsmsg_keyalias(const char * const title, const unsigned char * con
 static bool is_ame(void *device)
 {
 	unsigned char buf[TC_MP_READ_WRITE_CTRL_SIZE] = {0};
-	const int ret = iokit_ibmtape_modesense(device, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
+	const int ret = iokit_modesense(device, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 
 	if (ret != 0) {
 		char message[100] = {0};
@@ -3725,7 +3725,7 @@ static bool is_ame(void *device)
 
 static int is_encryption_capable(void *device)
 {
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	if (IS_LTO(priv->drive_type)) {
 		ltfsmsg(LTFS_ERR, 30845E, priv->drive_type);
@@ -3738,10 +3738,10 @@ static int is_encryption_capable(void *device)
 	return DEVICE_GOOD;
 }
 
-int iokit_ibmtape_set_key(void *device, const unsigned char *keyalias, const unsigned char *key)
+int iokit_set_key(void *device, const unsigned char *keyalias, const unsigned char *key)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	/*
 	 * Encryption  Decryption     Key         DKi      keyalias
@@ -3766,7 +3766,7 @@ int iokit_ibmtape_set_key(void *device, const unsigned char *keyalias, const uns
 	}
 
 	unsigned char buf[TC_MP_READ_WRITE_CTRL_SIZE] = {0};
-	ret = iokit_ibmtape_modesense(device, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
+	ret = iokit_modesense(device, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 	if (ret != DEVICE_GOOD)
 		goto out;
 
@@ -3813,7 +3813,7 @@ int iokit_ibmtape_set_key(void *device, const unsigned char *keyalias, const uns
 	priv->dev.is_data_key_set = keyalias != NULL;
 
 	memset(buf, 0, sizeof(buf));
-	ret = iokit_ibmtape_modesense(device, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
+	ret = iokit_modesense(device, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 	if (ret != DEVICE_GOOD)
 		goto out;
 
@@ -3862,10 +3862,10 @@ static void show_hex_dump(const char * const title, const uint8_t * const buf, c
 	ltfsmsg(LTFS_DEBUG, 30992D, title, s);
 }
 
-int iokit_ibmtape_get_keyalias(void *device, unsigned char **keyalias)
+int iokit_get_keyalias(void *device, unsigned char **keyalias)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETKEYALIAS));
 	ret = is_encryption_capable(device);
@@ -3934,9 +3934,9 @@ out:
 	return ret;
 }
 
-int iokit_ibmtape_takedump_drive(void *device, bool capture_unforced)
+int iokit_takedump_drive(void *device, bool capture_unforced)
 {
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_TAKEDUMPDRV));
 	_take_dump(priv, capture_unforced);
@@ -3945,11 +3945,11 @@ int iokit_ibmtape_takedump_drive(void *device, bool capture_unforced)
 	return 0;
 }
 
-int iokit_ibmtape_is_mountable(void *device, const char *barcode, const unsigned char cart_type,
+int iokit_is_mountable(void *device, const char *barcode, const unsigned char cart_type,
 							const unsigned char density)
 {
 	int ret;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ISMOUNTABLE));
 
@@ -3964,10 +3964,10 @@ int iokit_ibmtape_is_mountable(void *device, const char *barcode, const unsigned
 	return ret;
 }
 
-bool iokit_ibmtape_is_readonly(void *device)
+bool iokit_is_readonly(void *device)
 {
 	int ret;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	ret = ibm_tape_is_mountable( priv->drive_type,
 								NULL,
@@ -3981,10 +3981,10 @@ bool iokit_ibmtape_is_readonly(void *device)
 		return false;
 }
 
-int iokit_ibmtape_get_worm_status(void *device, bool *is_worm)
+int iokit_get_worm_status(void *device, bool *is_worm)
 {
 	int rc = 0;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETWORMSTAT));
 	if (priv->loaded) {
@@ -3999,9 +3999,9 @@ int iokit_ibmtape_get_worm_status(void *device, bool *is_worm)
 	return rc;
 }
 
-int iokit_ibmtape_get_serialnumber(void *device, char **result)
+int iokit_get_serialnumber(void *device, char **result)
 {
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	CHECK_ARG_NULL(device, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(result, -LTFS_NULL_ARG);
@@ -4010,7 +4010,7 @@ int iokit_ibmtape_get_serialnumber(void *device, char **result)
 
 	*result = strdup((const char *) priv->drive_serial);
 	if (! *result) {
-		ltfsmsg(LTFS_ERR, 10001E, "iokit_ibmtape_get_serialnumber: result");
+		ltfsmsg(LTFS_ERR, 10001E, "iokit_get_serialnumber: result");
 		ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_EXIT(REQ_TC_GETSER));
 		return -EDEV_NO_MEMORY;
 	}
@@ -4020,19 +4020,19 @@ int iokit_ibmtape_get_serialnumber(void *device, char **result)
 	return 0;
 }
 
-int iokit_ibmtape_get_info(void *device, struct tc_drive_info *info)
+int iokit_get_info(void *device, struct tc_drive_info *info)
 {
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	memcpy(info, &priv->info, sizeof(struct tc_drive_info));
 
 	return 0;
 }
 
-int iokit_ibmtape_set_profiler(void *device, char *work_dir, bool enable)
+int iokit_set_profiler(void *device, char *work_dir, bool enable)
 {
 	int rc = 0;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	char *path;
 	FILE *p;
@@ -4074,10 +4074,10 @@ int iokit_ibmtape_set_profiler(void *device, char *work_dir, bool enable)
 	return rc;
 }
 
-int iokit_ibmtape_get_block_in_buffer(void *device, uint32_t *block)
+int iokit_get_block_in_buffer(void *device, uint32_t *block)
 {
 	int ret = -EDEV_UNKNOWN;
-	struct iokit_ibmtape_data *priv = (struct iokit_ibmtape_data*)device;
+	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
 	unsigned char cdb[CDB6_LEN];
@@ -4125,75 +4125,75 @@ int iokit_ibmtape_get_block_in_buffer(void *device, uint32_t *block)
 	return ret;
 }
 
-struct tape_ops iokit_ibmtape_handler = {
-	.open                   = iokit_ibmtape_open,
-	.reopen                 = iokit_ibmtape_reopen,
-	.close                  = iokit_ibmtape_close,
-	.close_raw              = iokit_ibmtape_close_raw,
-	.is_connected           = iokit_ibmtape_is_connected,
-	.inquiry                = iokit_ibmtape_inquiry,
-	.inquiry_page           = iokit_ibmtape_inquiry_page,
-	.test_unit_ready        = iokit_ibmtape_test_unit_ready,
-	.read                   = iokit_ibmtape_read,
-	.write                  = iokit_ibmtape_write,
-	.writefm                = iokit_ibmtape_writefm,
-	.rewind                 = iokit_ibmtape_rewind,
-	.locate                 = iokit_ibmtape_locate,
-	.space                  = iokit_ibmtape_space,
-	.erase                  = iokit_ibmtape_erase,
-	.load                   = iokit_ibmtape_load,
-	.unload                 = iokit_ibmtape_unload,
-	.readpos                = iokit_ibmtape_readpos,
-	.setcap                 = iokit_ibmtape_setcap,
-	.format                 = iokit_ibmtape_format,
-	.remaining_capacity     = iokit_ibmtape_remaining_capacity,
-	.logsense               = iokit_ibmtape_logsense,
-	.modesense              = iokit_ibmtape_modesense,
-	.modeselect             = iokit_ibmtape_modeselect,
-	.reserve_unit           = iokit_ibmtape_reserve,
-	.release_unit           = iokit_ibmtape_release,
-	.prevent_medium_removal = iokit_ibmtape_prevent_medium_removal,
-	.allow_medium_removal   = iokit_ibmtape_allow_medium_removal,
-	.write_attribute        = iokit_ibmtape_write_attribute,
-	.read_attribute         = iokit_ibmtape_read_attribute,
-	.allow_overwrite        = iokit_ibmtape_allow_overwrite,
+struct tape_ops iokit_handler = {
+	.open                   = iokit_open,
+	.reopen                 = iokit_reopen,
+	.close                  = iokit_close,
+	.close_raw              = iokit_close_raw,
+	.is_connected           = iokit_is_connected,
+	.inquiry                = iokit_inquiry,
+	.inquiry_page           = iokit_inquiry_page,
+	.test_unit_ready        = iokit_test_unit_ready,
+	.read                   = iokit_read,
+	.write                  = iokit_write,
+	.writefm                = iokit_writefm,
+	.rewind                 = iokit_rewind,
+	.locate                 = iokit_locate,
+	.space                  = iokit_space,
+	.erase                  = iokit_erase,
+	.load                   = iokit_load,
+	.unload                 = iokit_unload,
+	.readpos                = iokit_readpos,
+	.setcap                 = iokit_setcap,
+	.format                 = iokit_format,
+	.remaining_capacity     = iokit_remaining_capacity,
+	.logsense               = iokit_logsense,
+	.modesense              = iokit_modesense,
+	.modeselect             = iokit_modeselect,
+	.reserve_unit           = iokit_reserve,
+	.release_unit           = iokit_release,
+	.prevent_medium_removal = iokit_prevent_medium_removal,
+	.allow_medium_removal   = iokit_allow_medium_removal,
+	.write_attribute        = iokit_write_attribute,
+	.read_attribute         = iokit_read_attribute,
+	.allow_overwrite        = iokit_allow_overwrite,
 	// May be command combination
-	.set_compression        = iokit_ibmtape_set_compression,
-	.set_default            = iokit_ibmtape_set_default,
-	.get_cartridge_health   = iokit_ibmtape_get_cartridge_health,
-	.get_tape_alert         = iokit_ibmtape_get_tape_alert,
-	.clear_tape_alert       = iokit_ibmtape_clear_tape_alert,
-	.get_xattr              = iokit_ibmtape_get_xattr,
-	.set_xattr              = iokit_ibmtape_set_xattr,
-	.get_parameters         = iokit_ibmtape_get_parameters,
-	.get_eod_status         = iokit_ibmtape_get_eod_status,
-	.get_device_list        = iokit_ibmtape_get_device_list,
-	.help_message           = iokit_ibmtape_help_message,
-	.parse_opts             = iokit_ibmtape_parse_opts,
-	.default_device_name    = iokit_ibmtape_default_device_name,
-	.set_key                = iokit_ibmtape_set_key,
-	.get_keyalias           = iokit_ibmtape_get_keyalias,
-	.takedump_drive         = iokit_ibmtape_takedump_drive,
-	.is_mountable           = iokit_ibmtape_is_mountable,
-	.get_worm_status        = iokit_ibmtape_get_worm_status,
-	.get_serialnumber       = iokit_ibmtape_get_serialnumber,
-	.get_info               = iokit_ibmtape_get_info,
-	.set_profiler           = iokit_ibmtape_set_profiler,
-	.get_block_in_buffer    = iokit_ibmtape_get_block_in_buffer,
-	.is_readonly            = iokit_ibmtape_is_readonly,
+	.set_compression        = iokit_set_compression,
+	.set_default            = iokit_set_default,
+	.get_cartridge_health   = iokit_get_cartridge_health,
+	.get_tape_alert         = iokit_get_tape_alert,
+	.clear_tape_alert       = iokit_clear_tape_alert,
+	.get_xattr              = iokit_get_xattr,
+	.set_xattr              = iokit_set_xattr,
+	.get_parameters         = iokit_get_parameters,
+	.get_eod_status         = iokit_get_eod_status,
+	.get_device_list        = iokit_get_device_list,
+	.help_message           = iokit_help_message,
+	.parse_opts             = iokit_parse_opts,
+	.default_device_name    = iokit_default_device_name,
+	.set_key                = iokit_set_key,
+	.get_keyalias           = iokit_get_keyalias,
+	.takedump_drive         = iokit_takedump_drive,
+	.is_mountable           = iokit_is_mountable,
+	.get_worm_status        = iokit_get_worm_status,
+	.get_serialnumber       = iokit_get_serialnumber,
+	.get_info               = iokit_get_info,
+	.set_profiler           = iokit_set_profiler,
+	.get_block_in_buffer    = iokit_get_block_in_buffer,
+	.is_readonly            = iokit_is_readonly,
 };
 
 struct tape_ops *tape_dev_get_ops(void)
 {
 	standard_table = standard_tape_errors;
 	vendor_table = ibm_tape_errors;
-	return &iokit_ibmtape_handler;
+	return &iokit_handler;
 }
 
-extern char tape_iokit_ibmtape_dat[];
+extern char tape_iokit_dat[];
 
 const char *tape_dev_get_message_bundle_name(void **message_data)
 {
-	*message_data = tape_iokit_ibmtape_dat;
-	return "tape_iokit_ibmtape";
+	*message_data = tape_iokit_dat;
+	return "tape_iokit";
 }

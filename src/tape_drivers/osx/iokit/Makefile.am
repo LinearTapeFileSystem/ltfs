@@ -23,7 +23,7 @@
 #  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
 #  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
 #  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#  SUBSTITUTE GOODS SERVICES OR; LOSS OF USE, DATA, OR PROFITS; BUSINESS OR
 #  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 #  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
@@ -33,16 +33,16 @@
 #  OO_Copyright_END
 #
 
-lib_LTLIBRARIES = libtape-iokit-ibmtape.la
-BASENAMES = libtape-iokit-ibmtape
+lib_LTLIBRARIES = libtape-iokit.la
+BASENAMES = libtape-iokit
 
 AM_LIBTOOLFLAGS = --tag=disable-static
 
-libtape_iokit_ibmtape_la_SOURCES = iokit_ibmtape.c iokit_scsi.c iokit_service.c ibm_tape.c
-libtape_iokit_ibmtape_la_DEPENDENCIES = ../../../../messages/libtape_iokit_ibmtape_dat.a ../../../libltfs/libltfs.la ./libtape_iokit_ibmtape_la-reed_solomon_crc.lo ./libtape_iokit_ibmtape_la-crc32c_crc.lo
-libtape_iokit_ibmtape_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_iokit_ibmtape_la-reed_solomon_crc.lo ./libtape_iokit_ibmtape_la-crc32c_crc.lo
-libtape_iokit_ibmtape_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_iokit_ibmtape_dat
-libtape_iokit_ibmtape_la_CPPFLAGS = @AM_CPPFLAGS@ @AM_EXTRA_CPPFLAGS@ -I ../../.. -I ../..
+libtape_iokit_la_SOURCES = iokit.c iokit_scsi.c iokit_service.c ibm_tape.c
+libtape_iokit_la_DEPENDENCIES = ../../../../messages/libtape_iokit_dat.a ../../../libltfs/libltfs.la ./libtape_iokit_la-reed_solomon_crc.lo ./libtape_iokit_la-crc32c_crc.lo
+libtape_iokit_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_iokit_la-reed_solomon_crc.lo ./libtape_iokit_la-crc32c_crc.lo
+libtape_iokit_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_iokit_dat
+libtape_iokit_la_CPPFLAGS = @AM_CPPFLAGS@ @AM_EXTRA_CPPFLAGS@ -I ../../.. -I ../..
 
 ibm_tape.c:
 	ln -s ../../ibm_tape.c ./ibm_tape.c
@@ -50,11 +50,11 @@ ibm_tape.c:
 clean-local:
 	rm -f ibm_tape.c
 
-libtape_iokit_ibmtape_la-reed_solomon_crc.lo: ../../reed_solomon_crc.c
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_iokit_ibmtape_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_iokit_ibmtape_la-reed_solomon_crc.lo -MD -MP -c -o libtape_iokit_ibmtape_la-reed_solomon_crc.lo $<
+libtape_iokit_la-reed_solomon_crc.lo: ../../reed_solomon_crc.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_iokit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_iokit_la-reed_solomon_crc.lo -MD -MP -c -o libtape_iokit_la-reed_solomon_crc.lo $<
 
-libtape_iokit_ibmtape_la-crc32c_crc.lo: ../../crc32c_crc.c
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_iokit_ibmtape_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_iokit_ibmtape_la-crc32c_crc.lo -MD -MP -c -o libtape_iokit_ibmtape_la-crc32c_crc.lo $<
+libtape_iokit_la-crc32c_crc.lo: ../../crc32c_crc.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_iokit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_iokit_la-crc32c_crc.lo -MD -MP -c -o libtape_iokit_la-crc32c_crc.lo $<
 
 install-exec-hook:
 	mkdir -p $(libdir)/ltfs

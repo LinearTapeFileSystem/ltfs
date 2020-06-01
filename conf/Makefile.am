@@ -7,7 +7,7 @@ PLAT_OPT += plugin tape sg __LIBDIR__/ltfs/libtape-sg-ibmtape.so
 endif
 
 if PLATFORM_MAC
-PLAT_OPT += plugin tape iokit __LIBDIR__/ltfs/libtape-iokit-ibmtape.so
+PLAT_OPT += plugin tape iokit __LIBDIR__/ltfs/libtape-iokit.so
 endif
 
 if PLATFORM_FREEBSD

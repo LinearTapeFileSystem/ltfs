@@ -36,7 +36,7 @@
 **
 ** COMPONENT NAME:  IBM Linear Tape File System
 **
-** FILE NAME:       tape_drivers/osx/iokit/iokit_ibmtape.h
+** FILE NAME:       tape_drivers/osx/iokit/iokit.h
 **
 ** DESCRIPTION:     Definitions of iokit ibmtape backend
 **
@@ -51,10 +51,10 @@
 *************************************************************************************
 */
 
-#ifndef __iokit_ibmtape_h
-#define __iokit_ibmtape_h
+#ifndef __iokit_h
+#define __iokit_h
 
-struct iokit_ibmtape_data {
+struct iokit_data {
 	struct iokit_device  dev;                  /**< device structure of iokit */
 	int32_t              drive_number;         /**< Drive number (IOKit iteration) */
 	bool                 loaded;               /**< Is cartridge loaded? */
@@ -85,11 +85,11 @@ struct iokit_ibmtape_data {
 	FILE*                profiler;             /**< The file pointer for profiler */
 };
 
-struct iokit_ibmtape_global_data {
+struct iokit_global_data {
 	char     *str_crc_checking; /**< option string for crc_checking */
 	unsigned crc_checking;      /**< Is crc checking enabled? */
 	unsigned strict_drive;      /**< Is bar code length checked strictly? */
 	unsigned disable_auto_dump; /**< Is auto dump disabled? */
 };
 
-#endif // __iokit_ibmtape_h
+#endif // __iokit_h
