@@ -55,7 +55,7 @@
 #include "libltfs/ltfs_endian.h"
 #include "libltfs/ltfslogging.h"
 
-#include "tape_drivers/ibm_tape.h"
+#include "tape_drivers/vendor_compat.h"
 
 #include "sg_scsi_tape.h"
 

@@ -79,7 +79,7 @@
 #include "libltfs/ltfs_error.h"
 
 #include "tape_drivers/tape_drivers.h"
-#include "tape_drivers/ibm_tape.h"
+#include "tape_drivers/vendor_compat.h"
 
 #include "filedebug_conf_tc.h"
 

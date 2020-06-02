@@ -38,17 +38,23 @@ BASENAMES = libtape-iokit
 
 AM_LIBTOOLFLAGS = --tag=disable-static
 
-libtape_iokit_la_SOURCES = iokit.c iokit_scsi.c iokit_service.c ibm_tape.c
+libtape_iokit_la_SOURCES = iokit.c iokit_scsi.c iokit_service.c vendor_compat.c ibm_tape.c hp_tape.c
 libtape_iokit_la_DEPENDENCIES = ../../../../messages/libtape_iokit_dat.a ../../../libltfs/libltfs.la ./libtape_iokit_la-reed_solomon_crc.lo ./libtape_iokit_la-crc32c_crc.lo
 libtape_iokit_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_iokit_la-reed_solomon_crc.lo ./libtape_iokit_la-crc32c_crc.lo
 libtape_iokit_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_iokit_dat
 libtape_iokit_la_CPPFLAGS = @AM_CPPFLAGS@ @AM_EXTRA_CPPFLAGS@ -I ../../.. -I ../..
 
+vendor_compat.c:
+	ln -s ../../vendor_compat.c ./vendor_compat.c
+
 ibm_tape.c:
 	ln -s ../../ibm_tape.c ./ibm_tape.c
 
+hp_tape.c:
+	ln -s ../../hp_tape.c ./hp_tape.c
+
 clean-local:
-	rm -f ibm_tape.c
+	rm -f vendor_compat.c ibm_tape.c hp_tape.c
 
 libtape_iokit_la-reed_solomon_crc.lo: ../../reed_solomon_crc.c
 	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_iokit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_iokit_la-reed_solomon_crc.lo -MD -MP -c -o libtape_iokit_la-reed_solomon_crc.lo $<

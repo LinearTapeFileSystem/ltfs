@@ -70,7 +70,7 @@
 #include "libltfs/ltfs_endian.h"
 #include "libltfs/ltfslogging.h"
 
-#include "tape_drivers/ibm_tape.h"
+#include "tape_drivers/vendor_compat.h"
 
 /* Extern those 2 variables for sense conversion for specific tape */
 struct error_table *standard_table = NULL;

@@ -77,7 +77,7 @@
 #include "libltfs/ltfslogging.h"
 
 #include "tape_drivers/tape_drivers.h"
-#include "tape_drivers/ibm_tape.h"
+#include "tape_drivers/vendor_compat.h"
 
 #define TAPE_BACKEND /* Use static vriable definition in tape_drivers.h */
 #include "cam_cmn.h"
@@ -2913,7 +2913,7 @@ int camtape_get_device_list(struct tc_drive_info *buf, int count)
 					buf[buf_index].host    = 0;
 					buf[buf_index].channel = 0;
 					buf[buf_index].target  = 0;
-					buf[buf_index].lun     = -1;					
+					buf[buf_index].lun     = -1;
 					cam_close_device(dev);
 				}
 				buf_index++;
@@ -4113,7 +4113,7 @@ struct tape_ops camtape_drive_handler = {
 	.is_mountable           = camtape_is_mountable,
 	.get_worm_status		= camtape_get_worm_status,
 	.get_serialnumber		= camtape_get_serialnumber,
-	.get_info               = camtape_get_info,	
+	.get_info               = camtape_get_info,
 	.set_profiler			= camtape_set_profiler,
 	.get_block_in_buffer	= camtape_get_block_in_buffer,
 	.is_readonly			= camtape_is_readonly

@@ -1,1 +1,3 @@
+vendor_compat.c
 ibm_tape.c
+hp_tape.c

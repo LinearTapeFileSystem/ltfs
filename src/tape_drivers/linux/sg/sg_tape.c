@@ -64,7 +64,7 @@
 /* Common header of backend */
 #include "reed_solomon_crc.h"
 #include "crc32c_crc.h"
-#include "ibm_tape.h"
+#include "vendor_compat.h"
 #include "open_factor.h"
 
 /* iokit functions */
