@@ -399,14 +399,18 @@ void init_error_table(int vendor,
 
 int init_timeout(int vendor, struct timeout_tape **table, int type)
 {
+	int ret = -EDEV_UNKNOWN;
+
 	switch (vendor) {
 		case VENDOR_IBM:
-			ibm_tape_init_timeout(table, type);
+			ret = ibm_tape_init_timeout(table, type);
 			break;
 		case VENDOR_HP:
-			hp_tape_init_timeout(table, type);
+			ret = hp_tape_init_timeout(table, type);
 			break;
 	}
+
+	return ret;
 }
 
 void destroy_timeout(struct timeout_tape** table)
