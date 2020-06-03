@@ -292,9 +292,6 @@ enum {
 	MEDIUM_CANNOT_ACCESS
 };
 
-/* Forward definition */
-typedef enum mam_advisory_lock_status mam_lockval;
-
 /* Structure of tape operations */
 struct tape_ops {
 	/**
