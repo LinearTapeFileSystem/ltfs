@@ -392,6 +392,11 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 	time_t    now;
 	struct tm *tm_now;
 
+	if (priv->vendor != VENDOR_IBM)
+		return 0;
+
+	/* Following logic is for IBM tape drives */
+
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_TAKEDUMPDRV));
 
 	/* Make base filename */
@@ -482,8 +487,9 @@ static int _raw_open(struct sg_data *priv)
 		priv->dev.fd = -1;
 		return ret;
 	}
+	priv->vendor = get_vendor_id(id_data.vendor_id);
 
-	struct supported_device **cur = ibm_supported_drives;
+	struct supported_device **cur = get_supported_devs(priv->vendor);
 	while(*cur) {
 		if((! strncmp(id_data.vendor_id, (*cur)->vendor_id, strlen((*cur)->vendor_id)) ) &&
 		   (! strncmp(id_data.product_id, (*cur)->product_id, strlen((*cur)->product_id)) ) ) {
@@ -494,14 +500,14 @@ static int _raw_open(struct sg_data *priv)
 	}
 
 	if(drive_type > 0) {
-		if (!ibm_tape_is_supported_firmware(drive_type, (unsigned char*)id_data.product_rev)) {
+		if (!drive_has_supported_fw(priv->vendor, drive_type, (unsigned char*)id_data.product_rev)) {
 			close(priv->dev.fd);
 			priv->dev.fd = -1;
 			return -EDEV_UNSUPPORTED_FIRMWARE;
 		} else
 			priv->drive_type = drive_type;
 	} else {
-		ltfsmsg(LTFS_INFO, 30213I, id_data.product_id);
+		ltfsmsg(LTFS_INFO, 30213I, id_data.vendor_id, id_data.product_id);
 		close(priv->dev.fd);
 		priv->dev.fd = -1;
 		return -EDEV_DEVICE_UNSUPPORTABLE; /* Unsupported device */
@@ -869,7 +875,7 @@ static int _cdb_read_buffer(void *device, int id, unsigned char *buf, size_t off
 	cdb[7] = (unsigned char)(len >> 8)     & 0xFF;
 	cdb[8] = (unsigned char) len           & 0xFF;
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -931,7 +937,7 @@ static int _cdb_force_dump(struct sg_data *priv)
 	buf[4] = 0x01;
 	buf[5] = 0x60; /* Diag ID */
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -985,7 +991,7 @@ static int _cdb_pri(void *device, unsigned char *buf, int size)
 	cdb[7] = (unsigned char)(size >> 8)  & 0xFF;
 	cdb[8] = (unsigned char) size        & 0xFF;
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -1106,7 +1112,7 @@ static int _cdb_pro(void *device,
 	if (sakey)
 		memcpy(buf + 8, sakey, KEYLEN);
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -1316,9 +1322,9 @@ int sg_open(const char *devname, void **handle)
 
 	increment_openfactor(priv->info.host, priv->info.channel);
 
-	/* Setup IBM tape specific parameters */
-	standard_table = standard_tape_errors;
-	vendor_table   = ibm_tape_errors;
+	/* Setup vendor specific parameters */
+	init_error_table(priv->vendor, &standard_table, &vendor_table);
+	init_timeout(priv->vendor, &priv->timeouts, priv->drive_type);
 	if (!priv->timeouts)
 		ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
 
@@ -1442,7 +1448,7 @@ int sg_inquiry_page(void *device, unsigned char page, struct tc_inq_page *inq)
 	cdb[2] = page;
 	ltfs_u16tobe(cdb + 3, sizeof(inq->data));
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -1524,7 +1530,7 @@ int sg_test_unit_ready(void *device)
 
 	/* Build CDB */
 	cdb[0] = TEST_UNIT_READY;
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -1599,7 +1605,7 @@ static int _cdb_read(void *device, char *buf, size_t size, bool sili)
 	cdb[3] = (size >> 8)  & 0xFF;
 	cdb[4] =  size        & 0xFF;
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -1875,7 +1881,7 @@ static int _cdb_write(void *device, uint8_t *buf, size_t size, bool *ew, bool *p
 	cdb[3] = (size >> 8)  & 0xFF;
 	cdb[4] =  size        & 0xFF;
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -2026,7 +2032,7 @@ int sg_writefm(void *device, size_t count, struct tc_position *pos, bool immed)
 	cdb[3] = (count >> 8)  & 0xFF;
 	cdb[4] =  count        & 0xFF;
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -2122,7 +2128,7 @@ int sg_rewind(void *device, struct tc_position *pos)
 	/* Build CDB */
 	cdb[0] = REWIND;
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -2213,7 +2219,7 @@ int sg_locate(void *device, struct tc_position dest, struct tc_position *pos)
 	cdb[3]  = (unsigned char)(dest.partition & 0xff);
 	ltfs_u64tobe(cdb + 4, dest.block);
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -2313,7 +2319,7 @@ int sg_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_position 
 			break;
 	}
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -2374,7 +2380,7 @@ static int _cdb_request_sense(void *device, unsigned char *buf, unsigned char si
 	cdb[0] = REQUEST_SENSE;
 	cdb[4] = (unsigned char)size;
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -2434,7 +2440,7 @@ int sg_erase(void *device, struct tc_position *pos, bool long_erase)
 	if (long_erase)
 		cdb[1] = 0x03;
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -2517,7 +2523,7 @@ static int _cdb_load_unload(void *device, bool load)
 	if (load)
 		cdb[4] = 0x01;
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -2586,8 +2592,15 @@ int sg_load(void *device, struct tc_position *pos)
 		return ret;
 	}
 
-	priv->cart_type = buf[2];
 	priv->density_code = buf[8];
+
+	if (priv->vendor == VENDOR_HP) {
+		priv->cart_type = assume_cart_type(priv->density_code);
+		if (buf[2] == 0x01)
+			priv->is_worm = true;
+	} else {
+		priv->cart_type = buf[2];
+	}
 
 	if (priv->cart_type == 0x00) {
 		ltfsmsg(LTFS_WARN, 30265W);
@@ -2595,7 +2608,7 @@ int sg_load(void *device, struct tc_position *pos)
 		return 0;
 	}
 
-	ret = ibm_tape_is_supported_tape(priv->cart_type, priv->density_code, &(priv->is_worm));
+	ret = is_supported_tape(priv->cart_type, priv->density_code, &(priv->is_worm));
 	if(ret == -LTFS_UNSUPPORTED_MEDIUM)
 		ltfsmsg(LTFS_INFO, 30228I, priv->cart_type, priv->density_code);
 
@@ -2667,7 +2680,7 @@ int sg_readpos(void *device, struct tc_position *pos)
 	cdb[0] = READ_POSITION;
 	cdb[1] = 0x06; /* Long Format */
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -2755,7 +2768,7 @@ int sg_setcap(void *device, uint16_t proportion)
 		cdb[0] = SET_CAPACITY;
 		ltfs_u16tobe(cdb + 3, proportion);
 
-		timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+		timeout = get_timeout(priv->timeouts, cdb[0]);
 		if (timeout < 0)
 			return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -2810,7 +2823,7 @@ int sg_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, const c
 	cdb[0] = FORMAT_MEDIUM;
 	cdb[2] = format;
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -3015,7 +3028,7 @@ static int _cdb_logsense(void *device, const unsigned char page, const unsigned 
 	cdb[3] = subpage;
 	ltfs_u16tobe(cdb + 7, size);
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -3083,7 +3096,7 @@ int sg_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
 	cdb[3] = subpage;
 	ltfs_u16tobe(cdb + 7, size);
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -3141,7 +3154,7 @@ int sg_modeselect(void *device, unsigned char *buf, const size_t size)
 	cdb[1] = 0x10; /* Set PF bit */
 	ltfs_u16tobe(cdb + 7, size);
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -3247,7 +3260,7 @@ static int _cdb_prevent_allow_medium_removal(void *device, bool prevent)
 	if (prevent)
 		cdb[4] = 0x01;
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -3346,7 +3359,7 @@ int sg_write_attribute(void *device, const tape_partition_t part,
 	cdb[7] = part;
 	ltfs_u32tobe(cdb + 10, len);
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0) {
 		free(buffer);
 		return -EDEV_UNSUPPORETD_COMMAND;
@@ -3417,7 +3430,7 @@ int sg_read_attribute(void *device, const tape_partition_t part,
 	ltfs_u16tobe(cdb + 8, id);
 	ltfs_u32tobe(cdb + 10, len);
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -3492,7 +3505,7 @@ int sg_allow_overwrite(void *device, const struct tc_position pos)
 	cdb[3] = (unsigned char)(pos.partition & 0xff);
 	ltfs_u64tobe(cdb + 4, pos.block);
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -3582,12 +3595,16 @@ int sg_set_default(void *device)
 	}
 
 	/* set logical block protection */
-	if (global_data.crc_checking) {
-		ltfsmsg(LTFS_DEBUG, 30392D, __FUNCTION__, "Setting LBP");
-		ret = _set_lbp(device, true);
+	if (priv->vendor == VENDOR_IBM) {
+		if (global_data.crc_checking) {
+			ltfsmsg(LTFS_DEBUG, 30392D, __FUNCTION__, "Setting LBP");
+			ret = _set_lbp(device, true);
+		} else {
+			ltfsmsg(LTFS_DEBUG, 30392D, __FUNCTION__, "Resetting LBP");
+			ret = _set_lbp(device, false);
+		}
 	} else {
-		ltfsmsg(LTFS_DEBUG, 30392D, __FUNCTION__, "Resetting LBP");
-		ret = _set_lbp(device, false);
+		ret = DEVICE_GOOD;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETDEFAULT));
@@ -3986,7 +4003,7 @@ static int _cdb_read_block_limits(void *device) {
 	/* Build CDB */
 	cdb[0] = READ_BLOCK_LIMITS;
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -4167,6 +4184,14 @@ static const char *_generate_product_name(const char *product_id)
 		}
 	}
 
+	for (i = 0; hp_supported_drives[i]; ++i) {
+		if (strncmp(hp_supported_drives[i]->product_id, product_id,
+					strlen(hp_supported_drives[i]->product_id)) == 0) {
+			product_name = hp_supported_drives[i]->product_name;
+			break;
+		}
+	}
+
 	return product_name;
 }
 
@@ -4323,7 +4348,7 @@ static int _cdb_spin(void *device, const uint16_t sps, unsigned char **buffer, s
 	ltfs_u16tobe(cdb + 2, sps); /* SECURITY PROTOCOL SPECIFIC */
 	ltfs_u32tobe(cdb + 6, len);
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -4378,7 +4403,7 @@ int _cdb_spout(void *device, const uint16_t sps,
 	ltfs_u16tobe(cdb + 2, sps); /* SECURITY PROTOCOL SPECIFIC */
 	ltfs_u32tobe(cdb + 6, size);
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -4845,7 +4870,7 @@ int sg_get_block_in_buffer(void *device, uint32_t *block)
 	cdb[0] = READ_POSITION;
 	cdb[1] = 0x08; /* Extended Format */
 
-	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
+	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
 		return -EDEV_UNSUPPORETD_COMMAND;
 
@@ -4938,8 +4963,12 @@ struct tape_ops sg_handler = {
 struct tape_ops *tape_dev_get_ops(void)
 {
 	init_openfactor();
-	standard_table = standard_tape_errors;
-	vendor_table = ibm_tape_errors;
+
+	if (!standard_table)
+		standard_table = standard_tape_errors;
+	if (!vendor_table)
+		vendor_table = ibm_tape_errors;
+
 	return &sg_handler;
 }
 

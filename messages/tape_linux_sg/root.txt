@@ -52,7 +52,7 @@ root:table {
 		30210I:string { "Cannot open device: failed to open %s (%d)." }
 		30211I:string { "Cannot %s blocking mode (%d)." }
 		30212I:string { "Cannot get drive identifier of %s." }
-		30213I:string { "Unsupported Drive \'%s\'." }
+		30213I:string { "Unsupported Drive \'%s\' / \'%s\'." }
 		30214I:string { "Firmware revision is %s." }
 		30215I:string { "Drive serial is %s." }
 		30216W:string { "Length mismatch is detected. (Act = %d, resid = %d, resid_sense = %d)." }
