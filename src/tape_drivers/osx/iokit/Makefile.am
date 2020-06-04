@@ -38,7 +38,7 @@ BASENAMES = libtape-iokit
 
 AM_LIBTOOLFLAGS = --tag=disable-static
 
-libtape_iokit_la_SOURCES = iokit.c iokit_scsi.c iokit_service.c vendor_compat.c ibm_tape.c hp_tape.c
+libtape_iokit_la_SOURCES = iokit_tape.c iokit_scsi.c iokit_service.c vendor_compat.c ibm_tape.c hp_tape.c
 libtape_iokit_la_DEPENDENCIES = ../../../../messages/libtape_iokit_dat.a ../../../libltfs/libltfs.la ./libtape_iokit_la-reed_solomon_crc.lo ./libtape_iokit_la-crc32c_crc.lo
 libtape_iokit_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_iokit_la-reed_solomon_crc.lo ./libtape_iokit_la-crc32c_crc.lo
 libtape_iokit_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_iokit_dat

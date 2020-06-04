@@ -36,7 +36,7 @@
 **
 ** COMPONENT NAME:  IBM Linear Tape File System
 **
-** FILE NAME:       tape_drivers/osx/iokit/iokit.h
+** FILE NAME:       tape_drivers/osx/iokit/iokit_tape.h
 **
 ** DESCRIPTION:     Definitions of iokit ibmtape backend
 **
@@ -51,8 +51,8 @@
 *************************************************************************************
 */
 
-#ifndef __iokit_h
-#define __iokit_h
+#ifndef __iokit_tape_h
+#define __iokit_tape_h
 
 struct iokit_data {
 	struct iokit_device  dev;                  /**< device structure of iokit */
@@ -93,4 +93,4 @@ struct iokit_global_data {
 	unsigned disable_auto_dump; /**< Is auto dump disabled? */
 };
 
-#endif // __iokit_h
+#endif // __iokit_tape_h

@@ -36,9 +36,9 @@
 **
 ** COMPONENT NAME:  IBM Linear Tape File System
 **
-** FILE NAME:       tape_drivers/osx/iokit/iokit.c
+** FILE NAME:       tape_drivers/osx/iokit/iokit_tape.c
 **
-** DESCRIPTION:     LTFS IBM tape drive backend implementation for OS X
+** DESCRIPTION:     LTFS tape drive backend implementation for OS X
 **
 ** AUTHORS:         Atsushi Abe
 **                  IBM Tokyo Lab., Japan
@@ -76,7 +76,7 @@
 #include "iokit_scsi.h"
 
 /* Definitions of this backend*/
-#include "iokit.h"
+#include "iokit_tape.h"
 
 #include "libltfs/ltfs_fuse_version.h"
 #include <fuse.h>
@@ -387,8 +387,10 @@ static int _take_dump(struct iokit_data *priv, bool capture_unforced)
 	time_t    now;
 	struct tm *tm_now;
 
-	if (priv->vendor == VENDOR_HP)
+	if (priv->vendor != VENDOR_IBM)
 		return 0;
+
+	/* Following logic is for IBM tape drives */
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_TAKEDUMPDRV));
 
