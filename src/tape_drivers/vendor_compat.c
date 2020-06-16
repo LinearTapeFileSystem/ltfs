@@ -285,6 +285,8 @@ int get_vendor_id(char* vendor)
 		return VENDOR_IBM;
 	else if (!strncmp(vendor, HP_VENDOR_ID, strlen(HP_VENDOR_ID)))
 		return VENDOR_HP;
+	else if (!strncmp(vendor, HPE_VENDOR_ID, strlen(HPE_VENDOR_ID)))
+		return VENDOR_HP;
 	else
 		return VENDOR_UNKNOWN;
 }

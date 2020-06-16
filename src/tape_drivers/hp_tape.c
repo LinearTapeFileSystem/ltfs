@@ -63,7 +63,10 @@
 #include "libltfs/ltfs_endian.h"
 
 struct supported_device *hp_supported_drives[] = {
-		TAPEDRIVE( HP_VENDOR_ID, "Ultrium 5-SCSI",  DRIVE_LTO5,    "[Ultrium 5-SCSI]" ),  /* HP Ultrium Gen 5 */
+		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 5-SCSI",  DRIVE_LTO5,    "[Ultrium 5-SCSI]" ),  /* HP Ultrium Gen 5  */
+		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 6-SCSI",  DRIVE_LTO6,    "[Ultrium 6-SCSI]" ),  /* HP Ultrium Gen 6  */
+		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 7-SCSI",  DRIVE_LTO7,    "[Ultrium 7-SCSI]" ),  /* HP Ultrium Gen 7  */
+		TAPEDRIVE( HPE_VENDOR_ID, "Ultrium 8-SCSI",  DRIVE_LTO8,    "[Ultrium 8-SCSI]" ),  /* HPE Ultrium Gen 8 */
 		/* End of supported_devices */
 		NULL
 };
@@ -124,200 +127,200 @@ static struct _timeout_tape timeout_lto[] = {
 };
 
 static struct _timeout_tape timeout_lto5[] = {
-	{ ERASE,                           16380 },
+	{ ERASE,                           18000 },
 	{ FORMAT_MEDIUM,                   1560  },
-	{ LOAD_UNLOAD,                     780   },
-	{ LOCATE10,                        2040  },
-	{ LOCATE16,                        2040  },
-	{ READ,                            1500  },
-	{ READ_BUFFER,                     480   },
+	{ LOAD_UNLOAD,                     600   },
+	{ LOCATE10,                        1200  },
+	{ LOCATE16,                        1200  },
+	{ READ,                            1200  },
+	{ READ_BUFFER,                     60    },
 	{ REWIND,                          600   },
-	{ SEND_DIAGNOSTIC,                 2100  },
+	{ SEND_DIAGNOSTIC,                 600   },
 	{ SET_CAPACITY,                    780   },
-	{ SPACE6,                          2040  },
-	{ SPACE16,                         2040  },
-	{ VERIFY,                          16920 },
-	{ WRITE,                           1500  },
-	{ WRITE_BUFFER,                    540   },
-	{ WRITE_FILEMARKS6,                1620  },
+	{ SPACE6,                          1200  },
+	{ SPACE16,                         1200  },
+	{ VERIFY,                          18000 },
+	{ WRITE,                           300   },
+	{ WRITE_BUFFER,                    60    },
+	{ WRITE_FILEMARKS6,                300   },
 	{-1, -1}
 };
 
 static struct _timeout_tape timeout_lto6[] = {
-	{ ERASE,                           24600 },
-	{ FORMAT_MEDIUM,                   3000  },
-	{ LOAD_UNLOAD,                     780   },
-	{ LOCATE10,                        2040  },
-	{ LOCATE16,                        2040  },
-	{ READ,                            1500  },
-	{ READ_BUFFER,                     480   },
+	{ ERASE,                           18000 },
+	{ FORMAT_MEDIUM,                   1560  },
+	{ LOAD_UNLOAD,                     600   },
+	{ LOCATE10,                        1200  },
+	{ LOCATE16,                        1200  },
+	{ READ,                            1200  },
+	{ READ_BUFFER,                     60    },
 	{ REWIND,                          600   },
-	{ SEND_DIAGNOSTIC,                 2100  },
+	{ SEND_DIAGNOSTIC,                 600   },
 	{ SET_CAPACITY,                    780   },
-	{ SPACE6,                          2040  },
-	{ SPACE16,                         2040  },
-	{ VERIFY,                          25200 },
-	{ WRITE,                           1500  },
-	{ WRITE_BUFFER,                    540   },
-	{ WRITE_FILEMARKS6,                1620  },
+	{ SPACE6,                          1200  },
+	{ SPACE16,                         1200  },
+	{ VERIFY,                          18000 },
+	{ WRITE,                           300   },
+	{ WRITE_BUFFER,                    60    },
+	{ WRITE_FILEMARKS6,                300   },
 	{-1, -1}
 };
 
 static struct _timeout_tape timeout_lto7[] = {
-	{ ERASE,                           27540 },
+	{ ERASE,                           29400 },
 	{ FORMAT_MEDIUM,                   3000  },
-	{ LOAD_UNLOAD,                     780   },
-	{ LOCATE10,                        2880  },
-	{ LOCATE16,                        2880  },
-	{ READ,                            2280  },
+	{ LOAD_UNLOAD,                     1020  },
+	{ LOCATE10,                        2700  },
+	{ LOCATE16,                        2700  },
+	{ READ,                            1920  },
 	{ READ_BUFFER,                     480   },
-	{ REWIND,                          600   },
+	{ REWIND,                          780   },
 	{ SEND_DIAGNOSTIC,                 1980  },
 	{ SET_CAPACITY,                    780   },
-	{ SPACE6,                          2880  },
-	{ SPACE16,                         2880  },
+	{ SPACE6,                          2700  },
+	{ SPACE16,                         2700  },
 	{ VERIFY,                          28860 },
-	{ WRITE,                           1500  },
+	{ WRITE,                           1920  },
 	{ WRITE_BUFFER,                    540   },
-	{ WRITE_FILEMARKS6,                1620  },
+	{ WRITE_FILEMARKS6,                1920  },
 	{-1, -1}
 };
 
 static struct _timeout_tape timeout_lto8[] = {
-	{ ERASE,                           46380 },
+	{ ERASE,                           53040 },
 	{ FORMAT_MEDIUM,                   3000  },
-	{ LOAD_UNLOAD,                     780   },
-	{ LOCATE10,                        2880  },
-	{ LOCATE16,                        2880  },
-	{ READ,                            2280  },
-	{ READ_BUFFER,                     480   },
-	{ REWIND,                          600   },
-	{ SEND_DIAGNOSTIC,                 1980  },
-	{ SET_CAPACITY,                    780   },
-	{ SPACE6,                          2880  },
-	{ SPACE16,                         2880  },
-	{ VERIFY,                          28860 },
-	{ WRITE,                           1500  },
-	{ WRITE_BUFFER,                    540   },
-	{ WRITE_FILEMARKS6,                1620  },
-	{-1, -1}
-};
-
-static struct _timeout_tape timeout_lto9[] = {
-	{ ERASE,                           46380 },
-	{ FORMAT_MEDIUM,                   3000  },
-	{ LOAD_UNLOAD,                     780   },
-	{ LOCATE10,                        2880  },
-	{ LOCATE16,                        2880  },
-	{ READ,                            2280  },
-	{ READ_BUFFER,                     480   },
-	{ REWIND,                          600   },
-	{ SEND_DIAGNOSTIC,                 1980  },
-	{ SET_CAPACITY,                    780   },
-	{ SPACE6,                          2880  },
-	{ SPACE16,                         2880  },
-	{ VERIFY,                          28860 },
-	{ WRITE,                           1500  },
-	{ WRITE_BUFFER,                    540   },
-	{ WRITE_FILEMARKS6,                1620  },
-	{-1, -1}
-};
-
-static struct _timeout_tape timeout_lto5_hh[] = {
-	{ ERASE,                           19200 },
-	{ FORMAT_MEDIUM,                   1980  },
-	{ LOAD_UNLOAD,                     1020  },
-	{ LOCATE10,                        2700  },
-	{ LOCATE16,                        2700  },
-	{ READ,                            1920  },
-	{ READ_BUFFER,                     660   },
-	{ REWIND,                          780   },
-	{ SEND_DIAGNOSTIC,                 3120  },
-	{ SET_CAPACITY,                    960   },
-	{ SPACE6,                          2700  },
-	{ SPACE16,                         2700  },
-	{ VERIFY,                          19980 },
-	{ WRITE,                           1920  },
-	{ WRITE_BUFFER,                    720   },
-	{ WRITE_FILEMARKS6,                1740  },
-	{-1, -1}
-};
-
-static struct _timeout_tape timeout_lto6_hh[] = {
-	{ ERASE,                           29400 },
-	{ FORMAT_MEDIUM,                   3840  },
-	{ LOAD_UNLOAD,                     1020  },
-	{ LOCATE10,                        2700  },
-	{ LOCATE16,                        2700  },
-	{ READ,                            1920  },
-	{ READ_BUFFER,                     660   },
-	{ REWIND,                          780   },
-	{ SEND_DIAGNOSTIC,                 3120  },
-	{ SET_CAPACITY,                    960   },
-	{ SPACE6,                          2700  },
-	{ SPACE16,                         2700  },
-	{ VERIFY,                          30000 },
-	{ WRITE,                           1920  },
-	{ WRITE_BUFFER,                    720   },
-	{ WRITE_FILEMARKS6,                1740  },
-	{-1, -1}
-};
-
-static struct _timeout_tape timeout_lto7_hh[] = {
-	{ ERASE,                           27540 },
-	{ FORMAT_MEDIUM,                   3240  },
 	{ LOAD_UNLOAD,                     840   },
 	{ LOCATE10,                        2940  },
 	{ LOCATE16,                        2940  },
 	{ READ,                            2340  },
 	{ READ_BUFFER,                     480   },
 	{ REWIND,                          660   },
-	{ SEND_DIAGNOSTIC,                 2040  },
-	{ SET_CAPACITY,                    960   },
+	{ SEND_DIAGNOSTIC,                 1980  },
+	{ SET_CAPACITY,                    780   },
 	{ SPACE6,                          2940  },
 	{ SPACE16,                         2940  },
-	{ VERIFY,                          28860 },
-	{ WRITE,                           1560  },
+	{ VERIFY,                          53040 },
+	{ WRITE,                           1680  },
 	{ WRITE_BUFFER,                    540   },
 	{ WRITE_FILEMARKS6,                1680  },
 	{-1, -1}
 };
 
-static struct _timeout_tape timeout_lto8_hh[] = {
-	{ ERASE,                           46380 },
-	{ FORMAT_MEDIUM,                   3240  },
+static struct _timeout_tape timeout_lto9[] = {
+	{ ERASE,                           53040 },
+	{ FORMAT_MEDIUM,                   3000  },
 	{ LOAD_UNLOAD,                     840   },
 	{ LOCATE10,                        2940  },
 	{ LOCATE16,                        2940  },
 	{ READ,                            2340  },
 	{ READ_BUFFER,                     480   },
 	{ REWIND,                          660   },
-	{ SEND_DIAGNOSTIC,                 2040  },
-	{ SET_CAPACITY,                    960   },
+	{ SEND_DIAGNOSTIC,                 1980  },
+	{ SET_CAPACITY,                    780   },
 	{ SPACE6,                          2940  },
 	{ SPACE16,                         2940  },
-	{ VERIFY,                          47700 },
-	{ WRITE,                           1560  },
+	{ VERIFY,                          53040 },
+	{ WRITE,                           1680  },
+	{ WRITE_BUFFER,                    540   },
+	{ WRITE_FILEMARKS6,                1680  },
+	{-1, -1}
+};
+
+static struct _timeout_tape timeout_lto5_hh[] = {
+	{ ERASE,                           18000 },
+	{ FORMAT_MEDIUM,                   1560  },
+	{ LOAD_UNLOAD,                     600   },
+	{ LOCATE10,                        1200  },
+	{ LOCATE16,                        1200  },
+	{ READ,                            1200  },
+	{ READ_BUFFER,                     60    },
+	{ REWIND,                          600   },
+	{ SEND_DIAGNOSTIC,                 600   },
+	{ SET_CAPACITY,                    780   },
+	{ SPACE6,                          1200  },
+	{ SPACE16,                         1200  },
+	{ VERIFY,                          18000 },
+	{ WRITE,                           300   },
+	{ WRITE_BUFFER,                    60    },
+	{ WRITE_FILEMARKS6,                300   },
+	{-1, -1}
+};
+
+static struct _timeout_tape timeout_lto6_hh[] = {
+	{ ERASE,                           18000 },
+	{ FORMAT_MEDIUM,                   1560  },
+	{ LOAD_UNLOAD,                     600   },
+	{ LOCATE10,                        1200  },
+	{ LOCATE16,                        1200  },
+	{ READ,                            1200  },
+	{ READ_BUFFER,                     60    },
+	{ REWIND,                          600   },
+	{ SEND_DIAGNOSTIC,                 600   },
+	{ SET_CAPACITY,                    780   },
+	{ SPACE6,                          1200  },
+	{ SPACE16,                         1200  },
+	{ VERIFY,                          18000 },
+	{ WRITE,                           300   },
+	{ WRITE_BUFFER,                    60    },
+	{ WRITE_FILEMARKS6,                300   },
+	{-1, -1}
+};
+
+static struct _timeout_tape timeout_lto7_hh[] = {
+	{ ERASE,                           29400 },
+	{ FORMAT_MEDIUM,                   3000  },
+	{ LOAD_UNLOAD,                     1020  },
+	{ LOCATE10,                        2700  },
+	{ LOCATE16,                        2700  },
+	{ READ,                            1920  },
+	{ READ_BUFFER,                     480   },
+	{ REWIND,                          780   },
+	{ SEND_DIAGNOSTIC,                 1980  },
+	{ SET_CAPACITY,                    780   },
+	{ SPACE6,                          2700  },
+	{ SPACE16,                         2700  },
+	{ VERIFY,                          28860 },
+	{ WRITE,                           1920  },
+	{ WRITE_BUFFER,                    540   },
+	{ WRITE_FILEMARKS6,                1920  },
+	{-1, -1}
+};
+
+static struct _timeout_tape timeout_lto8_hh[] = {
+	{ ERASE,                           53040 },
+	{ FORMAT_MEDIUM,                   3000  },
+	{ LOAD_UNLOAD,                     840   },
+	{ LOCATE10,                        2940  },
+	{ LOCATE16,                        2940  },
+	{ READ,                            2340  },
+	{ READ_BUFFER,                     480   },
+	{ REWIND,                          660   },
+	{ SEND_DIAGNOSTIC,                 1980  },
+	{ SET_CAPACITY,                    780   },
+	{ SPACE6,                          2940  },
+	{ SPACE16,                         2940  },
+	{ VERIFY,                          53040 },
+	{ WRITE,                           1680  },
 	{ WRITE_BUFFER,                    540   },
 	{ WRITE_FILEMARKS6,                1680  },
 	{-1, -1}
 };
 
 static struct _timeout_tape timeout_lto9_hh[] = {
-	{ ERASE,                           46380 },
-	{ FORMAT_MEDIUM,                   3240  },
+	{ ERASE,                           53040 },
+	{ FORMAT_MEDIUM,                   3000  },
 	{ LOAD_UNLOAD,                     840   },
 	{ LOCATE10,                        2940  },
 	{ LOCATE16,                        2940  },
 	{ READ,                            2340  },
 	{ READ_BUFFER,                     480   },
 	{ REWIND,                          660   },
-	{ SEND_DIAGNOSTIC,                 2040  },
-	{ SET_CAPACITY,                    960   },
+	{ SEND_DIAGNOSTIC,                 1980  },
+	{ SET_CAPACITY,                    780   },
 	{ SPACE6,                          2940  },
 	{ SPACE16,                         2940  },
-	{ VERIFY,                          47700 },
-	{ WRITE,                           1560  },
+	{ VERIFY,                          53040 },
+	{ WRITE,                           1680  },
 	{ WRITE_BUFFER,                    540   },
 	{ WRITE_FILEMARKS6,                1680  },
 	{-1, -1}
