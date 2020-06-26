@@ -85,6 +85,9 @@ static int sg_sense2errno(sg_io_hdr_t *req, uint32_t *s, char **msg)
 	if (rc == -EDEV_VENDOR_UNIQUE)
 		rc = _sense2errorcode(sense_value, vendor_table, msg, MASK_WITH_SENSE_KEY);
 
+	if (rc == -EDEV_UNKNOWN && ((sense_value & 0xFF0000) == 0x040000) )
+		rc = -EDEV_HARDWARE_ERROR;
+
 	if (rc == -EDEV_UNKNOWN) {
 		ltfsmsg(LTFS_INFO, 30287I, sense_value);
 	}

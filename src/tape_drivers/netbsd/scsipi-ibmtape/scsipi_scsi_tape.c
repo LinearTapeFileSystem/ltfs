@@ -85,6 +85,9 @@ static int scsipi_sense2errno(scsireq_t *req, uint32_t *s, char **msg)
 	if (rc == -EDEV_VENDOR_UNIQUE)
 		rc = _sense2errorcode(sense_value, vendor_table, msg, MASK_WITH_SENSE_KEY);
 
+	if (rc == -EDEV_UNKNOWN && ((sense_value & 0xFF0000) == 0x040000) )
+		rc = -EDEV_HARDWARE_ERROR;
+
 	return rc;
 }
 
