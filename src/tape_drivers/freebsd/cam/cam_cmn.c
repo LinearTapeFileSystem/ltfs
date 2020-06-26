@@ -93,6 +93,9 @@ int camtape_sense2rc(void *device, struct scsi_sense_data *sense, int sense_len)
 		rc = _sense2errcode(sense_concat, vendor_table, NULL, MASK_WITH_SENSE_KEY);
 	}
 
+	if (rc == -EDEV_UNKNOWN && ((sense_concat & 0xFF0000) == 0x040000) )
+		rc = -EDEV_HARDWARE_ERROR;
+
 	return rc;
 }
 

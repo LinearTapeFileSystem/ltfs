@@ -131,6 +131,7 @@ struct error_table standard_tape_errors[] = {
 	{0x035300, -EDEV_LOAD_UNLOAD_ERROR,         "Media Load or Eject Failed"},
 	{0x035304, -EDEV_LOAD_UNLOAD_ERROR,         "Medium Thread or Unthread Failure"},
 	/* Sense Key 4 (Hardware or Firmware Error) */
+	{0x040302, -EDEV_HARDWARE_ERROR,            "Open Writer Failure"},
 	{0x040403, -EDEV_HARDWARE_ERROR,            "Manual Intervention Required"},
 	{0x040801, -EDEV_HARDWARE_ERROR,            "Logical Unit Communication Failure"},
 	{0x040900, -EDEV_HARDWARE_ERROR,            "Track Following Error"},
