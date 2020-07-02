@@ -50,7 +50,7 @@ class CopyItem:
         self.dst     = dst
         self.vea_pre = vea_pre
         self.cp_attr = cp_attr
-	self.cp_xattr = cp_xattr
+        self.cp_xattr = cp_xattr
         self.vuuid   = ''
         self.part    = ''
         self.start   = -1
@@ -82,16 +82,16 @@ class CopyItem:
             #    sys.stderr.write("Copying {0}\n".format(self.src))
 
             if self.cp_attr: #Copy data and metadata
-		shutil.copy2(self.src, self.dst)
-		if self.cp_xattr:
-			src_attributes = {}
-			for key in xattr.list(self.src):
-				src_attributes[key] = xattr.get(self.src, key)
-			#shutil.copy2(self.src, self.dst)
-			#print(src_attributes)
-			(_, filename) = os.path.split(self.src)
-			for key in src_attributes:
-				xattr.set(os.path.join(self.dst, filename), key, src_attributes[key])
+                shutil.copy2(self.src, self.dst)
+                if self.cp_xattr:
+                    # Capture EAs of the source file
+                    src_attributes = {}
+                    for key in xattr.list(self.src):
+                        src_attributes[key] = xattr.get(self.src, key)
+                    # Set EAs of the destination file
+                    (_, filename) = os.path.split(self.src)
+                    for key in src_attributes:
+                        xattr.set(os.path.join(self.dst, filename), key, src_attributes[key])
             else: #Only copy data
                 shutil.copy(self.src, self.dst)
         except Exception as e:
@@ -195,8 +195,8 @@ parser.add_argument('-a','-all', help='achieve files recursively and preserve at
 args=parser.parse_args()
 
 if args.a:
-	args.p = True
-	args.recursive = True
+    args.p = True
+    args.recursive = True
 
 if args.target_directory:
     if args.DEST != None:
