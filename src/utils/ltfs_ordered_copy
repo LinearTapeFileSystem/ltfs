@@ -234,6 +234,8 @@ else:
     l = logger_info
     if args.v:
         l = logger_verbose
+    elif args.quiet:
+        l = logger_quiet
     elif len(args.verbose):
         l = int(args.verbose)
         if l > logger_debug:
