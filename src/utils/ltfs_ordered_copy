@@ -97,72 +97,130 @@ class CopyItem:
                 shutil.copy(self.src, self.dst)
         except Exception as e:
             self.logger.error("Failed to copy {0} to {1}: ${2}".format(self.src, self.dst, str(str(e))))
-            return
+            return False
+
+        return True
 
     def __repr__(self):
         return self.src + ":" + self.dst + ":" + self.vuuid + ":" + self.part + str(self.start)
 
-HalfMegaByte = 512 * 1024
+class CopyQueue:
+    """"""
+    HalfMegaByte = 512 * 1024
 
-def add_copy_item(c, tape_num, direct):
-    (u, p, s) = c.eval()
-    if u == '':
-        # Source is not on LTFS
-        direct.append(c)
-    else:
-        partation = {}
-        start_block = {}
-        if u in tape_num.keys():
-            partation = tape_num[u]
-            if not p in partation.keys():
-                tape_num[u][p] = {}
-            start_block = partation[p]
+    def __init__(self, logger): #initialization
+        self.direct = deque([])
+        self.tape_dict = {}
+        self.items = 0
+        self.logger = logger
+
+    def add_copy_item(self, c):
+        (u, p, s) = c.eval()
+        if u == '':
+            # Source is not on LTFS
+            self.direct.append(c)
+            self.items = self.items + 1
         else:
-            tape_num[u] = {}
-            partation = tape_num[u]
-            partation[p] = {}
-            start_block = partation[p]
+            partation = {}
+            start_block = {}
 
-        if s in start_block.keys():
-            tail = start_block[s][-1]
-            if tail.size >= HalfMegaByte:
-                start_block[s].append(c)
+            # Search target tape
+            if u in self.tape_dict.keys():
+                partation = self.tape_dict[u]
+                if not p in partation.keys():
+                    self.tape_dict[u][p] = {}
+                start_block = partation[p]
             else:
-                start_block[s].insert(-1, c)
-        else:
-            start_block[s] = [c]
+                self.tape_dict[u] = {}
+                partation = self.tape_dict[u]
+                partation[p] = {}
+                start_block = partation[p]
 
-def walk_dir(logger, source, dest, direct, tape_num, ds, cp_attr, cp_xattr=False):
-    (source_root, t) = os.path.split(source)
-    prefix_len = len(source_root)
-    dst = dest + "/" + t
-    dst = os.path.normpath(dst)
-    ds.append(dst)
+            # Search target start block in the target tape
+            if s in start_block.keys():
+                tail = start_block[s][-1]
+                if tail.size >= HalfMegaByte:
+                    start_block[s].append(c)
+                else:
+                    start_block[s].insert(-1, c)
+            else:
+                start_block[s] = [c]
 
-    logger.log(NOTSET + 1, 'Walking {}'.format(source))
-    for root, dirs, files in os.walk(source):
-        t = root[prefix_len:]
+            self.items = self.items + 1
+
+    def walk_dir(self, source, dest, cp_attr, cp_xattr=False):
+        (source_root, t) = os.path.split(source)
+        prefix_len = len(source_root)
         dst = dest + "/" + t
         dst = os.path.normpath(dst)
 
-        for d in dirs:
-            ds.append(os.path.join(dst, d))
-        for f in files:
-            logger.log(NOTSET + 1, 'Creating a copy item for file {}'.format(f))
-            c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX,
-                         cp_attr, cp_xattr, logger)
-            add_copy_item(c, tape_num, direct)
+        walk_dirs = []
+        walk_dirs.append(dst)
 
-    for d in ds:
-        try:
-            logger.log(NOTSET + 1, 'Making a directory {}'.format(d))
-            os.mkdir(d)
-        except OSError as e:
-            if e.errno != 17: # Not EEXIST
-                logger.error(str(e) + "\n")
-                exit(1)
+        self.logger.log(NOTSET + 1, 'Walking {}'.format(source))
+        for root, dirs, files in os.walk(source):
+            t = root[prefix_len:]
+            dst = dest + "/" + t
+            dst = os.path.normpath(dst)
 
-def writer(logger, q):
+            for d in dirs:
+                walk_dirs.append(os.path.join(dst, d))
+            for f in files:
+                self.logger.log(NOTSET + 1, 'Creating a copy item for file {}'.format(f))
+                c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX,
+                             cp_attr, cp_xattr, logger)
+                self.add_copy_item(c)
+
+        for d in walk_dirs:
+            try:
+                self.logger.log(NOTSET + 1, 'Making a directory {}'.format(d))
+                os.mkdir(d)
+            except OSError as e:
+                if e.errno != 17: # Not EEXIST
+                    self.logger.error(str(e) + "\n")
+                    exit(1)
+
+    def pop_direct(self):
+        self.items = self.items - len(self.direct)
+        return self.direct
+
+    def pop_tape(self):
+        tape_list = sorted(self.tape_dict.keys())
+        t = None
+
+        tape_key = ""
+        if len(tape_list):
+            tape_key = tape_list[0]
+            t = self.tape_dict[tape_key]
+            del self.tape_dict[tape_key]
+
+        return (tape_key, t)
+
+    def print_info(self):
+        self.logger.info("On disk sources: {0}".format(len(self.direct)))
+        self.logger.info("Source tapes: {0}".format(len(self.tape_dict.keys())))
+
+    def get_size(self):
+        return self.items
+
+class Progress:
+    def __init__(self, logger, title, num): #initialization
+        self.logger = logger
+        self.title = title
+        self.num = num
+        self.cur = 0
+
+    def update(self, step = 1):
+        if self.logger.getEffectiveLevel() == INFO:
+            self.cur = self.cur + 1
+            sys.stderr.write('\r{}: {}/{}'.format(self.title, self.cur, self.num))
+            sys.stderr.flush()
+
+    def finish(self):
+        if self.logger.getEffectiveLevel() == INFO:
+            logger.info("")
+
+def writer(logger, prog, q, success, fail):
     while True:
         try:
             ci = q.popleft()
@@ -173,7 +231,12 @@ def writer(logger, q):
             logger.error('writer thread error: ' + str(e))
             exit(1)
 
-        ci.run()
+        prog.update()
+        result = ci.run()
+        if result:
+            success = success + 1
+        else:
+            fail = fail + 1
 
 VEA_PREFIX=''
 LTFS_SIG_VEA='ltfs.softwareProduct'
@@ -309,9 +372,7 @@ else:
     args.keep_tree = ''
 
 # Create the list of copy item
-direct = deque([])
-cpls = {}
-dirs = []
+copyq = CopyQueue(logger)
 for s in args.SOURCE:
     dst = args.DEST
     if os.path.isfile(s):
@@ -323,7 +384,7 @@ for s in args.SOURCE:
             if not os.path.exists(new_d):
                 os.makedirs(new_d)
         c = CopyItem(s, dst, VEA_PREFIX, args.p, args.all, logger)
-        add_copy_item(c, cpls, direct)
+        copyq.add_copy_item(c)
     else:
         logger.log(NOTSET + 1, 'Creating copy item for directory {}'.format(s))
         if args.recursive:
@@ -334,42 +395,63 @@ for s in args.SOURCE:
                 if not os.path.exists(new_d):
                    os.makedirs(new_d)
                 dst = new_d
-            walk_dir(logger, s, dst, direct, cpls, dirs, args.p, args.all)
+            copyq.walk_dir(s, dst, args.p, args.all)
         else:
             logger.warning("omitting directory '{0}'".format(s))
 
-logger.info("On disk sources: {0}".format(len(direct)))
-logger.info("Source tapes: {0}".format(len(cpls.keys())))
+copyq.print_info()
 
 # Copy file on disk (direct item) with direct_write_threads
+success = 0
+fail = 0
+
+direct = copyq.pop_direct()
+prog_disk = Progress(logger, 'File copy from disk is on going', len(direct))
 if len(direct):
-    logger.info("Copying on disk files with {0} threads".format(direct_write_threads))
+    logger.info("Copying on {} disk files with {} threads".format(len(direct), direct_write_threads))
     writers = []
     for i in range(direct_write_threads):
-        th = threading.Thread(target = writer, args = ([logger, direct]))
+        th = threading.Thread(target = writer, args = ([logger, prog_disk, direct, success, fail]))
         writers.append(th)
         th.start()
 
     for th in writers:
         th.join()
 
+    prog_disk.finish()
+
 # Copy files on LTFS
-tape_list = sorted(cpls.keys())
-for partition_key in tape_list:
-    partition = cpls[partition_key]
-    partation_list = sorted(partition.keys())
+prog_tape = Progress(logger, 'File copy from tape is on going', copyq.get_size())
+(tape_key, tape) = copyq.pop_tape()
+while tape != None:
+    logger.log(NOTSET + 1, "Processing {}".format(len(tape)))
+    partation_list = sorted(tape.keys())
 
-    for start_block_key in partation_list:
-        logger.info("Processing tape {0}, Partition {1}".format(partition_key, start_block_key))
-        start_block = partition[start_block_key]
+    for partition_key in partation_list:
+        logger.info("Processing tape {0}, Partition {1}".format(tape_key, partition_key))
+        partition = tape[partition_key]
 
-        logger.info("Sorting {}\n".format(len(start_block.keys())))
-        start_block_list = sorted(start_block.keys())
-        logger.info("Copying files on {0} ({1})".format(partition_key, start_block_key))
+        logger.info("Sorting {} files on {} ({})".format(len(partition.keys()), tape_key, partition_key))
+        start_block_list = sorted(partition.keys())
+        logger.info("Copying files on {} ({})".format(tape_key, partition_key))
 
-        for file_ind_key in start_block_list:
-            file_ind = start_block[file_ind_key]
+        for start_block_key in start_block_list:
+            file_ind = partition[start_block_key]
             for cp in file_ind:
-                cp.run()
+                prog_tape.update()
+                result = cp.run()
+                if result:
+                    success = success + 1
+                else:
+                    fail = fail + 1
 
-exit(0)
+    (tape_key, tape) = copyq.pop_tape()
+    prog_tape.finish()
+
+# Return code
+if fail:
+    logger.info("Copied {} files, Failed {} files.".format(success, fail))
+    exit(1)
+else:
+    logger.info("Copied {} files.".format(success, fail))
+    exit(0)
