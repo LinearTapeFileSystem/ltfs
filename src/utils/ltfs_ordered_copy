@@ -139,7 +139,7 @@ class CopyQueue:
             # Search target start block in the target tape
             if s in start_block.keys():
                 tail = start_block[s][-1]
-                if tail.size >= HalfMegaByte:
+                if tail.size >= CopyQueue.HalfMegaByte:
                     start_block[s].append(c)
                 else:
                     start_block[s].insert(-1, c)
