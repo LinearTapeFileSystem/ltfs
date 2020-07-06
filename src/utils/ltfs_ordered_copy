@@ -71,16 +71,16 @@ class CopyItem:
             self.start = int(start_str)
             self.size  = os.path.getsize(self.src)
         except Exception as e:
-            self.logger.error("Failed to get attribute of {0}: {1}".format(self.src, str(str(e))))
+            self.logger.error('Failed to get attribute of "{0}": {1}'.format(self.src, str(str(e))))
 
         return (self.vuuid, self.part, self.start)
 
     def run(self):
         try:
             if len(self.vuuid):
-                logger.debug("Copying {0} ({2}) -> {1}".format(self.src, self.dst, str(self.start)))
+                logger.debug('Copying "{0}" ({2}) -> "{1}"'.format(self.src, self.dst, str(self.start)))
             else:
-                logger.debug("Copying file {0} -> {1}".format(self.src, self.dst))
+                logger.debug('Copying file "{0}" -> "{1}"'.format(self.src, self.dst))
 
             if self.cp_attr: #Copy data and metadata
                 shutil.copy2(self.src, self.dst)
@@ -96,7 +96,7 @@ class CopyItem:
             else: #Only copy data
                 shutil.copy(self.src, self.dst)
         except Exception as e:
-            self.logger.error("Failed to copy {0} to {1}: ${2}".format(self.src, self.dst, str(str(e))))
+            self.logger.error('Failed to copy "{0}" to "{1}": {2}'.format(self.src, self.dst, str(str(e))))
             return False
 
         return True
