@@ -41,20 +41,22 @@ import xattr
 import shutil
 import threading
 
+from logging import getLogger, basicConfig, NOTSET, CRITICAL, ERROR, WARNING, INFO, DEBUG
 from collections import deque
 
 class CopyItem:
     """"""
-    def __init__(self, src, dst, vea_pre, cp_attr, cp_xattr): #initialization
+    def __init__(self, src, dst, vea_pre, cp_attr, cp_xattr, logger): #initialization
         self.src     = src
         self.dst     = dst
         self.vea_pre = vea_pre
         self.cp_attr = cp_attr
-	self.cp_xattr = cp_xattr
+        self.cp_xattr = cp_xattr
         self.vuuid   = ''
         self.part    = ''
         self.start   = -1
         self.size    = 0
+        self.logger  = logger
 
     def eval(self): #access to the extended attributes present in some operating systems/filesystems by xattr
         try:
@@ -69,105 +71,172 @@ class CopyItem:
             self.start = int(start_str)
             self.size  = os.path.getsize(self.src)
         except Exception as e:
-            sys.stderr.write("Failed to get attribute of {0}: {1}\n".format(self.src, str(str(e))))
+            self.logger.error('Failed to get attribute of "{0}": {1}'.format(self.src, str(str(e))))
 
         return (self.vuuid, self.part, self.start)
 
     def run(self):
         try:
-            # TODO: Need to support verbosity
-            #if len(self.vuuid):
-            #    sys.stderr.write("Copying {0} ({1})\n".format(self.src, str(self.start)))
-            #else:
-            #    sys.stderr.write("Copying {0}\n".format(self.src))
+            if len(self.vuuid):
+                logger.debug('"{0}" ({2}) -> "{1}"'.format(self.src, self.dst, str(self.start)))
+            else:
+                logger.debug('"{0}" -> "{1}"'.format(self.src, self.dst))
 
             if self.cp_attr: #Copy data and metadata
-		shutil.copy2(self.src, self.dst)
-		if self.cp_xattr:
-			src_attributes = {}
-			for key in xattr.list(self.src):
-				src_attributes[key] = xattr.get(self.src, key)
-			#shutil.copy2(self.src, self.dst)
-			#print(src_attributes)
-			(_, filename) = os.path.split(self.src)
-			for key in src_attributes:
-				xattr.set(os.path.join(self.dst, filename), key, src_attributes[key])
+                shutil.copy2(self.src, self.dst)
+                if self.cp_xattr:
+                    # Capture EAs of the source file
+                    src_attributes = {}
+                    for key in xattr.list(self.src):
+                        src_attributes[key] = xattr.get(self.src, key)
+                    # Set EAs of the destination file
+                    (_, filename) = os.path.split(self.src)
+                    for key in src_attributes:
+                        xattr.set(os.path.join(self.dst, filename), key, src_attributes[key])
             else: #Only copy data
                 shutil.copy(self.src, self.dst)
         except Exception as e:
-            sys.stderr.write("Failed to copy {0} to {1}: ${2}\n".format(self.src, self.dst, str(str(e))))
-            return
+            self.logger.error('Failed to copy "{0}" to "{1}": {2}'.format(self.src, self.dst, str(str(e))))
+            return False
+
+        return True
 
     def __repr__(self):
         return self.src + ":" + self.dst + ":" + self.vuuid + ":" + self.part + str(self.start)
 
-HalfMegaByte = 512 * 1024
+class CopyQueue:
+    """"""
+    HalfMegaByte = 512 * 1024
 
-def add_copy_item(c, tape_num, direct):
-    (u, p, s) = c.eval()
-    if u == '':
-        # Source is not on LTFS
-        direct.append(c)
-    else:
-        partation = {}
-        start_block = {}
-        if u in tape_num.keys():
-            partation = tape_num[u]
-            if not p in partation.keys():
-                tape_num[u][p] = {}
-            start_block = partation[p]
+    def __init__(self, logger): #initialization
+        self.direct = deque([])
+        self.tape_dict = {}
+        self.items = 0
+        self.logger = logger
+
+    def add_copy_item(self, c):
+        (u, p, s) = c.eval()
+        if u == '':
+            # Source is not on LTFS
+            self.direct.append(c)
+            self.items = self.items + 1
         else:
-            tape_num[u] = {}
-            partation = tape_num[u]
-            partation[p] = {}
-            start_block = partation[p]
+            partation = {}
+            start_block = {}
 
-        if s in start_block.keys():
-            tail = start_block[s][-1]
-            if tail.size >= HalfMegaByte:
-                start_block[s].append(c)
+            # Search target tape
+            if u in self.tape_dict.keys():
+                partation = self.tape_dict[u]
+                if not p in partation.keys():
+                    self.tape_dict[u][p] = {}
+                start_block = partation[p]
             else:
-                start_block[s].insert(-1, c)
-        else:
-            start_block[s] = [c]
+                self.tape_dict[u] = {}
+                partation = self.tape_dict[u]
+                partation[p] = {}
+                start_block = partation[p]
 
-def walk_dir(source, dest, direct, tape_num, ds, cp_attr, cp_xattr=False):
-    (source_root, t) = os.path.split(source)
-    prefix_len = len(source_root)
-    dst = dest + "/" + t
-    dst = os.path.normpath(dst)
-    ds.append(dst)
+            # Search target start block in the target tape
+            if s in start_block.keys():
+                tail = start_block[s][-1]
+                if tail.size >= CopyQueue.HalfMegaByte:
+                    start_block[s].append(c)
+                else:
+                    start_block[s].insert(-1, c)
+            else:
+                start_block[s] = [c]
 
-    for root, dirs, files in os.walk(source):
-        t = root[prefix_len:]
+            self.items = self.items + 1
+
+    def walk_dir(self, source, dest, cp_attr, cp_xattr=False):
+        (source_root, t) = os.path.split(source)
+        prefix_len = len(source_root)
         dst = dest + "/" + t
         dst = os.path.normpath(dst)
 
-        for d in dirs:
-            ds.append(os.path.join(dst, d))
-        for f in files:
-            c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX, cp_attr, cp_xattr)
-            add_copy_item(c, tape_num, direct)
+        walk_dirs = []
+        walk_dirs.append(dst)
 
-    for d in ds:
-        try:
-            os.mkdir(d)
-        except OSError as e:
-            if e.errno != 17: # Not EEXIST
-                sys.stderr.write(str(e) + "\n")
-                exit(1)
+        self.logger.log(NOTSET + 1, 'Walking {}'.format(source))
+        for root, dirs, files in os.walk(source):
+            t = root[prefix_len:]
+            dst = dest + "/" + t
+            dst = os.path.normpath(dst)
 
-def writer(q):
+            for d in dirs:
+                walk_dirs.append(os.path.join(dst, d))
+            for f in files:
+                self.logger.log(NOTSET + 1, 'Creating a copy item for file {}'.format(f))
+                c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX,
+                             cp_attr, cp_xattr, logger)
+                self.add_copy_item(c)
+
+        for d in walk_dirs:
+            try:
+                self.logger.log(NOTSET + 1, 'Making a directory {}'.format(d))
+                os.mkdir(d)
+            except OSError as e:
+                if e.errno != 17: # Not EEXIST
+                    self.logger.error(str(e) + "\n")
+                    exit(1)
+
+    def pop_direct(self):
+        self.items = self.items - len(self.direct)
+        return self.direct
+
+    def pop_tape(self):
+        tape_list = sorted(self.tape_dict.keys())
+        t = None
+
+        tape_key = ""
+        if len(tape_list):
+            tape_key = tape_list[0]
+            t = self.tape_dict[tape_key]
+            del self.tape_dict[tape_key]
+
+        return (tape_key, t)
+
+    def print_info(self):
+        self.logger.info("On disk sources: {0}".format(len(self.direct)))
+        self.logger.info("Source tapes: {0}".format(len(self.tape_dict.keys())))
+
+    def get_size(self):
+        return self.items
+
+class Progress:
+    def __init__(self, logger, title, num): #initialization
+        self.logger = logger
+        self.title = title
+        self.num = num
+        self.cur = 0
+
+    def update(self, step = 1):
+        if self.logger.getEffectiveLevel() == INFO:
+            self.cur = self.cur + 1
+            sys.stderr.write('\r{}: {}/{}'.format(self.title, self.cur, self.num))
+            sys.stderr.flush()
+
+    def finish(self):
+        if self.logger.getEffectiveLevel() == INFO:
+            logger.info("")
+
+def writer(logger, prog, q, success, fail):
     while True:
         try:
             ci = q.popleft()
         except IndexError as e:
+            logger.log(NOTSET + 1, 'Index error break.')
             break;
         except Exception as e:
-            sys.stderr.write(str(e) + "\n")
+            logger.error('writer thread error: ' + str(e))
             exit(1)
 
-        ci.run()
+        prog.update()
+        result = ci.run()
+        if result:
+            success = success + 1
+        else:
+            fail = fail + 1
 
 VEA_PREFIX=''
 LTFS_SIG_VEA='ltfs.softwareProduct'
@@ -181,6 +250,14 @@ else:
     sys.stderr.write("unsupported platform '{0}'\n".format(plat))
     exit(1)
 
+logger_quiet    = 0
+logger_critical = 1
+logger_error    = 2
+logger_warning  = 3
+logger_info     = 4
+logger_verbose  = 5
+logger_debug    = 6
+
 # Start program here
 parser = argparse.ArgumentParser(description = 'Copy files from source to destination with LTFS order optimization')
 parser.add_argument('SOURCE', help='source files', nargs='*')
@@ -190,13 +267,47 @@ parser.add_argument('-r', '--recursive', help='copy directories recursively', ac
 parser.add_argument('-t', '--target-directory', help='copy all SOURCE arguments into TARGET_DIRECTORY')
 #parser.add_argument('-z', '--zero', help='handle NULL delimited source list (assume input \'find -print0\')', action='store_true')
 parser.add_argument('--keep-tree', help='Keep tree structure like recursive copy. Effective only stdin source')
-parser.add_argument('-a','-all', help='achieve files recursively and preserve attributes', action='store_true')
+parser.add_argument('-a','--all', help='achieve files recursively and preserve attributes', action='store_true')
+parser.add_argument('-v', help='Verbose output. Set VERBOSE level 5', action='store_true')
+parser.add_argument('--verbose', help='Configure verbosity of logger. VERBOSE shall be 0-6. default is 4', default = str(logger_info))
+parser.add_argument('-q','--quiet', help='No message output', action='store_true')
 
 args=parser.parse_args()
 
-if args.a:
-	args.p = True
-	args.recursive = True
+if args.all:
+    args.p = True
+    args.recursive = True
+
+logger = getLogger(__name__)
+basicConfig(format = '')
+if args.quiet:
+    basicConfig(level = CRITICAL)
+    logger.setLevel(CRITICAL)
+else:
+    level = {
+        logger_quiet: CRITICAL,
+        logger_critical: CRITICAL,
+        logger_error: ERROR,
+        logger_warning: WARNING,
+        logger_info: INFO,
+        logger_verbose: DEBUG,
+        logger_debug: NOTSET + 1
+    }
+
+    l = logger_info
+    if args.v:
+        l = logger_verbose
+    elif args.quiet:
+        l = logger_quiet
+    elif len(args.verbose):
+        l = int(args.verbose)
+        if l > logger_debug:
+            l = logger_debug
+
+    basicConfig(level = level[l])
+    logger.setLevel(level[l])
+
+logger.info('Tape order aware copy for LTFS')
 
 if args.target_directory:
     if args.DEST != None:
@@ -209,67 +320,73 @@ else:
         args.DEST = args.SOURCE[-1]
         args.SOURCE = args.SOURCE[:-1]
 
+logger.log(NOTSET + 1, 'Source (args): {}'.format(args.SOURCE))
+logger.log(NOTSET + 1, 'Destination:   {}'.format(args.DEST))
+
 if args.DEST == None:
-    sys.stderr.write("No destination is specified\n")
-    exit(1)
+    logger.error('No destination is specified')
+    exit(2)
 
 # Special case:
-#  Copy source in only one file
-#  Copy check source is file and
+#  Copy source is only one file
 if args.recursive == False and len(args.SOURCE) == 1:
+    logger.log(NOTSET + 1, 'Single file copy')
     if os.path.isfile(args.SOURCE[0]):
         try:
             shutil.copy(args.SOURCE[0], args.DEST)
         except Exception as e:
-            sys.stderr.write(str(e) + "\n")
+            logger.error(str(e))
             exit(1)
         exit(0)
     else:
-        sys.stderr.write("omitting directory '{0}'\n".format(args.SOURCE[0]))
-        exit(1)
+        logger.error("omitting directory '{0}'\n".format(args.SOURCE[0]))
+        exit(2)
 
 # Check destination is LTFS or not
+logger.log(NOTSET + 1, 'Checking destination is LTFS or not')
 direct_write_threads = 8
 try:
     sig = xattr.get(args.DEST, VEA_PREFIX + LTFS_SIG_VEA)
 
     if sig.startswith("LTFS"):
-        sys.stderr.write("Destination {0} is LTFS\n".format(args.DEST))
+        logger.info("Destination {0} is LTFS".format(args.DEST))
         direct_write_threads = 1
     else:
-        sys.stderr.write("Destination {0} is not LTFS\n".format(args.DEST))
+        logger.info("Destination {0} is not LTFS\n".format(args.DEST))
 except IOError as e:
-    if e.errno != 61: # Not ENODATA
-        sys.stderr.write(str(e) + "\n")
-        exit(1)
-    sys.stderr.write("Destination {0} is not LTFS\n".format(args.DEST))
+    if e.errno != 61 and e.errno != 93: # Not ENODATA, ENOATTR
+        logger.error('Check destination (I/O):' + str(e))
+        exit(2)
+    logger.warning("Destination {0} is not LTFS".format(args.DEST))
 except Exception as e:
-    sys.stderr.write(str(e) + "\n")
+    logger.error('Check destination:' + str(e))
     exit(1)
 
 # Read sources from stdin if required
 if len(args.SOURCE) == 0:
+    logger.log(NOTSET + 1, 'Fetching source list from stdin')
     for line in sys.stdin:
         args.SOURCE.append(line.rstrip('\r\n'))
+    logger.log(NOTSET + 1, 'Source: {}'.format(args.SOURCE))
 else:
     args.keep_tree = ''
 
 # Create the list of copy item
-direct = deque([])
-cpls = {}
-dirs = []
+copyq = CopyQueue(logger)
 for s in args.SOURCE:
     dst = args.DEST
     if os.path.isfile(s):
+        logger.log(NOTSET + 1, 'Creating copy item for file {}'.format(s))
         if len(args.keep_tree):
             dst = dst + '/' + s[len(args.keep_tree):]
             dst = os.path.normpath(dst)
             (new_d, t) = os.path.split(dst)
             if not os.path.exists(new_d):
                 os.makedirs(new_d)
-        c = CopyItem(s, dst, VEA_PREFIX, args.p, args.a)
-        add_copy_item(c, cpls, direct)
+        c = CopyItem(s, dst, VEA_PREFIX, args.p, args.all, logger)
+        copyq.add_copy_item(c)
     else:
+        logger.log(NOTSET + 1, 'Creating copy item for directory {}'.format(s))
         if args.recursive:
             if len(args.keep_tree):
                 dst = dst + '/' + s[len(args.keep_tree):]
@@ -278,42 +395,63 @@ for s in args.SOURCE:
                 if not os.path.exists(new_d):
                    os.makedirs(new_d)
                 dst = new_d
-            walk_dir(s, dst, direct, cpls, dirs, args.p, args.a)
+            copyq.walk_dir(s, dst, args.p, args.all)
         else:
-            sys.stderr.write("omitting directory '{0}'\n".format(s))
+            logger.warning("omitting directory '{0}'".format(s))
 
-sys.stderr.write("On disk sources: {0}\n".format(len(direct)))
-sys.stderr.write("Source tapes: {0}\n".format(len(cpls.keys())))
+copyq.print_info()
 
 # Copy file on disk (direct item) with direct_write_threads
+success = 0
+fail = 0
+
+direct = copyq.pop_direct()
+prog_disk = Progress(logger, 'File copy from disk is on going', len(direct))
 if len(direct):
-    sys.stderr.write("Copying on disk files with {0} threads\n".format(direct_write_threads))
+    logger.info("Copying on {} disk files with {} threads".format(len(direct), direct_write_threads))
     writers = []
     for i in range(direct_write_threads):
-        th = threading.Thread(target = writer, args = ([direct]))
+        th = threading.Thread(target = writer, args = ([logger, prog_disk, direct, success, fail]))
         writers.append(th)
         th.start()
 
     for th in writers:
         th.join()
 
+    prog_disk.finish()
+
 # Copy files on LTFS
-tape_list = sorted(cpls.keys())                 #List: tape number dict
-for partition_key in tape_list:
-    partition = cpls[partition_key]
-    partation_list = sorted(partition.keys())   #List: partition number dict
+prog_tape = Progress(logger, 'File copy from tape is on going', copyq.get_size())
+(tape_key, tape) = copyq.pop_tape()
+while tape != None:
+    logger.log(NOTSET + 1, "Processing {}".format(len(tape)))
+    partation_list = sorted(tape.keys())
 
-    for start_block_key in partation_list:
-        sys.stderr.write("Processing tape {0}, Partition {1}\n".format(partition_key, start_block_key))
-        start_block = partition[start_block_key]
+    for partition_key in partation_list:
+        logger.info("Processing tape {0}, Partition {1}".format(tape_key, partition_key))
+        partition = tape[partition_key]
 
-        sys.stderr.write("Sorting {}\n".format(len(start_block.keys())))
-        start_block_list = sorted(start_block.keys())  #List: start block number dict
-        sys.stderr.write("Copying files on {0} ({1})\n".format(partition_key, start_block_key))
+        logger.info("Sorting {} files on {} ({})".format(len(partition.keys()), tape_key, partition_key))
+        start_block_list = sorted(partition.keys())
+        logger.info("Copying files on {} ({})".format(tape_key, partition_key))
 
-        for file_ind_key in start_block_list:          #List: if multi-file in one block, file position will be write in here
-            file_ind = start_block[file_ind_key]
+        for start_block_key in start_block_list:
+            file_ind = partition[start_block_key]
             for cp in file_ind:
-                cp.run()
+                prog_tape.update()
+                result = cp.run()
+                if result:
+                    success = success + 1
+                else:
+                    fail = fail + 1
 
-exit(0)
+    (tape_key, tape) = copyq.pop_tape()
+    prog_tape.finish()
+
+# Return code
+if fail:
+    logger.info("Copied {} files, Failed {} files.".format(success, fail))
+    exit(1)
+else:
+    logger.info("Copied {} files.".format(success, fail))
+    exit(0)
