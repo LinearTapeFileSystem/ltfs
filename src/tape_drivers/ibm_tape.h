@@ -69,97 +69,7 @@ static const char base_firmware_level_lto5[] = "B170";
 static const char base_firmware_level_lto8[] = "HB81";
 static const char base_firmware_level_ts1140[] = "3694";
 
-extern struct error_table standard_tape_errors[];
 extern struct error_table ibm_tape_errors[];
-
-static inline int _sense2errorcode(uint32_t sense, struct error_table *table, char **msg, uint32_t mask)
-{
-	int rc = -EDEV_UNKNOWN;
-	int i;
-
-	if (msg)
-		*msg = NULL;
-
-	if (!table)
-		return rc;
-
-	if ( (sense & 0xFFFF00) == 0x044000 )
-		sense = 0x044000;
-	else if ( (sense & 0xFFF000) == 0x048000 ) /* 04/8xxx in TS3100/TS3200 */
-		sense = 0x048000;
-	else if ( (sense & 0xFFF000) == 0x0B4100 ) /* 0B/41xx in TS2900 */
-		sense = 0x0B4100;
-
-	if ( (sense & 0x00FF00) >= 0x008000 || (sense & 0x0000FF) >= 0x000080)
-		rc = -EDEV_VENDOR_UNIQUE;
-
-	i = 0;
-	while (table[i].sense != 0xFFFFFF) {
-		if((table[i].sense & mask) == (sense & mask)) {
-			rc  = table[i].err_code;
-			if (msg)
-				*msg = (char*)(table[i].msg);
-			break;
-		}
-		i++;
-	}
-
-	if (table[i].err_code == -EDEV_RECOVERED_ERROR)
-		rc = DEVICE_GOOD;
-	else if (table[i].sense == 0xFFFFFF && table[i].err_code == rc && msg)
-		*msg = (char*)(table[i].msg);
-
-	return rc;
-}
-
-#define TAPE_FAMILY_MASK       (0xF000)
-#define TAPE_FAMILY_ENTERPRISE (0x1000)
-#define TAPE_FAMILY_LTO        (0x2000)
-#define TAPE_FAMILY_ARCHIVE    (0x4000)
-
-#define TAPE_FORMFACTOR_MASK   (0x0F00)
-#define TAPE_FORMFACTOR_FULL   (0x0100)
-#define TAPE_FORMFACTOR_HALF   (0x0200)
-
-#define TAPE_GEN_MASK          (0x00FF)
-
-#define IS_ENTERPRISE(type)    (type & TAPE_FAMILY_ENTERPRISE)
-#define IS_LTO(type)           (type & TAPE_FAMILY_LTO)
-#define IS_FULL_HEIGHT(type)   (type & TAPE_FORMFACTOR_FULL)
-#define IS_HALF_HEIGHT(type)   (type & TAPE_FORMFACTOR_HALF)
-#define DRIVE_FAMILY_GEN(type) (type & (TAPE_GEN_MASK | TAPE_FAMILY_MASK) )
-#define DRIVE_GEN(type)        (type & TAPE_GEN_MASK)
-
-enum {
-	DRIVE_UNSUPPORTED = 0x0000, /* Unsupported drive */
-	DRIVE_LTO5        = 0x2105, /* IBM Ultrium Gen 5 */
-	DRIVE_LTO5_HH     = 0x2205, /* IBM Ultrium Gen 5 Half-High */
-	DRIVE_LTO6        = 0x2106, /* IBM Ultrium Gen 6 */
-	DRIVE_LTO6_HH     = 0x2206, /* IBM Ultrium Gen 6 Half-High */
-	DRIVE_LTO7        = 0x2107, /* IBM Ultrium Gen 7 */
-	DRIVE_LTO7_HH     = 0x2207, /* IBM Ultrium Gen 7 Half-High */
-	DRIVE_LTO8        = 0x2108, /* IBM Ultrium Gen 8 */
-	DRIVE_LTO8_HH     = 0x2208, /* IBM Ultrium Gen 8 Half-High */
-	DRIVE_LTO9        = 0x2109, /* IBM Ultrium Gen 9 */
-	DRIVE_LTO9_HH     = 0x2209, /* IBM Ultrium Gen 9 Half-High */
-	DRIVE_TS1140      = 0x1104, /* TS1140 */
-	DRIVE_TS1150      = 0x1105, /* TS1150 */
-	DRIVE_TS1155      = 0x5105, /* TS1155 */
-	DRIVE_TS1160      = 0x1106, /* TS1160 */
-};
-
-enum {
-	DRIVE_GEN_UNKNOWN = 0,
-	DRIVE_GEN_LTO5    = 0x2005,
-	DRIVE_GEN_LTO6    = 0x2006,
-	DRIVE_GEN_LTO7    = 0x2007,
-	DRIVE_GEN_LTO8    = 0x2008,
-	DRIVE_GEN_LTO9    = 0x2009,
-	DRIVE_GEN_JAG4    = 0x1004,
-	DRIVE_GEN_JAG5    = 0x1005,
-	DRIVE_GEN_JAG5A   = 0x5005,
-	DRIVE_GEN_JAG6    = 0x1006,
-};
 
 typedef struct {
 	int drive_generation;
@@ -259,8 +169,8 @@ extern int num_supported_density;
 #define LOGSENSEPAGE 1024     /* max data xfer for log sense page ioctl */
 
 int  ibm_tape_init_timeout(struct timeout_tape **table, int type);
-void ibm_tape_destroy_timeout(struct timeout_tape **table);
-int  ibm_tape_get_timeout(struct timeout_tape *table, int op_code);
+#define ibm_tape_destroy_timeout destroy_timeout
+#define ibm_tape_get_timeout get_timeout
 
 unsigned char ibm_tape_assume_cart_type(const char* type_name);
 char* ibm_tape_assume_cart_name(unsigned char type);
@@ -271,7 +181,7 @@ int ibm_tape_is_mountable(const int drive_type,
 						 const unsigned char density_code,
 						 const bool strict);
 
-int ibm_tape_is_supported_tape(unsigned char type, unsigned char density, bool *is_worm);
+#define ibm_tape_is_supported_tape is_supported_tape
 
 #define KEYLEN (8)
 #define KEY_PREFIX_HOST (0x10)

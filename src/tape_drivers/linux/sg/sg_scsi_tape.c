@@ -55,7 +55,7 @@
 #include "libltfs/ltfs_endian.h"
 #include "libltfs/ltfslogging.h"
 
-#include "tape_drivers/ibm_tape.h"
+#include "tape_drivers/vendor_compat.h"
 
 #include "sg_scsi_tape.h"
 
@@ -84,6 +84,9 @@ static int sg_sense2errno(sg_io_hdr_t *req, uint32_t *s, char **msg)
 	/* NOTE: error table must be changed in library edition */
 	if (rc == -EDEV_VENDOR_UNIQUE)
 		rc = _sense2errorcode(sense_value, vendor_table, msg, MASK_WITH_SENSE_KEY);
+
+	if (rc == -EDEV_UNKNOWN && ((sense_value & 0xFF0000) == 0x040000) )
+		rc = -EDEV_HARDWARE_ERROR;
 
 	if (rc == -EDEV_UNKNOWN) {
 		ltfsmsg(LTFS_INFO, 30287I, sense_value);

@@ -70,7 +70,7 @@
 #include "libltfs/ltfs_endian.h"
 #include "libltfs/ltfslogging.h"
 
-#include "tape_drivers/ibm_tape.h"
+#include "tape_drivers/vendor_compat.h"
 
 /* Extern those 2 variables for sense conversion for specific tape */
 struct error_table *standard_table = NULL;
@@ -93,6 +93,9 @@ static int iokit_sense2errno(struct iokit_scsi_request *req, uint32_t *s, char *
 	/* NOTE: error table must be changed in library edition */
 	if (rc == -EDEV_VENDOR_UNIQUE)
 		rc = _sense2errorcode(sense_value, vendor_table, msg, MASK_WITH_SENSE_KEY);
+
+	if (rc == -EDEV_UNKNOWN && ((sense_value & 0xFF0000) == 0x040000) )
+		rc = -EDEV_HARDWARE_ERROR;
 
 	return rc;
 }

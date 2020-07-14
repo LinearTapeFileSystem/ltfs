@@ -60,7 +60,7 @@
 #include <time.h>
 #include <cam/scsi/scsi_message.h>
 #include "ltfs_copyright.h"
-#include "ibm_tape.h"
+#include "vendor_compat.h"
 #include "libltfs/ltfslogging.h"
 #include "cam_cmn.h"
 
@@ -92,6 +92,9 @@ int camtape_sense2rc(void *device, struct scsi_sense_data *sense, int sense_len)
 	if (rc == -EDEV_VENDOR_UNIQUE) {
 		rc = _sense2errcode(sense_concat, vendor_table, NULL, MASK_WITH_SENSE_KEY);
 	}
+
+	if (rc == -EDEV_UNKNOWN && ((sense_concat & 0xFF0000) == 0x040000) )
+		rc = -EDEV_HARDWARE_ERROR;
 
 	return rc;
 }
@@ -154,7 +157,7 @@ int camtape_ccb2rc(struct camtape_data *softc, union ccb *ccb)
 	return rc;
 }
 
-int camtape_ioctlrc2err(void *device, int fd, struct scsi_sense_data *sense_data, 
+int camtape_ioctlrc2err(void *device, int fd, struct scsi_sense_data *sense_data,
 	int control_cmd, char **msg)
 {
 	union mterrstat errstat;
@@ -841,7 +844,7 @@ int camtape_get_info(void *device, struct tc_drive_info *info)
 	info->channel = 0;
 	info->target  = 0;
 	info->lun     = -1;
-	
+
 	return 0;
 }
 

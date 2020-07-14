@@ -36,7 +36,7 @@
 **
 ** COMPONENT NAME:  IBM Linear Tape File System
 **
-** FILE NAME:       tape_drivers/osx/iokit/iokit.h
+** FILE NAME:       tape_drivers/osx/iokit/iokit_tape.h
 **
 ** DESCRIPTION:     Definitions of iokit ibmtape backend
 **
@@ -51,8 +51,8 @@
 *************************************************************************************
 */
 
-#ifndef __iokit_h
-#define __iokit_h
+#ifndef __iokit_tape_h
+#define __iokit_tape_h
 
 struct iokit_data {
 	struct iokit_device  dev;                  /**< device structure of iokit */
@@ -66,6 +66,7 @@ struct iokit_data {
 	uint64_t             tape_alert;           /**< Latched tape alert flag */
 	unsigned char        dki[12];              /**< key-alias */
 	bool                 use_sili;             /**< Default true, false for USB drives */
+	int                  vendor;               /**< drive vendor */
 	int                  drive_type;           /**< drive type defined by ltfs */
 	bool                 clear_by_pc;          /**< clear pseudo write perm by partition change */
 	uint64_t             force_writeperm;      /**< pseudo write perm threshold */
@@ -92,4 +93,4 @@ struct iokit_global_data {
 	unsigned disable_auto_dump; /**< Is auto dump disabled? */
 };
 
-#endif // __iokit_h
+#endif // __iokit_tape_h

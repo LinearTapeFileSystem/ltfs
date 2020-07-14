@@ -64,6 +64,7 @@ struct sg_data {
 	uint64_t             tape_alert;           /**< Latched tape alert flag */
 	unsigned char        dki[12];              /**< key-alias */
 	bool                 use_sili;             /**< Default true, false for USB drives */
+	int                  vendor;               /**< drive vendor */
 	int                  drive_type;           /**< drive type defined by ltfs */
 	bool                 clear_by_pc;          /**< clear pseudo write perm by partition change */
 	uint64_t             force_writeperm;      /**< pseudo write perm threshold */

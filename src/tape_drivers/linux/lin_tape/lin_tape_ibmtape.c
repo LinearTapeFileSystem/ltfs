@@ -72,7 +72,7 @@
 #include "libltfs/ltfstrace.h"
 
 #include "tape_drivers/tape_drivers.h"
-#include "tape_drivers/ibm_tape.h"
+#include "tape_drivers/vendor_compat.h"
 
 #undef MAXSENSE
 #include "IBM_tape.h"

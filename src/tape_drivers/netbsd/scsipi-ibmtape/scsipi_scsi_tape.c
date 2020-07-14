@@ -55,7 +55,7 @@
 #include "libltfs/ltfs_endian.h"
 #include "libltfs/ltfslogging.h"
 
-#include "tape_drivers/ibm_tape.h"
+#include "tape_drivers/vendor_compat.h"
 
 #include "scsipi_scsi_tape.h"
 
@@ -84,6 +84,9 @@ static int scsipi_sense2errno(scsireq_t *req, uint32_t *s, char **msg)
 	/* NOTE: error table must be changed in library edition */
 	if (rc == -EDEV_VENDOR_UNIQUE)
 		rc = _sense2errorcode(sense_value, vendor_table, msg, MASK_WITH_SENSE_KEY);
+
+	if (rc == -EDEV_UNKNOWN && ((sense_value & 0xFF0000) == 0x040000) )
+		rc = -EDEV_HARDWARE_ERROR;
 
 	return rc;
 }
@@ -177,12 +180,12 @@ static bool is_expected_error(struct scsipi_tape *device, uint8_t *cdb, int32_t 
 #define SUGGEST_DIE      (0x40)
 #define SUGGEST_SENSE    (0x80)
 
-int scsipi_issue_cdb_command(struct scsipi_tape *device, scsireq_t *req, 
+int scsipi_issue_cdb_command(struct scsipi_tape *device, scsireq_t *req,
 			 char *desc, char **msg)
 {
 	int status = 0;
 	int ret = -1;
-	
+
 	CHECK_ARG_NULL(req, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(msg, -LTFS_NULL_ARG);
 
@@ -212,7 +215,7 @@ int scsipi_issue_cdb_command(struct scsipi_tape *device, scsireq_t *req,
 		ret = -EDEV_TIMEOUT;
 		goto out;
 		break;
-		
+
 	case SCCMD_SENSE:	/* FALLTHROUGH */
 	case SCCMD_OK:		/* Good drive status */
 		ret = 0;
@@ -239,7 +242,7 @@ int scsipi_issue_cdb_command(struct scsipi_tape *device, scsireq_t *req,
 		}
 	}
 
-	if (is_expected_error(device, req->cmd, ret)) { 
+	if (is_expected_error(device, req->cmd, ret)) {
 		ltfsmsg(LTFS_DEBUG, 30204D, desc, req->cmd[0], ret);
 	} else {
 		ltfsmsg(LTFS_INFO, 30205I, desc, req->cmd[0], ret);

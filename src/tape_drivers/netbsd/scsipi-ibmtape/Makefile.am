@@ -38,14 +38,20 @@ BASENAMES = libtape-scsipi-ibmtape
 
 AM_LIBTOOLFLAGS = --tag=disable-static
 
-libtape_scsipi_ibmtape_la_SOURCES = scsipi_scsi_tape.c scsipi_ibmtape.c ibm_tape.c
+libtape_scsipi_ibmtape_la_SOURCES = scsipi_scsi_tape.c scsipi_ibmtape.c vendor_compat.c ibm_tape.c hp_tape.c
 libtape_scsipi_ibmtape_la_DEPENDENCIES = ../../../../messages/libtape_linux_sg_ibmtape_dat.a ../../../libltfs/libltfs.la libtape_scsipi_ibmtape_la-reed_solomon_crc.lo libtape_scsipi_ibmtape_la-crc32c_crc.lo
 libtape_scsipi_ibmtape_la_LIBADD = ../../../libltfs/libltfs.la libtape_scsipi_ibmtape_la-reed_solomon_crc.lo libtape_scsipi_ibmtape_la-crc32c_crc.lo
 libtape_scsipi_ibmtape_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_linux_sg_ibmtape_dat
 libtape_scsipi_ibmtape_la_CPPFLAGS = @AM_CPPFLAGS@ @AM_EXTRA_CPPFLAGS@ -I ../../.. -I ../..
 
+vendor_compat.c:
+	ln -s ../../vendor_compat.c ./vendor_compat.c
+
 ibm_tape.c:
 	ln -s ../../ibm_tape.c ./ibm_tape.c
+
+hp_tape.c:
+	ln -s ../../hp_tape.c ./hp_tape.c
 
 clean-local:
 	rm -f ibm_tape.c

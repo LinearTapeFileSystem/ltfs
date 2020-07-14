@@ -55,7 +55,7 @@ root:table {
 		30810I:string { "Opening a device through iokit driver (%s)." }
 		30811I:string { "Cannot open device: failed to convert devname to devnumber (%s)." }
 		30812I:string { "Cannot get the drive identifier of %s." }
-		30813I:string { "Unsupported drive \'%s\'." }
+		30813I:string { "Unsupported drive \'%s\' / \'%s\'." }
 		30814I:string { "Vendor ID is %s." }
 		30815I:string { "Product ID is \'%s\'." }
 		30816I:string { "Firmware revision is %s." }
