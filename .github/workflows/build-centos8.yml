@@ -1,10 +1,10 @@
-name: Ubuntu 20.04 Build Job
+name: CentOS8 Build Job
 
 on: [push, pull_request]
 
 jobs:
   build:
-    name: Build on Ubuntu Focal
+    name: Build on CentOS8
     runs-on: ubuntu-latest
 
     steps:
@@ -12,6 +12,6 @@ jobs:
         uses: actions/checkout@v1
       - name: Build LTFS
         id: build
-        uses: LinearTapeFileSystem/Ubuntu2004-Build@v1.1
+        uses: LinearTapeFileSystem/CentOS8-Build@v0.1
         with:
           destination: '/tmp/ltfs'
