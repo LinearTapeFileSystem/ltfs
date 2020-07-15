@@ -93,6 +93,10 @@ These instructions will get you a copy of the project up and running on your loc
   | IBM    | TS1150     | None              |
   | IBM    | TS1155     | None              |
   | IBM    | TS1160     | None              |
+  | HP     | LTO5       | T.B.D.            |
+  | HP     | LTO6       | T.B.D.            |
+  | HP     | LTO7       | T.B.D.            |
+  | HP     | LTO8       | T.B.D.            |
 
 ## Installing
 
@@ -175,22 +179,23 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
 
 #### Buildable distributions
 
-  | Dist                          | Arch    | Status      |
-  |:-:                            |:-:      |:-:          |
-  | RHEL 7                        | x86_64  | OK          |
-  | RHEL 7                        | ppc64le | OK          |
-  | CentOS 7                      | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)|
-  | CentOS 7                      | ppc64le | Probably OK |
-  | Fedora 28                     | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)|
-  | Ubuntu 16.04 LTS              | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master)|
-  | Ubuntu 16.04 LTS              | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
-  | Ubuntu 18.04 LTS              | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master)|
-  | Ubuntu 18.04 LTS              | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
-  | Ubuntu 19.10 (Need icu-config)| x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2019.10%20Build%20Job/badge.svg?branch=master)|  
-  | Debian 9                      | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)|
-  | Debian 10 (Need icu-config)   | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian10%20Build%20Job/badge.svg?branch=master)|
-  | ArchLinux 2018.08.01          | x86_64  | OK          |
-  | ArchLinux 2018.12.31 (rolling)| x86_64  | OK          |
+  | Dist                              | Arch    | Status      |
+  |:-:                                |:-:      |:-:          |
+  | RHEL 7                            | x86_64  | OK          |
+  | RHEL 7                            | ppc64le | OK          |
+  | CentOS 7                          | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)|
+  | CentOS 7                          | ppc64le | Probably OK |
+  | Fedora 28                         | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)|
+  | Ubuntu 16.04 LTS                  | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master)|
+  | Ubuntu 16.04 LTS                  | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
+  | Ubuntu 18.04 LTS                  | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master)|
+  | Ubuntu 18.04 LTS                  | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
+  | Ubuntu 19.10 (Need icu-config)    | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2019.10%20Build%20Job/badge.svg?branch=master)|
+  | Ubuntu 20.04 LTS (Need icu-config)| x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2020.04%20Build%20Job/badge.svg?branch=master)|
+  | Debian 9                          | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)|
+  | Debian 10 (Need icu-config)       | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian10%20Build%20Job/badge.svg?branch=master)|
+  | ArchLinux 2018.08.01              | x86_64  | OK          |
+  | ArchLinux 2018.12.31 (rolling)    | x86_64  | OK          |
 
 Currently, automatic build checking is working on GitHub Actions and Travis CI.
 
