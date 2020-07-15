@@ -181,8 +181,12 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
 
   | Dist                              | Arch    | Status      |
   |:-:                                |:-:      |:-:          |
+  | RHEL 8                            | x86_64  | OK          |
+  | RHEL 8                            | ppc64le | OK          |
   | RHEL 7                            | x86_64  | OK          |
   | RHEL 7                            | ppc64le | OK          |
+  | CentOS 8                          | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS8%20Build%20Job/badge.svg?branch=master)|
+  | CentOS 8                          | ppc64le | Probably OK |
   | CentOS 7                          | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)|
   | CentOS 7                          | ppc64le | Probably OK |
   | Fedora 28                         | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)|
@@ -199,7 +203,7 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
 
 Currently, automatic build checking is working on GitHub Actions and Travis CI.
 
-For Ubuntu19.10 and Debian10, dummy `icu-config` is needed in the build machine. See Issue [#153](https://github.com/LinearTapeFileSystem/ltfs/issues/153).
+For Ubuntu19.10, Ubuntu20.04 and Debian10, dummy `icu-config` is needed in the build machine. See Issue [#153](https://github.com/LinearTapeFileSystem/ltfs/issues/153).
 
 ### Build and install on OSX (macOS)
 
