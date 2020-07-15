@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: Build on Fedore28
+    name: Build on Fedora28
     runs-on: ubuntu-latest
 
     steps:
