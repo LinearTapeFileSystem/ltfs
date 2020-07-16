@@ -1,4 +1,4 @@
-<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+M<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
           <!ENTITY dhcommand "ltfsck">
           <!ENTITY gnu       "<acronym>GNU</acronym>">
           ]>
@@ -59,7 +59,7 @@
       <title>OPTIONS</title>
       <para>
         These programs follow the usual &gnu; command line syntax,
-        with long options starting with two dashes (`-').  A summary of
+        with long options starting with two dashes ('-').  A summary of
         options is included below.  For a complete description, see the
         <application>Info</application> files.
       </para>
@@ -178,7 +178,7 @@
       </para>
       <para>
         These programs follow the usual &gnu; command line syntax,
-        with long options starting with two dashes (`-').  A summary of
+        with long options starting with two dashes ('-').  A summary of
         options is included below.  For a complete description, see the
         <application>Info</application> files.
       </para>

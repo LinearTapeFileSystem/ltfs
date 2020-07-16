@@ -1,0 +1,144 @@
+<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+          <!ENTITY dhcommand "ltfs_ordered_copy">
+          <!ENTITY gnu       "<acronym>GNU</acronym>">
+          ]>
+
+<reference>
+  <title>IBM Spectrum Archive Command Reference</title>
+
+  <refentry>
+    <refmeta>
+      <refentrytitle>
+        <command>&dhcommand;</command>
+      </refentrytitle>
+      <manvolnum>1</manvolnum>
+      <refmiscinfo>IBM Spectrum Archive</refmiscinfo>
+    </refmeta>
+
+    <refnamediv>
+      <refname>&dhcommand;</refname>
+      <refpurpose>Copy files from source to destination with LTFS order optimization</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+      <cmdsynopsis>
+        <command>&dhcommand;</command>
+        <arg><option>-p</option></arg>
+        <arg><option>-r</option></arg>
+        <arg><option>-t <replaceable>TARGET_DIRECTORY</replaceable></option></arg>
+        <arg><option>--keep-tree <replaceable>CUTOFF_PREFIX</replaceable></option></arg>
+        <arg><option>-a</option></arg>
+        <arg><option>-v</option></arg>
+        <arg><option>--verbose <replaceable>LOG_LEVEL</replaceable></option></arg>
+        <arg><option>-q</option></arg>
+        <arg><option>-h</option></arg>
+        <arg choice="opt" Rep="Repeat">SOURCE </arg>
+        <arg choice="opt">DESTINATION</arg>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+
+    <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+        <command>&dhcommand;</command> is a program to copy files from source to destination with LTFS
+        order optimization.
+        This command tries to acquire file list to copy to DESTINATION when no SOURCE is specified.
+      </para>
+    </refsect1>
+
+    <refsect1>
+      <title>OPTIONS</title>
+      <para>
+        These programs follow the usual &gnu; command line syntax,
+        with long options starting with two dashes ('-').  A summary of
+        options is included below.  For a complete description, see the
+        <application>Info</application> files.
+      </para>
+
+      <variablelist>
+        <varlistentry>
+          <term><option>-p</option></term>
+          <listitem>
+            <para>preserve attributes with shutil.copy2() in Python interpriter</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-r, --recursive</option></term>
+          <listitem>
+            <para>copy directories recursively</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-t, --target-directory=<replaceable>TARGET_DIRECTORY</replaceable></option></term>
+          <listitem>
+            <para>copy all SOURCE arguments into TARGET_DIRECTORY</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>--keep_tree=<replaceable>CUTOFF_PREFIX</replaceable></option></term>
+          <listitem>
+            <para>CUTOFF_PREFIX, effective only when file list is provided from stdin and keep-tree option is enabled. CUTOFF_PREFIX is removed from the file paths copied to the destination.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-a, --all</option></term>
+          <listitem>
+            <para>achieve files recursively and preserve attributes</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-v</option></term>
+          <listitem>
+            <para>Verbose output. Set VERBOSE level 5</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>--verbose=</option><replaceable>LOG_LEVEL</replaceable></term>
+          <listitem>
+            <para>Configure verbosity of logger. VERBOSE shall be 0-6. (Default: 4)</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-q, --quiet</option></term>
+          <listitem>
+            <para>No message outout</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsect1>
+
+    <refsect1>
+      <title>COMMAND EXAMPLES</title>
+      <para>
+        This section shows various command examples.
+      </para>
+
+      <example>
+        <title>SIMPLE USAGE</title>
+
+        <para>Copy file /foo/aaa to file /foo/bbb</para>
+        <blockquote><para>$ ltfs_ordered_copy /foo/aaa /foo/bbb</para></blockquote>
+
+        <para>Copy file /foo/aaa and /foo/bbb to directory /bar/</para>
+        <blockquote><para>% ltfs_ordered_copy /foo/aaa /foo/bbb /bar</para></blockquote>
+
+        <para>Copy directory /foo/ddd and /foo/DDD to directory /bar/</para>
+        <blockquote><para>% ltfs_ordered_copy /foo/ddd /foo/DDD /bar</para></blockquote>
+      </example>
+
+      <example>
+        <title>HOW TO USE WITH FIND COMMAND</title>
+
+        <para>Copy all files under /foo/ddd to directory /bar</para>
+        <blockquote><para>$ find /foo/ddd -type f | ltfs_ordered_copy -t /bar</para></blockquote>
+
+        <para>Copy all directories just under /foo/ddd to directory /bar</para>
+        <blockquote><para>$ find /foo/ddd -type d -maxdepth 1 | ltfs_ordered_copy -t /bar</para></blockquote>
+
+        <para>Copy all files just under /foo/ddd to directory /bar with keeping tree (Chop /foo/ddd from source list)</para>
+        <blockquote><para>$ find /foo/ddd -type f | ltfs_ordered_copy -t /bar --keep-tree=/foo/ddd</para></blockquote>
+      </example>
+    </refsect1>
+
+  </refentry>
+</reference>
