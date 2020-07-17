@@ -1,4 +1,4 @@
-* How to maintain the man pages of LTFS
+## How to maintain the man pages of LTFS
 
 Man pages for LTFS is originally written by SGML (DocBook V4.1). And it is converted to man (troff) by `docbook2man`.
 
