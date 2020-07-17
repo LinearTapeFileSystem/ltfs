@@ -42,7 +42,7 @@
       <title>GENERAL OPTIONS</title>
       <para>
         These programs follow the usual &gnu; command line syntax,
-        with long options starting with two dashes (`-').  A summary of
+        with long options starting with two dashes ('-').  A summary of
         options is included below.  For a complete description, see the
         <application>Info</application> files.
       </para>
@@ -73,7 +73,7 @@
       <title>LTFS OPTIONS (mount options)</title>
       <para>
         These programs follow the usual &gnu; command line syntax,
-        with long options starting with two dashes (`-').  A summary of
+        with long options starting with two dashes ('-').  A summary of
         options is included below.  For a complete description, see the
         <application>Info</application> files.
       </para>
@@ -197,7 +197,7 @@
       <title>FUSE OPTIONS (mount options)</title>
       <para>
         These programs follow the usual &gnu; command line syntax,
-        with long options starting with two dashes (`-').  A summary of
+        with long options starting with two dashes ('-').  A summary of
         options is included below.  For a complete description, see the
         <application>Info</application> files.
       </para>
@@ -231,7 +231,7 @@
       </para>
       <para>
         These programs follow the usual &gnu; command line syntax,
-        with long options starting with two dashes (`-').  A summary of
+        with long options starting with two dashes ('-').  A summary of
         options is included below.  For a complete description, see the
         <application>Info</application> files.
       </para>
