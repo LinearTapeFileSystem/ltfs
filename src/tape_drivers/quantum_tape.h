@@ -36,9 +36,9 @@
 **
 ** COMPONENT NAME:  IBM Linear Tape File System
 **
-** FILE NAME:       tape_drivers/vendor_compat.h
+** FILE NAME:       tape_drivers/quantum_tape.h
 **
-** DESCRIPTION:     Function prototypes of vendor unique features
+** DESCRIPTION:     Definitions of handling QUantum tape devices
 **
 ** AUTHOR:          Atsushi Abe
 **                  IBM Tokyo Lab., Japan
@@ -46,41 +46,35 @@
 **
 *************************************************************************************
 */
+
+#include <stdlib.h>
+#include <errno.h>
+
 #include "tape_drivers/spc_op_codes.h"
 #include "tape_drivers/ssc_op_codes.h"
 #include "tape_drivers/tape_drivers.h"
 
-/* Supported vendors */
-#include "tape_drivers/ibm_tape.h"
-#include "tape_drivers/hp_tape.h"
-#include "tape_drivers/quantum_tape.h"
+#include "libltfs/ltfslogging.h"
+#include "libltfs/ltfs_error.h"
 
-#ifndef __vendor_compat_h
+#ifndef __quantum_tape_h
 
-#define __vendor_compat_h
+#define __quantum_tape_h
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern struct error_table standard_tape_errors[];
+#define QUANTUM_VENDOR_ID "QUANTUM"
 
-int  get_vendor_id(char* vendor);
-struct supported_device **get_supported_devs(int vendor);
-bool drive_has_supported_fw(int vendor, int drive_type, const unsigned char * const revision);
-unsigned char assume_cart_type(const unsigned char dc);
-int  is_supported_tape(unsigned char type, unsigned char density, bool *is_worm);
+extern struct error_table quantum_tape_errors[];
 
-void init_error_table(int vendor,
-					  struct error_table **standard_table,
-					  struct error_table **vendor_table);
+int quantum_tape_init_timeout(struct timeout_tape** table, int type);
 
-int  init_timeout(int vendor, struct timeout_tape **table, int type);
-void destroy_timeout(struct timeout_tape **table);
-int  get_timeout(struct timeout_tape *table, int op_code);
+extern struct supported_device *quantum_supported_drives[];
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __vendor_compat_h
+#endif // __quantum_tape_h

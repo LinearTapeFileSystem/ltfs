@@ -36,9 +36,9 @@
 **
 ** COMPONENT NAME:  IBM Linear Tape File System
 **
-** FILE NAME:       tape_drivers/hp_tape.c
+** FILE NAME:       tape_drivers/quantum_tape.c
 **
-** DESCRIPTION:     General handling of HPE tape devices
+** DESCRIPTION:     General handling of Quantum tape devices
 **
 ** AUTHOR:          Atsushi Abe
 **                  IBM Tokyo Lab., Japan
@@ -59,23 +59,43 @@
 #define LOOP_BACK_DEVICE "lo"
 #endif
 
-#include "tape_drivers/hp_tape.h"
+#include "tape_drivers/quantum_tape.h"
 #include "libltfs/ltfs_endian.h"
 
-struct supported_device *hp_supported_drives[] = {
-		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 5-SCSI",  DRIVE_LTO5,    "[Ultrium 5-SCSI]" ),  /* HP Ultrium Gen 5  */
-		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 6-SCSI",  DRIVE_LTO6,    "[Ultrium 6-SCSI]" ),  /* HP Ultrium Gen 6  */
-		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 7-SCSI",  DRIVE_LTO7,    "[Ultrium 7-SCSI]" ),  /* HP Ultrium Gen 7  */
-		TAPEDRIVE( HPE_VENDOR_ID, "Ultrium 8-SCSI",  DRIVE_LTO8,    "[Ultrium 8-SCSI]" ),  /* HPE Ultrium Gen 8 */
-		/* End of supported_devices */
-		NULL
+struct supported_device *quantum_supported_drives[] = {
+	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH5",  DRIVE_LTO5_HH, "[ULTRIUM-HH5]" ),  /* QUANTUM Ultrium Gen 5 Half-High */
+	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH6",  DRIVE_LTO6_HH, "[ULTRIUM-HH6]" ),  /* QUANTUM Ultrium Gen 6 Half-High */
+	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH7",  DRIVE_LTO7_HH, "[ULTRIUM-HH7]" ),  /* QUANTUM Ultrium Gen 7 Half-High */
+	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH8",  DRIVE_LTO8_HH, "[ULTRIUM-HH8]" ),  /* QUANTUM Ultrium Gen 8 Half-High */
+	/* End of supported_devices */
+	NULL
 };
 
-/* HP/HPE LTO tape drive vendor unique sense table */
-struct error_table hp_tape_errors[] = {
+/* Quantum LTO tape drive vendor unique sense table */
+struct error_table quantum_tape_errors[] = {
 	/* Sense Key 0 (No Sense) */
-	{0x008282, -EDEV_CLEANING_REQUIRED,         "HPE LTO - Cleaning Required"},
-	{0x008283, -EDEV_HARDWARE_ERROR,            "HPE LTO - Bad microcode detected"},
+	{0x008282, -EDEV_CLEANING_REQUIRED,         "QUANTUM LTO - Cleaning Required"},
+	/* Sense Key 1 (Recoverd Error) */
+	{0x018252, -EDEV_DEGRADED_MEDIA,            "QUANTUM LTO - Degraded Media"},
+	{0x018383, -EDEV_RECOVERED_ERROR,           "Drive Has Been Cleaned"},
+	{0x018500, -EDEV_RECOVERED_ERROR,           "Search Match List Limit (warning)"},
+	{0x018501, -EDEV_RECOVERED_ERROR,           "Search Snoop Match Found"},
+	/* Sense Key 3 (Medium Error) */
+	{0x038500, -EDEV_DATA_PROTECT,              "Write Protected Because of Tape or Drive Failure"},
+	{0x038501, -EDEV_DATA_PROTECT,              "Write Protected Because of Tape Failure"},
+	{0x038502, -EDEV_DATA_PROTECT,              "Write Protected Because of Drive Failure"},
+	/* Sense Key 5 (Illegal Request) */
+	{0x058000, -EDEV_ILLEGAL_REQUEST,           "CU Mode, Vendor-Unique"},
+	{0x058283, -EDEV_ILLEGAL_REQUEST,           "Bad Microcode Detected"},
+	{0x058503, -EDEV_ILLEGAL_REQUEST,           "Write Protected Because of Current Tape Position"},
+	{0x05A301, -EDEV_ILLEGAL_REQUEST,           "OEM Vendor-Specific"},
+	/* Sense Key 6 (Unit Attention) */
+	{0x065DFF, -EDEV_UNIT_ATTENTION,            "Failure Prediction False"},
+	{0x068283, -EDEV_UNIT_ATTENTION,            "Drive Has Been Cleaned (older versions of microcode)"},
+	{0x068500, -EDEV_UNIT_ATTENTION,            "Search Match List Limit (alert)"},
+	/* Crypto Related Sense Code */
+	{0x044780, -EDEV_HARDWARE_ERROR,            "QUANTUM LTO - Read Internal CRC Error"},
+	{0x044781, -EDEV_HARDWARE_ERROR,            "QUANTUM LTO - Write Internal CRC Error"},
 	/* END MARK*/
 	{0xFFFFFF, -EDEV_UNKNOWN,                   "Unknown Error code"},
 };
@@ -126,201 +146,101 @@ static struct _timeout_tape timeout_lto[] = {
 	{-1, -1}
 };
 
-static struct _timeout_tape timeout_lto5[] = {
-	{ ERASE,                           18000 },
-	{ FORMAT_MEDIUM,                   1560  },
-	{ LOAD_UNLOAD,                     600   },
-	{ LOCATE10,                        1200  },
-	{ LOCATE16,                        1200  },
-	{ READ,                            1200  },
-	{ READ_BUFFER,                     60    },
-	{ REWIND,                          600   },
-	{ SEND_DIAGNOSTIC,                 600   },
-	{ SET_CAPACITY,                    780   },
-	{ SPACE6,                          1200  },
-	{ SPACE16,                         1200  },
-	{ VERIFY,                          18000 },
-	{ WRITE,                           300   },
-	{ WRITE_BUFFER,                    60    },
-	{ WRITE_FILEMARKS6,                300   },
-	{-1, -1}
-};
-
-static struct _timeout_tape timeout_lto6[] = {
-	{ ERASE,                           18000 },
-	{ FORMAT_MEDIUM,                   1560  },
-	{ LOAD_UNLOAD,                     600   },
-	{ LOCATE10,                        1200  },
-	{ LOCATE16,                        1200  },
-	{ READ,                            1200  },
-	{ READ_BUFFER,                     60    },
-	{ REWIND,                          600   },
-	{ SEND_DIAGNOSTIC,                 600   },
-	{ SET_CAPACITY,                    780   },
-	{ SPACE6,                          1200  },
-	{ SPACE16,                         1200  },
-	{ VERIFY,                          18000 },
-	{ WRITE,                           300   },
-	{ WRITE_BUFFER,                    60    },
-	{ WRITE_FILEMARKS6,                300   },
-	{-1, -1}
-};
-
-static struct _timeout_tape timeout_lto7[] = {
-	{ ERASE,                           29400 },
-	{ FORMAT_MEDIUM,                   3000  },
+static struct _timeout_tape timeout_lto5_hh[] = {
+	{ ERASE,                           19200 },
+	{ FORMAT_MEDIUM,                   1980  },
 	{ LOAD_UNLOAD,                     1020  },
 	{ LOCATE10,                        2700  },
 	{ LOCATE16,                        2700  },
 	{ READ,                            1920  },
-	{ READ_BUFFER,                     480   },
+	{ READ_BUFFER,                     660   },
 	{ REWIND,                          780   },
-	{ SEND_DIAGNOSTIC,                 1980  },
-	{ SET_CAPACITY,                    780   },
+	{ SEND_DIAGNOSTIC,                 3120  },
+	{ SET_CAPACITY,                    960   },
 	{ SPACE6,                          2700  },
 	{ SPACE16,                         2700  },
-	{ VERIFY,                          28860 },
+	{ VERIFY,                          19980 },
 	{ WRITE,                           1920  },
-	{ WRITE_BUFFER,                    540   },
-	{ WRITE_FILEMARKS6,                1920  },
-	{-1, -1}
-};
-
-static struct _timeout_tape timeout_lto8[] = {
-	{ ERASE,                           53040 },
-	{ FORMAT_MEDIUM,                   3000  },
-	{ LOAD_UNLOAD,                     840   },
-	{ LOCATE10,                        2940  },
-	{ LOCATE16,                        2940  },
-	{ READ,                            2340  },
-	{ READ_BUFFER,                     480   },
-	{ REWIND,                          660   },
-	{ SEND_DIAGNOSTIC,                 1980  },
-	{ SET_CAPACITY,                    780   },
-	{ SPACE6,                          2940  },
-	{ SPACE16,                         2940  },
-	{ VERIFY,                          53040 },
-	{ WRITE,                           1680  },
-	{ WRITE_BUFFER,                    540   },
-	{ WRITE_FILEMARKS6,                1680  },
-	{-1, -1}
-};
-
-static struct _timeout_tape timeout_lto9[] = {
-	{ ERASE,                           53040 },
-	{ FORMAT_MEDIUM,                   3000  },
-	{ LOAD_UNLOAD,                     840   },
-	{ LOCATE10,                        2940  },
-	{ LOCATE16,                        2940  },
-	{ READ,                            2340  },
-	{ READ_BUFFER,                     480   },
-	{ REWIND,                          660   },
-	{ SEND_DIAGNOSTIC,                 1980  },
-	{ SET_CAPACITY,                    780   },
-	{ SPACE6,                          2940  },
-	{ SPACE16,                         2940  },
-	{ VERIFY,                          53040 },
-	{ WRITE,                           1680  },
-	{ WRITE_BUFFER,                    540   },
-	{ WRITE_FILEMARKS6,                1680  },
-	{-1, -1}
-};
-
-static struct _timeout_tape timeout_lto5_hh[] = {
-	{ ERASE,                           18000 },
-	{ FORMAT_MEDIUM,                   1560  },
-	{ LOAD_UNLOAD,                     600   },
-	{ LOCATE10,                        1200  },
-	{ LOCATE16,                        1200  },
-	{ READ,                            1200  },
-	{ READ_BUFFER,                     60    },
-	{ REWIND,                          600   },
-	{ SEND_DIAGNOSTIC,                 600   },
-	{ SET_CAPACITY,                    780   },
-	{ SPACE6,                          1200  },
-	{ SPACE16,                         1200  },
-	{ VERIFY,                          18000 },
-	{ WRITE,                           300   },
-	{ WRITE_BUFFER,                    60    },
-	{ WRITE_FILEMARKS6,                300   },
+	{ WRITE_BUFFER,                    720   },
+	{ WRITE_FILEMARKS6,                1740  },
 	{-1, -1}
 };
 
 static struct _timeout_tape timeout_lto6_hh[] = {
-	{ ERASE,                           18000 },
-	{ FORMAT_MEDIUM,                   1560  },
-	{ LOAD_UNLOAD,                     600   },
-	{ LOCATE10,                        1200  },
-	{ LOCATE16,                        1200  },
-	{ READ,                            1200  },
-	{ READ_BUFFER,                     60    },
-	{ REWIND,                          600   },
-	{ SEND_DIAGNOSTIC,                 600   },
-	{ SET_CAPACITY,                    780   },
-	{ SPACE6,                          1200  },
-	{ SPACE16,                         1200  },
-	{ VERIFY,                          18000 },
-	{ WRITE,                           300   },
-	{ WRITE_BUFFER,                    60    },
-	{ WRITE_FILEMARKS6,                300   },
-	{-1, -1}
-};
-
-static struct _timeout_tape timeout_lto7_hh[] = {
 	{ ERASE,                           29400 },
-	{ FORMAT_MEDIUM,                   3000  },
+	{ FORMAT_MEDIUM,                   3840  },
 	{ LOAD_UNLOAD,                     1020  },
 	{ LOCATE10,                        2700  },
 	{ LOCATE16,                        2700  },
 	{ READ,                            1920  },
-	{ READ_BUFFER,                     480   },
+	{ READ_BUFFER,                     660   },
 	{ REWIND,                          780   },
-	{ SEND_DIAGNOSTIC,                 1980  },
-	{ SET_CAPACITY,                    780   },
+	{ SEND_DIAGNOSTIC,                 3120  },
+	{ SET_CAPACITY,                    960   },
 	{ SPACE6,                          2700  },
 	{ SPACE16,                         2700  },
-	{ VERIFY,                          28860 },
+	{ VERIFY,                          30000 },
 	{ WRITE,                           1920  },
-	{ WRITE_BUFFER,                    540   },
-	{ WRITE_FILEMARKS6,                1920  },
+	{ WRITE_BUFFER,                    720   },
+	{ WRITE_FILEMARKS6,                1740  },
 	{-1, -1}
 };
 
-static struct _timeout_tape timeout_lto8_hh[] = {
-	{ ERASE,                           53040 },
-	{ FORMAT_MEDIUM,                   3000  },
+static struct _timeout_tape timeout_lto7_hh[] = {
+	{ ERASE,                           27540 },
+	{ FORMAT_MEDIUM,                   3240  },
 	{ LOAD_UNLOAD,                     840   },
 	{ LOCATE10,                        2940  },
 	{ LOCATE16,                        2940  },
 	{ READ,                            2340  },
 	{ READ_BUFFER,                     480   },
 	{ REWIND,                          660   },
-	{ SEND_DIAGNOSTIC,                 1980  },
-	{ SET_CAPACITY,                    780   },
+	{ SEND_DIAGNOSTIC,                 2040  },
+	{ SET_CAPACITY,                    960   },
 	{ SPACE6,                          2940  },
 	{ SPACE16,                         2940  },
-	{ VERIFY,                          53040 },
-	{ WRITE,                           1680  },
+	{ VERIFY,                          28860 },
+	{ WRITE,                           1560  },
+	{ WRITE_BUFFER,                    540   },
+	{ WRITE_FILEMARKS6,                1680  },
+	{-1, -1}
+};
+
+static struct _timeout_tape timeout_lto8_hh[] = {
+	{ ERASE,                           46380 },
+	{ FORMAT_MEDIUM,                   3240  },
+	{ LOAD_UNLOAD,                     840   },
+	{ LOCATE10,                        2940  },
+	{ LOCATE16,                        2940  },
+	{ READ,                            2340  },
+	{ READ_BUFFER,                     480   },
+	{ REWIND,                          660   },
+	{ SEND_DIAGNOSTIC,                 2040  },
+	{ SET_CAPACITY,                    960   },
+	{ SPACE6,                          2940  },
+	{ SPACE16,                         2940  },
+	{ VERIFY,                          47700 },
+	{ WRITE,                           1560  },
 	{ WRITE_BUFFER,                    540   },
 	{ WRITE_FILEMARKS6,                1680  },
 	{-1, -1}
 };
 
 static struct _timeout_tape timeout_lto9_hh[] = {
-	{ ERASE,                           53040 },
-	{ FORMAT_MEDIUM,                   3000  },
+	{ ERASE,                           46380 },
+	{ FORMAT_MEDIUM,                   3240  },
 	{ LOAD_UNLOAD,                     840   },
 	{ LOCATE10,                        2940  },
 	{ LOCATE16,                        2940  },
 	{ READ,                            2340  },
 	{ READ_BUFFER,                     480   },
 	{ REWIND,                          660   },
-	{ SEND_DIAGNOSTIC,                 1980  },
-	{ SET_CAPACITY,                    780   },
+	{ SEND_DIAGNOSTIC,                 2040  },
+	{ SET_CAPACITY,                    960   },
 	{ SPACE6,                          2940  },
 	{ SPACE16,                         2940  },
-	{ VERIFY,                          53040 },
-	{ WRITE,                           1680  },
+	{ VERIFY,                          47700 },
+	{ WRITE,                           1560  },
 	{ WRITE_BUFFER,                    540   },
 	{ WRITE_FILEMARKS6,                1680  },
 	{-1, -1}
@@ -364,7 +284,7 @@ static int _create_table_tape(struct timeout_tape **result,
 	return 0;
 }
 
-int hp_tape_init_timeout(struct timeout_tape** table, int type)
+int quantum_tape_init_timeout(struct timeout_tape** table, int type)
 {
 	int ret = 0;
 
@@ -372,32 +292,17 @@ int hp_tape_init_timeout(struct timeout_tape** table, int type)
 	HASH_CLEAR(hh, *table);
 
 	switch (type) {
-		case DRIVE_LTO5:
-			ret = _create_table_tape(table, timeout_lto, timeout_lto5);
-			break;
 		case DRIVE_LTO5_HH:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto5_hh);
-			break;
-		case DRIVE_LTO6:
-			ret = _create_table_tape(table, timeout_lto, timeout_lto6);
 			break;
 		case DRIVE_LTO6_HH:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto6_hh);
 			break;
-		case DRIVE_LTO7:
-			ret = _create_table_tape(table, timeout_lto, timeout_lto7);
-			break;
 		case DRIVE_LTO7_HH:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto7_hh);
 			break;
-		case DRIVE_LTO8:
-			ret = _create_table_tape(table, timeout_lto, timeout_lto8);
-			break;
 		case DRIVE_LTO8_HH:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto8_hh);
-			break;
-		case DRIVE_LTO9:
-			ret = _create_table_tape(table, timeout_lto, timeout_lto9);
 			break;
 		case DRIVE_LTO9_HH:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto9_hh);
