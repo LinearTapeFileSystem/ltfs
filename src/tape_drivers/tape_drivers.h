@@ -169,6 +169,7 @@ enum {
 	VENDOR_UNKNOWN = 0,
 	VENDOR_IBM,
 	VENDOR_HP,
+	VENDOR_QUANTUM,
 };
 
 enum {

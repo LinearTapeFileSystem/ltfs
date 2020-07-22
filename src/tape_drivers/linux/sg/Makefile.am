@@ -38,7 +38,7 @@ BASENAMES = libtape-sg
 
 AM_LIBTOOLFLAGS = --tag=disable-static
 
-libtape_sg_la_SOURCES = sg_scsi_tape.c sg_tape.c vendor_compat.c ibm_tape.c hp_tape.c open_factor.c
+libtape_sg_la_SOURCES = sg_scsi_tape.c sg_tape.c vendor_compat.c ibm_tape.c hp_tape.c quantum_tape.c open_factor.c
 libtape_sg_la_DEPENDENCIES = ../../../../messages/libtape_linux_sg_dat.a ../../../libltfs/libltfs.la ./libtape_sg_la-reed_solomon_crc.lo ./libtape_sg_la-crc32c_crc.lo
 libtape_sg_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_sg_la-reed_solomon_crc.lo ./libtape_sg_la-crc32c_crc.lo
 libtape_sg_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_linux_sg_dat
@@ -53,11 +53,14 @@ ibm_tape.c:
 hp_tape.c:
 	ln -s ../../hp_tape.c ./hp_tape.c
 
+quantum_tape.c:
+	ln -s ../../quantum_tape.c ./quantum_tape.c
+
 open_factor.c:
 	ln -s ../../open_factor.c ./open_factor.c
 
 clean-local:
-	rm -f ibm_tape.c open_factor.c
+	rm -f vendor_compat.c ibm_tape.c hp_tape.c quantum_tape.c open_factor.c
 
 libtape_sg_la-reed_solomon_crc.lo: ../../reed_solomon_crc.c
 	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libtape_sg_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CRC_OPTIMIZE) -MT libtape_sg_la-reed_solomon_crc.lo -MD -MP -c -o libtape_sg_la-reed_solomon_crc.lo $<
