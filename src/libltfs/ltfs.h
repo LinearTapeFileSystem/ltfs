@@ -366,6 +366,12 @@ enum volumelock_status {
 	VOL_FORCE_READ_ONLY = 0x100000000, /**< Force read only */
 };
 
+enum volume_mount_type {
+	MOUNT_NORMAL = 0, /**< Normal mount */
+	MOUNT_ROLLBACK,   /**< Roll back mount */
+	MOUNT_ERR_TAPE,   /**< Mount write perm tape */
+};
+
 #define VOL_WRITE_PERM_MASK (0xE0)
 #define VOL_ADV_LOCK_MASK   (0x03)
 
@@ -389,13 +395,13 @@ struct ltfs_volume {
 	void *kmi_handle;              /**< Handle to the key manager interface state */
 
 	/* Internal state variables */
-	struct device_data *device;    /**< Device-specific data */
-	bool ip_index_file_end;        /**< Does the index partition end in an index file? */
-	bool dp_index_file_end;        /**< Does the data partition end in an index file? */
-	bool rollback_mount;           /**< Is the volume mounted in rollback mount mode? */
-	int  traverse_mode;            /**< Traverse strategy (rollback, list index, rollback mount) */
-	bool skip_eod_check;           /**< Skip EOD existance check? */
-	bool ignore_wrong_version;     /**< Ignore wrong index version while seeking index? */
+	struct device_data *device;        /**< Device-specific data */
+	bool ip_index_file_end;            /**< Does the index partition end in an index file? */
+	bool dp_index_file_end;            /**< Does the data partition end in an index file? */
+	enum volume_mount_type mount_type; /**< Mount type defined by enum */
+	int  traverse_mode;                /**< Traverse strategy (rollback, list index, rollback mount) */
+	bool skip_eod_check;               /**< Skip EOD existance check? */
+	bool ignore_wrong_version;         /**< Ignore wrong index version while seeking index? */
 
 	/* A 1-block read cache, used to prevent reading the same block from tape over and over.
 	 * You MUST hold the tape device lock before accessing this buffer. */

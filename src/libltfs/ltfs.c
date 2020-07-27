@@ -1544,6 +1544,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 
 	/* check for consistency */
 	INTERRUPTED_GOTO(ret, out_unlock);
+	vol->mount_type = MOUNT_NORMAL; /* Assume normal mount first */
 	if (IS_SINGLE_WRITE_PERM(vollock) || vollock == PWE_MAM_BOTH) {
 		bool read_ip = false;
 
@@ -1565,16 +1566,28 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 				vl_print = "UNKNOWN";
 				break;
 		}
-		ltfsmsg(LTFS_INFO, 11333I, vl_print, (unsigned long long)vol->ip_coh.count, (unsigned long long)vol->dp_coh.count);
+
+		ltfsmsg(LTFS_INFO, 11333I, vl_print,
+				(unsigned long long)vol->ip_coh.count, (unsigned long long)vol->ip_coh.volume_change_ref,
+				(unsigned long long)vol->dp_coh.count, (unsigned long long)vol->dp_coh.volume_change_ref,
+				(unsigned long long)volume_change_ref);
 
 		ltfs_mutex_lock(&vol->device->read_only_flag_mutex);
 		vol->device->write_error = true;
 		ltfs_mutex_unlock(&vol->device->read_only_flag_mutex);
 
 		if (vol->ip_coh.count < vol->dp_coh.count) {
+			if (vollock != PWE_MAM_IP && vollock != PWE_MAM) {
+				ltfsmsg(LTFS_WARN, 17264W, "DP", vl_print);
+				tape_takedump_drive(vol->device, false);
+			}
 			seekpos.partition = ltfs_part_id2num(vol->label->partid_dp, vol);
 			seekpos.block = vol->dp_coh.set_id;
 		} else {
+			if (vollock != PWE_MAM_DP && vollock != PWE_MAM) {
+				ltfsmsg(LTFS_WARN, 17264W, "IP", vl_print);
+				tape_takedump_drive(vol->device, false);
+			}
 			seekpos.partition = ltfs_part_id2num(vol->label->partid_ip, vol);
 			seekpos.block = vol->ip_coh.set_id;
 			read_ip = true;
@@ -1606,8 +1619,10 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 					ltfsmsg(LTFS_ERR, 11021E); /* read DP Index failed */
 				goto out_unlock;
 			}
-			else
+			else {
 				ltfsmsg(LTFS_DEBUG, 11025D); /* volume is consistent */
+				vol->mount_type = MOUNT_ERR_TAPE;
+			}
 		}
 	} else if (! force_full && volume_change_ref > 0
 		&& volume_change_ref == vol->ip_coh.volume_change_ref
@@ -1684,7 +1699,6 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 
 	/* Make roll back mount if necessary */
 	INTERRUPTED_GOTO(ret, out_unlock);
-	vol->rollback_mount = false;
 	if(gen != 0 && gen != vol->index->generation) {
 		if(is_worm_recovery_mount){
 			ret = ltfs_traverse_index_no_eod(vol, ltfs_ip_id(vol), gen, NULL, NULL, NULL);
@@ -1703,7 +1717,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 			ltfsmsg(LTFS_ERR, 17079E, gen);
 			goto out_unlock;
 		} else {
-			vol->rollback_mount = true;
+			vol->mount_type = MOUNT_ROLLBACK;
 			ltfs_unset_index_dirty(false, vol->index);
 			tape_force_read_only(vol->device);
 			goto out_unlock;
@@ -1751,8 +1765,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 				vol->lock_status = vol->index->vollock;
 				break;
 		}
-	}
-	else {
+	} else {
 		vol->lock_status = vol->index->vollock;
 	}
 
@@ -1864,6 +1877,9 @@ int ltfs_unmount(char *reason, struct ltfs_volume *vol)
 	int ret;
 	cartridge_health_info h;
 	int vollock = UNLOCKED_MAM;
+	char *skip_reason = NULL;
+	char *mount_type = NULL;
+	char *mam_lock = NULL;
 
 	ltfsmsg(LTFS_DEBUG, 11032D); /* Unmount the volume... */
 
@@ -1872,9 +1888,9 @@ start:
 	if (!ret) {
 		ret = tape_get_cart_volume_lock_status(vol->device, &vollock);
 
-		if (vol->rollback_mount == false
-			&& (ltfs_is_dirty(vol) || vol->index->selfptr.partition != ltfs_ip_id(vol))
-			&& (vollock != PWE_MAM_IP && vollock != PWE_MAM_BOTH)) {
+		if (vol->mount_type == MOUNT_NORMAL &&
+			(ltfs_is_dirty(vol) || vol->index->selfptr.partition != ltfs_ip_id(vol)) &&
+			(vollock != PWE_MAM_IP && vollock != PWE_MAM_BOTH)) {
 			ret = ltfs_write_index(ltfs_ip_id(vol), reason, vol);
 			if (NEED_REVAL(ret)) {
 				ret = ltfs_revalidate(true, vol);
@@ -1896,6 +1912,48 @@ start:
 				ltfsmsg(LTFS_ERR, 11033E); /* could not unmount, failed to write Index */
 				releasewrite_mrsw(&vol->lock);
 				return ret;
+			}
+		} else {
+			/* Skip to write an index */
+			if (vol->mount_type != MOUNT_NORMAL) {
+				switch (vol->mount_type) {
+					case MOUNT_NORMAL:
+						mount_type = "the volume is mounted as NORMAL";
+						break;
+					case MOUNT_ROLLBACK:
+						mount_type = "the volume is mounted as ROLLBACK";
+						break;
+					case MOUNT_ERR_TAPE:
+						mount_type = "the volume is mounted as ERROR_TAPE";
+						break;
+					default:
+						mount_type = "the volume is mounted as UNKNOWN";
+						break;
+				}
+				ltfsmsg(LTFS_INFO, 17265I, mount_type);
+			} else if (!ltfs_is_dirty(vol) && vol->index->selfptr.partition == ltfs_ip_id(vol)) {
+				ltfsmsg(LTFS_INFO, 17265I, "the volume is not dirty and current self pointer points IP");
+			} else if (vollock == PWE_MAM_IP || vollock == PWE_MAM_BOTH) {
+				switch (vollock) {
+					case PWE_MAM:
+						mam_lock = "the mam lock field is a partition";
+						break;
+					case PWE_MAM_BOTH:
+						mam_lock = "the mam lock field is both partitions";
+						break;
+					case PWE_MAM_IP:
+						mam_lock = "the mam lock field is IP";
+						break;
+					case PWE_MAM_DP:
+						mam_lock = "the mam lock field is DP";
+						break;
+					default:
+						mam_lock = "the mam lock field is UNKNOWN";
+						break;
+				}
+				ltfsmsg(LTFS_INFO, 17265I, mam_lock);
+			} else {
+				ltfsmsg(LTFS_INFO, 17265I, "the volume is unexpected condition");
 			}
 		}
 	} else {
