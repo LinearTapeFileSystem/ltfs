@@ -427,7 +427,7 @@ root:table {
 		11330I:string { "Loading cartridge." }
 		11331E:string { "Failed to load the cartridge (%s)." }
 		11332I:string { "Load successful." }
-		11333I:string { "A cartridge with write-perm error is detected on %s. Seek the newest index (%llu, %llu)." }
+		11333I:string { "A cartridge with write-perm error is detected on %s. Seek the newest index (IP Gen = %llu, VCR = %llu) (DP Gen = %llu, VCR = %llu) (VCR = %llu)." }
 		11334I:string { "Remove extent : %s (%llu, %llu)." }
 		11335D:string { "Get physical block position (%d - %d)." }
 		11336I:string { "The attribute does not exist. Ignore the expected error." }
@@ -805,6 +805,8 @@ v
 		17260I:string { "Sleep was interrupted by a signal while taking the advisory lock '%s'." }
 		17261I:string { "Kernel detected a false deadlock retry to acquire the advisory lock '%s' (%d)." }
 		17263I:string { "Sleep was failed while taking the advisory lock '%s' (%d, %d)." }
+		17264W:string { "Index on %s is newer but MAM shows a permanent write error happened on %s." }
+		17265I:string { "Skip writing index because %s." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 
