@@ -268,12 +268,10 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 
 	/* Look up parent directory */
 	fs_split_path(path_norm, &filename, strlen(path_norm) + 1);
-	if (dcache_initialized(vol)) {
-		ret = asprintf(&dentry_path, "%s/%s", path_norm, filename);
-		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_create: dentry_path");
-			goto out_dispose;
-		}
+	ret = asprintf(&dentry_path, "%s/%s", path_norm, filename);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_create: dentry_path");
+		goto out_dispose;
 	}
 
 	/* Lookup the parent dentry. On success, parent->contents_lock will be held in write mode */
@@ -341,7 +339,14 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 	d->vol = vol;
 	d->parent = parent;
 	++d->link_count;
-	++d->numhandles;
+
+	if (!iosched_initialized(vol)) {
+		/*
+		 * numhandles will be incremented in iosched_open() below when ioscheduler is
+		 * enabled.
+		 */
+		++d->numhandles;
+	}
 
 	/* Block end */
 	if (isdir)
@@ -365,7 +370,7 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 	ltfs_set_index_dirty(false, false, vol->index);
 	d->dirty = true;
 	ltfs_mutex_unlock(&vol->index->dirty_lock);
-	vol->file_open_count ++;
+	vol->file_open_count++;
 
 	*dentry = d;
 	ret = 0;
@@ -378,6 +383,13 @@ out_dispose:
 			dcache_unlink(dentry_path, d, vol);
 			fs_release_dentry(d);
 			/* TODO: roll back counters */
+		}
+	}
+
+	if (ret == 0 && iosched_initialized(vol)) {
+		ret = iosched_open(dentry_path, overwrite, &d, vol);
+		if (ret < 0) {
+			fs_release_dentry(d);
 		}
 	}
 

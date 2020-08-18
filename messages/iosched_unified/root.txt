@@ -64,5 +64,11 @@ root:table {
 		13024I:string { "Clean up extents and append index at index partition (%d)." }
 		13025I:string { "Get error position (%d, %d)." }
 		13026E:string { "Write perm handling error : %s (%d)." }
+		13027D:string { "Created DPR : %s." }
+		13028D:string { "Removed DPR : %s." }
+		13029D:string { "DPR (%s): %s (%u)." }
+		13030D:string { "No DPR on %s (req = 0x%llx)." }
+		13031D:string { "Created a request (0x%llx)." }
+		13032D:string { "Removed a request (0x%llx)." }
 	}
 }

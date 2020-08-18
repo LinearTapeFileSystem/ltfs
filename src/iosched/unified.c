@@ -79,35 +79,16 @@ enum request_state {
 };
 
 /**
- * A read request. These are used internally by unified_read to queue up read requests and issue
- * them after releasing the dentry's iosched_lock.
- */
-struct read_request {
-	TAILQ_ENTRY(read_request) list; /**< Pointers for linked list of requests */
-	uint64_t offset;                /**< File offset for the read request */
-	char *buf;                      /**< Buffer which will receive data */
-	size_t count;                   /**< Number of bytes to read */
-};
-
-/**
- * A write request.
- */
-struct write_request {
-	TAILQ_ENTRY(write_request) list; /**< Pointers for linked list of requests */
-	uint64_t offset;                 /**< Starting file offset for this request */
-	size_t count;                    /**< Current request length, always <= cache block size */
-	void *write_cache;               /**< Cache block containing this request's data */
-	enum request_state state;        /**< Current state of the request */
-};
-
-/**
  * Per-dentry private data structure. It records a list of outstanding write requests
  * and associated data.
  */
 struct dentry_priv {
-	struct dentry *dentry;   /**< Dentry associated with this request list */
-	ltfs_mutex_t io_lock; /**< Lock controlling file I/O to this dentry */
-	uint64_t file_size;      /**< Real file size, including outstanding write requests */
+	struct dentry *dentry;    /**< Dentry associated with this request list */
+	uint64_t      file_size;  /**< Real file size, including outstanding write requests */
+	ltfs_mutex_t  io_lock;    /**< Lock controlling file I/O to this dentry */
+
+	uint32_t      numhandles; /**< Reference count */
+	ltfs_mutex_t  ref_lock;   /**< Lock numhandles */
 
 	/**
 	 * Index partition write flag. This is set if the file's name and size match the volume's
@@ -154,6 +135,29 @@ struct dentry_priv {
 	 * A dentry_priv is placed in the ext_queue if and only if it has extents in this list.
 	 */
 	TAILQ_HEAD(ext_struct, extent_info) alt_extentlist;
+};
+
+/**
+ * A read request. These are used internally by unified_read to queue up read requests and issue
+ * them after releasing the dentry's iosched_lock.
+ */
+struct read_request {
+	TAILQ_ENTRY(read_request) list; /**< Pointers for linked list of requests */
+	uint64_t offset;                /**< File offset for the read request */
+	char     *buf;                  /**< Buffer which will receive data */
+	size_t   count;                 /**< Number of bytes to read */
+};
+
+/**
+ * A write request.
+ */
+struct write_request {
+	TAILQ_ENTRY(write_request) list; /**< Pointers for linked list of requests */
+	uint64_t           offset;       /**< Starting file offset for this request */
+	size_t             count;        /**< Current request length, always <= cache block size */
+	void               *write_cache; /**< Cache block containing this request's data */
+	struct dentry_priv *dpr;         /**< Corresponding dentry_priv */
+	enum request_state state;        /**< Current state of the request */
 };
 
 /**
@@ -222,8 +226,10 @@ struct unified_data {
 
 
 /* Prototypes */
-int  _unified_get_dentry_priv(struct dentry *d, struct dentry_priv **dentry_priv,
-	struct unified_data *priv);
+int  _unified_get_dentry_priv(struct dentry *d,
+							  struct dentry_priv **dentry_priv,
+							  struct unified_data *priv);
+void _unified_put_dentry_priv(struct dentry_priv *dentry_priv, struct unified_data *priv);
 ltfs_thread_return _unified_writer_thread(void *iosched_handle);
 void _unified_process_queue(enum request_state queue, struct unified_data *priv);
 void _unified_process_index_queue(struct unified_data *priv);
@@ -244,9 +250,6 @@ int _unified_merge_requests(struct write_request *dest, struct write_request *sr
 	void **spare_cache, struct dentry_priv *dpr, struct unified_data *priv);
 int _unified_flush_unlocked(struct dentry *d, struct unified_data *priv);
 int _unified_flush_all(struct unified_data *priv);
-void _unified_free_dentry_priv_conditional(struct dentry *d, uint32_t target_handles,
-	struct unified_data *priv);
-void _unified_free_dentry_priv(struct dentry *d, struct unified_data *priv);
 void _unified_set_write_ip(struct dentry_priv *dpr, struct unified_data *priv);
 void _unified_unset_write_ip(struct dentry_priv *dpr, struct unified_data *priv);
 void _unified_handle_write_error(ssize_t write_ret, struct write_request *req,
@@ -393,7 +396,7 @@ int unified_destroy(void *iosched_handle)
 	/* Push IP extents to libltfs and free remaining dentry_priv structures */
 	if (! TAILQ_EMPTY(&priv->ext_queue)) {
 		TAILQ_FOREACH_SAFE(dpr, &priv->ext_queue, ext_queue, aux)
-			_unified_free_dentry_priv(dpr->dentry, priv);
+			_unified_put_dentry_priv(dpr, priv);
 	}
 
 	/* Free data structures */
@@ -434,6 +437,9 @@ int unified_open(const char *path, bool open_write, struct dentry **dentry, void
 
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_ENTER(REQ_IOS_OPEN));
 	ret = ltfs_fsraw_open(path, open_write, dentry, ((struct unified_data *)iosched_handle)->vol);
+	if (!ret) {
+		ret = _unified_get_dentry_priv(*dentry, NULL, priv);
+	}
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_OPEN));
 	return ret;
 }
@@ -450,6 +456,7 @@ int unified_close(struct dentry *d, bool flush, void *iosched_handle)
 {
 	int write_error, ret = 0;
 	struct unified_data *priv = iosched_handle;
+	struct dentry_priv *dpr;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
@@ -457,15 +464,18 @@ int unified_close(struct dentry *d, bool flush, void *iosched_handle)
 
 	acquireread_mrsw(&priv->lock);
 	ltfs_mutex_lock(&d->iosched_lock);
+	ret = _unified_get_dentry_priv(d, &dpr, priv);
 	if (flush)
 		ret = _unified_flush_unlocked(d, priv);
 	write_error = _unified_get_write_error(d->iosched_priv);
-	_unified_free_dentry_priv_conditional(d, 3, priv);
+	_unified_put_dentry_priv(dpr, priv); /* Release DPR captured in this function */
+
 	ltfs_mutex_unlock(&d->iosched_lock);
 	releaseread_mrsw(&priv->lock);
 
 	/* No need to hold any scheduler locks when closing the file. All writes which were
 	 * outstanding when the close request started have been issued. */
+	_unified_put_dentry_priv(dpr, priv); /* Release DPR captured in unified_open() */
 	ltfs_fsraw_close(d);
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_CLOSE));
 	return ret ? ret : write_error ? write_error : 0;
@@ -514,8 +524,7 @@ ssize_t unified_read(struct dentry *d, char *buf, size_t size, off_t offset, voi
 		goto out;
 	releaseread_mrsw(&priv->vol->lock);
 
-	ltfs_mutex_lock(&d->iosched_lock);
-	dpr = d->iosched_priv;
+	_unified_get_dentry_priv(d, &dpr, priv);
 	if (! dpr) {
 		ltfs_mutex_unlock(&d->iosched_lock);
 		ret = ltfs_fsraw_read(d, buf, size, offset, priv->vol);
@@ -636,6 +645,9 @@ ssize_t unified_read(struct dentry *d, char *buf, size_t size, off_t offset, voi
 		ltfs_mutex_unlock(&d->iosched_lock);
 
 out:
+	if (dpr)
+		_unified_put_dentry_priv(dpr, priv);
+
 	releaseread_mrsw(&priv->lock);
 
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_READ));
@@ -705,6 +717,8 @@ write_start:
 	ret = _unified_get_write_error(dpr);
 	if (ret < 0) {
 		/* Propagate the write error to the caller */
+		if (dpr)
+			_unified_put_dentry_priv(dpr, priv);
 		ltfs_mutex_unlock(&d->iosched_lock);
 		releaseread_mrsw(&priv->lock);
 		ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_WRITE));
@@ -715,6 +729,8 @@ write_start:
 	if (! checked_readonly) {
 		ret = ltfs_get_tape_readonly(priv->vol);
 		if (ret < 0) {
+			if (dpr)
+				_unified_put_dentry_priv(dpr, priv);
 			ltfs_mutex_unlock(&d->iosched_lock);
 			releaseread_mrsw(&priv->lock);
 			ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_WRITE));
@@ -732,7 +748,6 @@ write_start:
 	}
 
 do_append:
-
 	if (TAILQ_EMPTY(&dpr->requests)) {
 		req = NULL;
 		last_offset = 0;
@@ -759,8 +774,11 @@ do_append:
 				NULL, d, priv);
 			if (ret < 0)
 				goto out;
-			else if (ret == 0)
+			else if (ret == 0) {
+				if (dpr)
+					_unified_put_dentry_priv(dpr, priv);
 				goto write_start;
+			}
 
 			buf += ret;
 			offset += ret;
@@ -782,8 +800,11 @@ do_insert_before:
 			ret = _unified_insert_new_request(buf, offset, size, &spare_cache, false, req, d, priv);
 			if (ret < 0)
 				goto out;
-			else if (ret == 0)
+			else if (ret == 0) {
+				if (dpr)
+					_unified_put_dentry_priv(dpr, priv);
 				goto write_start;
+			}
 
 			prev_req = TAILQ_PREV(req, req_struct, list);
 			buf += ret;
@@ -841,12 +862,15 @@ do_insert_before:
 					/* Split */
 					copy_offset = (offset - req->offset) + size;
 					ret = _unified_insert_new_request(req_cache + copy_offset,
-						req->offset + copy_offset, req->count - copy_offset,
-						&spare_cache, true, aux, d, priv);
+													  req->offset + copy_offset, req->count - copy_offset,
+													  &spare_cache, true, aux, d, priv);
 					if (ret < 0)
 						goto out;
-					else if (ret == 0)
+					else if (ret == 0) {
+						if (dpr)
+							_unified_put_dentry_priv(dpr, priv);
 						goto write_start;
+					}
 					req->count = offset - req->offset;
 					req = TAILQ_NEXT(req, list);
 					goto do_insert_before;
@@ -864,6 +888,9 @@ do_insert_before:
 		goto do_append;
 
 out:
+	if (dpr)
+		_unified_put_dentry_priv(dpr, priv);
+
 	if (ret >= 0) {
 		int err = ltfs_get_volume_lock(false, priv->vol);
 		/* It's undesirable to fail the write here, as we have no way to roll back the cache
@@ -880,8 +907,10 @@ out:
 		}
 	}
 	ltfs_mutex_unlock(&d->iosched_lock);
-	if (spare_cache)
+	if (spare_cache) {
+		_unified_put_dentry_priv(dpr, priv);
 		_unified_cache_free(spare_cache, 0, priv);
+	}
 	releaseread_mrsw(&priv->lock);
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_WRITE));
 	return (ret < 0) ? ret : (ssize_t)original_size;
@@ -947,7 +976,7 @@ int unified_truncate(struct dentry *d, off_t length, void *iosched_handle)
 	acquireread_mrsw(&priv->lock);
 	ltfs_mutex_lock(&d->iosched_lock);
 
-	dpr = d->iosched_priv;
+	_unified_get_dentry_priv(d, &dpr, priv);
 	if (dpr) {
 		if ((uint64_t)length < dpr->file_size) {
 			if (! TAILQ_EMPTY(&dpr->requests)) {
@@ -1001,7 +1030,9 @@ int unified_truncate(struct dentry *d, off_t length, void *iosched_handle)
 	ltfs_mutex_unlock(&d->iosched_lock);
 	releaseread_mrsw(&priv->lock);
 
-	if (! dpr)
+	if (dpr)
+		_unified_put_dentry_priv(dpr, priv);
+	else
 		ret = ltfs_fsraw_truncate(d, length, priv->vol);
 
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_TRUNCATE));
@@ -1206,8 +1237,6 @@ void _unified_process_index_queue(struct unified_data *priv)
 				_unified_free_request(req, priv);
 			}
 		}
-
-		_unified_free_dentry_priv_conditional(dentry_priv->dentry, 2, priv);
 	}
 	releasewrite_mrsw(&priv->lock);
 }
@@ -1359,17 +1388,28 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
  * @return 0 on success or a negative value on error. This function always succeeds
  *         if alloc is false.
  */
-int _unified_get_dentry_priv(struct dentry *d, struct dentry_priv **dentry_priv,
-	struct unified_data *priv)
+int _unified_get_dentry_priv(struct dentry *d,
+							 struct dentry_priv **dentry_priv,
+							 struct unified_data *priv)
 {
 	int ret;
 	size_t max_filesize;
 	struct dentry_priv *dpr;
 
+	acquireread_mrsw(&d->meta_lock);
 	if (d->iosched_priv) {
-		*dentry_priv = d->iosched_priv;
+		dpr = d->iosched_priv;
+		ltfs_mutex_lock(&dpr->ref_lock);
+		dpr->numhandles++;
+		if (dentry_priv) {
+			*dentry_priv = d->iosched_priv;
+		}
+		ltfsmsg(LTFS_DEBUG3, 13029D, "Inc", d->name.name, dpr->numhandles);
+		ltfs_mutex_unlock(&dpr->ref_lock);
+		releaseread_mrsw(&d->meta_lock);
 		return 0;
 	}
+	releaseread_mrsw(&d->meta_lock);
 
 	dpr = calloc(1, sizeof(struct dentry_priv));
 	if (! dpr) {
@@ -1398,18 +1438,78 @@ int _unified_get_dentry_priv(struct dentry *d, struct dentry_priv **dentry_priv,
 		return -LTFS_MUTEX_INIT;
 	}
 
-	acquireread_mrsw(&d->meta_lock);
+	ret = ltfs_mutex_init(&dpr->ref_lock);
+	if (ret) {
+		/* Failed to initialize mutex in scheduler private data (%d) */
+		ltfsmsg(LTFS_ERR, 13009E, ret);
+		ltfs_mutex_destroy(&dpr->io_lock);
+		ltfs_mutex_destroy(&dpr->write_error_lock);
+		free(dpr);
+		return -LTFS_MUTEX_INIT;
+	}
+
+	ltfs_fsraw_get_dentry(d, priv->vol);
+
+	acquirewrite_mrsw(&d->meta_lock);
+	ltfs_mutex_lock(&dpr->ref_lock);
 	dpr->file_size = d->size;
 	dpr->write_ip = d->matches_name_criteria;
-	releaseread_mrsw(&d->meta_lock);
+	dpr->numhandles = 1;
+	d->iosched_priv = dpr;
+	ltfs_mutex_unlock(&dpr->ref_lock);
+	releasewrite_mrsw(&d->meta_lock);
+
 	max_filesize = index_criteria_get_max_filesize(priv->vol);
 	if (max_filesize == 0 || dpr->file_size > max_filesize)
 		dpr->write_ip = false;
 
-	d->iosched_priv = dpr;
-	ltfs_fsraw_get_dentry(d, priv->vol);
-	*dentry_priv = dpr;
+	if (dentry_priv) {
+		*dentry_priv = dpr;
+	}
+
+	ltfsmsg(LTFS_DEBUG, 13027D, d->name.name);
+
 	return 0;
+}
+
+void _unified_put_dentry_priv(struct dentry_priv *dentry_priv, struct unified_data *priv)
+{
+	struct dentry_priv *dpr = dentry_priv;
+	struct dentry      *d   = dpr->dentry;
+
+	acquirewrite_mrsw(&d->meta_lock);
+	ltfs_mutex_lock(&dpr->ref_lock);
+	if (dpr->numhandles > 0) {
+		dpr->numhandles--;
+	}
+
+	if (!dpr->numhandles) {
+		d->iosched_priv = NULL;
+		ltfs_mutex_unlock(&dpr->ref_lock);
+		releasewrite_mrsw(&d->meta_lock);
+
+		if (! TAILQ_EMPTY(&dpr->requests))
+			ltfsmsg(LTFS_WARN, 13022W);
+
+		/* Sent alt_extentlist to libltfs */
+		if (dpr->write_ip && ! TAILQ_EMPTY(&dpr->alt_extentlist))
+			_unified_clear_alt_extentlist(true, dpr, priv);
+
+		ltfs_mutex_destroy(&dpr->write_error_lock);
+		ltfs_mutex_destroy(&dpr->ref_lock);
+		ltfs_mutex_destroy(&dpr->io_lock);
+		free(dpr);
+
+		ltfs_fsraw_put_dentry(d, priv->vol);
+
+		ltfsmsg(LTFS_DEBUG, 13028D, d->name.name);
+	} else {
+		ltfsmsg(LTFS_DEBUG3, 13029D, "Dec", d->name.name, dpr->numhandles);
+		ltfs_mutex_unlock(&dpr->ref_lock);
+		releasewrite_mrsw(&d->meta_lock);
+	}
+
+	return;
 }
 
 /**
@@ -1656,8 +1756,19 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
  */
 void _unified_free_request(struct write_request *req, struct unified_data *priv)
 {
-	if (req->write_cache)
+	struct dentry_priv *dpr = req->dpr;
+
+	if (req->write_cache) {
 		_unified_cache_free(req->write_cache, req->count, priv);
+	}
+
+	if (dpr) {
+		ltfsmsg(LTFS_DEBUG, 13032D, req);
+		_unified_put_dentry_priv(req->dpr, priv);
+	} else {
+		ltfsmsg(LTFS_DEBUG, 13030D, __FUNCTION__, req);
+	}
+
 	free(req);
 }
 
@@ -1741,8 +1852,8 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
 	bool ip_state, struct write_request *req, struct dentry *d, struct unified_data *priv)
 {
 	int ret;
-	struct dentry_priv *dpr = d->iosched_priv;
-	struct write_request *new_req;
+	struct dentry_priv *dpr = NULL;
+	struct write_request *new_req = NULL;
 	size_t copy_count;
 
 	if (! (*cache)) {
@@ -1772,6 +1883,10 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
 		releaseread_mrsw(&priv->lock);
 		return -LTFS_NO_MEMORY;
 	}
+
+	_unified_get_dentry_priv(d, &dpr, priv);
+
+	new_req->dpr = dpr;
 	new_req->offset = offset;
 	new_req->count = copy_count;
 	if (ip_state)
@@ -1789,6 +1904,8 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
 	/* Update file size */
 	if (new_req->offset + new_req->count > dpr->file_size)
 		dpr->file_size = new_req->offset + new_req->count;
+
+	ltfsmsg(LTFS_DEBUG, 13031D, new_req);
 
 	return (ssize_t)count;
 }
@@ -1922,6 +2039,50 @@ int _unified_merge_requests(struct write_request *dest, struct write_request *sr
  * @param priv I/O scheduler private data.
  * @return 0 on success or a negative value on error.
  */
+#if 1
+int _unified_flush_unlocked(struct dentry *d, struct unified_data *priv)
+{
+	ssize_t ret = 0;
+	struct dentry_priv *dpr;
+	struct write_request *req, *aux;
+
+	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
+
+	_unified_get_dentry_priv(d, &dpr, priv);
+	if (! dpr) {
+		return 0;
+	}
+
+	/* Check for previous write errors */
+	ret = _unified_get_write_error(dpr);
+	if (ret < 0) {
+		_unified_put_dentry_priv(dpr, priv);
+		return ret;
+	}
+
+	if (TAILQ_EMPTY(&dpr->requests)) {
+		_unified_put_dentry_priv(dpr, priv);
+		return 0;
+	}
+
+	/* Enqueue requests to DP queue */
+	TAILQ_FOREACH_SAFE(req, &dpr->requests, list, aux) {
+		if (req->state == REQUEST_PARTIAL) {
+			_unified_update_queue_membership(false, false, REQUEST_PARTIAL, dpr, priv);
+			req->state = REQUEST_DP;
+			_unified_update_queue_membership(true, false, REQUEST_DP, dpr, priv);
+		}
+	}
+
+	/* Tell background thread a write request is ready */
+	ltfs_thread_cond_signal(&priv->queue_cond);
+
+	_unified_put_dentry_priv(dpr, priv);
+
+	return 0;
+}
+#else
 int _unified_flush_unlocked(struct dentry *d, struct unified_data *priv)
 {
 	ssize_t ret = 0;
@@ -1979,6 +2140,7 @@ int _unified_flush_unlocked(struct dentry *d, struct unified_data *priv)
 	ret = _unified_get_write_error(dpr);
 	return (ret < 0) ? ret : 0;
 }
+#endif
 
 /**
  * Flush all dentries to the data partition.
@@ -2020,75 +2182,6 @@ int _unified_flush_all(struct unified_data *priv)
 
 	releasewrite_mrsw(&priv->lock);
 	return 0;
-}
-
-/**
- * Free a dentry_priv structure if it has no open handles, outstanding requests or
- * queued IP extents.
- * The caller is assumed to have a handle on the dentry, so "no open handles" means
- * d->numhandles == 2 normally, numhandles == 1 if d has been unlinked or if IP processing
- * just finished and there are no open handles.
- * The caller should also hold appropriate locks, which usually means d->iosched_lock.
- * @param d Dentry to free priv structure for.
- * @param target_handles Only free the dentry_priv if the dentry has this many handles or fewer.
- * @param priv I/O scheduler private data.
- */
-void _unified_free_dentry_priv_conditional(struct dentry *d, uint32_t target_handles,
-	struct unified_data *priv)
-{
-	uint32_t numhandles;
-	struct dentry_priv *dpr;
-
-	acquireread_mrsw(&d->meta_lock);
-	numhandles = d->numhandles;
-	releaseread_mrsw(&d->meta_lock);
-
-	dpr = d->iosched_priv;
-	if (dpr && numhandles <= target_handles && TAILQ_EMPTY(&dpr->requests) &&
-		TAILQ_EMPTY(&dpr->alt_extentlist)) {
-		/* Take I/O lock first. The background thread could be processing this dentry */
-		ltfs_mutex_lock(&dpr->io_lock);
-		ltfs_mutex_unlock(&dpr->io_lock);
-
-		ltfs_mutex_destroy(&dpr->write_error_lock);
-		ltfs_mutex_destroy(&dpr->io_lock);
-		free(dpr);
-		d->iosched_priv = NULL;
-		ltfs_fsraw_put_dentry(d, priv->vol);
-	}
-}
-
-/**
- * Free a dentry_priv structure unconditionally, dispatching its alt_extentlist to libltfs
- * if write_ip is enabled.
- * This is called on unmount to ensure that IP extents hit the tape. It emits a warning if the
- * dentry has any outstanding write requests.
- * @param d Dentry to free priv structure for.
- * @param priv I/O scheduler private data.
- */
-void _unified_free_dentry_priv(struct dentry *d, struct unified_data *priv)
-{
-	struct dentry_priv *dpr = d->iosched_priv;
-
-	if (! dpr)
-		return;
-
-	if (! TAILQ_EMPTY(&dpr->requests))
-		ltfsmsg(LTFS_WARN, 13022W);
-
-	/* Wait for background thread to finish flushing requests */
-	ltfs_mutex_lock(&dpr->io_lock);
-	ltfs_mutex_unlock(&dpr->io_lock);
-
-	/* Sent alt_extentlist to libltfs */
-	if (dpr->write_ip && ! TAILQ_EMPTY(&dpr->alt_extentlist))
-		_unified_clear_alt_extentlist(true, dpr, priv);
-
-	ltfs_mutex_destroy(&dpr->write_error_lock);
-	ltfs_mutex_destroy(&dpr->io_lock);
-	free(dpr);
-	d->iosched_priv = NULL;
-	ltfs_fsraw_put_dentry(d, priv->vol);
 }
 
 /**
