@@ -63,6 +63,8 @@
 #include "libltfs/arch/time_internal.h"
 #include "cache_manager.h"
 
+//#define USE_DIRECT_FLUSH /* Use direct flush at flush all */
+
 /**
  * Maximum number of requests targeting the Index Partition to keep before flushing
  * them to the tape, as a fraction of the total number of cache blocks in the pool.
@@ -215,6 +217,15 @@ struct unified_data {
 	uint32_t dp_request_count; /**< Number of requests in REQUEST_DP state which will NOT change to IP state */
 	uint32_t ip_request_count; /**< Number of requests in REQUEST_IP state */
 
+	/**
+	 * writer thread Lock.
+	 * Take this before manipulating the working_set, dp_queue and ip_queue lists
+	 * or the corresponding request counters. Do not take the sched_lock or any dentry_priv lock
+	 * while holding this lock.
+	 */
+	ltfs_thread_mutex_t writer_lock;
+	ltfs_thread_cond_t  writer_cond; /**< Signal this variable when the writer thread starts to write blocks  */
+
 	ltfs_thread_t writer_thread; /**< Background writer thread ID */
 	bool writer_keepalive;   /**< Used to terminate the background writer thread */
 	void *pool;              /**< Handle to the cache manager */
@@ -333,10 +344,33 @@ void *unified_init(struct ltfs_volume *vol)
 		free(priv);
 		return NULL;
 	}
+	ret = ltfs_thread_mutex_init(&priv->writer_lock);
+	if (ret) {
+		/* Cannot initialize scheduler: failed to initialize mutex %s (%d) */
+		ltfsmsg(LTFS_ERR, 13006E, "writer_lock", ret);
+		ltfs_thread_cond_destroy(&priv->cache_cond);
+		ltfs_thread_mutex_destroy(&priv->cache_lock);
+		cache_manager_destroy(priv->pool);
+		free(priv);
+		return NULL;
+	}
+	ret = ltfs_thread_cond_init(&priv->writer_cond);
+	if (ret) {
+		/* Cannot initialize scheduler: failed to initialize condition variable %s (%d) */
+		ltfsmsg(LTFS_ERR, 13007E, "writer_cond", ret);
+		ltfs_thread_mutex_destroy(&priv->writer_lock);
+		ltfs_thread_cond_destroy(&priv->cache_cond);
+		ltfs_thread_mutex_destroy(&priv->cache_lock);
+		cache_manager_destroy(priv->pool);
+		free(priv);
+		return NULL;
+	}
 
 	ret = init_mrsw(&priv->lock);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 13006E, "lock", ret);
+		ltfs_thread_cond_destroy(&priv->writer_cond);
+		ltfs_thread_mutex_destroy(&priv->writer_lock);
 		ltfs_thread_cond_destroy(&priv->queue_cond);
 		ltfs_thread_mutex_destroy(&priv->queue_lock);
 		ltfs_thread_cond_destroy(&priv->cache_cond);
@@ -357,7 +391,9 @@ void *unified_init(struct ltfs_volume *vol)
 	ret = ltfs_thread_create(&priv->writer_thread, _unified_writer_thread, priv);
 	if (ret) {
 		/* Cannot initialize scheduler: failed to create thread */
-		ltfsmsg(LTFS_ERR, 13008E, "queue_cond", ret);
+		ltfsmsg(LTFS_ERR, 13008E, "writer thread", ret);
+		ltfs_thread_cond_destroy(&priv->writer_cond);
+		ltfs_thread_mutex_destroy(&priv->writer_lock);
 		ltfs_thread_cond_destroy(&priv->queue_cond);
 		ltfs_thread_mutex_destroy(&priv->queue_lock);
 		ltfs_thread_cond_destroy(&priv->cache_cond);
@@ -402,6 +438,8 @@ int unified_destroy(void *iosched_handle)
 	}
 
 	/* Free data structures */
+	ltfs_thread_cond_destroy(&priv->writer_cond);
+	ltfs_thread_mutex_destroy(&priv->writer_lock);
 	ltfs_thread_cond_destroy(&priv->queue_cond);
 	ltfs_thread_mutex_destroy(&priv->queue_lock);
 	ltfs_thread_cond_destroy(&priv->cache_cond);
@@ -940,8 +978,13 @@ int unified_flush(struct dentry *d, bool closeflag, void *iosched_handle)
 		ret = _unified_flush_unlocked(d, priv);
 		ltfs_mutex_unlock(&d->iosched_lock);
 		releasewrite_mrsw(&priv->lock);
-	} else
+	} else {
+#ifdef USE_DIRECT_FLUSH
+		ret = _unified_exit_all(priv);
+#else
 		ret = _unified_flush_all(priv);
+#endif
+	}
 
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_FLUSH));
 	return ret;
@@ -1150,6 +1193,7 @@ ltfs_thread_return _unified_writer_thread(void *iosched_handle)
 		ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_ENTER(REQ_IOS_IOSCHED));
 		if (! priv->writer_keepalive) {
 			ltfs_thread_mutex_unlock(&priv->queue_lock);
+			ltfs_thread_cond_broadcast(&priv->writer_cond);
 			_unified_exit_all(priv);
 			_unified_process_queue(REQUEST_IP, priv);
 			break;
@@ -1201,7 +1245,13 @@ void _unified_process_index_queue(struct unified_data *priv)
 
 	partition_id = ltfs_ip_id(priv->vol);
 
+	ltfs_thread_mutex_lock(&priv->writer_lock);
 	acquirewrite_mrsw(&priv->lock);
+
+	ltfsmsg(LTFS_DEBUG3, 13034D, "IP");
+	ltfs_thread_cond_broadcast(&priv->writer_cond);
+	ltfs_thread_mutex_unlock(&priv->writer_lock);
+
 	TAILQ_FOREACH_SAFE(dentry_priv, &priv->ip_queue, ip_queue, dpr_aux) {
 		/* Remove dentry_priv from the IP queue, process its IP requests,
 		 * then free it if the request list is empty. */
@@ -1251,7 +1301,13 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 	uint32_t count, i;
 	ssize_t ret;
 
+	ltfs_thread_mutex_lock(&priv->writer_lock);
 	acquireread_mrsw(&priv->lock);
+
+	ltfsmsg(LTFS_DEBUG3, 13034D, "DP");
+	ltfs_thread_cond_broadcast(&priv->writer_cond);
+	ltfs_thread_mutex_unlock(&priv->writer_lock);
+
 	ltfs_thread_mutex_lock(&priv->queue_lock);
 	count = queue == REQUEST_DP ? priv->dp_count : priv->dp_count + priv->ws_count;
 	ltfs_thread_mutex_unlock(&priv->queue_lock);
@@ -1260,9 +1316,9 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 	 * Process only the 'count' entries that are known to be in the queue.
 	 * This is needed to guarantee a limited runtime.
 	 */
-	for (i=0; i<count; ++i) {
-		struct dentry *dentry;
-		struct dentry_priv *dentry_priv;
+	for (i = 0; i < count; ++i) {
+		struct dentry *dentry = NULL;
+		struct dentry_priv *dentry_priv = NULL;
 		struct req_struct local_req_list;
 		struct write_request *req, *req_aux;
 
@@ -1275,7 +1331,12 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 			ltfs_thread_mutex_unlock(&priv->queue_lock);
 			break;
 		}
-		dentry = dentry_priv->dentry;
+
+		if (dentry_priv) {
+			dentry = dentry_priv->dentry;
+			_unified_get_dentry_priv(dentry, NULL, priv);
+		}
+
 		ltfs_thread_mutex_unlock(&priv->queue_lock);
 
 		if (! dentry) {
@@ -1372,8 +1433,10 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 			}
 		}
 
-		if (dentry_priv)
+		if (dentry_priv) {
 			ltfs_mutex_unlock(&dentry_priv->io_lock);
+			_unified_put_dentry_priv(dentry_priv, priv);
+		}
 	}
 
 	releaseread_mrsw(&priv->lock);
@@ -2182,34 +2245,63 @@ int _unified_flush_all(struct unified_data *priv)
 {
 	int ret;
 	struct dentry_priv *dpr, *aux;
+	bool empty = false;
 
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
 
+	ltfs_thread_mutex_lock(&priv->writer_lock);
 	acquirewrite_mrsw(&priv->lock);
 
 	if (! TAILQ_EMPTY(&priv->dp_queue)) {
 		TAILQ_FOREACH_SAFE(dpr, &priv->dp_queue, dp_queue, aux) {
+			ltfsmsg(LTFS_DEBUG, 13033D, "DP", dpr->dentry->platform_safe_name);
+			ltfs_mutex_lock(&dpr->dentry->iosched_lock);
 			ret = _unified_flush_unlocked(dpr->dentry, priv);
+			ltfs_mutex_unlock(&dpr->dentry->iosched_lock);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 13020E, dpr->dentry->platform_safe_name, ret);
 				releasewrite_mrsw(&priv->lock);
 				return ret;
 			}
 		}
+	} else {
+		empty = true;
 	}
 
 	if (! TAILQ_EMPTY(&priv->working_set)) {
 		TAILQ_FOREACH_SAFE(dpr, &priv->working_set, working_set, aux) {
+			ltfsmsg(LTFS_DEBUG, 13033D, "WS", dpr->dentry->platform_safe_name);
+			ltfs_mutex_lock(&dpr->dentry->iosched_lock);
 			ret = _unified_flush_unlocked(dpr->dentry, priv);
+			ltfs_mutex_unlock(&dpr->dentry->iosched_lock);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 13020E, dpr->dentry->platform_safe_name, ret);
 				releasewrite_mrsw(&priv->lock);
 				return ret;
 			}
 		}
+	} else {
+		if (empty)
+			empty = true;
+		else
+			empty = false;
 	}
 
 	releasewrite_mrsw(&priv->lock);
+	if (!empty) {
+		ltfsmsg(LTFS_DEBUG3, 13035D);
+		ltfs_thread_cond_wait(&priv->writer_cond, &priv->writer_lock);
+		ltfs_thread_mutex_unlock(&priv->writer_lock);
+		ltfsmsg(LTFS_DEBUG3, 13036D);
+
+		/* Confirm the writer thread processed the blocks requeued above */
+		acquirewrite_mrsw(&priv->lock);
+		releasewrite_mrsw(&priv->lock);
+		ltfsmsg(LTFS_DEBUG3, 13037D);
+	} else {
+		ltfs_thread_mutex_unlock(&priv->writer_lock);
+	}
+
 	return 0;
 }
 

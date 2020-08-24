@@ -70,5 +70,10 @@ root:table {
 		13030D:string { "No DPR on %s (req = 0x%llx)." }
 		13031D:string { "Created a request (0x%llx)." }
 		13032D:string { "Removed a request (0x%llx)." }
+		13033D:string { "Flushing all (%s, %s)." }
+		13034D:string { "Send a broadcast from %s." }
+		13035D:string { "Waiting a broadcast." }
+		13036D:string { "Received a broadcast." }
+		13037D:string { "Flush is done." }
 	}
 }

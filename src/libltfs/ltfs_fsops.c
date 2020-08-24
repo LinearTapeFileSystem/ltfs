@@ -340,7 +340,7 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 	d->parent = parent;
 	++d->link_count;
 
-	if (!iosched_initialized(vol)) {
+	if (isdir || !iosched_initialized(vol)) {
 		/*
 		 * numhandles will be incremented in iosched_open() below when ioscheduler is
 		 * enabled.
@@ -386,7 +386,7 @@ out_dispose:
 		}
 	}
 
-	if (ret == 0 && iosched_initialized(vol)) {
+	if (!isdir && !ret && iosched_initialized(vol)) {
 		ret = iosched_open(dentry_path, overwrite, &d, vol);
 		if (ret < 0) {
 			fs_release_dentry(d);
