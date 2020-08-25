@@ -85,7 +85,6 @@ const char *iosched_get_message_bundle_name(void **message_data);
 /**
  * Request type definisions for LTFS request profile
  */
-
 #define REQ_IOS_OPEN        0000	/**< open */
 #define REQ_IOS_CLOSE       0001	/**< close */
 #define REQ_IOS_READ        0002	/**< read */
@@ -95,9 +94,11 @@ const char *iosched_get_message_bundle_name(void **message_data);
 #define REQ_IOS_GETFSIZE    0006	/**< get_filesize */
 #define REQ_IOS_UPDPLACE    0007	/**< update_data_placement */
 #define REQ_IOS_IOSCHED     0008	/**< (io_scheduler ... _unified_writer_thread) */
-#define REQ_IOS_ENQUEUE_IP  0009	/**< Enqueue data block to IP */
-#define REQ_IOS_DEQUEUE_IP  000A	/**< Dequeue data block to IP */
-#define REQ_IOS_ENQUEUE_DP  000B	/**< Enqueue data block to DP */
-#define REQ_IOS_DEQUEUE_DP  000C	/**< Dequeue data block to DP */
+#define REQ_IOS_ENQUEUE_IP  0009	/**< Enqueue data block to IP (unused at this time) */
+#define REQ_IOS_DEQUEUE_IP  000A	/**< Dequeue data block to IP (unused at this time) */
+#define REQ_IOS_ENQUEUE_DP  000B	/**< Enqueue data block to DP (unused at this time) */
+#define REQ_IOS_DEQUEUE_DP  000C	/**< Dequeue data block to DP (unused at this time) */
+#define REQ_IOS_ADD_REQUEST 000D	/**< Add a request */
+#define REQ_IOS_DEL_REQUEST 000E	/**< Remove a request */
 
 #endif /* __iosched_ops_h */

@@ -1389,8 +1389,6 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 				} else {
 					TAILQ_REMOVE(&dentry_priv->requests, req, list);
 					TAILQ_INSERT_TAIL(&local_req_list, req, list);
-					if (queue != REQUEST_PARTIAL)
-						ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EVENT(REQ_IOS_DEQUEUE_DP));
 				}
 			}
 		}
@@ -1761,7 +1759,6 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
 				if (! dentry_priv->write_ip)
 					++priv->dp_request_count;
 				++dentry_priv->in_dp_queue;
-				ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EVENT(REQ_IOS_ENQUEUE_DP));
 			} else {
 				if ((all && dentry_priv->in_dp_queue) || dentry_priv->in_dp_queue == 1) {
 					TAILQ_REMOVE(&priv->dp_queue, dentry_priv, dp_queue);
@@ -1787,7 +1784,6 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
 				}
 				++dentry_priv->in_ip_queue;
 				++priv->ip_request_count;
-				ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EVENT(REQ_IOS_ENQUEUE_IP));
 			} else {
 				if ((all && dentry_priv->in_ip_queue) || dentry_priv->in_ip_queue == 1) {
 					TAILQ_REMOVE(&priv->ip_queue, dentry_priv, ip_queue);
@@ -1800,7 +1796,6 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
 					--dentry_priv->in_ip_queue;
 					--priv->ip_request_count;
 				}
-				ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EVENT(REQ_IOS_DEQUEUE_IP));
 			}
 			break;
 
@@ -1835,6 +1830,8 @@ void _unified_free_request(struct write_request *req, struct unified_data *priv)
 	}
 
 	free(req);
+
+	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EVENT(REQ_IOS_DEL_REQUEST));
 }
 
 /**
@@ -1971,6 +1968,7 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
 		dpr->file_size = new_req->offset + new_req->count;
 
 	ltfsmsg(LTFS_DEBUG3, 13031D, new_req);
+	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EVENT(REQ_IOS_ADD_REQUEST));
 
 	return (ssize_t)count;
 }

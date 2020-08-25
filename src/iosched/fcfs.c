@@ -119,7 +119,7 @@ int fcfs_open(const char *path, bool open_write, struct dentry **dentry, void *i
 
 	ret = ltfs_fsraw_open(path, open_write, dentry, priv->vol);
 	if (!ret)
-		ltfs_fsraw_get_dentry(d, priv->vol);
+		ltfs_fsraw_get_dentry(*dentry, priv->vol);
 
 	return ret;
 }
@@ -133,6 +133,8 @@ int fcfs_open(const char *path, bool open_write, struct dentry **dentry, void *i
  */
 int fcfs_close(struct dentry *d, bool flush, void *iosched_handle)
 {
+	struct fcfs_data *priv = (struct fcfs_data *) iosched_handle;
+
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
 
