@@ -1248,6 +1248,11 @@ void _unified_process_index_queue(struct unified_data *priv)
 	ltfs_thread_mutex_lock(&priv->writer_lock);
 	acquirewrite_mrsw(&priv->lock);
 
+	/*
+	 * Send a signal to all threads the writer thread woke up and processing queued requests.
+	 * Waiter could try to lock priv->lock after receiving this signal. And it is guaranteed that
+	 * all queued requests are flushed to the drive once priv->lock is captured.
+	 */
 	ltfsmsg(LTFS_DEBUG3, 13034D, "IP");
 	ltfs_thread_cond_broadcast(&priv->writer_cond);
 	ltfs_thread_mutex_unlock(&priv->writer_lock);
@@ -1304,6 +1309,11 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 	ltfs_thread_mutex_lock(&priv->writer_lock);
 	acquireread_mrsw(&priv->lock);
 
+	/*
+	 * Send a signal to all threads the writer thread woke up and processing queued requests.
+	 * Waiter could try to lock priv->lock after receiving this signal. And it is guaranteed that
+	 * all queued requests are flushed to the drive once priv->lock is captured.
+	 */
 	ltfsmsg(LTFS_DEBUG3, 13034D, "DP");
 	ltfs_thread_cond_broadcast(&priv->writer_cond);
 	ltfs_thread_mutex_unlock(&priv->writer_lock);
@@ -2287,15 +2297,24 @@ int _unified_flush_all(struct unified_data *priv)
 
 	releasewrite_mrsw(&priv->lock);
 	if (!empty) {
-		ltfsmsg(LTFS_DEBUG3, 13035D);
+		/*
+		 * Wait a signal from the writer thread if pending request was existed.
+		 * The writer thread wakes up once a signal comes, and at this time
+		 * the writer thread shall hold priv->lock.
+		 */
+		ltfsmsg(LTFS_DEBUG2, 13035D);
 		ltfs_thread_cond_wait(&priv->writer_cond, &priv->writer_lock);
 		ltfs_thread_mutex_unlock(&priv->writer_lock);
 		ltfsmsg(LTFS_DEBUG3, 13036D);
 
-		/* Confirm the writer thread processed the blocks requeued above */
+		/*
+		 * prov->lock shall be released when all queued requests are processed.
+		 * So we can consider the queued requests on this flush operation is already flushed
+		 * to the drive.
+		 */
 		acquirewrite_mrsw(&priv->lock);
 		releasewrite_mrsw(&priv->lock);
-		ltfsmsg(LTFS_DEBUG3, 13037D);
+		ltfsmsg(LTFS_DEBUG2, 13037D);
 	} else {
 		ltfs_thread_mutex_unlock(&priv->writer_lock);
 	}
