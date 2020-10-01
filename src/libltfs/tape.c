@@ -2424,6 +2424,7 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable)
 	int i;
 	bool reload = false;
 	bool loaded = false;
+	bool supported = true;
 	unsigned char mp_dev_config_ext[TC_MP_DEV_CONFIG_EXT_SIZE];
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
@@ -2485,8 +2486,13 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable)
 
 	ret = dev->backend->modeselect(dev->backend_data, mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 17155E, ret);
-		return ret;
+		if (ret == -EDEV_ILLEGAL_REQUEST) {
+			ltfsmsg(LTFS_INFO, 17266I);
+			supported = false;
+		} else {
+			ltfsmsg(LTFS_ERR, 17155E, ret);
+			return ret;
+		}
 	}
 
 	if (reload) {
@@ -2497,7 +2503,11 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable)
 		}
 	}
 
-	dev->append_only_mode = enable;
+	if (supported) {
+		dev->append_only_mode = enable;
+	} else {
+		dev->append_only_mode = false;
+	}
 
 	return 0;
 }
