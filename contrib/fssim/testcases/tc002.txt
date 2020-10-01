@@ -1,0 +1,8 @@
+mkdir /DB0
+mkdir /DB1/DB2/DB3/DB4/DB5/DB6/DB7/DB8/DB9/DB10
+index initial_tc002
+mv /DB1/DB2 /DB0
+mv /DB0/DB2/DB3 /DB1
+mv /DB1/DB3/DB4 /DB0/DB2
+index shuffle_tc002
+exit

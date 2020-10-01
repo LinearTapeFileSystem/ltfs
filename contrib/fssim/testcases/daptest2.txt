@@ -1,0 +1,21 @@
+index t0
+ls
+ls -a
+touch a/b/c/foo
+touch a/b/c/bar
+log
+ls -a
+ls -a b
+ls -a a/b
+md z
+ls -a
+ls -a a/b/c
+index t1
+ll
+ll a
+md c
+ll
+ls
+rd c
+index t2
+exit

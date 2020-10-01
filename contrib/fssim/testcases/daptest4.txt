@@ -1,0 +1,7 @@
+index t0
+touch a/b/foo
+touch a/c/foo
+index t1
+touch a/c/foo
+index t2
+exit

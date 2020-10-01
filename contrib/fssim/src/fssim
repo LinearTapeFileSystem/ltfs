@@ -1,0 +1,376 @@
+#!/usr/bin/python3
+#
+# File System Simulator for LTFS
+#
+# This program simulates file system directory activity such as creating or
+# deleteing files and directories, moving and copying files or directories,
+# listing information, etc.  It also writes full and incremental XML indexes
+# to files on request.
+#
+# Usage:
+#
+#    fssim [-d] [command file]
+#
+#  where:
+#      -d:            prints lots of debugging messages during processing
+#      command file:  executes commands from specified text file at startup
+#
+# (c) David Pease - IBM Almaden Research Center - May 2018
+# (c) David Pease - pease@coati.com - Sept. 2020
+#
+
+from   sys       import argv, exit, version
+from   fscommon  import *
+import fsglobals as g
+import readline
+
+TimeNow = None               # a constant value for readability
+
+###########################################################################
+#   filesystem command functions                                          #
+###########################################################################
+
+# cd: change directory
+def cd(opt, name=None):
+   if name == "/" or name == None:
+      g.curdir = g.root
+      g.curnm  = "/"
+      return True
+   if name == ".." and g.curnm != "/":
+      g.curdir = g.curdir.parent
+      g.curnm = splitPath(g.curnm)[0]
+      if g.curnm ==  "":
+         g.curnm = "/"
+      return True
+   dirnm, newdir = dirpath(name)
+   if newdir == None:
+      return False
+   g.curdir = newdir 
+   g.curnm  = dirnm
+   return True
+
+# md: create a directory or (multi-level) directory path 
+def md(opt, *names):
+   for name in names:
+      fullname = fullName(name)
+      pieces = fullname[1:].split("/")
+      path = ""
+      for piece in pieces:
+         path += ("/" + piece)
+         fpath, obj = dirpath(path)
+         if not obj:
+            if not makeObj(path, dir=True):
+               return False
+   return True
+
+# rd: remove a directory
+def rd(opt, name):
+   return rmObj(name, dir=True)
+
+# rm: remove a file
+def rm(opt, name):
+   return rmObj(name)
+
+# cp: copy a single file, or copy a directory's contents recursively
+def cp(opt, oldname, newname):
+   if opt:
+      if opt == "-r":
+         return copyrecurs(oldname, newname)
+      else:
+         return False
+   return movecopy(oldname, newname, copy=True)
+
+# mv: move a file or directory
+def mv(opt, oldname, newname):
+   return movecopy(oldname, newname)
+
+# tf: update an object's timestamp or create a new file
+def tf(opt, *names):
+   for name in names:
+      if name == "/":              # special case for touching root dir 
+         g.root.modTime = TimeNow
+         log(name, 0, "Mod")
+         continue
+      path, parent, objname = dirpath(name, parentRef=True)
+      if parent == None:
+         if not md(None, splitPath(name)[0]):
+            return False
+         path, parent, objname = dirpath(name, parentRef=True)
+         if parent == None:
+            return False  
+      if not parent.contains(objname):
+         if not makeObj(name): 
+            return False
+      else:
+         parent.obj(objname).modTime = TimeNow
+         log(joinPath(path, objname), parent.obj(objname).oid, "Mod")
+   return True
+
+# ec: echo string to a file or the screen
+def ec(opt, *args):
+   if len(args) >= 2 and args[-2] in (">", ">>"):
+      name = args[-1]
+      path, obj = dirpath(name)
+      if obj:
+         if obj.isDir:
+            return False
+         obj.modTime = TimeNow
+      else:      # need to create file first
+         if not tf(None, name):
+            return False
+         path, obj = dirpath(name)   
+         if not obj:
+            return False
+      data = " ".join(args[:len(args)-2])
+      if args[-2] == ">>":
+         obj.data += data
+      else: 
+         obj.data = data
+      log(path, obj.oid, "Mod")
+   else:
+      fsprt(*args)
+   return True
+
+# ct: cat (print) a file's data
+def ct(opt, name):
+   path, obj = dirpath(name)
+   if not obj or obj.isDir:
+      return False
+   fsprt(obj.data)
+   return True
+
+# ls: list directory contents or file information with optional information 
+def ls(opt, dirnm=None, showall=False):
+   if opt:
+      if opt == "-a":
+         showall = True
+      else:  
+         return False
+   if not dirnm:
+      wobj = g.curdir
+      dirnm = g.curnm
+   else:
+      path, wobj = dirpath(dirnm)
+      if not wobj:
+         return False
+   if wobj.isFile:
+      flag = "-m-" if wobj.isModified else "---"
+      lth = len(wobj.data)
+      fsprt(flag, wobj.oid, wobj.modTime[5:16], lth, splitPath(path)[1])
+      return True
+   if showall:
+      flag = "d" +"-m"[wobj.isModified] +"-n"[wobj.isNew] 
+      fsprt(flag, wobj.oid, wobj.modTime[5:16], len(wobj.children), ".")
+   for name in sorted(wobj.children,       # process subdirs before files
+         key=lambda name: "\0"+name if wobj.obj(name).isDir else name):
+      if wobj.obj(name).isDir:
+         flag = "d" + "-m"[wobj.obj(name).isModified] +     \
+                "-n"[wobj.obj(name).isNew]   
+         lth = len(wobj.obj(name).children)
+      else:
+         flag = "-" + "-m"[wobj.obj(name).isModified] + "-" 
+         lth = len(wobj.obj(name).data) 
+      fsprt(flag, wobj.obj(name).oid, wobj.obj(name).modTime[5:16], lth, name)
+   return True
+
+# ll: list long, same as ls -a
+def ll(opt, dirnm=None):
+   return ls(opt, dirnm, showall=True)
+
+# tr: show a tree view of file system with optional oids
+def tr(opt):
+   oids = False
+   if opt:
+      if opt == "-o":
+         oids = True
+      else:
+         return False
+   if not oids:
+      fsprt("/")
+   else:
+      fsprt("/ (0)")
+   return dfs(g.root, "/", tree, oids)
+
+# print out one line of the tree view (invoked through dfs())
+def tree(desc, dirobj, path, name, oids):
+   if desc not in ("file", "dir"):
+      return True
+   if path == "/":
+      prefix = ""
+   else:
+      prefix = path.count("/") * "  "
+   if oids:
+      oidstr = " (" + str(dirobj.obj(name).oid) + ")"
+   else:
+      oidstr = ""
+   if desc == "file":
+      fsprt(prefix + " |-" + name + oidstr)
+   elif desc == "dir":
+      fsprt(prefix + " |=" + name + oidstr)
+   return True
+
+# cl: clear the screen
+def cl(opt):
+   fsprt("\x1b\x5b\x48\x1b\x5b\x32\x4a")
+   return True
+
+# ix: write out both a full and an incremental index
+def ix(opt, fnprefix):
+   full = True
+   incr = True
+   if opt:
+      if opt == "-f":
+         incr = False
+      elif opt == "-i":
+         full = False
+      else:
+         return False
+   if incr:
+      result = incrIndex(fnprefix)
+      if not result:                 
+         full = True                  # if incremental fails, force full index
+   if full:          # full index clears log, all file flags, so must be last
+      result = fullIndex(fnprefix)
+   return result
+
+# pl: display update log entries by name or optionally by time
+def pl(opt):
+   byTime = False
+   if opt:
+      if opt == "-t":
+         byTime = True
+      else:
+         return False
+   return printLog(byTime)
+
+# fc: check file system for extraneous or incorrect information
+def fc(opt):
+   if g.root.isNew or g.root.isModified:
+      fsprt("/", ("Mod" * g.root.isModified), ("New" * g.root.isNew))
+   return dfs(g.root, "/", chkMods, None)
+
+# display objects that indicate New or Modified (invoked thru dfs())
+def chkMods(desc, dirobj, path, name, dummy):
+   if desc not in ("file", "dir"):
+      return True
+   obj = dirobj.obj(name)
+   mod = obj.isModified
+   new = obj.isDir and obj.isNew
+   if mod or new:   
+      fsprt(joinPath(path, name), ("Mod" * mod), ("New" * new))
+   return True
+
+###########################################################################
+#   execute a single input command (from command file or keyboard)        #
+###########################################################################
+
+def execCommand(input):
+   if input == "exit":
+      return False
+   if input == "help":
+      fsprt("Enter 'exit', 'help', or one of the following commands:")
+      for cmdname in sorted(cmdTable):
+         fsprt("%-5s %s" % (cmdname, cmdTable[cmdname][3]))
+      return True
+   # tokenize input string allowing quoted strings
+   sstr = input.split('"')
+   if len(sstr) % 2 != 1:
+      fsprt("** Invalid")
+      return True
+   input = []
+   for ct, ss in enumerate(sstr):
+      if not ss:
+         continue
+      if ct % 2 == 1:
+         input.append(ss)
+         continue
+      else:
+         input += ss.split()
+   # process the command
+   cmdnm = input[0]
+   if cmdnm not in cmdTable:
+      fsprt("** Invalid")
+      return True
+   func = cmdTable[cmdnm][2]
+   opt = None
+   if len(input) > 1 and input[1].startswith("-"):
+      opt = input[1]
+      del input[1]
+   if (len(input)-1) < cmdTable[cmdnm][0] or \
+      (len(input)-1) > cmdTable[cmdnm][1]:
+      fsprt("** Invalid")
+      return True
+   params = []
+   for p in input[1:]:
+      params.append(p)
+   if not func(opt, *params):
+      fsprt("** Failed")
+   return True
+
+###########################################################################
+# command table - name: (min operands, max operands, function, help text) #
+###########################################################################
+
+cmdTable = {
+   # cmd   min max fn  help text
+   "cd":    (0, 1, cd, "[dirname]    - change current directory"),
+   "mkdir": (1,20, md, "dirname ...  - make directories"),
+   "md":    (1,20, md, "dirname ...  - alias for mkdir"),
+   "touch": (1,20, tf, "name ...     - create file(s) or update time(s)"),
+   "rmdir": (1, 1, rd, "dirname      - remove directory"),
+   "rd":    (1, 1, rd, "dirname      - alias for rmdir"),
+   "rm":    (1, 1, rm, "filename     - remove file"),
+   "cp":    (2, 2, cp, "[-r] name name  - copy one file, or dir recursively"),
+   "mv":    (2, 2, mv, "name name    - move/rename file or directory"),
+   "ls":    (0, 1, ls, "[-a] [name]  - list file or directory info"),
+   "dir":   (0, 1, ls, "[-a] [name]  - alias for ls"),
+   "ll":    (0, 1, ll, "[name]       - alias for ls -a (ls with all info)"),
+   "tree":  (0, 0, tr, "[-o]         - show a tree view of the file system"),
+   "echo":  (1, 20,ec, "[data] [>|>> name] - write data to screen or file"),
+   "cat":   (1, 1, ct, "name         - write a file's contents to the screen"),
+   "cls":   (0, 0, cl, "             - clear the screen"),
+   "index": (1, 1, ix, "[-f|-i] fileprefix - write full and/or incr indexes"),
+   "log":   (0, 0, pl, "log [-t]     - display log entries by name or time"),
+   "fsck":  (0, 0, fc, "             - check files and dirs for correctness"),
+}
+
+###########################################################################
+#   main line                                                             #
+###########################################################################
+
+# create root directory with no parent and make it the current dir
+g.root   = Dir(None)                 # equivalent to mkfs -t fssim  ;-)
+log("/", 0, "New")
+g.curdir = g.root
+g.curnm  = "/"
+
+# set debugging flag
+g.debug  = "-d" in argv[1:]
+
+# if command file specified, execute commands from it
+if len(argv) > 1 and not argv[-1].startswith("-"):
+   infname = argv[-1]
+   with open(infname, "r") as infile:
+      inlines = infile.readlines()
+   for inpt in inlines:
+      inpt = inpt.strip()
+      if inpt:
+         if g.debug:
+            fsprt("==============================")
+         if inpt.startswith("#"):
+            fsprt(inpt)
+         else:
+            fsprt(g.curnm+"> "+inpt)
+            if not execCommand(inpt):
+               exit(0)
+
+# go into interactive mode
+fsprt('Enter command, "exit", or "help":')
+while True:
+   if version.startswith("2"):
+      input = raw_input                  # use python 3.x function name
+   inpt = input(g.curnm+"> ").strip()
+   if inpt and not inpt.startswith("#"):
+      if not execCommand(inpt):
+         exit(0)
+

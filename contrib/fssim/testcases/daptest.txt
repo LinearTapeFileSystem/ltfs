@@ -1,0 +1,11 @@
+index t0
+touch a/b/c/foo
+log
+index t1
+touch a/b/bar
+touch a/b/baz
+ll a/b
+log
+index t2
+exit
+

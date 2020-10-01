@@ -1,0 +1,8 @@
+index t5-0
+touch asdf/qwer/zxcv/foo
+index t5-1
+rm asdf/qwer/zxcv/foo
+ll asdf/qwer/zxcv
+index t5-2	
+ll asdf/qwer/zxcv
+exit

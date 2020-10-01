@@ -1,0 +1,13 @@
+mkdir /DA0
+mkdir /DB0
+touch /DA0/fa0
+touch /DB0/fb0
+tree
+index initial_tc005
+rm /DA0/fa0
+touch /DA0/fa0
+mv /DB0/fb0 /DB0/fb1
+mv /DB0/fb1 /DB0/fb0
+tree
+index new_samename_tc005
+exit

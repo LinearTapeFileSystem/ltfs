@@ -1,0 +1,17 @@
+index t9-0
+md qwer
+touch asdf/zxcv/uiop/foo asdf/zxcv/uiop/bar asdf/zxcv/hjkl/baz
+tree -o
+# directory is qwer empty, adsf contains zxcv with subdirs and files
+index t9-1
+mv asdf/zxcv qwer
+tree -o
+ll asdf
+# move entire zxcv subtree to qwer, verify everything moves correctly
+index t9-2
+md asdf/zxcv
+cp -r qwer/zxcv asdf/zxcv
+tree -o
+index t9-3
+exit
+

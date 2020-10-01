@@ -1,0 +1,74 @@
+#!/bin/bash
+# 
+# Run an fssim test case, apply incremental indexes to initial full index,
+# compare result to final full index, and display any difference
+# 
+
+# process operands and set values 
+if [ $# -lt 1 ]; then 
+   echo "Usage:" $0 "[-d] <cmdfile>"
+   exit 1
+fi
+if [ $1 == "-d" ]; then
+   OPT="-d"
+   shift 1
+else
+   OPT=""
+fi
+if [ $# -ne 1 ]; then
+   echo "Missing command file name"
+   exit 1
+fi
+if [ ! -f $1 ]; then
+   echo "File" $1 "does not exist"
+   exit 1
+fi
+
+# initialize xml file name suffixes
+FNAME="-full.xml"
+INAME="-incr.xml"
+
+# create list of indexes written by input command file
+FLIST=""
+while read -r prefix; do
+   FLIST="$FLIST $prefix"
+done < <(grep "^ *index" $1 | rev | cut -d" " -f 1 | rev)
+
+# verify that at least two indexes are written by test case 
+alist=( $FLIST)
+if [ ${#alist[@]} -lt 2 ]; then
+   echo "Too few indexes written in test script $1 for comparison"
+   exit 1
+fi
+
+# build file name strings based on list of indexes and name suffixes
+FULLFILE=""
+INCRFILES=""
+for prefix in $FLIST; do
+   if [[ $FULLFILE == "" ]]; then
+      FULLFILE=$prefix$FNAME
+   else
+      INCRFILES="$INCRFILES $prefix$INAME"
+      COMPFILE=$prefix$FNAME
+   fi
+done
+
+# build the actual command lines
+CMD1="./fssim $OPT $1"
+CMD2="./fsidxupd $OPT $FULLFILE $INCRFILES"
+CMD3="diff upd-full.xml $COMPFILE"
+
+# display each command, then execute it
+echo $CMD1
+$CMD1
+echo $CMD2
+$CMD2
+echo $CMD3
+$CMD3 > tempout.txt
+
+# check for errors and display them
+if [ -s tempout.txt ]; then
+   echo "************** Errors from diff - $1 *****************"
+   cat tempout.txt
+fi
+rm tempout.txt

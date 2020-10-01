@@ -1,0 +1,159 @@
+#!/usr/bin/python3
+#
+# File System Index Processor for LTFS
+#
+# This program reads in a full index created by the fssim program, then 
+# updates that index using one or more incremental indexes created  
+# sequentially by the same program.  At the end, it writes the resulting
+# xml index to a file (upd-full.xml).
+#
+# Usage:
+#
+#    fsidxupd [-d] <fullindex> [<incrindex> ...]
+#
+#  where:
+#      -d:            prints lots of debugging messages during processing
+#      fullindex:     a file containing a full index (from fssim)
+#      incrindex:     a file containing an incremental index (from fssim)
+#
+# (c) David Pease - IBM Almaden Research Center - May 2018
+# (c) David Pease - pease@coati.com - Sept. 2020
+#
+
+from   sys                   import argv, exit
+from   xml.etree.ElementTree import parse
+from   fscommon              import *
+import fsglobals as g
+
+###########################################################################
+#  process xml children (files and dirs) in <contents> blocks recursivley #
+###########################################################################
+
+def processContents(path, contents, full=False):
+ 
+   for child in contents:
+      values = {}
+      for val in child:
+         if val.tag == "contents":
+            values[val.tag] = val
+         else:
+            values[val.tag] = val.text
+      name = joinPath(path, values["name"])
+      dir = child.tag == "directory"
+      if full:
+         obj = makeObj(name, oid=values["oid"], ts=values["time"], dir=dir,
+                       update=False)
+         if not obj:
+            return False
+         if "data" in values:
+            obj.data = values["data"]
+      else:   # is incremental
+         fullpath, obj = dirpath(name)
+         if not obj:
+            if "deleted" in values:
+               pass          # already deleted, so okay
+            else:
+               dbprt("Creating:", name, values)
+               if not "oid" in values:
+                  fsprt("Error creating %s, no oid in index" % name)
+                  return False
+               obj = makeObj(name, oid=values["oid"], ts=values["time"],
+                             dir=dir, update=False)
+               if not obj:
+                  return False
+               if "data" in values:
+                  obj.data = values["data"]
+         else:
+            if "deleted" in values:
+               obj.parent.rmObj(values["name"], update=False,verifyEmpty=False)
+            else:
+               if "oid" in values and obj.oid != values["oid"]:
+                  if not obj.parent.rmObj(values["name"], update=False,
+                                          verifyEmpty=False):
+                     return False
+                  obj = makeObj(name, oid=values["oid"], ts=values["time"],
+                                 dir=dir, update=False)
+                  if not obj:
+                     return False
+               else:
+                  if "time" in values:
+                     obj.modTime = values["time"]
+               if "data" in values:
+                  obj.data = values["data"]
+      if dir and not "deleted" in values:
+         dbprt("Entering:", child.tag, values)
+         if not processContents(name, values["contents"], full=full):
+            return False
+   return True
+
+###########################################################################
+#   main line                                                             #
+###########################################################################
+
+# do some parameter validation
+if len(argv) > 1 and argv[1] == "-d":
+   g.debug = True
+   del argv[1]
+if len(argv) < 2:
+   fsprt("Too few parameters")
+   exit(12)
+fullfn = argv[1]
+incrlist = argv[2:]
+
+# first build the base filesystem from the full index
+try:
+   xml = parse(fullfn)
+except:
+   fsprt("Error parsing XML in file", fullfn)
+   exit(12)
+xmlroot = xml.getroot()
+if xmlroot.tag != "fullindex":
+   fsprt("Invalid full index file header", xmlroot.tag)
+   exit(12)
+oid = ts = contents = None
+for child in xmlroot:
+   if child.tag == "oid":
+      oid = int(child.text)
+   elif child.tag == "time":
+      ts = child.text
+   elif child.tag == "contents":
+      contents = child
+   else:
+      fsprt("Invalid tag", tag)
+if oid == None or not ts or contents is None:
+   fsprt("Missing root directory entries")
+   exit(12)
+g.root = Dir(None, oid=oid, time=ts)
+g.curdir = g.root
+g.curnm  = "/"   
+if not processContents("/", contents, full=True):
+   fsprt("Error creating full index structure.")
+   exit(12)
+
+# now start applying updates from incremental indexes
+for incrfn in incrlist:
+   try:
+      xml = parse(incrfn)
+   except:
+      fsprt("Error parsing XML in file", incrfn)
+      exit(12)
+   xmlroot = xml.getroot()
+   if xmlroot.tag != "incrementalindex":
+      fsprt("Invalid incremental index file header", xmlroot.tag)
+      exit(12)
+   ts = contents = None
+   for child in xmlroot:
+      if child.tag == "time":
+         ts = child.text
+      elif child.tag == "contents":
+         contents = child
+   if ts:
+      g.root.modTime = ts
+   if contents is not None:
+      if not processContents("/", contents):
+         fsprt("Error applying incremental index", incrfn)
+         exit(12)
+
+# write out final results as a full index
+fullIndex("upd")
+

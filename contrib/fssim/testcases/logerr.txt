@@ -1,0 +1,19 @@
+touch A/B/foo
+touch A/B/bar
+touch A/B/baz
+touch A/B/C/foo
+touch A/B/C/bar
+touch A/B/C/baz
+log
+index l0
+rm A/B/foo
+rm A/B/bar
+rm A/B/baz
+rm A/B/C/foo
+rm A/B/C/bar
+rm A/B/C/baz
+rd A/B/C
+rd A/B
+log
+index l1
+exit

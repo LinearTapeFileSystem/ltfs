@@ -1,0 +1,77 @@
+index J0
+touch A1/B1/C1/c 
+echo "some " > A1/B1/b
+md A1/B2 A1/B3
+tree
+index J1
+#Case 1. Deleting a file
+#        step 1: delete /A1/B1/b 
+rm A1/B1/b
+tree
+index J2
+#Case 2. Adding data to a file, and rename the file 
+#        step 1: adding data at end of existing file /A1/B1/b
+#        step 2: rename the file b to b.NEW
+echo data >> A1/B1/b
+mv A1/B1/b A1/B1/b.NEW
+tree
+index J3
+#Case 3: 1. Deleting a file (file UID: XXX), 
+#           and create a new file with same name (file UID: YYY)    
+touch foo
+ls
+rm foo
+touch foo
+ls
+index J4
+rm foo
+#Case 4. Creating a new file with same name, after renaming the original one
+#        step 1: rename file b to b.bak
+#        step 2: create a new file as b
+touch b
+mv b b.bak
+touch b
+ls
+index J5
+#Case 5. Moving whole subdirectory to another location
+#        step 1: move directory B1 under directory B2
+tree
+mv A1/B1 A1/B2/B1
+tree
+index J6
+#Case 6. Moving a file to other location, following by moving its parent 
+# directory to different location (or move a subdirectory first, and then 
+# move a file inside the subdirectory to other location).
+#        step 1: move file /A1/B1/C1/c to B2 (now it becomes /A1/B2/c)
+#        step 2: move directory B1 (not including c) under B3
+#     or, 
+#        step 1: move directory B1 under B3
+#        step 2: move file c in /A1/B3/B1/C1 directory to B2
+md A1/B1/C1 A1/B3
+touch A1/B1/C1/c
+tree
+index XY
+mv A1/B1/C1/c A1/B2
+mv A1/B1 A1/B3
+tree -o
+log
+index J7
+#Case 7. Moving a file more than once
+#        step 1: move file b to directory B2
+#        step 2: move the same file (/A1/B2/b) to B3
+mv b /A1/B2
+ll
+ls /A1/B2
+mv /A1/B2/b A1/B3
+ll /A1/B2
+ls /A1/B3  
+tree
+index J8
+#Case 8. Create a file and delete it within an interval
+#        step 1: delete file c
+#        step 2: create file c in /A1/B1/C
+touch c
+rm c
+ll
+index J9
+exit

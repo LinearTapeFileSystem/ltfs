@@ -1,0 +1,35 @@
+index t7-0
+touch asdf/foo asdf/bar
+rm asdf/foo
+rm asdf/bar
+# asdf has deleted files foo and bar
+ll asdf
+rd asdf
+ll
+# asdf is deleted
+md asdf
+ll
+# asdf is recreated, has a different oid (so is different directory)
+ll asdf
+rd asdf
+# asdf is deleted again
+ll
+touch qwer/baz qwer/bar
+# qwer is created, contains only bar and baz
+ll
+ll qwer
+tree -o
+mv qwer asdf
+# qwer (with bar and baz) is moved to deleted asdf, asdf has new oid
+ll
+# qwer is now deleted, asdf is recreated (share same oid)
+ll asdf
+# asdf should contain bar, baz
+md qwer
+# qwer is recreated, gets new oid so is different directory
+ll
+ll asdf
+ll qwer
+tree -o
+index t7-1
+exit
