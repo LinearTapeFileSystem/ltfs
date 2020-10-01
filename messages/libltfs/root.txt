@@ -807,6 +807,7 @@ v
 		17263I:string { "Sleep was failed while taking the advisory lock '%s' (%d, %d)." }
 		17264W:string { "Index on %s is newer but MAM shows a permanent write error happened on %s." }
 		17265I:string { "Skip writing index because %s." }
+		17266I:string { "Skip to set append only mode because the drive doesn't seem to support it." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 
