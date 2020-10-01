@@ -19,7 +19,9 @@ sequentially in the same execution of fssim, then creates a full index
 from the result.  The resulting full index should exactly match the 
 corresponding full index from fssim.
 
-The programs were written by David Pease at IBM's Almaden Research Center in May-August of 2018, and significantly revised and improved by the original author (now retired) in September of 2020.
+The programs were written by David Pease at IBM's Almaden Research Center in 
+May-August of 2018, and significantly revised and improved by the original 
+author (now retired) in September of 2020.
 
 Invoking the programs:
 ======================
