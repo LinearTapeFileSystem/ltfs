@@ -1,0 +1,8 @@
+index t6-0
+md Dir1
+touch Dir2/Dir3/foo Dir2/Dir3/bar
+index t6-1
+touch Dir2/Dir3/baz
+rd Dir1
+index t6-2
+exit

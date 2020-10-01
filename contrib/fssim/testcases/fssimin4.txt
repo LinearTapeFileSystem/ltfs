@@ -1,0 +1,7 @@
+index t4-0
+touch asdf/foo
+rm asdf/foo
+rd asdf
+index t4-1
+exit
+

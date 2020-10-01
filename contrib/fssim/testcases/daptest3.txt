@@ -1,0 +1,10 @@
+index t0
+touch foo
+echo "Hi" > bar
+ll
+log
+mv bar foo
+ll
+log
+index t1
+exit

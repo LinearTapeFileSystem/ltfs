@@ -1,0 +1,18 @@
+index t8-0
+touch asdf/foo asdf/bar
+index t8-1
+# index t8-1 contains asdf with both foo and bar
+rm asdf/foo
+rm asdf/bar
+rd asdf
+# remove foo and bar, and directory asdf
+touch asdf
+#recreate asdf as a file
+rm asdf
+# now remove asdf
+md asdf
+# and recreate asdf as a directory again
+index t8-2
+tree
+exit
+

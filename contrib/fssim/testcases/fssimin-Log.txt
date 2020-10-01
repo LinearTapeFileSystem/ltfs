@@ -1,0 +1,14 @@
+index l0
+touch A/D/bar
+touch A/B/C/foo
+echo "Hello world!" > A/B/C/foo
+cd /A/B/C
+cp foo /
+cd
+rm A/B/C/foo
+rm foo
+echo "foo!" > foo
+log
+log -t
+index l1
+exit

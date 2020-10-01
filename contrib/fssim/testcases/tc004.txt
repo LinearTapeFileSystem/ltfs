@@ -1,0 +1,34 @@
+mkdir /DB0
+mkdir /DB1/DB2/DB3/DB4/DB5/DB6/DB7/DB8/DB9/DB10
+index initial_tc004
+mv /DB1/DB2                    /DB0
+mv /DB0/DB2/DB3                /DB1
+mv /DB1/DB3/DB4                /DB0/DB2
+mv /DB0/DB2/DB4/DB5            /DB1/DB3
+mv /DB1/DB3/DB5/DB6            /DB0/DB2/DB4
+mv /DB0/DB2/DB4/DB6/DB7        /DB1/DB3/DB5
+mv /DB1/DB3/DB5/DB7/DB8        /DB0/DB2/DB4/DB6
+mv /DB0/DB2/DB4/DB6/DB8/DB9    /DB1/DB3/DB5/DB7
+mv /DB1/DB3/DB5/DB7/DB9/DB10   /DB0/DB2/DB4/DB6/DB8
+mv /DB0                        /DA1
+mv /DA1/DB2                    /DA1/DA2
+mv /DA1/DA2/DB4                /DA1/DA2/DA3
+mv /DA1/DA2/DA3/DB6            /DA1/DA2/DA3/DA4
+mv /DA1/DA2/DA3/DA4/DB8        /DA1/DA2/DA3/DA4/DA5
+mv /DA1/DA2/DA3/DA4/DA5/DB10   /DA1/DA2/DA3/DA4/DA5/DA6
+mv /DB1/DB3/DB5/DB7/DB9        /DB1/DB3/DB5/DB7/DB1
+mv /DB1/DB3/DB5/DB7            /DB1/DB3/DB5/DB2
+mv /DB1/DB3/DB5                /DB1/DB3/DB3
+mv /DB1/DB3                    /DB1/DB4
+mv /DB1                        /DB5
+tree
+rmdir /DA1/DA2/DA3/DA4/DA5/DA6
+rmdir /DA1/DA2/DA3/DA4/DA5
+rmdir /DA1/DA2/DA3/DA4
+rmdir /DA1/DA2/DA3
+rmdir /DB5/DB4/DB3/DB2/DB1
+rmdir /DB5/DB4/DB3/DB2
+rmdir /DB5/DB4/DB3
+tree
+index shuffle_remove_tc004
+exit

@@ -1,0 +1,63 @@
+index -f t10-0
+#  /A
+#    |_ /B
+#    |   |_ n1
+#    |_ n2
+#    |_ n3
+#  /C
+#    |_ n4
+#    |_ n5
+#  /n1
+#  /D
+#  /E
+#   
+touch /A/B/n1 /A/n2 /A/n3 /C/n4 /C/n5 n1
+mkdir D E
+tree
+index -i t10-1
+fsck
+#  1. Delete /A/B/n1
+#      Rename the directory /C to /A/B/n1
+rm /A/B/n1
+mv /C /A/B/n1
+tree -o
+index -i t10-2
+fsck
+#  2. Append data data to /A/B/n1
+#      Delete /A/B/n1
+#      Rename file /n1 to /A/B/n1
+touch /A/B/n1
+rm /A/B/n1
+mv n1 /A/B/n1
+tree -o
+index -i t10-3
+fsck
+#  3. Delete /E
+#      Rename /D to /E
+rd E
+mv D E
+tree 
+index -i t10-4
+fsck   
+#  4. Append data to /A/B/n1
+#      Rename /A/B/n1 to /A/n1
+#      Delete /A/B
+#      Rename /C to /A/B
+#      Move back /A/n1 to the new directory under /A/B
+md C
+touch /A/B/n1
+mv A/B/n1 A/n1
+rd A/B
+mv C /A/B
+mv n1 /A/B
+tree
+log 
+index t10-5
+fsck
+#  5. Delete /n1
+#      Create a new non-empty file /n1
+#      Delete /n1 again
+#      Create an empty file /n1
+
+exit
+

@@ -1,0 +1,9 @@
+index q0
+touch a/b/c/foo
+index q1
+touch a/b/c/foo
+touch a/b/c
+touch a/b
+log
+index q2
+exit
