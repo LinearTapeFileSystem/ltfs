@@ -365,8 +365,8 @@ Windows 10 (or earlier, using Cygwin).
  
 ## Final Comments
 
-The _oid_s in the files and directories correspond to the _fileuid_ in LTFS.
-Initially I did not believe that _oid_s (and thus _fileuid_s) were important
+The _oidsi_ in the files and directories correspond to the _fileuid_ in LTFS.
+Initially I did not believe that _oids_ (and thus _fileuids_) were important
 to processing incremental indexes.  It turns out that I was wrong, and that
 a unique identifier for an object is important to the correct application
 of an incremental index in one important case.  Timestamps are the last 
