@@ -365,7 +365,7 @@ Windows 10 (or earlier, using Cygwin).
  
 ## Final Comments
 
-The _oidsi_ in the files and directories correspond to the _fileuid_ in LTFS.
+The _oids_ in the files and directories correspond to the _fileuid_ in LTFS.
 Initially I did not believe that _oids_ (and thus _fileuids_) were important
 to processing incremental indexes.  It turns out that I was wrong, and that
 a unique identifier for an object is important to the correct application
