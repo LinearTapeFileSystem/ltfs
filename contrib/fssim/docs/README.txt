@@ -110,7 +110,7 @@ cls               - clear the screen (tested in Linux terminal window)
 cp    [-r] name name - copy a file from one name to another; with -r option,
                     copy directory contents recursively
 dir   [-a] [name] - an alias for ls
-echo  [data] [{>|>>} name] - write data to the screen or to a file
+echo  data [{>|>>} name] - write data to the screen or to a file
 fsck              - verify that all object flags have been correctly reset 
 index [{-i|-f}] fileprefix - write full and/or incremental indexes to files 
                     using names prefixed with the specified prefix (see below)

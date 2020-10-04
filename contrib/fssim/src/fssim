@@ -326,7 +326,7 @@ cmdTable = {
    "dir":   (0, 1, ls, "[-a] [name]  - alias for ls"),
    "ll":    (0, 1, ll, "[name]       - alias for ls -a (ls with all info)"),
    "tree":  (0, 0, tr, "[-o]         - show a tree view of the file system"),
-   "echo":  (1, 20,ec, "[data] [>|>> name] - write data to screen or file"),
+   "echo":  (1, 20,ec, "data [>|>> name] - write data to screen or file"),
    "cat":   (1, 1, ct, "name         - write a file's contents to the screen"),
    "cls":   (0, 0, cl, "             - clear the screen"),
    "index": (1, 1, ix, "[-f|-i] fileprefix - write full and/or incr indexes"),
