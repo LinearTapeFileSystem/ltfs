@@ -1578,14 +1578,23 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 
 		if (vol->ip_coh.count < vol->dp_coh.count) {
 			if (vollock != PWE_MAM_IP && vollock != PWE_MAM) {
-				ltfsmsg(LTFS_WARN, 17264W, "DP", vl_print);
-				tape_takedump_drive(vol->device, false);
+				/*
+				 * The index on DP is newer but MAM shows write perm doesn't happen in IP.
+				 * If LTFS failed to write IP with non-medium reason error (like cable pull on locate)
+				 * while write error handling at DP in the previous session, this condition would happen.
+				 */
+				ltfsmsg(LTFS_INFO, 17264I, "DP", vl_print);
 			}
 			seekpos.partition = ltfs_part_id2num(vol->label->partid_dp, vol);
 			seekpos.block = vol->dp_coh.set_id;
 		} else {
 			if (vollock != PWE_MAM_DP && vollock != PWE_MAM) {
-				ltfsmsg(LTFS_WARN, 17264W, "IP", vl_print);
+				/*
+				 * The index on IP is newer but MAM shows write perm doesn't happen in DP.
+				 * LTFS already have written an index on DP when it is writing an index on IP,
+				 * so this condition wouldn't happen logically.
+				 */
+				ltfsmsg(LTFS_INFO, 17264I, "IP", vl_print);
 				tape_takedump_drive(vol->device, false);
 			}
 			seekpos.partition = ltfs_part_id2num(vol->label->partid_ip, vol);
