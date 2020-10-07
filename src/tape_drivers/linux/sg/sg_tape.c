@@ -761,9 +761,10 @@ static int _reconnect_device(void *device)
 	ret = ioctl(priv->dev.fd, SG_GET_RESERVED_SIZE, &reserved_size);
 	if (ret < 0) {
 		/* Just print the log */
-		ltfsmsg(LTFS_ERR, 30284E, priv->drive_serial);
+		ltfsmsg(LTFS_INFO, 30284I, priv->drive_serial);
+	} else {
+		ltfsmsg(LTFS_INFO, 30285I, priv->drive_serial, reserved_size);
 	}
-	ltfsmsg(LTFS_INFO, 30285I, priv->drive_serial, reserved_size);
 
 	increment_openfactor(priv->info.host, priv->info.channel);
 
