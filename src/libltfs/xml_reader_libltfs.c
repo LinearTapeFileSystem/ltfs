@@ -126,7 +126,7 @@ static int decode_entry_name(char **new_name, const char *name)
 				tmp_name[j+1] = buf_decode[0];
 				tmp_name[j+2] = buf_decode[1];
 				j+=2;
-				ltfsmsg(LTFS_ERR, 17256I, name);
+				ltfsmsg(LTFS_INFO, 17256I, name);
 			}
 
 			i+=2;
@@ -145,7 +145,7 @@ static int decode_entry_name(char **new_name, const char *name)
 		 */
 		if (tmp_name[j] == '/' || tmp_name[j] == 0x1f) {
 			tmp_name[j] = '_';
-			ltfsmsg(LTFS_ERR, 17257I, name);
+			ltfsmsg(LTFS_INFO, 17257I, name);
 		}
 
 		j++;
