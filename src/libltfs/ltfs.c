@@ -2272,7 +2272,6 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	struct ltfs_timespec modtime_old = { .tv_sec = 0, .tv_nsec = 0 };
 	bool generation_inc = false;
 	struct tc_position physical_selfptr;
-	bool immed = false;
 	char *cache_path_save = NULL;
 	bool write_perm = (strcmp(reason, SYNC_WRITE_PERM) == 0);
 	bool update_vollock = false;
@@ -2445,24 +2444,6 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	ret = xml_schema_to_tape(reason, vol);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 11083E, ret);
-		if (generation_inc) {
-			vol->index->mod_time = modtime_old;
-			--vol->index->generation;
-		}
-		vol->index->backptr = old_backptr;
-		vol->index->selfptr = old_selfptr;
-
-		if (IS_WRITE_PERM(-ret))
-			update_vollock = true;
-
-		goto out_write_perm;
-	}
-
-	/* WFM immed @ format */
-	immed = (strcmp(reason, SYNC_FORMAT) == 0);
-	ret = tape_write_filemark(vol->device, 1, true, true, immed);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 11084E, ret);
 		if (generation_inc) {
 			vol->index->mod_time = modtime_old;
 			--vol->index->generation;
