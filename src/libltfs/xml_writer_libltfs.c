@@ -824,6 +824,7 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 	xmlTextWriterPtr writer;
 	struct xml_output_tape *out_ctx;
 	char *creator = NULL;
+	bool immed = false;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(reason, -LTFS_NULL_ARG);
@@ -887,14 +888,26 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 		xmlFreeTextWriter(writer); /* close callback is called from here */
 
 		if (out_ctx->err_code || out_ctx->errno_fd) {
+			/* Error happens while writing down the index on tape */
 			if (out_ctx->err_code) ret = out_ctx->err_code;
 			else if (out_ctx->errno_fd) ret = out_ctx->errno_fd;
 
 			if (out_ctx->fd >= 0)
 				xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, true);
 		} else {
-			if (vol->index_cache_path)
-				_commit_offset_caches(vol->index_cache_path, vol->index);
+			/* New index is successfully sent to the internal buffer of tape drive */
+			immed = (strcmp(reason, SYNC_FORMAT) == 0); /* Use immediate write FM only at format */
+			ret = tape_write_filemark(vol->device, 1, true, true, immed);
+			if (!ret) {
+				/*
+				 * All buffered data, new index and following FM is written on tape correctly.
+				 * It's time to unveil the offset cache and sync cache to other programs.
+				 */
+				if (vol->index_cache_path)
+					_commit_offset_caches(vol->index_cache_path, vol->index);
+			} else {
+				ltfsmsg(LTFS_ERR, 11084E, ret);
+			}
 
 			if (out_ctx->fd >= 0)
 				xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, false);
