@@ -89,7 +89,7 @@ root:table {
 		30247I:string { "No alternate device is found for drive %s." }
 		30248I:string { "Drive serial is not matched. Actual: %s, Expected %s." }
 		30249I:string { "Opening another path for drive %s on %s." }
-		30250I:string { "Opened SCSI tape device %d.%d.%d.%d (%s)." }
+		30250I:string { "Opened the SCSI tape device %d.%d.%d.%d (%s)." }
 		30251I:string { "Logical block protection is enabled." }
 		30252I:string { "Logical block protection is disabled." }
 		30253I:string { "Saving drive dump to %s." }
@@ -116,16 +116,16 @@ root:table {
 		30274I:string { "Pseudo-error on %s." }
 		30275I:string { "Pseudo-error on write. Good return code, but a record to emulate a write error did not get sent to the drive." }
 		30276I:string { "Raw capacity info of partition %d (%llu - %llu) %s." }
-		30277W:string { "Detect ENOMEM in ioctl() call. Wait 3 secs and retry (%d)." }
-		30278I:string { "Retrying %s operation at (%u, %llu)." }
-		30279I:string { "Retrying %s operation at (%u, %llu) with skip back, because the command was already executed (%u, %llu)." }
+		30277W:string { "Detect ENOMEM in ioctl() call. Wait 3 seconds and retry (%d)." }
+		30278I:string { "Retrying the %s operation at (%u, %llu)." }
+		30279I:string { "Retrying the %s operation at (%u, %llu) with skip back, because the command was already run (%u, %llu)." }
 		30280W:string { "Unexpected current position for %s operation (%d). (%u, %llu), (%u, %llu) ." }
 		30281W:string { "Position confirmation for %s operation retry is failed (%d). (%u, %llu), (%u, %llu)." }
-		30282W:string { "Unexpected position after skip back for %s operation. (%u, %llu), (%u, %llu)." }
+		30282W:string { "Unexpected position after skip back for a %s operation. (%u, %llu), (%u, %llu)." }
 		30283W:string { "Skip back for %s operation is failed (%d). (%u, %llu), (%u, %llu)." }
-		30284I:string { "Cannot get reserved buffer size of %s." }
-		30285I:string { "Reserved buffer size of %s is %d." }
-		30286I:string { "Failed to get cartridge status. The cartridge is not loaded." }
+		30284I:string { "Cannot get the reserved buffer size of %s." }
+		30285I:string { "The reserved buffer size of %s is %d." }
+		30286I:string { "Failed to get the cartridge status. The cartridge is not loaded." }
 		30287I:string { "Received an unknown sense code %06x." }
 		30288I:string { "Opening a tape device for drive serial %s." }
 		30289I:string { "Cannot fetch the reservation key (%s, %d)." }
