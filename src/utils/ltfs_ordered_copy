@@ -368,7 +368,8 @@ if len(args.SOURCE) == 0:
     for line in sys.stdin:
         args.SOURCE.append(line.rstrip('\r\n'))
     logger.log(NOTSET + 1, 'Source: {}'.format(args.SOURCE))
-else:
+
+if args.keep_tree is None:
     args.keep_tree = ''
 
 # Create the list of copy item
