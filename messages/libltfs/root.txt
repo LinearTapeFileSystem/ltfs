@@ -437,10 +437,10 @@ root:table {
 		11340I:string { "Revalidation process is successfully done. (%s)" }
 		//unused 11341E:string { "Failed to update the volume lock status to %d (%d)." }
 		11342E:string { "Failed to get the volume lock status (%d)." }
-		11343I:string { "Try to write an index on IP on %s because of an permanent write error on DP." }
-		11344I:string { "Tape %s is frozen successfully because of an permanent write error on DP." }
-		11345E:string { "Failed to freeze tape %s because permanent write errors on IP and DP." }
-		11346E:string { "Tape %s is frozen by the previous index on the tape. Some metadata will be lost at unmount operation." }
+		11343I:string { "Try to write an index on the IP on %s because of a permanent write error on the DP.." }
+		11344I:string { "Tape %s is frozen successfully because of a permanent write error on the DP." }
+		11345E:string { "Failed to freeze tape %s because of permanent write errors on the IP and DP." }
+		11346E:string { "Tape %s is frozen by the previous index on the tape. Some metadata will be lost during the unmount operation." }
 
 		// Message IDs 11400 through 11800 are allocated to the libchanger.
 		// DO NOT add messages with those IDs to this file.
@@ -798,16 +798,16 @@ v
 		17253E:string { "Cannot get tape parameters: %s (%d)." }
 		17254E:string { "This cartridge cannot be reformatted in the drive (0x%02x, %d)." }
 		17255I:string { "Cannot open %s cache for sync (%d)." }
-		17256I:string { "Unexpected character is existed into decoded name object (%s): Revert to the encoded character" }
-		17257I:string { "0x2f (/) or 0x1f (US) is existed into name object (%s): Replace to '_'" }
-		17258E:string { "Critical error happened while parsing an index (%d). Stop seeking the latest index." }
+		17256I:string { "An unexpected character exists in the decoded name object (%s). Revert to the encoded character." }
+		17257I:string { "0x2f (/) or 0x1f (US) exists in name object (%s): Replace it with '_'." }
+		17258E:string { "A critical error happened while parsing an index (%d). Stop seeking the latest index." }
 		17259I:string { "Recover an index on %s from (%c, %llu)." }
 		17260I:string { "Sleep was interrupted by a signal while taking the advisory lock '%s'." }
-		17261I:string { "Kernel detected a false deadlock retry to acquire the advisory lock '%s' (%d)." }
-		17263I:string { "Sleep was failed while taking the advisory lock '%s' (%d, %d)." }
-		17264I:string { "Index on %s is newer but MAM shows a permanent write error happened on %s." }
-		17265I:string { "Skip writing index because %s." }
-		17266I:string { "Skip to set append only mode because the drive doesn't seem to support it." }
+		17261I:string { "The kernel detected a false deadlock retry to acquire the advisory lock '%s' (%d)." }
+		17263I:string { "Sleep failed while taking the advisory lock '%s' (%d, %d)." }
+		17264I:string { "The index on %s is newer, but MAM shows a permanent write error happened on %s." }
+		17265I:string { "Skip writing the index because of %s." }
+		17266I:string { "Skip setting the append only mode because the drive doesn't seem to support it." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 
