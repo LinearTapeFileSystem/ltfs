@@ -83,20 +83,24 @@ These instructions will get you a copy of the project up and running on your loc
 
 ## Supported Tape Drives
 
-  | Vendor | Drive Type | Minimum F/W Level |
-  |:-:     |:-:         |:-:                |
-  | IBM    | LTO5       | B170              |
-  | IBM    | LTO6       | None              |
-  | IBM    | LTO7       | None              |
-  | IBM    | LTO8       | HB81              |
-  | IBM    | TS1140     | 3694              |
-  | IBM    | TS1150     | None              |
-  | IBM    | TS1155     | None              |
-  | IBM    | TS1160     | None              |
-  | HP     | LTO5       | T.B.D.            |
-  | HP     | LTO6       | T.B.D.            |
-  | HP     | LTO7       | T.B.D.            |
-  | HP     | LTO8       | T.B.D.            |
+  | Vendor  | Drive Type              | Minimum F/W Level |
+  |:-------:|:-----------------------:|:-----------------:|
+  | IBM     | LTO5                    | B170              |
+  | IBM     | LTO6                    | None              |
+  | IBM     | LTO7                    | None              |
+  | IBM     | LTO8                    | HB81              |
+  | IBM     | TS1140                  | 3694              |
+  | IBM     | TS1150                  | None              |
+  | IBM     | TS1155                  | None              |
+  | IBM     | TS1160                  | None              |
+  | HP      | LTO5                    | T.B.D.            |
+  | HP      | LTO6                    | T.B.D.            |
+  | HP      | LTO7                    | T.B.D.            |
+  | HP      | LTO8                    | T.B.D.            |
+  | Quantum | LTO5 (Only Half Height) | T.B.D.            |
+  | Quantum | LTO6 (Only Half Height) | T.B.D.            |
+  | Quantum | LTO7 (Only Half Height) | T.B.D.            |
+  | Quantum | LTO8 (Only Half Height) | T.B.D.            |
 
 ## Installing
 
@@ -172,6 +176,16 @@ options lpfc lpfc_sg_seg_cnt=256
 ```
 
 In some versions of the lpfc driver (for Emulex Fibre HBAs), the table size of the scatter-gather cannot be changed correctly. You can check the value is changed or not in `sg_tablesize` value in `/proc/scsi/sg/debug`. If you don't have a correct value (256 or greater) in `sg_tablesize`, removing `allow_dio=1` configuration of the sg driver is strongly recommended.
+
+##### Note for buggy HBAs
+
+LTFS doesn't support the HBAs which doesn't handle the transfer length of SCSI data by default. The reason is because the safety of the data but LTFS provides a option to relax this limitation.
+
+You can use such kind of HBAs if you run the `configure` script with `--enable-buggy-ifs` option and build.
+
+List of the HBA `--enable-buggy-ifs` is needed is below.
+
+[HBA list require `--enable-buggy-ifs`](https://github.com/LinearTapeFileSystem/ltfs/wiki/HBA-info)
 
 #### IBM lin_tape driver support
 
