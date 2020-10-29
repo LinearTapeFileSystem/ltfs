@@ -220,7 +220,9 @@ class Progress:
         if self.logger.getEffectiveLevel() == INFO:
             logger.info("")
 
-def writer(logger, prog, q, success, fail):
+RESULT_LOCK = threading.Lock()
+
+def writer(logger, prog, q, r):
     while True:
         try:
             ci = q.popleft()
@@ -232,11 +234,14 @@ def writer(logger, prog, q, success, fail):
             exit(1)
 
         prog.update()
+
         result = ci.run()
-        if result:
-            success = success + 1
-        else:
-            fail = fail + 1
+
+        with RESULT_LOCK:
+            if result:
+                r[0] = r[0] + 1
+            else:
+                r[1] = r[1] + 1
 
 VEA_PREFIX=''
 LTFS_SIG_VEA='ltfs.softwareProduct'
@@ -411,13 +416,17 @@ prog_disk = Progress(logger, 'File copy from disk is on going', len(direct))
 if len(direct):
     logger.info("Copying on {} disk files with {} threads".format(len(direct), direct_write_threads))
     writers = []
+    result = [0, 0]
     for i in range(direct_write_threads):
-        th = threading.Thread(target = writer, args = ([logger, prog_disk, direct, success, fail]))
+        th = threading.Thread(target = writer, args = ([logger, prog_disk, direct, result]))
         writers.append(th)
         th.start()
 
     for th in writers:
         th.join()
+
+    success = result[0]
+    fail = result[1]
 
     prog_disk.finish()
 
