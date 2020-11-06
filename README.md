@@ -3,6 +3,10 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs/badge)](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs)
 [![BSD License](http://img.shields.io/badge/license-BSD-blue.svg?style=flat)](LICENSE)
 
+# About this branch
+
+This is the `master` branch of the LTFS project. At this time, this branch is used for version 2.5 development. So it wouldn't be stable a little. Please consider to follow the tree on `v2.4-stable` branch if you want to use stable codes.
+
 # Linear Tape File System (LTFS)
 
 Linear Tape File System (LTFS) is a filesystem to mount a LTFS formatted tape in a tape drive. Once LTFS mounts a LTFS formatted tape as filesystem, user can access to the tape via filesystem API.
