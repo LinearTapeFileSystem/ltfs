@@ -1268,7 +1268,7 @@ int sg_open(const char *devname, void **handle)
 				ret = DEVICE_GOOD;
 				break;
 			} else if (ret < 0) {
-				ltfsmsg(LTFS_INFO, 30289I, priv->devname);
+				ltfsmsg(LTFS_INFO, 30289I, priv->devname, ret);
 				close(priv->dev.fd);
 				priv->dev.fd = -1;
 				free(priv->devname);
@@ -1316,7 +1316,7 @@ int sg_open(const char *devname, void **handle)
 	ioctl(priv->dev.fd, SG_SET_RESERVED_SIZE, &reserved_size);
 	ret = ioctl(priv->dev.fd, SG_GET_RESERVED_SIZE, &reserved_size);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 30284E, devname);
+		ltfsmsg(LTFS_INFO, 30284I, devname);
 		goto free;
 	}
 	ltfsmsg(LTFS_INFO, 30285I, devname, reserved_size);

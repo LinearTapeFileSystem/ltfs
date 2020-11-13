@@ -1886,7 +1886,6 @@ int ltfs_unmount(char *reason, struct ltfs_volume *vol)
 	int ret;
 	cartridge_health_info h;
 	int vollock = UNLOCKED_MAM;
-	char *skip_reason = NULL;
 	char *mount_type = NULL;
 	char *mam_lock = NULL;
 
