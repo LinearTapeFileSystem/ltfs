@@ -279,7 +279,8 @@ int camtape_open(const char *devname, void **handle)
 	ltfsmsg(LTFS_INFO, 31229I, vendor);
 
 	/* Check the drive is supportable */
-	struct supported_device **cur = ibm_supported_drives;
+	softc->vendor = get_vendor_id(vendor);
+	struct supported_device **cur = get_supported_devs(softc->vendor);
 	while(*cur) {
 		if ((! strncmp((char*)softc->cd->inq_data.vendor, (*cur)->vendor_id,
 					   strlen((*cur)->vendor_id)) ) &&
@@ -294,12 +295,11 @@ int camtape_open(const char *devname, void **handle)
 	if (drive_type != DRIVE_UNSUPPORTED) {
 		softc->drive_type = drive_type;
 
-		/* Setup IBM tape specific parameters */
-		standard_table = standard_tape_errors;
-		vendor_table   = ibm_tape_errors;
-
-		/* Set specific timeout value based on drive type */
-		ibm_tape_init_timeout(&softc->timeouts, softc->drive_type);
+		/* Setup vendor specific parameters */
+		init_error_table(softc->vendor, &standard_table, &vendor_table);
+		init_timeout(softc->vendor, &softc->timeouts, softc->drive_type);
+		if (!softc->timeouts)
+			ibm_tape_init_timeout(&softc->timeouts, softc->drive_type);
 	} else {
 		ltfsmsg(LTFS_INFO, 31230I, softc->cd->inq_data.product);
 		close(softc->fd_sa);
@@ -313,7 +313,7 @@ int camtape_open(const char *devname, void **handle)
 	memcpy(softc->drive_serial, softc->cd->serial_num, softc->cd->serial_num_len);
 
 	ltfsmsg(LTFS_INFO, 31232I, softc->cd->inq_data.revision);
-	if (! ibm_tape_is_supported_firmware(softc->drive_type, (uint8_t *)softc->cd->inq_data.revision)) {
+	if (! drive_has_supported_fw(softc->vendor, softc->drive_type, (uint8_t *)softc->cd->inq_data.revision)) {
 		ltfsmsg(LTFS_INFO, 31230I, "firmware", softc->cd->inq_data.revision);
 		close(softc->fd_sa);
 		close_cd_pass_device(softc);
@@ -1136,13 +1136,21 @@ int camtape_load(void *device, struct tc_position *pos)
 	softc->cart_type = buf[2];
 	softc->density_code = buf[8];
 
+	if (softc->vendor == VENDOR_HP) {
+		softc->cart_type = assume_cart_type(softc->density_code);
+		if (buf[2] == 0x01)
+			softc->is_worm = true;
+	} else {
+		softc->cart_type = buf[2];
+	}
+
 	if (softc->cart_type == 0x00) {
 		ltfsmsg(LTFS_WARN, 31253W);
 		ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOAD));
 		return 0;
 	}
 
-	rc = ibm_tape_is_supported_tape(softc->cart_type, softc->density_code, &(softc->is_worm));
+	rc = is_supported_tape(softc->cart_type, softc->density_code, &(softc->is_worm));
 	if(rc == -LTFS_UNSUPPORTED_MEDIUM)
 		ltfsmsg(LTFS_INFO, 31255I, softc->cart_type, softc->density_code);
 
@@ -2363,13 +2371,18 @@ int camtape_set_default(void *device)
 	}
 
 	/* set logical block protection */
-	if (global_data.crc_checking) {
-		ltfsmsg(LTFS_DEBUG, 31392D, __FUNCTION__, "Setting LBP");
-		rc = camtape_set_lbp(device, true);
+	if (softc->vendor == VENDOR_IBM) {
+		if (global_data.crc_checking) {
+			ltfsmsg(LTFS_DEBUG, 31392D, __FUNCTION__, "Setting LBP");
+			rc = camtape_set_lbp(device, true);
+		} else {
+			ltfsmsg(LTFS_DEBUG, 31392D, __FUNCTION__, "Resetting LBP");
+			rc = camtape_set_lbp(device, false);
+		}
 	} else {
-		ltfsmsg(LTFS_DEBUG, 31392D, __FUNCTION__, "Resetting LBP");
-		rc = camtape_set_lbp(device, false);
+		rc = DEVICE_GOOD;
 	}
+
 	if (rc != DEVICE_GOOD)
 		goto bailout;
 

@@ -775,6 +775,9 @@ int camtape_takedump_drive(void *device, bool nonforced_dump)
 	struct camtape_data *softc = (struct camtape_data *)device;
 	unsigned char *serial = softc->drive_serial;
 
+	if (softc->vendor != VENDOR_IBM)
+		return 0;
+
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_TAKEDUMPDRV));
 	/* Make base filename */
 	time(&now);

@@ -382,6 +382,7 @@ struct camtape_data {
 	bool          loaded;            /**< Is cartridge loaded? */
 	bool          loadfailed;        /**< Is load/unload failed? */
 	unsigned char drive_serial[255]; /**< serial number of device */
+	int           vendor;            /**< drive vendor */
 	int           drive_type;        /**< device type */
 	int           itd_command_size;  /**< ITD sense conversion table size for commands */
 	struct itd_conversion_entry *itd_command; /**< ITD sense conversion table for commands */
