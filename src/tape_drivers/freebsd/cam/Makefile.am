@@ -41,8 +41,8 @@ BASENAMES = libtape-cam
 AM_LIBTOOLFLAGS = --tag=disable-static
 
 libtape_cam_la_SOURCES = cam_cmn.c cam_tc.c vendor_compat.c ibm_tape.c hp_tape.c quantum_tape.c
-libtape_cam_la_DEPENDENCIES = ../../../../messages/libtape_freebsd_cam_dat.a ../../../libltfs/libltfs.la libtape_cam_la-reed_solomon_crc.lo libtape_cam_la-crc32c_crc.lo libtape_cam_la-ibm_tape.lo
-libtape_cam_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_cam_la-reed_solomon_crc.lo ./libtape_cam_la-crc32c_crc.lo ./libtape_cam_la-ibm_tape.lo
+libtape_cam_la_DEPENDENCIES = ../../../../messages/libtape_freebsd_cam_dat.a ../../../libltfs/libltfs.la libtape_cam_la-reed_solomon_crc.lo libtape_cam_la-crc32c_crc.lo 
+libtape_cam_la_LIBADD = ../../../libltfs/libltfs.la ./libtape_cam_la-reed_solomon_crc.lo ./libtape_cam_la-crc32c_crc.lo 
 libtape_cam_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages -ltape_freebsd_cam_dat
 libtape_cam_la_CPPFLAGS = @AM_CPPFLAGS@ -I ../../.. -I ../..
 

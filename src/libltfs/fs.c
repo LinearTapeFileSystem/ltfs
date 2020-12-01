@@ -263,7 +263,7 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 		d->platform_safe_name = NULL;
 	} else if (name && !platform_safe_name) {
 		d->name.name = strdup(name);
-		update_platform_safe_name(d, FALSE, idx);
+		update_platform_safe_name(d, false, idx);
 		if (! d->name.name || ! d->platform_safe_name) {
 			ltfsmsg(LTFS_ERR, 10001E, "fs_allocate_dentry: name");
 			if (d->name.name)
