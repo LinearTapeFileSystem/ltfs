@@ -75,5 +75,6 @@ root:table {
 		13035D:string { "Waiting a broadcast signal." }
 		13036D:string { "Received a broadcast signal." }
 		13037D:string { "Flush all operation is finished." }
+		13038E:string { "Cannot capture dentry private in %s (%d)"}
 	}
 }

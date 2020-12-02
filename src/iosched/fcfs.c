@@ -118,7 +118,7 @@ int fcfs_open(const char *path, bool open_write, struct dentry **dentry, void *i
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
 
 	ret = ltfs_fsraw_open(path, open_write, dentry, priv->vol);
-	if (!ret)
+	if (ret == 0)
 		ltfs_fsraw_get_dentry(*dentry, priv->vol);
 
 	return ret;

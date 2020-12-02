@@ -223,6 +223,7 @@ struct unified_data {
 	 * or the corresponding request counters. Do not take the sched_lock or any dentry_priv lock
 	 * while holding this lock.
 	 */
+	bool did_writer_wake_up;         /**< Flag to show, writer already woke up by a signal or not */
 	ltfs_thread_mutex_t writer_lock;
 	ltfs_thread_cond_t  writer_cond; /**< Signal this variable when the writer thread starts to write blocks  */
 
@@ -477,7 +478,7 @@ int unified_open(const char *path, bool open_write, struct dentry **dentry, void
 
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_ENTER(REQ_IOS_OPEN));
 	ret = ltfs_fsraw_open(path, open_write, dentry, ((struct unified_data *)iosched_handle)->vol);
-	if (!ret) {
+	if (ret == 0) {
 		ret = _unified_get_dentry_priv(*dentry, NULL, priv);
 	}
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_OPEN));
@@ -494,9 +495,9 @@ int unified_open(const char *path, bool open_write, struct dentry **dentry, void
  */
 int unified_close(struct dentry *d, bool flush, void *iosched_handle)
 {
-	int write_error, ret = 0;
+	int write_error = 0, ret = 0;
 	struct unified_data *priv = iosched_handle;
-	struct dentry_priv *dpr;
+	struct dentry_priv *dpr = NULL;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
@@ -504,12 +505,20 @@ int unified_close(struct dentry *d, bool flush, void *iosched_handle)
 
 	acquireread_mrsw(&priv->lock);
 	ltfs_mutex_lock(&d->iosched_lock);
+
 	ret = _unified_get_dentry_priv(d, &dpr, priv);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 13038E, __FUNCTION__, ret);
+		goto out;
+	}
+
 	if (flush)
 		ret = _unified_flush_unlocked(d, priv);
 	write_error = _unified_get_write_error(d->iosched_priv);
+
 	_unified_put_dentry_priv(dpr, priv); /* Release DPR captured in this function */
 
+out:
 	ltfs_mutex_unlock(&d->iosched_lock);
 	releaseread_mrsw(&priv->lock);
 
@@ -518,6 +527,7 @@ int unified_close(struct dentry *d, bool flush, void *iosched_handle)
 	_unified_put_dentry_priv(dpr, priv); /* Release DPR captured in unified_open() */
 	ltfs_fsraw_close(d);
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_CLOSE));
+
 	return ret ? ret : write_error ? write_error : 0;
 }
 
@@ -564,6 +574,7 @@ ssize_t unified_read(struct dentry *d, char *buf, size_t size, off_t offset, voi
 		goto out;
 	releaseread_mrsw(&priv->vol->lock);
 
+	ltfs_mutex_lock(&d->iosched_lock);
 	_unified_get_dentry_priv(d, &dpr, priv);
 	if (! dpr) {
 		ltfs_mutex_unlock(&d->iosched_lock);
@@ -936,19 +947,18 @@ out:
 		/* It's undesirable to fail the write here, as we have no way to roll back the cache
 		 * to its previous state. There's no harm in ignoring revalidation errors at this point. */
 		if (err == 0) {
-            if (isupdatetime) {
-                acquirewrite_mrsw(&d->meta_lock);
-                get_current_timespec(&d->modify_time);
-                d->change_time = d->modify_time;
-                releasewrite_mrsw(&d->meta_lock);
-            }
+			if (isupdatetime) {
+				acquirewrite_mrsw(&d->meta_lock);
+				get_current_timespec(&d->modify_time);
+				d->change_time = d->modify_time;
+				releasewrite_mrsw(&d->meta_lock);
+			}
 			/* Don't set index dirty flag here. Will be set later by ltfs_fsraw_add_extent. */
 			releaseread_mrsw(&priv->vol->lock);
 		}
 	}
 	ltfs_mutex_unlock(&d->iosched_lock);
 	if (spare_cache) {
-		_unified_put_dentry_priv(dpr, priv);
 		_unified_cache_free(spare_cache, 0, priv);
 	}
 	releaseread_mrsw(&priv->lock);
@@ -1070,15 +1080,15 @@ int unified_truncate(struct dentry *d, off_t length, void *iosched_handle)
 		ltfs_mutex_lock(&dpr->io_lock);
 		ret = ltfs_fsraw_truncate(d, length, priv->vol);
 		ltfs_mutex_unlock(&dpr->io_lock);
+
+		_unified_put_dentry_priv(dpr, priv);
+	} else {
+		/* No corresponded DPR just call normal truncate */
+		ret = ltfs_fsraw_truncate(d, length, priv->vol);
 	}
 
 	ltfs_mutex_unlock(&d->iosched_lock);
 	releaseread_mrsw(&priv->lock);
-
-	if (dpr)
-		_unified_put_dentry_priv(dpr, priv);
-	else
-		ret = ltfs_fsraw_truncate(d, length, priv->vol);
 
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_TRUNCATE));
 	return ret;
@@ -1193,6 +1203,7 @@ ltfs_thread_return _unified_writer_thread(void *iosched_handle)
 		ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_ENTER(REQ_IOS_IOSCHED));
 		if (! priv->writer_keepalive) {
 			ltfs_thread_mutex_unlock(&priv->queue_lock);
+			priv->did_writer_wake_up = true;
 			ltfs_thread_cond_broadcast(&priv->writer_cond);
 			_unified_exit_all(priv);
 			_unified_process_queue(REQUEST_IP, priv);
@@ -1254,6 +1265,7 @@ void _unified_process_index_queue(struct unified_data *priv)
 	 * all queued requests are flushed to the drive once priv->lock is captured.
 	 */
 	ltfsmsg(LTFS_DEBUG3, 13034D, "IP");
+	priv->did_writer_wake_up = true;
 	ltfs_thread_cond_broadcast(&priv->writer_cond);
 	ltfs_thread_mutex_unlock(&priv->writer_lock);
 
@@ -1315,6 +1327,7 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 	 * all queued requests are flushed to the drive once priv->lock is captured.
 	 */
 	ltfsmsg(LTFS_DEBUG3, 13034D, "DP");
+	priv->did_writer_wake_up = true;
 	ltfs_thread_cond_broadcast(&priv->writer_cond);
 	ltfs_thread_mutex_unlock(&priv->writer_lock);
 
@@ -1475,7 +1488,7 @@ int _unified_get_dentry_priv(struct dentry *d,
 		ltfs_mutex_lock(&dpr->ref_lock);
 		dpr->numhandles++;
 		if (dentry_priv) {
-			*dentry_priv = d->iosched_priv;
+			*dentry_priv = dpr;
 		}
 		ltfsmsg(LTFS_DEBUG3, 13029D, "Inc", d->name.name, dpr->numhandles);
 		ltfs_mutex_unlock(&dpr->ref_lock);
@@ -1834,7 +1847,7 @@ void _unified_free_request(struct write_request *req, struct unified_data *priv)
 
 	if (dpr) {
 		ltfsmsg(LTFS_DEBUG3, 13032D, req);
-		_unified_put_dentry_priv(req->dpr, priv);
+		_unified_put_dentry_priv(dpr, priv);
 	} else {
 		ltfsmsg(LTFS_DEBUG, 13030D, __FUNCTION__, req);
 	}
@@ -1924,8 +1937,8 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
 	bool ip_state, struct write_request *req, struct dentry *d, struct unified_data *priv)
 {
 	int ret;
-	struct dentry_priv *dpr = NULL;
-	struct write_request *new_req = NULL;
+	struct dentry_priv *dpr;
+	struct write_request *new_req;
 	size_t copy_count;
 
 	if (! (*cache)) {
@@ -2260,39 +2273,37 @@ int _unified_flush_all(struct unified_data *priv)
 	ltfs_thread_mutex_lock(&priv->writer_lock);
 	acquirewrite_mrsw(&priv->lock);
 
-	if (! TAILQ_EMPTY(&priv->dp_queue)) {
-		TAILQ_FOREACH_SAFE(dpr, &priv->dp_queue, dp_queue, aux) {
-			ltfsmsg(LTFS_DEBUG, 13033D, "DP", dpr->dentry->platform_safe_name);
-			ltfs_mutex_lock(&dpr->dentry->iosched_lock);
-			ret = _unified_flush_unlocked(dpr->dentry, priv);
-			ltfs_mutex_unlock(&dpr->dentry->iosched_lock);
-			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, 13020E, dpr->dentry->platform_safe_name, ret);
-				releasewrite_mrsw(&priv->lock);
-				return ret;
-			}
-		}
-	} else {
+	/* First of all, test both are empty */
+	if (TAILQ_EMPTY(&priv->dp_queue) && TAILQ_EMPTY(&priv->working_set)) {
 		empty = true;
-	}
-
-	if (! TAILQ_EMPTY(&priv->working_set)) {
-		TAILQ_FOREACH_SAFE(dpr, &priv->working_set, working_set, aux) {
-			ltfsmsg(LTFS_DEBUG, 13033D, "WS", dpr->dentry->platform_safe_name);
-			ltfs_mutex_lock(&dpr->dentry->iosched_lock);
-			ret = _unified_flush_unlocked(dpr->dentry, priv);
-			ltfs_mutex_unlock(&dpr->dentry->iosched_lock);
-			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, 13020E, dpr->dentry->platform_safe_name, ret);
-				releasewrite_mrsw(&priv->lock);
-				return ret;
+	} else {
+		if (! TAILQ_EMPTY(&priv->dp_queue)) {
+			TAILQ_FOREACH_SAFE(dpr, &priv->dp_queue, dp_queue, aux) {
+				ltfsmsg(LTFS_DEBUG, 13033D, "DP", dpr->dentry->platform_safe_name);
+				ltfs_mutex_lock(&dpr->dentry->iosched_lock);
+				ret = _unified_flush_unlocked(dpr->dentry, priv);
+				ltfs_mutex_unlock(&dpr->dentry->iosched_lock);
+				if (ret < 0) {
+					ltfsmsg(LTFS_ERR, 13020E, dpr->dentry->platform_safe_name, ret);
+					releasewrite_mrsw(&priv->lock);
+					return ret;
+				}
 			}
 		}
-	} else {
-		if (empty)
-			empty = true;
-		else
-			empty = false;
+
+		if (! TAILQ_EMPTY(&priv->working_set)) {
+			TAILQ_FOREACH_SAFE(dpr, &priv->working_set, working_set, aux) {
+				ltfsmsg(LTFS_DEBUG, 13033D, "WS", dpr->dentry->platform_safe_name);
+				ltfs_mutex_lock(&dpr->dentry->iosched_lock);
+				ret = _unified_flush_unlocked(dpr->dentry, priv);
+				ltfs_mutex_unlock(&dpr->dentry->iosched_lock);
+				if (ret < 0) {
+					ltfsmsg(LTFS_ERR, 13020E, dpr->dentry->platform_safe_name, ret);
+					releasewrite_mrsw(&priv->lock);
+					return ret;
+				}
+			}
+		}
 	}
 
 	releasewrite_mrsw(&priv->lock);
@@ -2303,7 +2314,9 @@ int _unified_flush_all(struct unified_data *priv)
 		 * the writer thread shall hold priv->lock.
 		 */
 		ltfsmsg(LTFS_DEBUG2, 13035D);
-		ltfs_thread_cond_wait(&priv->writer_cond, &priv->writer_lock);
+		priv->did_writer_wake_up = false;
+		while (!priv->did_writer_wake_up)
+			ltfs_thread_cond_wait(&priv->writer_cond, &priv->writer_lock);
 		ltfs_thread_mutex_unlock(&priv->writer_lock);
 		ltfsmsg(LTFS_DEBUG3, 13036D);
 
