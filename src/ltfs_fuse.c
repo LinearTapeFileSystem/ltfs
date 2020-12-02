@@ -162,7 +162,7 @@ static void _free_file_info(struct file_info *fi)
  * @return File handle information, or NULL if memory allocation failed or if 'priv' is NULL.
  */
 static struct file_info *_file_open(const char *path, void *d, struct file_info *spare,
-	struct ltfs_fuse_data *priv)
+									struct ltfs_fuse_data *priv)
 {
 	struct file_info *fi = NULL;
 	CHECK_ARG_NULL(priv, NULL);
