@@ -257,6 +257,7 @@
 #define LTFS_TAPE_REMOVED         1198  /* The tape is already removed */
 #define LTFS_NEED_MOVE            1199  /* Need to move tape to a storage slot first before the operation */
 #define LTFS_NEED_START_OVER      1200  /* Need operation needs to be started again */
+#define LTFS_LOCATE_ERROR         1201  /* Locate returns write-perm error */
 
 #define LTFS_ERR_MAX              19999
 
