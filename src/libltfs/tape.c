@@ -851,6 +851,7 @@ int tape_seek_append_position(struct device_data *dev, tape_partition_t prt, boo
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 12033E, ret);
 		dev->write_error = true;
+
 		return ret;
 	}
 
@@ -996,7 +997,7 @@ int tape_rewind(struct device_data *dev)
  */
 int tape_seek(struct device_data *dev, struct tc_position *pos)
 {
-	int ret;
+	int ret = 0;
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(pos, -LTFS_NULL_ARG);
@@ -1016,8 +1017,14 @@ int tape_seek(struct device_data *dev, struct tc_position *pos)
 			ltfs_mutex_unlock(&dev->read_only_flag_mutex);
 		}
 	}
-	else {
-		ret = 0;
+
+	if (IS_WRITE_PERM(-ret)) {
+		/*
+		 * LOCATE command must not return a WRITE_PERM related error.
+		 * LOCATE is actually read operation, it doesn't make sense to return a WRITE_PERM at all.
+		 */
+		ltfsmsg(LTFS_ERR, 17267E, ret, -LTFS_LOCATE_ERROR);
+		ret = -LTFS_LOCATE_ERROR;
 	}
 
 	if (ret == 0 && (dev->position.partition != pos->partition ||
@@ -1051,6 +1058,14 @@ int tape_seek_eod(struct device_data *dev, tape_partition_t partition)
 	ret = dev->backend->locate(dev->backend_data, seekpos, &dev->position);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 12039E, ret);
+		if (IS_WRITE_PERM(-ret)) {
+			/*
+			 * LOCATE command must not return a WRITE_PERM related error.
+			 * LOCATE is actually read operation, it doesn't make sense to return a WRITE_PERM at all.
+			 */
+			ltfsmsg(LTFS_ERR, 17267E, ret, -LTFS_LOCATE_ERROR);
+			ret = -LTFS_LOCATE_ERROR;
+		}
 		return ret;
 	}
 
@@ -1547,6 +1562,14 @@ int tape_unformat(struct device_data *dev)
 	ret = dev->backend->locate(dev->backend_data, bom, &dev->position);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 12054E, ret);
+		if (IS_WRITE_PERM(-ret)) {
+			/*
+			 * LOCATE command must not return a WRITE_PERM related error.
+			 * LOCATE is actually read operation, it doesn't make sense to return a WRITE_PERM at all.
+			 */
+			ltfsmsg(LTFS_ERR, 17267E, ret, -LTFS_LOCATE_ERROR);
+			ret = -LTFS_LOCATE_ERROR;
+		}
 		return ret;
 	}
 
