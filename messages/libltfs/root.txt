@@ -808,6 +808,7 @@ v
 		17264I:string { "The index on %s is newer, but MAM shows a permanent write error happened on %s." }
 		17265I:string { "Skip writing the index because of %s." }
 		17266I:string { "Skip setting the append only mode because the drive doesn't seem to support it." }
+		17267E:string { "Locate command returns write-perm error (%d). Replace a return code to %d." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 
