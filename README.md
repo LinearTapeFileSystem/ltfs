@@ -115,6 +115,8 @@ make install
 
 `./configure --help` shows various options for build and install.
 
+In some systems, you might need `sudo ldconfig -v` after `make install` to load the shared libraries correctly.
+
 #### Parameter settings of the sg driver
 
 LTFS uses the sg driver by default. You can improve reliability to change parameters of the sg driver below.
@@ -208,16 +210,15 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
   | Ubuntu 16.04 LTS                  | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
   | Ubuntu 18.04 LTS                  | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master)|
   | Ubuntu 18.04 LTS                  | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
-  | Ubuntu 19.10 (Need icu-config)    | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2019.10%20Build%20Job/badge.svg?branch=master)|
   | Ubuntu 20.04 LTS (Need icu-config)| x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2020.04%20Build%20Job/badge.svg?branch=master)|
   | Debian 9                          | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)|
   | Debian 10 (Need icu-config)       | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian10%20Build%20Job/badge.svg?branch=master)|
-  | ArchLinux 2018.08.01              | x86_64  | OK          |
-  | ArchLinux 2018.12.31 (rolling)    | x86_64  | OK          |
+  | ArchLinux 2018.08.01              | x86_64  | Not checked automatically |
+  | ArchLinux 2018.12.31 (rolling)    | x86_64  | Not checked automatically|
 
 Currently, automatic build checking is working on GitHub Actions and Travis CI.
 
-For Ubuntu19.10, Ubuntu20.04 and Debian10, dummy `icu-config` is needed in the build machine. See Issue [#153](https://github.com/LinearTapeFileSystem/ltfs/issues/153).
+For Ubuntu20.04 and Debian10, dummy `icu-config` is needed in the build machine. See Issue [#153](https://github.com/LinearTapeFileSystem/ltfs/issues/153).
 
 ### Build and install on OSX (macOS)
 
