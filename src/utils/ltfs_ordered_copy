@@ -338,6 +338,12 @@ if args.recursive == False and len(args.SOURCE) == 1:
     logger.log(NOTSET + 1, 'Single file copy')
     if os.path.isfile(args.SOURCE[0]):
         try:
+            if len(args.keep_tree):
+                dst = args.DEST + '/' + args.SOURCE[0][len(args.keep_tree):]
+                args.DEST = os.path.normpath(dst)
+                (new_d, t) = os.path.split(dst)
+                if not os.path.exists(new_d):
+                    os.makedirs(new_d)
             shutil.copy(args.SOURCE[0], args.DEST)
         except Exception as e:
             logger.error(str(e))
