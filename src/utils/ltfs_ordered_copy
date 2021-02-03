@@ -267,7 +267,7 @@ logger_debug    = 6
 parser = argparse.ArgumentParser(description = 'Copy files from source to destination with LTFS order optimization')
 parser.add_argument('SOURCE', help='source files', nargs='*')
 parser.add_argument('DEST', help='destination', nargs='?')
-parser.add_argument('-p', help='preserve attributes with shutil.copy2()', action='store_true')
+parser.add_argument('-p', help='preserve attributes with shutil.copy2(). Ignored if destination does not support xattr', action='store_true')
 parser.add_argument('-r', '--recursive', help='copy directories recursively', action='store_true')
 parser.add_argument('-t', '--target-directory', help='copy all SOURCE arguments into TARGET_DIRECTORY')
 #parser.add_argument('-z', '--zero', help='handle NULL delimited source list (assume input \'find -print0\')', action='store_true')
@@ -359,9 +359,12 @@ try:
     else:
         logger.info("Destination {0} is not LTFS\n".format(args.DEST))
 except IOError as e:
-    if e.errno != 61 and e.errno != 93: # Not ENODATA, ENOATTR
+    if e.errno != 61 and e.errno != 93 and e.errno != 95: # Not ENODATA, ENOATTR, EOPNOTSUPP
         logger.error('Check destination (I/O):' + str(e))
         exit(2)
+    if e.errno == 95 and args.p:
+        logger.warning("{0} does not support xattr. Cannot use -p. Attributes will not be preserved during copy.".format(args.DEST))
+        args.p = False
     logger.warning("Destination {0} is not LTFS".format(args.DEST))
 except Exception as e:
     logger.error('Check destination:' + str(e))
