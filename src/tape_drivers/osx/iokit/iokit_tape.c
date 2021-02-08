@@ -1980,12 +1980,24 @@ int iokit_load(void *device, struct tc_position *pos)
 
 	priv->density_code = buf[8];
 
-	if (priv->vendor == VENDOR_HP) {
+	if (buf[2] == 0x00 || buf[2] == 0x01) {
+		/*
+		 * Non-IBM drive doesn't have cartridge type so need to assume from density code.
+		 */
 		priv->cart_type = assume_cart_type(priv->density_code);
 		if (buf[2] == 0x01)
 			priv->is_worm = true;
 	} else {
+		/*
+		 * IBM drive haves cartridge type in buf[2] like TC_MP_LTO5D_CART.
+		 */
 		priv->cart_type = buf[2];
+	}
+
+	if (priv->cart_type == 0x00) {
+		ltfsmsg(LTFS_WARN, 30871W);
+		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOAD));
+		return 0;
 	}
 
 	ret = is_supported_tape(priv->cart_type, priv->density_code, &(priv->is_worm));
