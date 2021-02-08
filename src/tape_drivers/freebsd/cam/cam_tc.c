@@ -1766,7 +1766,9 @@ int camtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 	int rc;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REMAINCAP));
-	if (IS_LTO(softc->drive_type) && (DRIVE_GEN(softc->drive_type) == 0x05)) {
+	if ((IS_LTO(softc->drive_type) && (DRIVE_GEN(softc->drive_type) == 0x05)) ||
+		(softc->vendor == VENDOR_HP && IS_LTO(softc->drive_type) && (DRIVE_GEN(softc->drive_type) == 0x06))) {
+
 		/* Issue LogPage 0x31 */
 		rc = camtape_logsense(device, LOG_TAPECAPACITY, logdata, LOGSENSEPAGE);
 		if (rc) {
