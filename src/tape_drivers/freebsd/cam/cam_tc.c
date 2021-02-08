@@ -1133,14 +1133,19 @@ int camtape_load(void *device, struct tc_position *pos)
 	softc->force_readperm  = DEFAULT_READPERM;
 	softc->write_counter = 0;
 	softc->read_counter = 0;
-	softc->cart_type = buf[2];
 	softc->density_code = buf[8];
 
-	if (softc->vendor == VENDOR_HP) {
-		softc->cart_type = assume_cart_type(softc->density_code);
+	if (buf[2] == 0x00 || buf[2] == 0x01) {
+		/*
+		 * Non-IBM drive doesn't have cartridge type so need to assume from density code.
+		 */
+		softc->cart_type = assume_cart_type(priv->density_code);
 		if (buf[2] == 0x01)
 			softc->is_worm = true;
 	} else {
+		/*
+		 * IBM drive haves cartridge type in buf[2] like TC_MP_LTO5D_CART.
+		 */
 		softc->cart_type = buf[2];
 	}
 
