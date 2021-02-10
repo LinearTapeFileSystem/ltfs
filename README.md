@@ -135,6 +135,8 @@ In RHEL7, you can put following file as `/etc/modprobe.d/sg.conf`.
 options sg def_reserved_size=1048576
 ```
 
+A reboot is required for these settings to take effect.
+
 You can check current configuration of sg driver to see the file `/proc/scsi/sg/debug` like
 
 ```
@@ -164,6 +166,8 @@ In RHEL7, you can put following file as `/etc/modprobe.d/sg.conf`.
 options sg allow_dio=1
 ```
 
+A reboot is required for these settings to take effect.
+
 At this time, we know following HBA's works correctly.
 
 - QLogic 8Gb FC HBAs
@@ -180,6 +184,8 @@ In the lpfc driver (for Emulex Fibre HBAs), the table size of the scatter-gather
 ```
 options lpfc lpfc_sg_seg_cnt=256
 ```
+
+A reboot is required for these settings to take effect.
 
 In some versions of the lpfc driver (for Emulex Fibre HBAs), the table size of the scatter-gather cannot be changed correctly. You can check the value is changed or not in `sg_tablesize` value in `/proc/scsi/sg/debug`. If you don't have a correct value (256 or greater) in `sg_tablesize`, removing `allow_dio=1` configuration of the sg driver is strongly recommended.
 
