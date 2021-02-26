@@ -116,6 +116,7 @@ root:table {
 		30869W:string { "The drive is already reserved: %s (%s)" }
 		30870I:string { "Failed to get the cartridge status. The cartridge is not loaded." }
 		30871W:string { "Failed to get medium type code: medium type check is skipped." }
+		30872I:string { "Setting up timeout values from %s." }
 
 		30992D:string { "Backend %s %s." }
 		30993D:string { "Backend %s: %d %s." }
@@ -124,8 +125,7 @@ root:table {
 		30996D:string { "Backend %s: %llu %s." }
 		30997D:string { "Backend %s: (%llu, %llu) %s." }
 		30998D:string { "Backend %s: (%llu, %llu) FM = %llu %s." }
-		30999I:string { "iokit backend options:\n"
-						"    -o devname=<dev>          tape device (default=%s)\n"
+		30999I:string { "iokit backend options:\n    -o devname=<dev>          tape device (default=%s)\n"
 						"    -o scsi_lbprotect=<on|off> enable drive logical block protection (default=off)\n." }
         }
 }

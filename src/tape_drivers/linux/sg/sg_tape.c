@@ -540,12 +540,12 @@ static int _raw_open(struct sg_data *priv)
 	ltfsmsg(LTFS_INFO, 30214I, id_data.product_rev);
 	ltfsmsg(LTFS_INFO, 30215I, priv->drive_serial);
 
-	snprintf(priv->info.name, TAPE_DEVNAME_LEN_MAX + 1, "%s", priv->devname);
-	snprintf(priv->info.vendor, TAPE_VENDOR_NAME_LEN_MAX + 1, "%s", id_data.vendor_id);
-	snprintf(priv->info.model, TAPE_MODEL_NAME_LEN_MAX + 1, "%s", id_data.product_id);
-	snprintf(priv->info.serial_number, TAPE_SERIAL_LEN_MAX + 1, "%s", id_data.unit_serial);
-	snprintf(priv->info.product_rev, PRODUCT_REV_LENGTH + 1, "%s", id_data.product_rev);
-	snprintf(priv->info.product_name, PRODUCT_NAME_LENGTH + 1, "%s", _generate_product_name(id_data.product_id));
+	strncpy(priv->info.name,          priv->devname,       TAPE_DEVNAME_LEN_MAX + 1);
+	strncpy(priv->info.vendor,        id_data.vendor_id,   TAPE_VENDOR_NAME_LEN_MAX + 1);
+	strncpy(priv->info.model,         id_data.product_id,  TAPE_MODEL_NAME_LEN_MAX + 1);
+	strncpy(priv->info.serial_number, id_data.unit_serial, TAPE_SERIAL_LEN_MAX + 1);
+	strncpy(priv->info.product_rev,   id_data.product_rev, PRODUCT_REV_LENGTH + 1);
+	strncpy(priv->info.product_name,  _generate_product_name(id_data.product_id), PRODUCT_NAME_LENGTH + 1);
 
 	return 0;
 }
@@ -1169,6 +1169,57 @@ start:
 	return ret;
 }
 
+/** SCSI command handling of REPORT SUPPORTED OPERATION CODES
+ */
+static int _cdb_rsoc(void* device, unsigned char *buf, uint32_t len)
+{
+	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
+	struct sg_data *priv = (struct sg_data*)device;
+
+	sg_io_hdr_t req;
+	unsigned char cdb[CDB12_LEN];
+	unsigned char sense[MAXSENSE];
+	int timeout = 60;
+	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "RSOC";
+	char *msg = NULL;
+
+	/* Zero out the CDB and the result buffer */
+	ret = init_sg_io_header(&req);
+	if (ret < 0)
+		return ret;
+
+	memset(cdb, 0, sizeof(cdb));
+	memset(buf, 0, len);
+	memset(sense, 0, sizeof(sense));
+
+	/* Build CDB */
+	cdb[0] = MAINTENANCE_IN;
+	cdb[1] = 0x0C; /* REPORT SUPPORTED OPERATION CODES */
+	cdb[2] = 0x80; /* Fetch all commands with RCTD */
+	ltfs_u32tobe(cdb + 6, len); /* allocation length */
+
+	/* Build request */
+	req.dxfer_direction = SCSI_FROM_TARGET_TO_INITIATOR;
+	req.cmd_len         = sizeof(cdb);
+	req.mx_sb_len       = sizeof(sense);
+	req.dxfer_len       = len;
+	req.dxferp          = buf;
+	req.cmdp            = cdb;
+	req.sbp             = sense;
+	req.timeout         = SGConversion(timeout);
+	req.usr_ptr         = (void *)cmd_desc;
+
+	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
+	if (ret < 0){
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
+	}
+
+	return ret;
+}
+
 /* Global functions */
 int sg_open(const char *devname, void **handle)
 {
@@ -1179,6 +1230,9 @@ int sg_open(const char *devname, void **handle)
 	struct open_order *order = NULL;
 
 	struct sg_data *priv;
+
+	unsigned char *rsoc_buf = NULL;
+	uint32_t rsoc_len = RSOC_BUF_SIZE;
 
 	CHECK_ARG_NULL(devname, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(handle, -LTFS_NULL_ARG);
@@ -1323,11 +1377,46 @@ int sg_open(const char *devname, void **handle)
 
 	increment_openfactor(priv->info.host, priv->info.channel);
 
-	/* Setup vendor specific parameters */
+	/* Setup error table sense to ltfs error code */
 	init_error_table(priv->vendor, &standard_table, &vendor_table);
-	init_timeout(priv->vendor, &priv->timeouts, priv->drive_type);
-	if (!priv->timeouts)
-		ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
+
+	/* Setup device specific timeout value */
+	rsoc_buf = calloc(1, RSOC_BUF_SIZE);
+	if (rsoc_buf) {
+		ret = _cdb_rsoc(&priv->dev, rsoc_buf, RSOC_BUF_SIZE);
+		rsoc_len = ltfs_betou32(rsoc_buf);
+		if (!ret && rsoc_len < RSOC_BUF_SIZE) {
+			ltfsmsg(LTFS_INFO, 30294I, "RSOC");
+			ret = init_timeout_rsoc(&priv->timeouts, rsoc_buf, rsoc_len);
+			if (!priv->timeouts)
+				ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
+		}
+
+		if (ret < 0) {
+			/*
+			 * The drive doesn't support RSOC, buffer overrun or parse error
+			 * try to initialize the timeout table from drive vendor and drive type
+			 */
+			ltfsmsg(LTFS_INFO, 30294I, "vendor and device");
+			ret = init_timeout(priv->vendor, &priv->timeouts, priv->drive_type);
+			if (!priv->timeouts) {
+				ltfsmsg(LTFS_INFO, 30294I, "device");
+				ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
+			}
+		}
+		free(rsoc_buf);
+	} else {
+		/*
+		 * Memory allocation failure, try to initialize the timeout table
+		 * from drive vendor and drive type
+		 */
+		ltfsmsg(LTFS_INFO, 30294I, "vendor and device");
+		init_timeout(priv->vendor, &priv->timeouts, priv->drive_type);
+		if (!priv->timeouts) {
+			ltfsmsg(LTFS_INFO, 30294I, "device");
+			ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
+		}
+	}
 
 	/* Issue TURs to clear POR sense */
 	_clear_por(priv);
@@ -4258,12 +4347,12 @@ int sg_get_device_list(struct tc_drive_info *buf, int count)
 		}
 
 		if (found < count && buf) {
-			snprintf(buf[found].name, TAPE_DEVNAME_LEN_MAX + 1, "%s", devname);
-			snprintf(buf[found].vendor, TAPE_VENDOR_NAME_LEN_MAX + 1, "%s", identifier.vendor_id);
-			snprintf(buf[found].model, TAPE_MODEL_NAME_LEN_MAX + 1, "%s", identifier.product_id);
-			snprintf(buf[found].serial_number, TAPE_SERIAL_LEN_MAX + 1, "%s", identifier.unit_serial);
-			snprintf(buf[found].product_rev, PRODUCT_REV_LENGTH + 1, "%s", identifier.product_rev);
-			snprintf(buf[found].product_name, PRODUCT_NAME_LENGTH + 1, "%s", _generate_product_name(identifier.product_id));
+			strncpy(buf[found].name,          devname,                TAPE_DEVNAME_LEN_MAX + 1);
+			strncpy(buf[found].vendor,        identifier.vendor_id,   TAPE_VENDOR_NAME_LEN_MAX + 1);
+			strncpy(buf[found].model,         identifier.product_id,  TAPE_MODEL_NAME_LEN_MAX + 1);
+			strncpy(buf[found].serial_number, identifier.unit_serial, TAPE_SERIAL_LEN_MAX + 1);
+			strncpy(buf[found].product_rev,   identifier.product_rev, PRODUCT_REV_LENGTH + 1);
+			strncpy(buf[found].product_name,  _generate_product_name(identifier.product_id), PRODUCT_NAME_LENGTH + 1);
 
 			if (! ioctl(dev.fd, SG_GET_SCSI_ID, &scsi_id)) {
 				buf[found].host    = scsi_id.host_no;

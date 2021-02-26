@@ -483,7 +483,7 @@ fi
 
 if test "x$warning_as_error" = "xyes"
 then
-    AM_CFLAGS="${AM_CFLAGS} -Werror"
+    AM_CFLAGS="${AM_CFLAGS} -Werror -Wno-deprecated-declarations"
 fi
 
 if test "x$use_new_locking" = "xyes"
@@ -517,6 +517,11 @@ then
     if test ${GCC_VERSION_MAJOR} -ge 4 -a ${GCC_VERSION_MINOR} -ge 3
     then
         SSE42=yes
+    fi
+
+    if test ${GCC_VERSION_MAJOR} -ge 8 -a ${GCC_VERSION_MINOR} -ge 0 -a "x$warning_as_error" = "xyes"
+    then
+        AM_CFLAGS="${AM_CFLAGS} -Wno-stringop-truncation"
     fi
 
     if test "x${SSE42}" = "xyes"

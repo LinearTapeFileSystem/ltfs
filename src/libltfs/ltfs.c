@@ -2285,7 +2285,7 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		return ret;
 	}
 
-	if (vol->label->barcode[0] == ' ' || vol->label->barcode == NULL)
+	if (vol->label->barcode[0] == ' ' || vol->label->barcode[0] == '\0')
 		bc_print = LTFS_NO_BARCODE;
 	else
 		bc_print = vol->label->barcode;
@@ -3398,7 +3398,7 @@ start:
 		releaseread_mrsw(&vol->lock);
 
 	if (dirty) {
-		if (vol->label->barcode[0] == ' ' || vol->label->barcode == NULL)
+		if (vol->label->barcode[0] == ' ' || vol->label->barcode[0] == '\0')
 			bc_print = LTFS_NO_BARCODE;
 		else
 			bc_print = vol->label->barcode;

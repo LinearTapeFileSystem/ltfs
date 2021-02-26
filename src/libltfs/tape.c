@@ -1819,9 +1819,8 @@ int tape_get_media_pool_info(struct ltfs_volume *vol, char **media_name, char **
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
-	if (vol->t_attr->media_pool) {
-		len = strlen(vol->t_attr->media_pool);
-	}
+	vol->t_attr->media_pool[TC_MAM_MEDIA_POOL_SIZE] = '\0'; /* Add a sentinel */
+	len = strlen(vol->t_attr->media_pool);
 
 	if (len == 0)
 		return -1;
