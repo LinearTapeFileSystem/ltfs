@@ -329,17 +329,21 @@ int ltfs_fuse_statfs(const char *path, struct statvfs *buf)
 	stats->f_bfree = blockstat.remaining_dp;        /* Remaining tape capacity */
 	stats->f_bavail = stats->f_bfree;               /* Blocks available for normal user (ignored) */
 
-	stats->f_files = UINT64_MAX;
-	stats->f_ffree = UINT64_MAX - ltfs_get_file_count(priv->data);
+#ifdef __APPLE__
+	stats->f_files = UINT_MAX;
+	stats->f_ffree = UINT_MAX - ltfs_get_file_count(priv->data);
 	memcpy(buf, stats, sizeof(struct statvfs));
 
-#ifdef __APPLE__
 	/* With MacFUSE, we use an f_frsize not equal to the file system block size.
 	 * Need to adjust the block counts so they're in units of the reported f_frsize. */
 	double scale = ltfs_get_blocksize(priv->data) / (double)stats->f_frsize;
 	buf->f_blocks *= scale;
 	buf->f_bfree  *= scale;
 	buf->f_bavail *= scale;
+#else
+	stats->f_files = UINT64_MAX;
+	stats->f_ffree = UINT64_MAX - ltfs_get_file_count(priv->data);
+	memcpy(buf, stats, sizeof(struct statvfs));
 #endif /* __APPLE__ */
 
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_STATFS), 0, 0);

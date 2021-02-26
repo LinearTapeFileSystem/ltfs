@@ -428,6 +428,39 @@ int init_timeout(int vendor, struct timeout_tape **table, int type)
 	return ret;
 }
 
+int init_timeout_rsoc(struct timeout_tape **table, unsigned char *buf, uint32_t len)
+{
+	int entries = len / RSOC_ENT_SIZE;
+	int modulo  = len % RSOC_ENT_SIZE;
+	int i = 0, offset = 0;
+	int op_code, timeout;
+	struct timeout_tape *entry, *out = NULL;
+
+	if (modulo) {
+		/* Descriptor length is invalid */
+		return -EDEV_INVALID_ARG;
+	}
+
+	HASH_CLEAR(hh, *table);
+
+	for (i = 0; i < entries; i++) {
+		offset  = RSOC_HEADER_SIZE + (RSOC_ENT_SIZE * i);
+		op_code = (int)(*((unsigned char *)(buf + offset)));
+		timeout = (int)(ltfs_betou32(buf + offset + RSOC_RECOM_TO_OFFSET));
+
+		out = NULL;
+		HASH_FIND_INT(*table, &op_code, out);
+		if (!out) {
+			entry = malloc(sizeof(struct timeout_tape));
+			entry->op_code = op_code;
+			entry->timeout = timeout;
+			HASH_ADD_INT(*table, op_code, entry);
+		}
+	}
+
+	return 0;
+}
+
 void destroy_timeout(struct timeout_tape** table)
 {
 	struct timeout_tape *entry, *tmp;

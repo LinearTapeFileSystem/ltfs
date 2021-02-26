@@ -56,12 +56,19 @@ extern "C" {
 
 #ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
+#elif defined(__APPLE__)
+#include <time.h>
+typedef time_t ltfs_time_t;
+struct ltfs_timespec {
+	ltfs_time_t tv_sec;
+	long        tv_nsec;
+};
 #else
 #include <time.h>
-typedef int64_t	ltfs_time_t;
+typedef int64_t ltfs_time_t;
 struct ltfs_timespec {
-	ltfs_time_t	tv_sec;
-	long		tv_nsec;
+	ltfs_time_t tv_sec;
+	long        tv_nsec;
 };
 #endif
 
