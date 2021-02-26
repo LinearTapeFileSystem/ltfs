@@ -909,7 +909,7 @@ int iokit_open(const char *devname, void **handle)
 		ret = _cdb_rsoc(&priv->dev, rsoc_buf, RSOC_BUF_SIZE);
 		rsoc_len = ltfs_betou32(rsoc_buf);
 		if (!ret && rsoc_len < RSOC_BUF_SIZE) {
-			ltfsmsg(LTFS_INFO, 30294I, "RSOC");
+			ltfsmsg(LTFS_INFO, 30872I, "RSOC");
 			ret = init_timeout_rsoc(&priv->timeouts, rsoc_buf, rsoc_len);
 		}
 
@@ -918,10 +918,10 @@ int iokit_open(const char *devname, void **handle)
 			 * The drive doesn't support RSOC, buffer overrun or parse error
 			 * try to initialize the timeout table from drive vendor and drive type
 			 */
-			ltfsmsg(LTFS_INFO, 30294I, "vendor and device");
+			ltfsmsg(LTFS_INFO, 30872I, "vendor and device");
 			ret = init_timeout(priv->vendor, &priv->timeouts, priv->drive_type);
 			if (!priv->timeouts) {
-				ltfsmsg(LTFS_INFO, 30294I, "device");
+				ltfsmsg(LTFS_INFO, 30872I, "device");
 				ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
 			}
 		}
@@ -931,10 +931,10 @@ int iokit_open(const char *devname, void **handle)
 		 * Memory allocation failure, try to initialize the timeout table
 		 * from drive vendor and drive type
 		 */
-		ltfsmsg(LTFS_INFO, 30294I, "vendor and device");
+		ltfsmsg(LTFS_INFO, 30872I, "vendor and device");
 		init_timeout(priv->vendor, &priv->timeouts, priv->drive_type);
 		if (!priv->timeouts) {
-			ltfsmsg(LTFS_INFO, 30294I, "device");
+			ltfsmsg(LTFS_INFO, 30872I, "device");
 			ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
 		}
 	}
@@ -2610,7 +2610,7 @@ int iokit_reserve(void *device)
 	int count = 0;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RESERVEUNIT));
-	ltfsmsg(LTFS_DEBUG, 30392D, "reserve (PRO)", priv->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30992D, "reserve (PRO)", priv->drive_serial);
 
 start:
 	ret = _cdb_pro(device, PRO_ACT_RESERVE, PRO_TYPE_EXCLUSIVE,
@@ -2680,7 +2680,7 @@ int iokit_release(void *device)
 #else /* Use persistent reserve */
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RELEASEUNIT));
-	ltfsmsg(LTFS_DEBUG, 30392D, "release (PRO)", priv->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30992D, "release (PRO)", priv->drive_serial);
 
 	ret = _cdb_pro(device, PRO_ACT_RELEASE, PRO_TYPE_EXCLUSIVE,
 				   priv->key, NULL);

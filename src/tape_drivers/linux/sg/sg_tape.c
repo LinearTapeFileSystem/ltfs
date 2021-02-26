@@ -1386,7 +1386,7 @@ int sg_open(const char *devname, void **handle)
 		ret = _cdb_rsoc(&priv->dev, rsoc_buf, RSOC_BUF_SIZE);
 		rsoc_len = ltfs_betou32(rsoc_buf);
 		if (!ret && rsoc_len < RSOC_BUF_SIZE) {
-			ltfsmsg(LTFS_INFO, 30872I, "RSOC");
+			ltfsmsg(LTFS_INFO, 30294I, "RSOC");
 			ret = init_timeout_rsoc(&priv->timeouts, rsoc_buf, rsoc_len);
 			if (!priv->timeouts)
 				ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
@@ -1397,10 +1397,10 @@ int sg_open(const char *devname, void **handle)
 			 * The drive doesn't support RSOC, buffer overrun or parse error
 			 * try to initialize the timeout table from drive vendor and drive type
 			 */
-			ltfsmsg(LTFS_INFO, 30872I, "vendor and device");
+			ltfsmsg(LTFS_INFO, 30294I, "vendor and device");
 			ret = init_timeout(priv->vendor, &priv->timeouts, priv->drive_type);
 			if (!priv->timeouts) {
-				ltfsmsg(LTFS_INFO, 30872I, "device");
+				ltfsmsg(LTFS_INFO, 30294I, "device");
 				ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
 			}
 		}
@@ -1410,10 +1410,10 @@ int sg_open(const char *devname, void **handle)
 		 * Memory allocation failure, try to initialize the timeout table
 		 * from drive vendor and drive type
 		 */
-		ltfsmsg(LTFS_INFO, 30872I, "vendor and device");
+		ltfsmsg(LTFS_INFO, 30294I, "vendor and device");
 		init_timeout(priv->vendor, &priv->timeouts, priv->drive_type);
 		if (!priv->timeouts) {
-			ltfsmsg(LTFS_INFO, 30872I, "device");
+			ltfsmsg(LTFS_INFO, 30294I, "device");
 			ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
 		}
 	}
