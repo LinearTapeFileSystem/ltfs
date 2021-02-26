@@ -291,7 +291,12 @@ static void emulate_seek_wait(struct filedebug_data *state, struct tc_position *
 		dest->block % blocks_per_wrap :
 		blocks_per_wrap - (dest->block % blocks_per_wrap);
 
-	uint64_t distance = llabs(target_dist_from_bot - current_dist_from_bot);
+	uint64_t distance;
+	if (target_dist_from_bot > current_dist_from_bot)
+		distance = target_dist_from_bot - current_dist_from_bot;
+	else
+		distance = current_dist_from_bot - target_dist_from_bot;
+
 	float cost = ((float) state->conf.eot_to_bot_sec / blocks_per_wrap) * (distance-1.0);
 	time_t delay_us = 0;
 

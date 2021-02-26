@@ -69,6 +69,11 @@
 #define REDPOS_LONG_LEN           (32)
 #define REDPOS_EXT_LEN            (32)
 
+#define RSOC_BUF_SIZE             (4 * KB)
+#define RSOC_ENT_SIZE             (20)
+#define RSOC_HEADER_SIZE          (4)
+#define RSOC_RECOM_TO_OFFSET      (16)
+
 #ifndef MAXSENSE
 #define MAXSENSE                   (255)
 #endif
@@ -111,9 +116,9 @@ static inline int _sense2errorcode(uint32_t sense, struct error_table *table, ch
 
 	if ( (sense & 0xFFFF00) == 0x044000 )
 		sense = 0x044000;
-	else if ( (sense & 0xFFF000) == 0x048000 ) /* 04/8xxx in TS3100/TS3200 */
+	else if ( (sense & 0xFFFF00) == 0x048000 ) /* 04/8xxx in TS3100/TS3200 */
 		sense = 0x048000;
-	else if ( (sense & 0xFFF000) == 0x0B4100 ) /* 0B/41xx in TS2900 */
+	else if ( (sense & 0xFFFF00) == 0x0B4100 ) /* 0B/41xx in TS2900 */
 		sense = 0x0B4100;
 
 	if ( (sense & 0x00FF00) >= 0x008000 || (sense & 0x0000FF) >= 0x000080)

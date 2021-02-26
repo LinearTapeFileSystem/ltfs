@@ -133,6 +133,7 @@ root:table {
 		30291I:string { "Changer %s was reserved from this node and can be reserved from the current path." }
 		30292I:string { "Changer %s was reserved from this node but failed to reserve from the current path." }
 		30293I:string { "Changer %s was reserved from another node (%s)." }
+		30294I:string { "Setting up timeout values from %s." }
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }

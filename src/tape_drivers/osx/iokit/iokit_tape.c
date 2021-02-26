@@ -96,7 +96,10 @@ struct iokit_global_data global_data;
 #define LOG_PAGE_PARAM_OFFSET     (4)
 
 #define IOKIT_MAX_BLOCK_SIZE (1 * MB)
+
+#ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
 
 /* Forward references (For keep function order to struct tape_ops) */
 int iokit_readpos(void *device, struct tc_position *pos);
@@ -140,7 +143,6 @@ static inline int _parse_logPage(const unsigned char *logdata,
 		i += param_len + LOG_PAGE_PARAM_OFFSET;
 	}
 
-out:
 	return ret;
 }
 
@@ -731,6 +733,51 @@ start:
 	return ret;
 }
 
+/** SCSI command handling of REPORT SUPPORTED OPERATION CODES
+ */
+static int _cdb_rsoc(void* device, unsigned char *buf, uint32_t len)
+{
+	int ret = -EDEV_UNKNOWN;
+	struct iokit_data *priv = (struct iokit_data*)device;
+
+	struct iokit_scsi_request req;
+	unsigned char cdb[CDB12_LEN];
+	unsigned char sense[MAXSENSE];
+	int timeout = 60;
+	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "RSOC";
+	char *msg = NULL;
+
+	/* Zero out the CDB and the result buffer */
+	memset(cdb, 0, sizeof(cdb));
+	memset(&req, 0, sizeof(struct iokit_scsi_request));
+	memset(buf, 0, len);
+	memset(sense, 0, sizeof(sense));
+
+	/* Build CDB */
+	cdb[0] = MAINTENANCE_IN;
+	cdb[1] = 0x0C; /* REPORT SUPPORTED OPERATION CODES */
+	cdb[2] = 0x80; /* Fetch all commands with RCTD */
+	ltfs_u32tobe(cdb + 6, len); /* allocation length */
+
+	/* Build request */
+	req.dxfer_direction = SCSI_FROM_TARGET_TO_INITIATOR;
+	req.cmd_len         = sizeof(cdb);
+	req.mx_sb_len       = sizeof(SCSI_Sense_Data);
+	req.dxfer_len       = len;
+	req.dxferp          = buf;
+	req.cmdp            = cdb;
+	memset(&req.sense_buffer, 0, req.mx_sb_len);
+	req.timeout         = IOKitConversion(timeout);
+	req.desc            = cmd_desc;
+
+	ret = iokit_issue_cdb_command(&priv->dev, &req, &msg);
+	if (ret < 0){
+		_process_errors(device, ret, msg, cmd_desc, true);
+	}
+
+	return ret;
+}
+
 /* Global functions */
 int iokit_open(const char *devname, void **handle)
 {
@@ -741,6 +788,9 @@ int iokit_open(const char *devname, void **handle)
 
 	struct iokit_data *priv;
 	scsi_device_identifier id_data;
+
+	unsigned char *rsoc_buf = NULL;
+	uint32_t rsoc_len = RSOC_BUF_SIZE;
 
 	ltfsmsg(LTFS_INFO, 30810I, devname);
 
@@ -850,9 +900,44 @@ int iokit_open(const char *devname, void **handle)
 	priv->info.target  = 0;
 	priv->info.lun     = -1;
 
-	/* Setup vendor specific parameters */
+	/* Setup error table sense to ltfs error code */
 	init_error_table(priv->vendor, &standard_table, &vendor_table);
-	init_timeout(priv->vendor, &priv->timeouts, priv->drive_type);
+
+	/* Setup device specific timeout value */
+	rsoc_buf = calloc(1, RSOC_BUF_SIZE);
+	if (rsoc_buf) {
+		ret = _cdb_rsoc(&priv->dev, rsoc_buf, RSOC_BUF_SIZE);
+		rsoc_len = ltfs_betou32(rsoc_buf);
+		if (!ret && rsoc_len < RSOC_BUF_SIZE) {
+			ltfsmsg(LTFS_INFO, 30872I, "RSOC");
+			ret = init_timeout_rsoc(&priv->timeouts, rsoc_buf, rsoc_len);
+		}
+
+		if (ret < 0) {
+			/*
+			 * The drive doesn't support RSOC, buffer overrun or parse error
+			 * try to initialize the timeout table from drive vendor and drive type
+			 */
+			ltfsmsg(LTFS_INFO, 30872I, "vendor and device");
+			ret = init_timeout(priv->vendor, &priv->timeouts, priv->drive_type);
+			if (!priv->timeouts) {
+				ltfsmsg(LTFS_INFO, 30872I, "device");
+				ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
+			}
+		}
+		free(rsoc_buf);
+	} else {
+		/*
+		 * Memory allocation failure, try to initialize the timeout table
+		 * from drive vendor and drive type
+		 */
+		ltfsmsg(LTFS_INFO, 30872I, "vendor and device");
+		init_timeout(priv->vendor, &priv->timeouts, priv->drive_type);
+		if (!priv->timeouts) {
+			ltfsmsg(LTFS_INFO, 30872I, "device");
+			ibm_tape_init_timeout(&priv->timeouts, priv->drive_type);
+		}
+	}
 
 	/* Register reservation key */
 	ibm_tape_genkey(priv->key);
@@ -880,7 +965,6 @@ free:
 
 int iokit_reopen(const char *devname, void *device)
 {
-	char    *end;
 	int     drive_type = DRIVE_UNSUPPORTED;
 	int     ret = -EDEV_UNKNOWN;
 
@@ -931,7 +1015,7 @@ int iokit_reopen(const char *devname, void *device)
 		} else
 			priv->drive_type = drive_type;
 	} else {
-		ltfsmsg(LTFS_INFO, 30813I, id_data.product_id);
+		ltfsmsg(LTFS_INFO, 30813I, id_data.vendor_id, id_data.product_id);
 		iokit_release_exclusive_access(&priv->dev);
 		ret = -EDEV_DEVICE_UNSUPPORTABLE; /* Unsupported device */
 	}
@@ -1202,10 +1286,10 @@ static int _cdb_read(void *device, char *buf, size_t size, boolean_t sili)
 						 * In this case, LTFS will trust SCSI sense.
 						 */
 						if (diff_len < 0) {
-							ltfsmsg(LTFS_INFO, 30820I, diff_len, size - diff_len); // "Detect overrun condition"
+							ltfsmsg(LTFS_INFO, 30820I, diff_len, (int)(size - diff_len)); // "Detect overrun condition"
 							ret = -EDEV_OVERRUN;
 						} else {
-							ltfsmsg(LTFS_DEBUG, 30821D, diff_len, size - diff_len); // "Detect underrun condition"
+							ltfsmsg(LTFS_DEBUG, 30821D, diff_len, (int)(size - diff_len)); // "Detect underrun condition"
 							length = size - diff_len;
 							ret = DEVICE_GOOD;
 						}
@@ -1215,10 +1299,10 @@ static int _cdb_read(void *device, char *buf, size_t size, boolean_t sili)
 #endif
 					} else {
 						if (diff_len < 0) {
-							ltfsmsg(LTFS_INFO, 30820I, diff_len, size - diff_len); // "Detect overrun condition"
+							ltfsmsg(LTFS_INFO, 30820I, diff_len, (int)(size - diff_len)); // "Detect overrun condition"
 							ret = -EDEV_OVERRUN;
 						} else {
-							ltfsmsg(LTFS_DEBUG, 30821D, diff_len, size - diff_len); // "Detect underrun condition"
+							ltfsmsg(LTFS_DEBUG, 30821D, diff_len, (int)(size - diff_len)); // "Detect underrun condition"
 							length = size - diff_len;
 							ret = DEVICE_GOOD;
 						}
@@ -1301,7 +1385,8 @@ read_retry:
 			return ret;
 		}
 		goto read_retry;
-	} else if ( !(pos->block) && unusual_size && (ret == size || ret == -EDEV_FILEMARK_DETECTED) ) {
+	} else if ( !(pos->block) && unusual_size &&
+				(ret == (int32_t)size || ret == -EDEV_FILEMARK_DETECTED) ) {
 		/*
 		 *  Try to read again without sili bit, because some I/F doesn't support SILION read correctly
 		 *  like
@@ -1552,7 +1637,7 @@ int iokit_rewind(void *device, struct tc_position *pos)
 	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REWIND));
-	ltfsmsg(LTFS_DEBUG, 30997D, "rewind", 0, 0, priv->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30997D, "rewind", (unsigned long long)0, (unsigned long long)0, priv->drive_serial);
 
 	// Zero out the CDB and the result buffer
 	memset(cdb, 0, sizeof(cdb));
@@ -1615,7 +1700,7 @@ int iokit_locate(void *device, struct tc_position dest, struct tc_position *pos)
 	bool pc = false;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOCATE));
-	ltfsmsg(LTFS_DEBUG, 30997D, "locate", dest.partition, dest.block, priv->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30997D, "locate", (unsigned long long)dest.partition, dest.block, priv->drive_serial);
 
 	if (pos->partition != dest.partition) {
 		if (priv->clear_by_pc) {
@@ -1868,7 +1953,7 @@ int iokit_erase(void *device, struct tc_position *pos, bool long_erase)
 
 			if (IS_ENTERPRISE(priv->drive_type)) {
 				get_current_timespec(&ts_now);
-				ltfsmsg(LTFS_INFO, 30829I, (ts_now.tv_sec - ts_start.tv_sec)/60);
+				ltfsmsg(LTFS_INFO, 30829I, (int)((ts_now.tv_sec - ts_start.tv_sec)/60));
 			} else {
 				progress = ((uint32_t) sense_buf[16] & 0xFF) << 8;
 				progress += ((uint32_t) sense_buf[17] & 0xFF);
@@ -2281,7 +2366,7 @@ int iokit_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 		offset = (int)buf[0] + 1;
 		length = (int)buf[offset] + 1;
 
-		if (offset + length <= param_size) {
+		if ((uint32_t)(offset + length) <= param_size) {
 			cap->max_p1 = ltfs_betou32(&buf[offset + PARTITIOIN_REC_HEADER_LEN]);
 		}
 
@@ -2296,7 +2381,7 @@ int iokit_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 		offset = (int)buf[0] + 1;
 		length = (int)buf[offset] + 1;
 
-		if (offset + length <= param_size) {
+		if ((uint32_t)(offset + length) <= param_size) {
 			cap->remaining_p1 = ltfs_betou32(&buf[offset + PARTITIOIN_REC_HEADER_LEN]);
 		}
 
@@ -2525,7 +2610,7 @@ int iokit_reserve(void *device)
 	int count = 0;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RESERVEUNIT));
-	ltfsmsg(LTFS_DEBUG, 30392D, "reserve (PRO)", priv->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30992D, "reserve (PRO)", priv->drive_serial);
 
 start:
 	ret = _cdb_pro(device, PRO_ACT_RESERVE, PRO_TYPE_EXCLUSIVE,
@@ -2595,7 +2680,7 @@ int iokit_release(void *device)
 #else /* Use persistent reserve */
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RELEASEUNIT));
-	ltfsmsg(LTFS_DEBUG, 30392D, "release (PRO)", priv->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30992D, "release (PRO)", priv->drive_serial);
 
 	ret = _cdb_pro(device, PRO_ACT_RELEASE, PRO_TYPE_EXCLUSIVE,
 				   priv->key, NULL);
@@ -2752,7 +2837,7 @@ int iokit_read_attribute(void *device, const tape_partition_t part,
 	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READATTR));
-	ltfsmsg(LTFS_DEBUG3, 30997D, "readattr", (unsigned long)part, id, priv->drive_serial);
+	ltfsmsg(LTFS_DEBUG3, 30997D, "readattr", (unsigned long long)part, (unsigned long long)id, priv->drive_serial);
 
 	/* Prepare the buffer to transfer */
 	uint32_t len = size + 4;
@@ -2828,7 +2913,7 @@ int iokit_allow_overwrite(void *device, const struct tc_position pos)
 	char *msg = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ALLOWOVERW));
-	ltfsmsg(LTFS_DEBUG, 30997D, "allow overwrite", pos.partition, pos.block, priv->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 30997D, "allow overwrite", (unsigned long long)pos.partition, pos.block, priv->drive_serial);
 
 	// Zero out the CDB and the result buffer
 	memset(cdb, 0, sizeof(cdb));
@@ -3507,7 +3592,7 @@ int iokit_get_device_list(struct tc_drive_info *buf, int count)
 	int i, ret;
 	int found = 0;
 	int32_t devs = iokit_get_ssc_device_count();
-	uint32_t drive_type;
+	int drive_type;
 	scsi_device_identifier identifier;
 	struct iokit_device *iokit_device; // Pointer to device status structure
 
@@ -3526,7 +3611,7 @@ int iokit_get_device_list(struct tc_drive_info *buf, int count)
 				continue;
 			}
 			drive_type = iokit_get_drive_identifier(iokit_device, &identifier);
-			if (drive_type != -1) {
+			if (!drive_type) {
 				if (found < count && buf) {
 					snprintf(buf[i].name, TAPE_DEVNAME_LEN_MAX, "%d", i);
 					snprintf(buf[i].vendor, TAPE_VENDOR_NAME_LEN_MAX, "%s", identifier.vendor_id);
@@ -3956,7 +4041,6 @@ int iokit_get_keyalias(void *device, unsigned char **keyalias)
 free:
 	free(buffer);
 
-out:
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETKEYALIAS));
 	return ret;
 }
@@ -4142,7 +4226,7 @@ int iokit_get_block_in_buffer(void *device, uint32_t *block)
 		*block = (buf[5] << 16) + (buf[6] << 8) + (int)buf[7];
 
 		ltfsmsg(LTFS_DEBUG, 30998D, "blocks-in-buffer",
-				(unsigned long long) *block, 0, 0, priv->drive_serial);
+				(unsigned long long) *block, (unsigned long long)0, (unsigned long long)0, priv->drive_serial);
 	} else {
 		_process_errors(device, ret, msg, cmd_desc, true);
 	}
