@@ -2611,6 +2611,18 @@ out:
 	return ret;
 }
 
+int tape_logsense(struct device_data *dev, const uint8_t page, const uint8_t subpage,
+				  unsigned char *buf, const size_t size)
+{
+	int ret = -EDEV_UNKNOWN;
+
+	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
+
+	ret = dev->backend->logsense(dev->backend_data, page, subpage, buf, size);
+
+	return ret;
+}
+
 /**
  * Wait the drive goes to ready state
  * @param device handle to tape device

@@ -101,7 +101,8 @@ struct scsipi_ibmtape_global_data global_data;
 int scsipi_ibmtape_readpos(void *device, struct tc_position *pos);
 int scsipi_ibmtape_locate(void *device, struct tc_position dest, struct tc_position *pos);
 int scsipi_ibmtape_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_position *pos);
-int scsipi_ibmtape_logsense(void *device, const unsigned char page, unsigned char *buf, const size_t size);
+int scsipi_ibmtape_logsense(void *device, const uint8_t page, const uint8_t subpage,
+							unsigned char *buf, const size_t size);
 int scsipi_ibmtape_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
 						 const unsigned char subpage, unsigned char *buf, const size_t size);
 int scsipi_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size);
@@ -2576,7 +2577,7 @@ int scsipi_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *cap
 
 	if (IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) {
 		/* Use LogPage 0x31 */
-		ret = scsipi_ibmtape_logsense(device, (uint8_t)LOG_TAPECAPACITY, (void *)buffer, LOGSENSEPAGE);
+		ret = scsipi_ibmtape_logsense(device, (uint8_t)LOG_TAPECAPACITY, (uint8_t)0, (void *)buffer, LOGSENSEPAGE);
 		if(ret < 0)
 		{
 			ltfsmsg(LTFS_INFO, 30229I, LOG_VOLUMESTATS, ret);
@@ -2631,7 +2632,7 @@ int scsipi_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *cap
 		ret = DEVICE_GOOD;
 	} else {
 		/* Use LogPage 0x17 */
-		ret = scsipi_ibmtape_logsense(device, LOG_VOLUMESTATS, (void *)buffer, LOGSENSEPAGE);
+		ret = scsipi_ibmtape_logsense(device, LOG_VOLUMESTATS, (uint8_t)0, (void *)buffer, LOGSENSEPAGE);
 		if(ret < 0)
 		{
 			ltfsmsg(LTFS_INFO, 30229I, LOG_VOLUMESTATS, ret);
@@ -2700,8 +2701,8 @@ out:
 	return ret;
 }
 
-static int _cdb_logsense(void *device, const unsigned char page, const unsigned char subpage,
-						 unsigned char *buf, const size_t size)
+int scsipi_ibmtape_logsense(void *device, const uint8_t page, const uint8_t subpage,
+							unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
 	int ret_ep = DEVICE_GOOD;
@@ -2713,7 +2714,14 @@ static int _cdb_logsense(void *device, const unsigned char page, const unsigned 
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOGSENSE";
 	char *msg = NULL;
 
+	unsigned char *inner_buf = NULL;
+
+	ltfsmsg(LTFS_DEBUG3, 30397D, "logsense", page, subpage, priv->drive_serial);
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
+
+	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 1MB */
+	if (!inner_buf)
+		return -LTFS_NO_MEMORY;
 
 	/* Zero out the CDB and the result buffer */
 	ret = init_scsireq(&req);
@@ -2745,19 +2753,17 @@ static int _cdb_logsense(void *device, const unsigned char page, const unsigned 
 		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
 		if (ret_ep < 0)
 			ret = ret_ep;
+	} else {
+		if (size > req.datalen_used)
+			memcpy(buf, inner_buf, req.datalen_used);
+		else
+			memcpy(buf, inner_buf, size);
+
+		ret = req.datalen_used;
 	}
 
+	free (inner_buf);
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOGSENSE));
-
-	return ret;
-}
-
-int scsipi_ibmtape_logsense(void *device, const unsigned char page, unsigned char *buf, const size_t size)
-{
-	int ret = -EDEV_UNKNOWN;
-
-	ltfsmsg(LTFS_DEBUG3, 30393D, "logsense", page, "");
-	ret = _cdb_logsense(device, page, 0x00, buf, size);
 
 	return ret;
 }
@@ -3325,8 +3331,8 @@ int scsipi_ibmtape_get_cartridge_health(void *device, struct tc_cartridge_health
 
 	/* Issue LogPage 0x37 */
 	cart_health->tape_efficiency  = UNSUPPORTED_CARTRIDGE_HEALTH;
-	ret = scsipi_ibmtape_logsense(device, LOG_PERFORMANCE, logdata, LOGSENSEPAGE);
-	if (ret)
+	ret = scsipi_ibmtape_logsense(device, LOG_PERFORMANCE, (uint8_t)0, logdata, LOGSENSEPAGE);
+	if (ret < 0)
 		ltfsmsg(LTFS_INFO, 30234I, LOG_PERFORMANCE, ret, "get cart health");
 	else {
 		for(i = 0; i < (int)((sizeof(perfstats)/sizeof(perfstats[0]))); i++) {
@@ -3380,7 +3386,8 @@ int scsipi_ibmtape_get_cartridge_health(void *device, struct tc_cartridge_health
 	cart_health->read_mbytes      = UNSUPPORTED_CARTRIDGE_HEALTH;
 	cart_health->passes_begin     = UNSUPPORTED_CARTRIDGE_HEALTH;
 	cart_health->passes_middle    = UNSUPPORTED_CARTRIDGE_HEALTH;
-	ret = scsipi_ibmtape_logsense(device, LOG_VOLUMESTATS, logdata, LOGSENSEPAGE);
+
+	ret = scsipi_ibmtape_logsense(device, LOG_VOLUMESTATS, (uint8_t)0, logdata, LOGSENSEPAGE);
 	if (ret < 0)
 		ltfsmsg(LTFS_INFO, 30234I, LOG_VOLUMESTATS, ret, "get cart health");
 	else {
@@ -3476,10 +3483,11 @@ int scsipi_ibmtape_get_tape_alert(void *device, uint64_t *tape_alert)
 
 	/* Issue LogPage 0x2E */
 	ta = 0;
-	ret = scsipi_ibmtape_logsense(device, LOG_TAPE_ALERT, logdata, LOGSENSEPAGE);
+	ret = scsipi_ibmtape_logsense(device, LOG_TAPE_ALERT, (uint8_t)0, logdata, LOGSENSEPAGE);
 	if (ret < 0)
 		ltfsmsg(LTFS_INFO, 30234I, LOG_TAPE_ALERT, ret, "get tape alert");
 	else {
+		ret = 0;
 		for(i = 1; i <= 64; i++) {
 			if (_parse_logPage(logdata, (uint16_t) i, &param_size, buf, 16)
 				|| param_size != sizeof(uint8_t)) {
@@ -3532,11 +3540,12 @@ int scsipi_ibmtape_get_xattr(void *device, const char *name, char **buf)
 		if (priv->fetch_sec_acq_loss_w == 0 ||
 			((priv->fetch_sec_acq_loss_w + 60 < now.tv_sec) && priv->dirty_acq_loss_w))
 		{
-			ret = _cdb_logsense(device, LOG_PERFORMANCE, LOG_PERFORMANCE_CAPACITY_SUB, logdata, LOGSENSEPAGE);
+			ret = scsipi_ibmtape_logsense(device, LOG_PERFORMANCE, LOG_PERFORMANCE_CAPACITY_SUB, logdata, LOGSENSEPAGE);
 
 			if (ret < 0) {
 				ltfsmsg(LTFS_INFO, 30234I, LOG_PERFORMANCE, ret, "get xattr");
 			} else {
+				ret = 0;
 				if (_parse_logPage(logdata, PERF_ACTIVE_CQ_LOSS_W, &param_size, logbuf, 16)) {
 					ltfsmsg(LTFS_INFO, 30235I, LOG_PERFORMANCE,  "get xattr");
 					ret = -LTFS_NO_XATTR;
@@ -3782,8 +3791,8 @@ int scsipi_ibmtape_get_eod_status(void *device, int part)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETEODSTAT));
 
 	/* Issue LogPage 0x17 */
-	ret = scsipi_ibmtape_logsense(device, LOG_VOLUMESTATS, logdata, LOGSENSEPAGE);
-	if (ret) {
+	ret = scsipi_ibmtape_logsense(device, LOG_VOLUMESTATS, (uint8_t)0, logdata, LOGSENSEPAGE);
+	if (ret < 0) {
 		ltfsmsg(LTFS_WARN, 30237W, LOG_VOLUMESTATS, ret);
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETEODSTAT));
 		return EOD_UNKNOWN;

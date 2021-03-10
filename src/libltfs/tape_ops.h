@@ -581,6 +581,7 @@ struct tape_ops {
 
 	/**
 	 * Get capacity data from a device.
+	 *
 	 * @param device Device handle returned by the backend's open().
 	 * @param cap On success, the backend must fill this structure with the total and remaining
 	 *            capacity values of the two partitions on the medium, in units of 1048576 bytes.
@@ -590,16 +591,17 @@ struct tape_ops {
 
 	/**
 	 * Send a SCSI Log Sense command to a device.
-	 * libltfs does not currently use this function, but it may be useful internally (for example,
-	 * ibmtape uses it from its remaining_capacity() function).
+	 *
 	 * @param device Device handle returned by the backend's open().
 	 * @param page Log page to query.
+	 * @param subpage Specify the sub page of the log page to query.
 	 * @param buf On success, the backend must fill this buffer with the log page's value.
 	 * @param size Buffer size.
-	 * @return 0 on success or a negative value on error. Backends for which Log Sense is
+	 * @return Page length on success or a negative value on error. Backends for which Log Sense is
 	 *         meaningless should return -1.
 	 */
-	int   (*logsense)(void *device, const uint8_t page, unsigned char *buf, const size_t size);
+	int   (*logsense)(void *device, const uint8_t page, const uint8_t subpage,
+					  unsigned char *buf, const size_t size);
 
 	/**
 	 * Send a SCSI Mode Sense(10) command to a device.

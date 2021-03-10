@@ -857,7 +857,7 @@ int itdtimage_set_xattr(void *device, const char *name, const char *buf, size_t 
 	return -LTFS_NO_XATTR;
 }
 
-int itdtimage_logsense(void *device, const uint8_t page, unsigned char *buf, const size_t size)
+int itdtimage_logsense(void *device, const uint8_t page, const uint8_t subpage, unsigned char *buf, const size_t size)
 {
 	ltfsmsg(LTFS_ERR, 10007E, __FUNCTION__);
 	return -EDEV_UNSUPPORTED_FUNCTION;
