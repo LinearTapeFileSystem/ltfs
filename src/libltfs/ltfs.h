@@ -672,7 +672,6 @@ void ltfs_unset_index_dirty(bool update_version, struct ltfs_index *idx);
 int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol);
 int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, struct ltfs_volume *vol);
 
-
 char ltfs_dp_id(struct ltfs_volume *vol);
 char ltfs_ip_id(struct ltfs_volume *vol);
 const char *ltfs_get_volume_uuid(struct ltfs_volume *vol);
@@ -688,6 +687,8 @@ int ltfs_traverse_index_no_eod(struct ltfs_volume *vol, char partition, unsigned
 int ltfs_check_eod_status(struct ltfs_volume *vol);
 int ltfs_recover_eod(struct ltfs_volume *vol);
 int ltfs_release_medium(struct ltfs_volume *vol);
+int ltfs_logpage(const uint8_t page, const uint8_t subpage, unsigned char *buf,
+				 const size_t size, struct ltfs_volume *vol);
 int ltfs_wait_device_ready(struct ltfs_volume *vol);
 void ltfs_recover_eod_simple(struct ltfs_volume *vol);
 

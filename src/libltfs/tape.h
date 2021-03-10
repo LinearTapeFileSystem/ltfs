@@ -203,6 +203,8 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable);
 int tape_get_append_only_mode_setting(struct device_data *dev, bool *enabled);
 
 int tape_is_cartridge_loadable(struct device_data *dev);
+int tape_logsense(struct device_data *dev, const uint8_t page, const uint8_t subpage,
+				  unsigned char *buf, const size_t size);
 int tape_wait_device_ready(struct device_data *dev, void * const kmi_handle);
 int tape_set_key(struct device_data *dev, const unsigned char *keyalias, const unsigned char *key);
 int tape_clear_key(struct device_data *device, void * const kmi_handle);

@@ -1681,8 +1681,8 @@ bailout:
  */
 #define MAX_UINT16 (0x0000FFFF)
 
-int camtape_logsense_page(struct camtape_data *softc, const uint8_t page, const uint8_t subpage,
-						  unsigned char *buf, const size_t size)
+int camtape_logsense(struct camtape_data *softc, const uint8_t page, const uint8_t subpage,
+					 unsigned char *buf, const size_t size)
 {
 	int rc = DEVICE_GOOD;
 	char *msg = NULL;
@@ -1690,8 +1690,16 @@ int camtape_logsense_page(struct camtape_data *softc, const uint8_t page, const 
 	union ccb *ccb = NULL;
 	int timeout;
 
-	ltfsmsg(LTFS_DEBUG3, 31397D, "logsense", (unsigned long long)page, (unsigned long long)subpage,
-			softc->drive_serial);
+	unsigned int len = 0;
+	unsigned char *inner_buf = NULL;
+
+	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
+	ltfsmsg(LTFS_DEBUG3, 31397D, "logsense",
+			(unsigned long long)page, (unsigned long long)subpage, softc->drive_serial);
+
+	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 1MB */
+	if (!inner_buf)
+		return -LTFS_NO_MEMORY;
 
 	ccb = cam_getccb(softc->cd);
 	if (ccb == NULL) {
@@ -1717,8 +1725,8 @@ int camtape_logsense_page(struct camtape_data *softc, const uint8_t page, const 
 				   /*save_pages*/ 0,
 				   /*ppc*/ 0,
 				   /*paramptr*/ 0,
-				   /*param_buf*/ buf,
-				   /*param_len*/ size,
+				   /*param_buf*/ inner_buf,
+				   /*param_len*/ MAXLP_SIZE,
 				   /*sense_len*/ SSD_FULL_SIZE,
 				   /*timeout*/ timeout);
 	/*
@@ -1733,23 +1741,27 @@ int camtape_logsense_page(struct camtape_data *softc, const uint8_t page, const 
 
 	if (rc != DEVICE_GOOD)
 		camtape_process_errors(softc, rc, msg, "logsense page", true);
+	else {
+		len = ((int)inner_buf[2] << 8) + (int)inner_buf[3] + 4;
+
+		if (size > len)
+			memcpy(buf, inner_buf, len);
+		else
+			memcpy(buf, inner_buf, size);
+
+		rc = len;
+	}
 
 bailout:
+	if (inner_buf != NULL)
+		free(inner_buf);
+
 	if (ccb != NULL)
 		cam_freeccb(ccb);
 
-	return rc;
-}
-
-int camtape_logsense(void *device, const uint8_t page, unsigned char *buf, const size_t size)
-{
-	struct camtape_data *softc = (struct camtape_data *)device;
-	int ret = 0;
-
-	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
-	ret = camtape_logsense_page(softc, page, 0, buf, size);
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOGSENSE));
-	return ret;
+
+	return rc;
 }
 
 #define PARTITIOIN_REC_HEADER_LEN (4)
@@ -1768,8 +1780,8 @@ int camtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REMAINCAP));
 	if (IS_LTO(softc->drive_type) && (DRIVE_GEN(softc->drive_type) == 0x05)) {
 		/* Issue LogPage 0x31 */
-		rc = camtape_logsense(device, LOG_TAPECAPACITY, logdata, LOGSENSEPAGE);
-		if (rc) {
+		rc = camtape_logsense(device, LOG_TAPECAPACITY, (uint8_t)0, logdata, LOGSENSEPAGE);
+		if (rc < 0) {
 			ltfsmsg(LTFS_INFO, 31257I, LOG_TAPECAPACITY, rc);
 			ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
 			return rc;
@@ -1808,8 +1820,8 @@ int camtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 	}
 	else {
 		/* Issue LogPage 0x17 */
-		rc = camtape_logsense(device, LOG_VOLUMESTATS, logdata, LOGSENSEPAGE);
-		if (rc) {
+		rc = camtape_logsense(device, LOG_VOLUMESTATS, (uint8_t)0, logdata, LOGSENSEPAGE);
+		if (rc < 0) {
 			ltfsmsg(LTFS_INFO, 31257I, LOG_VOLUMESTATS, rc);
 			ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
 			return rc;
@@ -2460,8 +2472,8 @@ int camtape_get_cartridge_health(void *device, struct tc_cartridge_health *cart_
 
 	/* Issue LogPage 0x37 */
 	cart_health->tape_efficiency  = UNSUPPORTED_CARTRIDGE_HEALTH;
-	rc = camtape_logsense(device, LOG_PERFORMANCE, logdata, LOGSENSEPAGE);
-	if (rc)
+	rc = camtape_logsense(device, LOG_PERFORMANCE, (uint8_t)0, logdata, LOGSENSEPAGE);
+	if (rc < 0)
 		ltfsmsg(LTFS_INFO, 31261I, LOG_PERFORMANCE, rc, "get cart health");
 	else {
 		for(i = 0; i < (int)((sizeof(perfstats)/sizeof(perfstats[0]))); i++) { /* BEAM: loop doesn't iterate - Use loop for future enhancement. */
@@ -2511,8 +2523,9 @@ int camtape_get_cartridge_health(void *device, struct tc_cartridge_health *cart_
 	cart_health->read_mbytes      = UNSUPPORTED_CARTRIDGE_HEALTH;
 	cart_health->passes_begin     = UNSUPPORTED_CARTRIDGE_HEALTH;
 	cart_health->passes_middle    = UNSUPPORTED_CARTRIDGE_HEALTH;
-	rc = camtape_logsense(device, LOG_VOLUMESTATS, logdata, LOGSENSEPAGE);
-	if (rc)
+
+	rc = camtape_logsense(device, LOG_VOLUMESTATS, (uint8_t)0, logdata, LOGSENSEPAGE);
+	if (rc < 0)
 		ltfsmsg(LTFS_INFO, 31261I, LOG_VOLUMESTATS, rc, "get cart health");
 	else {
 		for(i = 0; i < (int)((sizeof(volstats)/sizeof(volstats[0]))); i++) {
@@ -2608,10 +2621,11 @@ int camtape_get_tape_alert(void *device, uint64_t *tape_alert)
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETTAPEALT));
 	/* Issue LogPage 0x2E */
 	ta = 0;
-	rc = camtape_logsense(device, LOG_TAPE_ALERT, logdata, LOGSENSEPAGE);
-	if (rc)
+	rc = camtape_logsense(device, LOG_TAPE_ALERT, (uint8_t)0, logdata, LOGSENSEPAGE);
+	if (rc < 0)
 		ltfsmsg(LTFS_INFO, 31261I, LOG_TAPE_ALERT, rc, "get tape alert");
 	else {
+		rc = 0;
 		for(i = 1; i <= 64; i++) {
 			if (parse_logPage(logdata, (uint16_t) i, &param_size, buf, 16)
 				|| param_size != sizeof(uint8_t)) {
@@ -3058,8 +3072,8 @@ int camtape_get_eod_status(void *device, int part)
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETEODSTAT));
 	/* Issue LogPage 0x17 */
-	rc = camtape_logsense(device, LOG_VOL_STATISTICS, logdata, LOGSENSEPAGE);
-	if (rc) {
+	rc = camtape_logsense(device, LOG_VOL_STATISTICS, (uint8_t)0, logdata, LOGSENSEPAGE);
+	if (rc < 0) {
 		ltfsmsg(LTFS_WARN, 31264W, LOG_VOL_STATISTICS, rc);
 		ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETEODSTAT));
 		return EOD_UNKNOWN;
@@ -3127,11 +3141,12 @@ int camtape_get_xattr(void *device, const char *name, char **buf)
 		get_current_timespec(&now);
 		if ( softc->fetch_sec_acq_loss_w == 0 ||
 			 ((softc->fetch_sec_acq_loss_w + 60 < now.tv_sec) && softc->dirty_acq_loss_w)) {
-			rc = camtape_logsense_page(device, LOG_PERFORMANCE, LOG_PERFORMANCE_CAPACITY_SUB,
-									   logdata, LOGSENSEPAGE);
-			if (rc)
+			rc = camtape_logsense(device, LOG_PERFORMANCE, LOG_PERFORMANCE_CAPACITY_SUB,
+								  logdata, LOGSENSEPAGE);
+			if (rc < 0)
 				ltfsmsg(LTFS_INFO, 31261I, LOG_PERFORMANCE, rc, "get xattr");
 			else {
+				rc = 0;
 				if (parse_logPage(logdata, PERF_ACTIVE_CQ_LOSS_W, &param_size, logbuf, 16)) {
 					ltfsmsg(LTFS_INFO, 31262I, LOG_PERFORMANCE, "get xattr");
 					rc = -LTFS_NO_XATTR;

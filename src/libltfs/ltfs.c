@@ -4040,8 +4040,36 @@ int ltfs_release_medium(struct ltfs_volume *vol)
 }
 
 /**
+ * Capture log page.
+ *
+ * At buffer shortage, this function returns the length of the page. The page is truncated
+ * by size.
+ *
+ * @param vol LTFS volume
+ * @param page log page to capture
+ * @param subpage subpage to capture
+ * @param buf buffer of the contents of logpage
+ * @param size buffer size
+ * @return page length on success or a negative value on error
+ */
+int ltfs_logpage(const uint8_t page, const uint8_t subpage, unsigned char *buf,
+				 const size_t size, struct ltfs_volume *vol)
+{
+	int ret = -EDEV_UNKNOWN;
+
+	if (vol->device) {
+		tape_device_lock(vol->device);
+		ret = tape_logsense(vol->device, page, subpage, buf, size);
+		tape_device_unlock(vol->device);
+	}
+
+	return ret;
+}
+
+/**
  * Wait the drive goes to ready state
- * @param device handle to tape device
+ *
+ * @param vol LTFS volume
  * @return 0 on success or a negative value on error
  */
 int ltfs_wait_device_ready(struct ltfs_volume *vol)

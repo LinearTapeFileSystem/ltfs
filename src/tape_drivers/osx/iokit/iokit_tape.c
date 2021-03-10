@@ -104,7 +104,8 @@ struct iokit_global_data global_data;
 /* Forward references (For keep function order to struct tape_ops) */
 int iokit_readpos(void *device, struct tc_position *pos);
 int iokit_locate(void *device, struct tc_position dest, struct tc_position *pos);
-int iokit_logsense(void *device, const unsigned char page, unsigned char *buf, const size_t size);
+int iokit_logsense(void *device, const uint8_t page, const uint8_t subpage,
+				   unsigned char *buf, const size_t size);
 int iokit_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
 							const unsigned char subpage, unsigned char *buf, const size_t size);
 int iokit_modeselect(void *device, unsigned char *buf, const size_t size);
@@ -457,7 +458,7 @@ static int _cdb_read_buffer(void *device, int id, unsigned char *buf, size_t off
 
 	ltfsmsg(LTFS_DEBUG, 30993D, "read buffer", id, priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -509,7 +510,7 @@ static int _cdb_force_dump(struct iokit_data *priv)
 
 	ltfsmsg(LTFS_DEBUG, 30993D, "force dump", 0, priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 	memset(&buf, 0, sizeof(buf));
@@ -1095,7 +1096,7 @@ int iokit_inquiry_page(void *device, unsigned char page, struct tc_inq_page *inq
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_INQUIRYPAGE));
 	ltfsmsg(LTFS_DEBUG, 30993D, "inquiry", page, priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -1174,7 +1175,7 @@ int iokit_test_unit_ready(void *device)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_TUR));
 	ltfsmsg(LTFS_DEBUG3, 30992D, "test unit ready", priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -1238,7 +1239,7 @@ static int _cdb_read(void *device, char *buf, size_t size, boolean_t sili)
 	char *msg = NULL;
 	size_t length = -EDEV_UNKNOWN;
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -1439,7 +1440,7 @@ static int _cdb_write(void *device, uint8_t *buf, size_t size, bool *ew, bool *p
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "WRITE";
 	char *msg = NULL;
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -1559,7 +1560,7 @@ int iokit_writefm(void *device, size_t count, struct tc_position *pos, bool imme
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITEFM));
 	ltfsmsg(LTFS_DEBUG, 30994D, "write file marks", count, priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -1639,7 +1640,7 @@ int iokit_rewind(void *device, struct tc_position *pos)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REWIND));
 	ltfsmsg(LTFS_DEBUG, 30997D, "rewind", (unsigned long long)0, (unsigned long long)0, priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -1714,7 +1715,7 @@ int iokit_locate(void *device, struct tc_position dest, struct tc_position *pos)
 		pc = true;
 	}
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -1777,7 +1778,7 @@ int iokit_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_positi
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SPACE));
 
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -1860,7 +1861,7 @@ static int _cdb_request_sense(void *device, unsigned char *buf, unsigned char si
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "REQUEST_SENSE";
 	char *msg = NULL;
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -1910,7 +1911,7 @@ int iokit_erase(void *device, struct tc_position *pos, bool long_erase)
 
 	get_current_timespec(&ts_start);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -1984,7 +1985,7 @@ static int _cdb_load_unload(void *device, bool load)
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOAD_UNLOAD";
 	char *msg = NULL;
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -2123,7 +2124,7 @@ int iokit_readpos(void *device, struct tc_position *pos)
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READPOS));
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -2202,7 +2203,7 @@ int iokit_setcap(void *device, uint16_t proportion)
 
 		ret = iokit_modeselect(device, buf, sizeof(buf));
 	} else {
-		// Zero out the CDB and the result buffer
+		/* Zero out the CDB and the result buffer */
 		memset(cdb, 0, sizeof(cdb));
 		memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -2248,7 +2249,7 @@ int iokit_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, cons
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_FORMAT));
 	ltfsmsg(LTFS_DEBUG, 30992D, "format", priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -2303,7 +2304,7 @@ int iokit_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 
 	if (IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) {
 		/* Use LogPage 0x31 */
-		ret = iokit_logsense(device, (uint8_t)LOG_TAPECAPACITY, (void *)buffer, LOGSENSEPAGE);
+		ret = iokit_logsense(device, (uint8_t)LOG_TAPECAPACITY, (uint8_t)0, (void *)buffer, LOGSENSEPAGE);
 		if(ret < 0)
 		{
 			ltfsmsg(LTFS_INFO, 30832I, LOG_VOLUMESTATS, ret);
@@ -2346,9 +2347,8 @@ int iokit_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 		ret = DEVICE_GOOD;
 	} else {
 		/* Use LogPage 0x17 */
-		ret = iokit_logsense(device, LOG_VOLUMESTATS, (void *)buffer, LOGSENSEPAGE);
-		if(ret < 0)
-		{
+		ret = iokit_logsense(device, LOG_VOLUMESTATS, (uint8_t)0, (void *)buffer, LOGSENSEPAGE);
+		if(ret < 0) {
 			ltfsmsg(LTFS_INFO, 30832I, LOG_VOLUMESTATS, ret);
 			goto out;
 		}
@@ -2404,8 +2404,8 @@ out:
 	return ret;
 }
 
-static int _cdb_logsense(void *device, const unsigned char page, const unsigned char subpage,
-						 unsigned char *buf, const size_t size)
+int iokit_logsense(void *device, const uint8_t page, const uint8_t subpage,
+				   unsigned char *buf, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
 	struct iokit_data *priv = (struct iokit_data*)device;
@@ -2416,9 +2416,18 @@ static int _cdb_logsense(void *device, const unsigned char page, const unsigned 
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOGSENSE";
 	char *msg = NULL;
 
-	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
+	unsigned int len = 0;
+	unsigned char *inner_buf = NULL;
 
-	// Zero out the CDB and the result buffer
+	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
+	ltfsmsg(LTFS_DEBUG3, 30997D, "logsense",
+			(unsigned long long)page, (unsigned long long)subpage, priv->drive_serial);
+
+	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 1MB */
+	if (!inner_buf)
+		return -LTFS_NO_MEMORY;
+
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -2426,18 +2435,20 @@ static int _cdb_logsense(void *device, const unsigned char page, const unsigned 
 	cdb[0] = LOG_SENSE;
 	cdb[2] = 0x40 | (page & 0x3F); /* Current value */
 	cdb[3] = subpage;
-	ltfs_u16tobe(cdb + 7, size);
+	ltfs_u16tobe(cdb + 7, MAXLP_SIZE);
 
 	timeout = get_timeout(priv->timeouts, cdb[0]);
-	if (timeout < 0)
+	if (timeout < 0) {
+		free(inner_buf);
 		return -EDEV_UNSUPPORETD_COMMAND;
+	}
 
 	/* Build request */
 	req.dxfer_direction = SCSI_FROM_TARGET_TO_INITIATOR;
 	req.cmd_len         = sizeof(cdb);
 	req.mx_sb_len       = sizeof(SCSI_Sense_Data);
-	req.dxfer_len       = size;
-	req.dxferp          = buf;
+	req.dxfer_len       = MAXLP_SIZE;
+	req.dxferp          = inner_buf;
 	req.cmdp            = cdb;
 	memset(&req.sense_buffer, 0, req.mx_sb_len);
 	req.timeout         = IOKitConversion(timeout);
@@ -2446,19 +2457,19 @@ static int _cdb_logsense(void *device, const unsigned char page, const unsigned 
 	ret = iokit_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
 		_process_errors(device, ret, msg, cmd_desc, true);
+	} else {
+		len = ((int)inner_buf[2] << 8) + (int)inner_buf[3] + 4;
+
+		if (size > len)
+			memcpy(buf, inner_buf, len);
+		else
+			memcpy(buf, inner_buf, size);
+
+		ret = len;
 	}
 
+	free (inner_buf);
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOGSENSE));
-
-	return ret;
-}
-
-int iokit_logsense(void *device, const unsigned char page, unsigned char *buf, const size_t size)
-{
-	int ret = -EDEV_UNKNOWN;
-
-	ltfsmsg(LTFS_DEBUG3, 30993D, "logsense", page, "");
-	ret = _cdb_logsense(device, page, 0x00, buf, size);
 
 	return ret;
 }
@@ -2478,7 +2489,7 @@ int iokit_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_MODESENSE));
 	ltfsmsg(LTFS_DEBUG3, 30993D, "modesense", page, priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -2529,7 +2540,7 @@ int iokit_modeselect(void *device, unsigned char *buf, const size_t size)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_MODESELECT));
 	ltfsmsg(LTFS_DEBUG3, 30992D, "modeselect", priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -2578,7 +2589,7 @@ int iokit_reserve(void *device)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RESERVEUNIT));
 	ltfsmsg(LTFS_DEBUG, 30992D, "reserve unit (6)", priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -2650,7 +2661,7 @@ int iokit_release(void *device)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_RELEASEUNIT));
 	ltfsmsg(LTFS_DEBUG, 30992D, "release unit (6)", priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -2703,7 +2714,7 @@ static int _cdb_prevent_allow_medium_removal(void *device, bool prevent)
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "PREVENT/ALLOW_MEDIUM_REMOVAL";
 	char *msg = NULL;
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -2785,7 +2796,7 @@ int iokit_write_attribute(void *device, const tape_partition_t part,
 	ltfs_u32tobe(buffer, len);
 	memcpy(buffer + 4, buf, size);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -2847,7 +2858,7 @@ int iokit_read_attribute(void *device, const tape_partition_t part,
 		return -EDEV_NO_MEMORY;
 	}
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -2915,7 +2926,7 @@ int iokit_allow_overwrite(void *device, const struct tc_position pos)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ALLOWOVERW));
 	ltfsmsg(LTFS_DEBUG, 30997D, "allow overwrite", (unsigned long long)pos.partition, pos.block, priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -3080,8 +3091,8 @@ int iokit_get_cartridge_health(void *device, struct tc_cartridge_health *cart_he
 
 	/* Issue LogPage 0x37 */
 	cart_health->tape_efficiency  = UNSUPPORTED_CARTRIDGE_HEALTH;
-	ret = iokit_logsense(device, LOG_PERFORMANCE, logdata, LOGSENSEPAGE);
-	if (ret)
+	ret = iokit_logsense(device, LOG_PERFORMANCE, (uint8_t)0, logdata, LOGSENSEPAGE);
+	if (ret < 0)
 		ltfsmsg(LTFS_INFO, 30837I, LOG_PERFORMANCE, ret, "get cart health");
 	else {
 		for(i = 0; i < (int)((sizeof(perfstats)/sizeof(perfstats[0]))); i++) {
@@ -3135,7 +3146,7 @@ int iokit_get_cartridge_health(void *device, struct tc_cartridge_health *cart_he
 	cart_health->read_mbytes      = UNSUPPORTED_CARTRIDGE_HEALTH;
 	cart_health->passes_begin     = UNSUPPORTED_CARTRIDGE_HEALTH;
 	cart_health->passes_middle    = UNSUPPORTED_CARTRIDGE_HEALTH;
-	ret = iokit_logsense(device, LOG_VOLUMESTATS, logdata, LOGSENSEPAGE);
+	ret = iokit_logsense(device, LOG_VOLUMESTATS, (uint8_t)0, logdata, LOGSENSEPAGE);
 	if (ret < 0)
 		ltfsmsg(LTFS_INFO, 30837I, LOG_VOLUMESTATS, ret, "get cart health");
 	else {
@@ -3231,10 +3242,11 @@ int iokit_get_tape_alert(void *device, uint64_t *tape_alert)
 
 	/* Issue LogPage 0x2E */
 	ta = 0;
-	ret = iokit_logsense(device, LOG_TAPE_ALERT, logdata, LOGSENSEPAGE);
+	ret = iokit_logsense(device, LOG_TAPE_ALERT, (uint8_t)0, logdata, LOGSENSEPAGE);
 	if (ret < 0)
 		ltfsmsg(LTFS_INFO, 30837I, LOG_TAPE_ALERT, ret, "get tape alert");
 	else {
+		ret = 0;
 		for(i = 1; i <= 64; i++) {
 			if (_parse_logPage(logdata, (uint16_t) i, &param_size, buf, 16)
 				|| param_size != sizeof(uint8_t)) {
@@ -3287,11 +3299,11 @@ int iokit_get_xattr(void *device, const char *name, char **buf)
 		if (priv->fetch_sec_acq_loss_w == 0 ||
 			((priv->fetch_sec_acq_loss_w + 60 < now.tv_sec) && priv->dirty_acq_loss_w))
 		{
-			ret = _cdb_logsense(device, LOG_PERFORMANCE, LOG_PERFORMANCE_CAPACITY_SUB, logdata, LOGSENSEPAGE);
-
+			ret = iokit_logsense(device, LOG_PERFORMANCE, LOG_PERFORMANCE_CAPACITY_SUB, logdata, LOGSENSEPAGE);
 			if (ret < 0) {
 				ltfsmsg(LTFS_INFO, 30837I, LOG_PERFORMANCE, ret, "get xattr");
 			} else {
+				ret = 0;
 				if (_parse_logPage(logdata, PERF_ACTIVE_CQ_LOSS_W, &param_size, logbuf, 16)) {
 					ltfsmsg(LTFS_INFO, 30838I, LOG_PERFORMANCE,  "get xattr");
 					ret = -LTFS_NO_XATTR;
@@ -3391,7 +3403,7 @@ static int _cdb_read_block_limits(void *device) {
 
 	ltfsmsg(LTFS_DEBUG, 30992D, "read block limits", priv->drive_serial);
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -3519,8 +3531,8 @@ int iokit_get_eod_status(void *device, int part)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETEODSTAT));
 
 	/* Issue LogPage 0x17 */
-	ret = iokit_logsense(device, LOG_VOLUMESTATS, logdata, LOGSENSEPAGE);
-	if (ret) {
+	ret = iokit_logsense(device, LOG_VOLUMESTATS, (uint8_t)0, logdata, LOGSENSEPAGE);
+	if (ret < 0) {
 		ltfsmsg(LTFS_WARN, 30840W, LOG_VOLUMESTATS, ret);
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETEODSTAT));
 		return EOD_UNKNOWN;
@@ -3684,7 +3696,7 @@ static int _cdb_spin(void *device, const uint16_t sps, unsigned char **buffer, s
 	char *msg = NULL;
 	size_t len = *size + 4;
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
@@ -3737,7 +3749,7 @@ int _cdb_spout(void *device, const uint16_t sps,
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "SPOUT";
 	char *msg = NULL;
 
-	// Zero out the CDB and the result buffer
+	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
 	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
