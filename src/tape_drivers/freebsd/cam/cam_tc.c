@@ -1690,6 +1690,7 @@ int camtape_logsense(struct camtape_data *softc, const uint8_t page, const uint8
 	union ccb *ccb = NULL;
 	int timeout;
 
+	unsigned int len = 0;
 	unsigned char *inner_buf = NULL;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
@@ -1741,12 +1742,14 @@ int camtape_logsense(struct camtape_data *softc, const uint8_t page, const uint8
 	if (rc != DEVICE_GOOD)
 		camtape_process_errors(softc, rc, msg, "logsense page", true);
 	else {
-		if (size > (ccb->csio.dxfer_len - ccb->csio.resid))
-			memcpy(buf, inner_buf, (ccb->csio.dxfer_len - ccb->csio.resid));
+		len = ((int)inner_buf[2] << 8) + (int)inner_buf[3] + 4;
+
+		if (size > len)
+			memcpy(buf, inner_buf, len);
 		else
 			memcpy(buf, inner_buf, size);
 
-		ret = ccb->csio.dxfer_len - ccb->csio.resid;
+		rc = len;
 	}
 
 bailout:

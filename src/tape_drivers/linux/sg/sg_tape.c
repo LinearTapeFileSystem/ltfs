@@ -3102,6 +3102,7 @@ int sg_logsense(void *device, const uint8_t page, const uint8_t subpage,
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOGSENSE";
 	char *msg = NULL;
 
+	unsigned int len = 0;
 	unsigned char *inner_buf = NULL;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
@@ -3126,7 +3127,7 @@ int sg_logsense(void *device, const uint8_t page, const uint8_t subpage,
 	cdb[0] = LOG_SENSE;
 	cdb[2] = 0x40 | (page & 0x3F); /* Current value */
 	cdb[3] = subpage;
-	ltfs_u16tobe(cdb + 7, size);
+	ltfs_u16tobe(cdb + 7, MAXLP_SIZE);
 
 	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0) {
@@ -3138,7 +3139,7 @@ int sg_logsense(void *device, const uint8_t page, const uint8_t subpage,
 	req.dxfer_direction = SCSI_FROM_TARGET_TO_INITIATOR;
 	req.cmd_len         = sizeof(cdb);
 	req.mx_sb_len       = sizeof(sense);
-	req.dxfer_len       = MAXLP_SIZE;;
+	req.dxfer_len       = MAXLP_SIZE;
 	req.dxferp          = inner_buf;
 	req.cmdp            = cdb;
 	req.sbp             = sense;
@@ -3151,12 +3152,14 @@ int sg_logsense(void *device, const uint8_t page, const uint8_t subpage,
 		if (ret_ep < 0)
 			ret = ret_ep;
 	} else {
-		if (size > req.actual_xfered)
-			memcpy(buf, inner_buf, req.actual_xfered);
+		len = ((int)inner_buf[2] << 8) + (int)inner_buf[3] + 4;
+
+		if (size > len)
+			memcpy(buf, inner_buf, len);
 		else
 			memcpy(buf, inner_buf, size);
 
-		ret = req.actual_xfered;
+		ret = len;
 	}
 
 	free (inner_buf);

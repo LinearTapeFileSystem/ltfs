@@ -2235,7 +2235,7 @@ int lin_tape_ibmtape_logsense(void *device, const uint8_t page, const uint8_t su
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOGSENSE));
 
-	return rc;
+	return logpage.len;
 }
 
 /**

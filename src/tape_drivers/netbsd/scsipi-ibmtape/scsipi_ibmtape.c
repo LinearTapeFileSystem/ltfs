@@ -2714,6 +2714,7 @@ int scsipi_ibmtape_logsense(void *device, const uint8_t page, const uint8_t subp
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "LOGSENSE";
 	char *msg = NULL;
 
+	unsigned int len = 0;
 	unsigned char *inner_buf = NULL;
 
 	ltfsmsg(LTFS_DEBUG3, 30397D, "logsense", page, subpage, priv->drive_serial);
@@ -2734,7 +2735,7 @@ int scsipi_ibmtape_logsense(void *device, const uint8_t page, const uint8_t subp
 	cdb[0] = LOG_SENSE;
 	cdb[2] = 0x40 | (page & 0x3F); /* Current value */
 	cdb[3] = subpage;
-	ltfs_u16tobe(cdb + 7, size);
+	ltfs_u16tobe(cdb + 7, MAXLP_SIZE);
 
 	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
@@ -2754,12 +2755,14 @@ int scsipi_ibmtape_logsense(void *device, const uint8_t page, const uint8_t subp
 		if (ret_ep < 0)
 			ret = ret_ep;
 	} else {
-		if (size > req.datalen_used)
-			memcpy(buf, inner_buf, req.datalen_used);
+		len = ((int)inner_buf[2] << 8) + (int)inner_buf[3] + 4;
+
+		if (size > len)
+			memcpy(buf, inner_buf, len);
 		else
 			memcpy(buf, inner_buf, size);
 
-		ret = req.datalen_used;
+		ret = len;
 	}
 
 	free (inner_buf);
