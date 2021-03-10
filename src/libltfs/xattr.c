@@ -805,6 +805,7 @@ bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_volume *v
 			|| ! strcmp(name, "ltfs.vendor.IBM.cartridgeMountNode")
 			|| ! strcmp(name, "ltfs.vendor.IBM.logLevel")
 			|| ! strcmp(name, "ltfs.vendor.IBM.syslogLevel")
+			|| ! strcmp(name, "ltfs.vendor.IBM.logPage")
 			|| ! strncmp(name, "ltfs.vendor", strlen("ltfs.vendor")))
 			return true;
 	}
@@ -1126,6 +1127,29 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 				val = NULL;
 				ret = -LTFS_NO_MEMORY;
 			}
+		} else if ( (!strncmp(name, "ltfs.vendor.IBM.logPage.", strlen("ltfs.vendor.IBM.logPage."))) &&
+					(strlen(name) == strlen("ltfs.vendor.IBM.logPage.XX.XX")) ) {
+			char page_str[3]    = {0x00, 0x00, 0x00};
+			char subpage_str[3] = {0x00, 0x00, 0x00};
+
+			uint8_t page    = 0xFF;
+			uint8_t subpage = 0xFF;
+
+			char *endptr = NULL;
+
+			page_str[0]    = name[24];
+			page_str[1]    = name[25];
+			subpage_str[0] = name[27];
+			subpage_str[1] = name[28];
+
+			page = (uint8_t)(strtoul(page_str, &endptr, 16));
+			if (*endptr) return -LTFS_NO_XATTR;
+
+			subpage = (uint8_t)(strtoul(subpage_str, &endptr, 16));
+			if (*endptr) return -LTFS_NO_XATTR;
+
+			ret = ltfs_logpage(page, subpage, (unsigned char *)buf, buf_size, vol);
+
 		} else if (! strncmp(name, "ltfs.vendor", strlen("ltfs.vendor"))) {
 			if (! strncmp(name + strlen("ltfs.vendor."), LTFS_VENDOR_NAME, strlen(LTFS_VENDOR_NAME))) {
 				ret = _xattr_get_vendorunique_xattr(&val, name, vol);
