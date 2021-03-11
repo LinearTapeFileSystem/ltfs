@@ -3109,7 +3109,7 @@ int sg_logsense(void *device, const uint8_t page, const uint8_t subpage,
 	ltfsmsg(LTFS_DEBUG3, 30397D, "logsense",
 			(unsigned long long)page, (unsigned long long)subpage, priv->drive_serial);
 
-	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 1MB */
+	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 0xFFFF */
 	if (!inner_buf)
 		return -LTFS_NO_MEMORY;
 
@@ -3147,7 +3147,7 @@ int sg_logsense(void *device, const uint8_t page, const uint8_t subpage,
 	req.usr_ptr         = (void *)cmd_desc;
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
-	if (ret < 0){
+	if (ret < 0) {
 		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
 		if (ret_ep < 0)
 			ret = ret_ep;

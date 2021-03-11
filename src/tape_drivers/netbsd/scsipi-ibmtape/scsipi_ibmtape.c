@@ -2720,7 +2720,7 @@ int scsipi_ibmtape_logsense(void *device, const uint8_t page, const uint8_t subp
 	ltfsmsg(LTFS_DEBUG3, 30397D, "logsense", page, subpage, priv->drive_serial);
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
 
-	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 1MB */
+	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 0xFFFF */
 	if (!inner_buf)
 		return -LTFS_NO_MEMORY;
 

@@ -1697,7 +1697,7 @@ int camtape_logsense(struct camtape_data *softc, const uint8_t page, const uint8
 	ltfsmsg(LTFS_DEBUG3, 31397D, "logsense",
 			(unsigned long long)page, (unsigned long long)subpage, softc->drive_serial);
 
-	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 1MB */
+	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 0xFFFF */
 	if (!inner_buf)
 		return -LTFS_NO_MEMORY;
 

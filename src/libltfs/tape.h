@@ -222,6 +222,8 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 void tape_load_all_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr);
 int update_tape_attribute (struct ltfs_volume *vol, const char *new_value, int type, int size);
 int read_tape_attribute (struct ltfs_volume *vol, char **val, const char *name);
+int tape_read_attr(struct device_data *dev, const tape_partition_t part,
+				   unsigned char *buf, const size_t size);
 int tape_is_mountable(struct device_data *dev, char *barcode,
 					  unsigned char cart_type, unsigned char density);
 int tape_is_reformattable(struct device_data *dev, unsigned char cart_type, unsigned char density);

@@ -2423,7 +2423,7 @@ int iokit_logsense(void *device, const uint8_t page, const uint8_t subpage,
 	ltfsmsg(LTFS_DEBUG3, 30997D, "logsense",
 			(unsigned long long)page, (unsigned long long)subpage, priv->drive_serial);
 
-	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 1MB */
+	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 0xFFFF */
 	if (!inner_buf)
 		return -LTFS_NO_MEMORY;
 
