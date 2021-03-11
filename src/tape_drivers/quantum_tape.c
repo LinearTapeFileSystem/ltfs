@@ -68,6 +68,7 @@ struct supported_device *quantum_supported_drives[] = {
 	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH7",  DRIVE_LTO7_HH, "[ULTRIUM-HH7]" ),  /* QUANTUM Ultrium Gen 7 Half-High */
 	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH8",  DRIVE_LTO8_HH, "[ULTRIUM-HH8]" ),  /* QUANTUM Ultrium Gen 8 Half-High */
 	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM 5",    DRIVE_LTO5_HH, "[ULTRIUM-5]" ),    /* Another QUANTUM Ultrium Gen 5 Half-High */
+	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM 6",    DRIVE_LTO5_HH, "[ULTRIUM-6]" ),    /* Another QUANTUM Ultrium Gen 5 Half-High */
 	/* End of supported_devices */
 	NULL
 };
