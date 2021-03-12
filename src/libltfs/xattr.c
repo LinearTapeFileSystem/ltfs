@@ -1158,16 +1158,19 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 
 			char *endptr = NULL;
 
+			part_str[0] = name[25];
+			part_str[1] = name[26];
+
 			if (!strncmp(part_str, "IP", sizeof(part_str))) {
 				part = ltfs_part_id2num(vol->label->partid_ip, vol);
-			} else if (!strncmp(part_str, "IP", sizeof(part_str))) {
+			} else if (!strncmp(part_str, "DP", sizeof(part_str))) {
 				part = ltfs_part_id2num(vol->label->partid_dp, vol);;
 			} else {
 				part = (uint8_t)(strtoul(part_str, &endptr, 16));
 				if (*endptr) return -LTFS_NO_XATTR;
 			}
 
-			if (part < 2) return -LTFS_NO_XATTR;
+			if (part > 1) return -LTFS_NO_XATTR;
 
 			ret = ltfs_mam(part, (unsigned char *)buf, buf_size, vol);
 
