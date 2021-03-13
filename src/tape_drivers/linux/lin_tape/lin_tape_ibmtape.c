@@ -2548,7 +2548,11 @@ int lin_tape_ibmtape_read_attribute(void *device, const tape_partition_t part, c
 	memset(sense, 0, sizeof(sense));
 
 	/* Prepare Data Buffer */
-	spt.buffer_length = size + 4;
+	if (size == MAXMAM_SIZE)
+		spt.buffer_length = MAXMAM_SIZE;
+	else
+		spt.buffer_length = size + 4;
+
 	spt.buffer = calloc(1, spt.buffer_length);
 	if (spt.buffer == NULL) {
 		ltfsmsg(LTFS_ERR, 10001E, "lin_tape_ibmtape_read_attribute: data buffer");
@@ -2593,7 +2597,13 @@ int lin_tape_ibmtape_read_attribute(void *device, const tape_partition_t part, c
 			id != TC_MAM_APP_FORMAT_VERSION)
 			ltfsmsg(LTFS_INFO, 30460I, rc);
 	} else {
-		memcpy(buf, (spt.buffer + 4), size);
+		if (size == MAXMAM_SIZE) {
+			/* Include header if request size is MAXMAM_SIZE */
+			memcpy(buf, spt.buffer, size);
+		} else {
+			memcpy(buf, (spt.buffer + 4), size);
+		}
+
 		free(spt.buffer);
 	}
 

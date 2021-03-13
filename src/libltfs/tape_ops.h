@@ -666,6 +666,8 @@ struct tape_ops {
 	 * Read a MAM parameter from a device.
 	 * For performance reasons, it is recommended that all backends implement MAM parameter support.
 	 * However, this support is technically optional.
+	 * Normally the buffer doesn't include header of contents. But it includes only when the size is
+	 * MAXMAM_SIZE.
 	 * @param device Device handle returned by the backend's open().
 	 * @param part Partition to read the parameter from.
 	 * @param id Attribute ID to read. libltfs uses TC_MAM_PAGE_VCR and TC_MAM_PAGE_COHERENCY.

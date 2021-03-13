@@ -79,6 +79,7 @@
 #endif
 
 #define MAXLP_SIZE             (0xFFFF)
+#define MAXMAM_SIZE            (0xFFFF)
 
 #define MASK_WITH_SENSE_KEY    (0xFFFFFF)
 #define MASK_WITHOUT_SENSE_KEY (0x00FFFF)

@@ -806,6 +806,7 @@ bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_volume *v
 			|| ! strcmp(name, "ltfs.vendor.IBM.logLevel")
 			|| ! strcmp(name, "ltfs.vendor.IBM.syslogLevel")
 			|| ! strcmp(name, "ltfs.vendor.IBM.logPage")
+			|| ! strcmp(name, "ltfs.vendor.IBM.mediaMAM")
 			|| ! strncmp(name, "ltfs.vendor", strlen("ltfs.vendor")))
 			return true;
 	}
@@ -1149,6 +1150,29 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 			if (*endptr) return -LTFS_NO_XATTR;
 
 			ret = ltfs_logpage(page, subpage, (unsigned char *)buf, buf_size, vol);
+
+		} else if ( (!strncmp(name, "ltfs.vendor.IBM.mediaMAM.", strlen("ltfs.vendor.IBM.mediaMAM."))) &&
+					(strlen(name) == strlen("ltfs.vendor.IBM.mediaMAM.XX")) ) {
+			char part_str[3] = {0x00, 0x00, 0x00};
+			tape_partition_t part = 0;
+
+			char *endptr = NULL;
+
+			part_str[0] = name[25];
+			part_str[1] = name[26];
+
+			if (!strncmp(part_str, "IP", sizeof(part_str))) {
+				part = ltfs_part_id2num(vol->label->partid_ip, vol);
+			} else if (!strncmp(part_str, "DP", sizeof(part_str))) {
+				part = ltfs_part_id2num(vol->label->partid_dp, vol);;
+			} else {
+				part = (uint8_t)(strtoul(part_str, &endptr, 16));
+				if (*endptr) return -LTFS_NO_XATTR;
+			}
+
+			if (part > 1) return -LTFS_NO_XATTR;
+
+			ret = ltfs_mam(part, (unsigned char *)buf, buf_size, vol);
 
 		} else if (! strncmp(name, "ltfs.vendor", strlen("ltfs.vendor"))) {
 			if (! strncmp(name + strlen("ltfs.vendor."), LTFS_VENDOR_NAME, strlen(LTFS_VENDOR_NAME))) {

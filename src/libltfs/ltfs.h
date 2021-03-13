@@ -689,6 +689,8 @@ int ltfs_recover_eod(struct ltfs_volume *vol);
 int ltfs_release_medium(struct ltfs_volume *vol);
 int ltfs_logpage(const uint8_t page, const uint8_t subpage, unsigned char *buf,
 				 const size_t size, struct ltfs_volume *vol);
+int ltfs_mam(const tape_partition_t part, unsigned char *buf,
+			 const size_t size, struct ltfs_volume *vol);
 int ltfs_wait_device_ready(struct ltfs_volume *vol);
 void ltfs_recover_eod_simple(struct ltfs_volume *vol);
 
