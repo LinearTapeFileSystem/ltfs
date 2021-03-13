@@ -1419,7 +1419,7 @@ int itdtimage_get_serialnumber(void *vstate, char **result)
 	return DEVICE_GOOD;
 }
 
-int filedebug_get_info(void *device, struct tc_drive_info *info)
+int itdtimage_get_info(void *device, struct tc_drive_info *info)
 {
 	/*
 	 * Return dummy data.
@@ -1642,6 +1642,7 @@ struct tape_ops itdtimage_handler = {
 	.is_mountable			= itdtimage_is_mountable,
 	.get_worm_status		= itdtimage_get_worm_status,
 	.get_serialnumber       = itdtimage_get_serialnumber,
+	.get_info               = itdtimage_get_info,
 	.set_profiler           = itdtimage_set_profiler,
 	.get_block_in_buffer    = itdtimage_get_block_in_buffer,
 	.is_readonly 			= itdtimage_is_readonly,
