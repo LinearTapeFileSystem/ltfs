@@ -485,7 +485,7 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 }
 
 /**
- * Unroll operations made during tape_load_tape()
+ * Unroll operations made during tape_load_tape().
  * @param dev device to unload
  * @return 0 on success or a negative value on error
  */
@@ -3472,7 +3472,47 @@ int read_tape_attribute(struct ltfs_volume *vol, char **val, const char *name)
 }
 
 /**
- * Evaluate the tape can be mountable
+ * Generic I/F to get MAM.
+ * @param dev a pointer to the tape device
+ * @param part partition to get MAM
+ * @param buf pointer of the buffer
+ * @param size length of the buffer
+ * @return attr length on success or a negative value on error.
+ */
+int tape_read_attr(struct device_data *dev, const tape_partition_t part,
+				   unsigned char *buf, const size_t size)
+{
+	int ret;
+	unsigned char *inner_buf = NULL;
+	unsigned int len = 0;
+
+	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
+
+	inner_buf = calloc(1, MAXMAM_SIZE); /* Assume max length of MAM is 0xFFFF */
+	if (!inner_buf)
+		return -LTFS_NO_MEMORY;
+
+	ret = dev->backend->read_attribute(dev->backend_data, part,
+									   0,
+									   inner_buf,
+									   MAXMAM_SIZE);
+	if (!ret) {
+		len = ((int)inner_buf[2] << 8) + (int)inner_buf[3] + 4;
+
+		if (size > len)
+			memcpy(buf, inner_buf, len);
+		else
+			memcpy(buf, inner_buf, size);
+
+		ret = len;
+	}
+
+	return ret;
+}
+
+/**
+ * Evaluate the tape can be mountable.
  * @param device a pointer to the tape device
  * @param barcode barcode of the tape (NULL is accepted if cart_type and density is available)
  * @param cart_type cartridge type in CM

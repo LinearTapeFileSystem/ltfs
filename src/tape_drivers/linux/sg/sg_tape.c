@@ -3109,7 +3109,7 @@ int sg_logsense(void *device, const uint8_t page, const uint8_t subpage,
 	ltfsmsg(LTFS_DEBUG3, 30397D, "logsense",
 			(unsigned long long)page, (unsigned long long)subpage, priv->drive_serial);
 
-	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 1MB */
+	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 0xFFFF */
 	if (!inner_buf)
 		return -LTFS_NO_MEMORY;
 
@@ -3147,7 +3147,7 @@ int sg_logsense(void *device, const uint8_t page, const uint8_t subpage,
 	req.usr_ptr         = (void *)cmd_desc;
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
-	if (ret < 0){
+	if (ret < 0) {
 		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
 		if (ret_ep < 0)
 			ret = ret_ep;
@@ -3511,7 +3511,12 @@ int sg_read_attribute(void *device, const tape_partition_t part,
 	ltfsmsg(LTFS_DEBUG3, 30397D, "readattr", (unsigned long long)part, (unsigned long long)id, priv->drive_serial);
 
 	/* Prepare the buffer to transfer */
-	uint32_t len = size + 4;
+	uint32_t len = 0;
+	if (size == MAXMAM_SIZE)
+		len = MAXMAM_SIZE;
+	else
+		len = size + 4;
+
 	unsigned char *buffer = calloc(1, len);
 	if (!buffer) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
@@ -3569,7 +3574,12 @@ int sg_read_attribute(void *device, const tape_partition_t part,
 			id != TC_MAM_APP_FORMAT_VERSION)
 			ltfsmsg(LTFS_INFO, 30233I, ret);
 	} else {
-		memcpy(buf, buffer + 4, size);
+		if (size == MAXMAM_SIZE) {
+			/* Include header if request size is MAXMAM_SIZE */
+			memcpy(buf, buffer, size);
+		} else {
+			memcpy(buf, buffer + 4, size);
+		}
 	}
 
 	free(buffer);

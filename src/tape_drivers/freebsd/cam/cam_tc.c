@@ -1697,7 +1697,7 @@ int camtape_logsense(struct camtape_data *softc, const uint8_t page, const uint8
 	ltfsmsg(LTFS_DEBUG3, 31397D, "logsense",
 			(unsigned long long)page, (unsigned long long)subpage, softc->drive_serial);
 
-	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 1MB */
+	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 0xFFFF */
 	if (!inner_buf)
 		return -LTFS_NO_MEMORY;
 
@@ -2070,6 +2070,10 @@ int camtape_read_attribute(void *device, const tape_partition_t part, const uint
 	size_t attr_size;
 	union ccb *ccb = NULL;
 
+	/* TODO: Need to return data with header when size is MAXMAM_SIZE */
+	if (size == MAXMAM_SIZE)
+		return -LTFS_NO_XATTR;
+
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READATTR));
 	ltfsmsg(LTFS_DEBUG3, 31397D, "readattr", (unsigned long long)part,
 			(unsigned long long)id, softc->drive_serial);
@@ -2137,6 +2141,7 @@ int camtape_read_attribute(void *device, const tape_partition_t part, const uint
 			id != TC_MAM_APP_FORMAT_VERSION)
 			ltfsmsg(LTFS_INFO, 31260I, rc);
 	} else {
+
 		memcpy(buf, &attr_header[1], size);
 	}
 

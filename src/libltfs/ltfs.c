@@ -4067,6 +4067,32 @@ int ltfs_logpage(const uint8_t page, const uint8_t subpage, unsigned char *buf,
 }
 
 /**
+ * Capture MAM.
+ *
+ * At buffer shortage, this function returns the length of the page. The page is truncated
+ * by size.
+ *
+ * @param vol LTFS volume
+ * @param part partition to capture
+ * @param buf buffer of the contents of logpage
+ * @param size buffer size
+ * @return MAM length on success or a negative value on error
+ */
+int ltfs_mam(const tape_partition_t part, unsigned char *buf,
+			 const size_t size, struct ltfs_volume *vol)
+{
+	int ret = -EDEV_UNKNOWN;
+
+	if (vol->device) {
+		tape_device_lock(vol->device);
+		ret = tape_read_attr(vol->device, part, buf, size);
+		tape_device_unlock(vol->device);
+	}
+
+	return ret;
+}
+
+/**
  * Wait the drive goes to ready state
  *
  * @param vol LTFS volume
