@@ -252,6 +252,7 @@ root:table {
 		I1199E:string{ "You need to move tape to a storage slot first before the operation." }
 		I1200E:string{ "The operation needs to be started again." }
 		I1201E:string{ "Locate returns write-perm error." }
+		I1202E:string{ "Failed to open a stats DB." }
 
 		// Special error codes
 		I9997E:string{ "Child process error (ltfsck/mkltfs): %s (%d)." }

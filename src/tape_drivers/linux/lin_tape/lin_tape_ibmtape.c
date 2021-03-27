@@ -2214,6 +2214,7 @@ int lin_tape_ibmtape_logsense(void *device, const uint8_t page, const uint8_t su
 	int rc;
 	char *msg;
 	struct log_sense10_page log_page;
+	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
 	ltfsmsg(LTFS_DEBUG3, 30597D, "logsense", (unsigned long long)page, (unsigned long long)subpage,
@@ -2235,7 +2236,7 @@ int lin_tape_ibmtape_logsense(void *device, const uint8_t page, const uint8_t su
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOGSENSE));
 
-	return logpage.len;
+	return log_page.len;
 }
 
 /**
