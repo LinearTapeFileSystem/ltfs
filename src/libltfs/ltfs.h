@@ -440,6 +440,7 @@ struct ltfs_volume {
 	int file_open_count;            /**< Number of opened files */
 
 	const char *work_directory;
+
 };
 
 struct ltfs_label {
@@ -698,6 +699,7 @@ int ltfs_print_device_list(struct tape_ops *ops);
 void ltfs_enable_livelink_mode(struct ltfs_volume *vol);
 
 int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol);
+int get_rao_list(char *buf, struct ltfs_volume *vol);
 #ifdef __cplusplus
 }
 #endif

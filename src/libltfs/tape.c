@@ -3559,7 +3559,7 @@ int tape_is_reformattable(struct device_data *dev, unsigned char cart_type, unsi
  * Enable profiler function
  * @param device a pointer to the tape device
  * @param work_dir work directory to store profiler data
- * @paran enable enable or disable profiler function of this backend
+ * @param enable enable or disable profiler function of this backend
  * @return 0 on success or a negative value on error
  */
 int tape_set_profiler(struct device_data *dev, char *work_dir, bool enable)
@@ -3569,4 +3569,84 @@ int tape_set_profiler(struct device_data *dev, char *work_dir, bool enable)
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
 
 	return dev->backend->set_profiler(dev->backend_data, work_dir, enable);
+}
+
+/**
+ * Prepares GRAO parameter list, and sends rao request.
+ * Before the request is sent, GRAO UDS segments passed from in_grao_uds_info is
+ * appended to GRAO parameter list.
+ * @param dev a pointer to the tape device
+ * @param num_of_files number of files to process in rao. 0 will clear rao list.
+ * @param [out] ret_buf the returned buffer from grao.
+ * @return 0 on success or a negative value on error
+ */
+int tape_rao_request(struct device_data *dev, const uint32_t num_of_files, char *ret_buf)
+{
+	int ret = 0;
+	unsigned char *uds_descriptor;
+
+	//check and construct uds descriptor
+	if (num_of_files >= 0) {
+		/* fetch supported uds size from drive */
+		ret = dev->backend->get_uds_rao(dev->backend_data, &dev->rao.max_uds_supported, &dev->rao.max_uds_size);
+		if (ret < 0) {
+			//Failed to get supported uds size from drive.
+			ltfsmsg(LTFS_ERR, 17268E);
+			return -ret;
+		}
+		/* check if uds size is supported on drive */
+		if (num_of_files >= (uint32_t)&dev->rao.max_uds_supported || \
+			num_of_files * COMMAND_DESCRIPTION_LENGTH >= (uint32_t)&dev->rao.max_uds_size) {
+			ltfsmsg(LTFS_ERR, 17269E, &dev->rao.max_uds_supported, &dev->rao.max_uds_size);
+			return -EDEV_INVALID_ARG;
+		}
+		/* create buffer */
+		uds_descriptor = calloc(num_of_files * COMMAND_DESCRIPTION_LENGTH, 1);
+		if (!uds_descriptor) {
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+			return -EDEV_NO_MEMORY;
+		}
+		memset(uds_descriptor, 0, sizeof(uds_descriptor));
+	 	/* create UDS for each file and append everything to param list */
+		uint32_t i = 0;
+		for(i=0; i<num_of_files; i++) {
+			ltfs_u16tobe(uds_descriptor +  0 + i*32, 0x1E);					//[0-1] Discriptor length
+			ltfs_u32tobe(uds_descriptor +  5 + i*32, &dev->rao.in_grao_uds_info[i].user_identifier);	//[5-14] 10 byte application label data
+			uds_descriptor[15 + i*32] = &dev->rao.in_grao_uds_info[i].partition;						//[15] partition number
+			ltfs_u64tobe(uds_descriptor + 16 + i*32, &dev->rao.in_grao_uds_info[i].byteoffset_start);	// BEGINNING LOGICAL OBJECT IDENTIFIER
+			ltfs_u64tobe(uds_descriptor + 24 + i*32, &dev->rao.in_grao_uds_info[i].byteoffset_end);		// ENDING LOGICAL OBJECT IDENTIFIER
+		}
+	} else {
+		/* rao list will be cleared if call size is less than zero */
+		uds_descriptor = calloc(1, 0);
+		&dev->rao.in_buf == NULL;
+		ltfsmsg(LTFS_DEBUG, 17270D, "Clear Called");
+	}
+
+	//run GRAO
+	ret = dev->backend->g_rao(dev->backend_data, uds_descriptor, num_of_files);
+	if (ret < 0){
+		ltfsmsg(LTFS_ERR, 17271E, "GRAO", ret); //GRAO command returns error
+		free(uds_descriptor);
+		return ret;
+	}
+	else if (num_of_files <= 0) {
+		/* rao list cleared */
+		ltfsmsg(LTFS_DEBUG, 17270D, "Clear Done");
+		free(uds_descriptor);
+		return ret;
+	}
+
+	// run RRAO
+	ret = dev->backend->r_rao(dev->backend_data, num_of_files, ret_buf);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 17271E, "RRAO", ret);
+		free(uds_descriptor);
+		return ret;
+	}
+
+	// rrao successful
+	free(uds_descriptor);
+
+	return ret;
 }

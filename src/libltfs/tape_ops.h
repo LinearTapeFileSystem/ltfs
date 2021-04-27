@@ -927,6 +927,35 @@ struct tape_ops {
 	 * @param device Device handle returned by the backend's open().
 	 */
 	bool   (*is_readonly)(void *device);
+
+	/**
+	 * Submit the RRAO command to get the result of rao.
+	 * This should be called after the GRAO command.
+	 * @param device A pointer to the tape device
+	 * @param[out] ret_buf rrao, rao result in binary. You need to parse it by yourself.
+	 * @return 0 on success or a negative value on error
+	 */
+	int   (*r_rao)(void *device, const uint32_t num_of_files, char *ret_buf);
+
+	/**
+	 * Get the uds limits for device when submitting the GRAO command.
+	 * @param device A pointer to the tape device
+	 * @param[out] max_uds_supported max uds supported
+	 * @param[out] max_uds_size max size supported
+	 * @return 0 on success or a negative value on error
+	 */
+	int   (*get_uds_rao)(void *device, uint32_t *max_uds_supported, uint32_t *max_uds_size);
+
+	/**
+	 * Submit the GRAO command to prepare for the RRAO comand.
+	 * This should be called after the uds limits for devices are checked with the get_uds_rao command.
+	 * @param device A pointer to the tape device
+	 * @param buf buffer data to process
+	 * @param num_of_files The number of files to process for RAO.
+	 * @return 0 on success or a negative value on error
+	 */
+	int   (*g_rao)(void *device, const unsigned char *buf, const uint32_t num_of_files);
+
 };
 
 /**

@@ -83,6 +83,10 @@
 #define MILLISEC_CONVERSION  (1000) /* Sec to millisec conversion */
 #define SGConversion(sec) (sec * MILLISEC_CONVERSION)
 
+/* rao parameters */
+#define GEOMETORY_OFF        (0x00)
+#define GEOMETORY_ON         (0x01)
+
 struct sg_tape
 {
 	int  fd;

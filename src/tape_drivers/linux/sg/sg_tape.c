@@ -5024,6 +5024,211 @@ int sg_get_block_in_buffer(void *device, uint32_t *block)
 	return ret;
 }
 
+int sg_r_rao(void *device, const uint32_t num_of_files, char *ret_buf)
+{
+	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
+
+	struct sg_data *priv = (struct sg_data*)device;
+	sg_io_hdr_t req;
+	unsigned char sense[MAXSENSE];
+	unsigned char cdb[CDB12_LEN];
+	int timeout;
+	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "MAINTENANCE_OUT";
+	char *msg = NULL;
+
+
+	// Allocation length to be returned.
+	// 32 bytes are needed in uds, and 2*10 bytes additional descripter for geometry each, if on.
+	// \* num_of_files Each file will need uds.
+	// \+ 8, for reserved bytes at the beginning cdb.
+	uint64_t len		= num_of_files * (32 + GEOMETORY_OFF*20) + 8;
+
+	uint32_t uds_sa		= 0x9d;			//uds limits + service action
+	uint32_t rao_offset	= 0x0;			//Rao list offset. Set to zero.
+
+	/* Prepare the buffer */
+	unsigned char *buffer = calloc(1, len);
+	if (!buffer) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -EDEV_NO_MEMORY;
+	}
+
+	/* Zero out the CDB and the result buffer */
+	ret = init_sg_io_header(&req);
+	if (ret < 0)
+		return ret;
+	memset(cdb, 0, sizeof(cdb));
+	memset(sense, 0, sizeof(sense));
+
+	/* Build CDB */
+	cdb[0] = MAINTENANCE_IN;
+	cdb[1] = uds_sa;
+	ltfs_u32tobe(cdb + 2, rao_offset);
+	ltfs_u32tobe(cdb + 6, len);
+	cdb[10] = GEOMETORY_OFF; //UDS_TYPE
+
+	timeout = get_timeout(priv->timeouts, cdb[0]);
+	if (timeout < 0)
+		return -EDEV_UNSUPPORETD_COMMAND;
+
+	/* Build request */
+	req.dxfer_direction = SCSI_FROM_TARGET_TO_INITIATOR;
+	req.cmd_len         = sizeof(cdb);
+	req.mx_sb_len       = sizeof(sense);
+	req.dxfer_len       = len;
+	req.dxferp          = buffer;
+	req.cmdp            = cdb;
+	req.sbp             = sense;
+	req.timeout         = SGConversion(timeout);
+	req.usr_ptr         = (void *)cmd_desc;
+
+	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
+	if (ret < 0){
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
+	}
+
+	memcpy(ret_buf, buffer, len);
+	free(buffer);
+
+	return ret;
+}
+
+int sg_get_uds_rao(void *device, uint32_t *max_uds_supported, uint32_t *max_uds_size)
+{
+	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
+
+	struct sg_data *priv = (struct sg_data*)device;
+	sg_io_hdr_t req;
+	unsigned char sense[MAXSENSE];
+	unsigned char cdb[CDB12_LEN];
+	int timeout;
+	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "MAINTENANCE_OUT";
+	char *msg = NULL;
+
+	/* uds mode preset */
+	uint32_t len		= 4;		//allocation length to be returned
+	uint32_t uds_sa		= 0x1D;		//uds limits + service action
+	uint32_t rao_offset	= 0x0;		//Rao list offset. Set to zero.
+
+	/* Prepare the buffer */
+	unsigned char *buffer = calloc(1, len);
+	if (!buffer) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -EDEV_NO_MEMORY;
+	}
+
+	/* Zero out the CDB and the result buffer */
+	ret = init_sg_io_header(&req);
+	if (ret < 0)
+		return ret;
+	memset(cdb, 0, sizeof(cdb));
+	memset(sense, 0, sizeof(sense));
+
+	/* Build CDB */
+	cdb[0] = MAINTENANCE_IN;
+	cdb[1] = uds_sa;
+	ltfs_u32tobe(cdb + 2, rao_offset);
+	ltfs_u32tobe(cdb + 6, len);
+	cdb[10] = GEOMETORY_OFF; //UDS_TYPE
+
+	timeout = get_timeout(priv->timeouts, cdb[0]);
+	if (timeout < 0)
+		return -EDEV_UNSUPPORETD_COMMAND;
+
+	/* Build request */
+	req.dxfer_direction = SCSI_FROM_TARGET_TO_INITIATOR;
+	req.cmd_len         = sizeof(cdb);
+	req.mx_sb_len       = sizeof(sense);
+	req.dxfer_len       = len;
+	req.dxferp          = buffer;
+	req.cmdp            = cdb;
+	req.sbp             = sense;
+	req.timeout         = SGConversion(timeout);
+	req.usr_ptr         = (void *)cmd_desc;
+
+	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
+	if (ret < 0){
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
+	}
+
+	memcpy(max_uds_supported, buffer, 16);
+	memcpy(max_uds_size, buffer + 16, 16);
+	free(buffer);
+
+	return ret;
+}
+
+int sg_g_rao(void *device, const unsigned char *buf, const uint32_t num_of_files)
+{
+	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
+
+	struct sg_data *priv = (struct sg_data*)device;
+	sg_io_hdr_t req;
+	unsigned char cdb[CDB12_LEN];
+	unsigned char sense[MAXSENSE];
+	int timeout;
+	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "MAINTENANCE_OUT";
+	char *msg = NULL;
+
+	/* Prepare the buffer (Parameter List) to transfer */
+	uint32_t len = 32 * num_of_files + 8; //(uds siz * num of file) + 0-7 byte header
+	unsigned char *buffer = calloc(1, len);
+	if (!buffer) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -EDEV_NO_MEMORY;
+	}
+
+	// build buffer
+	ltfs_u32tobe(buffer + 4, len - 8);
+	memcpy(buffer + 8, buf, len - 8);
+
+	/* Zero out the CDB and the result buffer */
+	ret = init_sg_io_header(&req);
+	if (ret < 0)
+		return ret;
+
+	memset(cdb, 0, sizeof(cdb));
+	memset(sense, 0, sizeof(sense));
+
+	/* Build CDB */
+	cdb[0] = MAINTENANCE_OUT; //op_code
+	cdb[1] = 0x1D; //service action
+	cdb[2] = 0x2; //PROCESS, reorder UDS on
+	cdb[3] = GEOMETORY_OFF; //UDS_TYPE
+	ltfs_u32tobe(cdb + 6, len); //parameter list len starts from 6 byte, adding len to cbc 6-9
+
+	timeout = get_timeout(priv->timeouts, cdb[0]);
+	if (timeout < 0)
+		return -EDEV_UNSUPPORETD_COMMAND;
+
+	/* Build request */
+	req.dxfer_direction = SCSI_FROM_INITIATOR_TO_TARGET;
+	req.cmd_len         = sizeof(cdb);
+	req.mx_sb_len       = sizeof(sense);
+	req.dxfer_len       = len;
+	req.dxferp          = buffer;
+	req.cmdp            = cdb;
+	req.sbp             = sense;
+	req.timeout         = SGConversion(timeout);
+	req.usr_ptr         = (void *)cmd_desc;
+
+	if (ret < 0){
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
+	}
+	free(buffer);
+
+	return ret;
+}
+
 struct tape_ops sg_handler = {
 	.open                   = sg_open,
 	.reopen                 = sg_reopen,
@@ -5080,6 +5285,9 @@ struct tape_ops sg_handler = {
 	.set_profiler           = sg_set_profiler,
 	.get_block_in_buffer    = sg_get_block_in_buffer,
 	.is_readonly            = sg_is_readonly,
+	.r_rao                  = sg_r_rao,
+	.get_uds_rao            = sg_get_uds_rao,
+	.g_rao                  = sg_g_rao,
 };
 
 struct tape_ops *tape_dev_get_ops(void)

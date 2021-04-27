@@ -4228,3 +4228,61 @@ int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol)
 
 	return ret;
 }
+
+int get_rao_list(char *buf, struct ltfs_volume *vol)
+{
+	int ret = -EDEV_UNKNOWN;
+	uint32_t MAXFILENUM = 2700;
+
+	ret = tape_device_lock(vol->device);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 12010E, __FUNCTION__);
+		return ret;
+	}
+
+	//!- for debug
+	const uint32_t num_of_files = 3;
+	char debug_buf[] = "1 1 7 7\n2 1 20 20\n3 1 21 21";
+	vol->device->rao.in_buf = &debug_buf;
+	//!- for debug
+
+	if (vol->device->rao.in_buf == NULL) {
+		ltfsmsg(LTFS_ERR, 17272E);
+		tape_device_unlock(vol->device);
+		return -EDEV_INVALID_ARG;
+	}
+
+	struct in_grao_uds_info in_grao[num_of_files];
+	vol->device->rao.in_grao_uds_info = in_grao;
+
+	if (num_of_files >= MAXFILENUM) {
+		ltfsmsg(LTFS_ERR, 17273E, MAXFILENUM, num_of_files);
+		tape_device_unlock(vol->device);
+		return -EDEV_INVALID_ARG;
+	}
+
+	/* input parser */
+	char *tp = NULL;
+	uint32_t array[num_of_files][4];
+	uint32_t i=0;
+
+	tp = strtok(vol->device->rao.in_buf, " \n");
+	while(tp != NULL && i <= num_of_files * 4 ){
+		if (tp != NULL) {
+			array[i/4][i%4] = (uint32_t)strtoul(tp, NULL, 10); //size need consideration
+		}
+		tp = strtok(NULL, " \n");
+		i++;
+	}
+	for( i = 0; i < num_of_files; i++ ) {
+		vol->device->rao.in_grao_uds_info[i].user_identifier	= array[i][0];
+		vol->device->rao.in_grao_uds_info[i].partition			= array[i][1];
+		vol->device->rao.in_grao_uds_info[i].byteoffset_start	= array[i][2];
+		vol->device->rao.in_grao_uds_info[i].byteoffset_end		= array[i][3];
+	}
+
+	ret = tape_rao_request(vol->device, num_of_files, buf);
+	tape_device_unlock(vol->device);
+
+	return ret;
+}

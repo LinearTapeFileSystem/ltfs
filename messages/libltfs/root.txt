@@ -809,8 +809,15 @@ v
 		17265I:string { "Skip writing the index because of %s." }
 		17266I:string { "Skip setting the append only mode because the drive doesn't seem to support it." }
 		17267E:string { "Locate command returns write-perm error (%d). Replace a return code to %d." }
+		17268E:string { "Failed to get supported uds size from drive." }
+		17269E:string { "Too many files to process on this drive. Valid size: max_uds_supported: %u, max_uds_size: %u." }
+		17270D:string { "RAO list clear: %s." }
+		17271E:string { "RAO command returns error on %s (%d)." }
+		17272E:string { "The file information to process for RAO is not specified." }
+		17273E:string { "File number exceeds the maximum limit for RAO. Maximum file supported: %u, given: %u." }
 
 		// For Debug 19999I:string { "%s %s %d." }
+		19999I:string { "%s Output buf:%x result:%d." }
 
 		// DO NOT place messages with IDs 20000 or higher here!
 		// If you are writing a plugin for libltfs, create a separate message bundle

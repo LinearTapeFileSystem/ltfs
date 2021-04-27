@@ -805,6 +805,7 @@ bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_volume *v
 			|| ! strcmp(name, "ltfs.vendor.IBM.cartridgeMountNode")
 			|| ! strcmp(name, "ltfs.vendor.IBM.logLevel")
 			|| ! strcmp(name, "ltfs.vendor.IBM.syslogLevel")
+			|| ! strcmp(name, "ltfs.vendor.IBM.rao")
 			|| ! strcmp(name, "ltfs.vendor.IBM.logPage")
 			|| ! strcmp(name, "ltfs.vendor.IBM.mediaMAM")
 			|| ! strncmp(name, "ltfs.vendor", strlen("ltfs.vendor")))
@@ -1128,6 +1129,11 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 				val = NULL;
 				ret = -LTFS_NO_MEMORY;
 			}
+		} else if (! strcmp(name, "ltfs.vendor.IBM.rao")) {
+			ret = get_rao_list(&buf, vol);
+			ltfsmsg(LTFS_INFO, 19999I, "RAO command success:", &buf, ret );//!--- show dump for debug
+			if (ret < 0)
+				val = NULL;
 		} else if ( (!strncmp(name, "ltfs.vendor.IBM.logPage.", strlen("ltfs.vendor.IBM.logPage."))) &&
 					(strlen(name) == strlen("ltfs.vendor.IBM.logPage.XX.XX")) ) {
 			char page_str[3]    = {0x00, 0x00, 0x00};

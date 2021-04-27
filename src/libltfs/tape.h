@@ -75,6 +75,8 @@ extern "C" {
 #define MB   (KB * 1024)
 #define GB   (MB * 1024)
 
+#define COMMAND_DESCRIPTION_LENGTH (32)
+
 #define NEED_REVAL(ret) (ret == -EDEV_POR_OR_BUS_RESET	\
 						 || ret == -EDEV_MEDIUM_MAY_BE_CHANGED	\
 						 || ret == -EDEV_RESERVATION_PREEMPTED	\
@@ -84,6 +86,12 @@ extern "C" {
 
 #define IS_UNEXPECTED_MOVE(ret) (ret == -EDEV_MEDIUM_REMOVAL_REQ)
 
+struct rao_mod {
+	char *in_buf;
+	uint32_t max_uds_supported;
+	uint32_t max_uds_size;
+	struct in_grao_uds_info *in_grao_uds_info;
+};
 struct device_data {
 	struct tc_position position;          /**< Current head position */
 	tape_block_t append_pos[2];           /**< Append positions, 0 means append at EOD */
@@ -106,6 +114,15 @@ struct device_data {
 	ltfs_mutex_t backend_mutex;           /**< Mutex to control backend access */
 	ltfs_mutex_t read_only_flag_mutex;    /**< Mutex to control read_only access */
 	char *serial_number;                  /**< Serial number for identification */
+
+	struct rao_mod rao;                   /**< RAO related module */
+};
+
+struct in_grao_uds_info {
+	uint32_t user_identifier; // not used by drive
+	tape_partition_t partition;
+	uint32_t byteoffset_start;
+	uint32_t byteoffset_end;
 };
 
 int tape_device_alloc(struct device_data **device);
@@ -228,6 +245,7 @@ int tape_is_mountable(struct device_data *dev, char *barcode,
 					  unsigned char cart_type, unsigned char density);
 int tape_is_reformattable(struct device_data *dev, unsigned char cart_type, unsigned char density);
 int tape_set_profiler(struct device_data *dev, char *work_dir, bool enable);
+int tape_rao_request(struct device_data *dev, const uint32_t num_of_files, char *ret_buf);
 
 static inline char* tape_get_serialnumber(struct device_data *dev)
 {
