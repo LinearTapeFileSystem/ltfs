@@ -82,7 +82,7 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(config, -LTFS_NULL_ARG);
 
-	pl->lib_handle = NULL;
+	memset(pl, 0, sizeof(*pl));
 
 	lib_path = config_file_get_lib(type, name, config);
 	if (! lib_path) {
