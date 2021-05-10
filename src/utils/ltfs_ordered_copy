@@ -4,7 +4,7 @@
 #  OO_Copyright_BEGIN
 #
 #
-#  Copyright 2010, 2020 IBM Corp. All rights reserved.
+#  Copyright 2010, 2021 IBM Corp. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #   modification, are permitted provided that the following conditions
@@ -72,6 +72,8 @@ class CopyItem:
             self.size  = os.path.getsize(self.src)
         except Exception as e:
             self.logger.error('Failed to get attribute of "{0}": {1}'.format(self.src, str(str(e))))
+            self.part = b'a'
+            self.start = 0
 
         return (self.vuuid, self.part, self.start)
 
@@ -92,7 +94,7 @@ class CopyItem:
                     # Set EAs of the destination file
                     (_, filename) = os.path.split(self.src)
                     for key in src_attributes:
-                        xattr.set(os.path.join(self.dst, filename), key, src_attributes[key])
+                        xattr.set(self.dst, key, src_attributes[key])
             else: #Only copy data
                 shutil.copy(self.src, self.dst)
         except Exception as e:
@@ -267,7 +269,7 @@ logger_debug    = 6
 parser = argparse.ArgumentParser(description = 'Copy files from source to destination with LTFS order optimization')
 parser.add_argument('SOURCE', help='source files', nargs='*')
 parser.add_argument('DEST', help='destination', nargs='?')
-parser.add_argument('-p', help='preserve attributes with shutil.copy2()', action='store_true')
+parser.add_argument('-p', help='preserve attributes with shutil.copy2(). Ignored if destination does not support xattr', action='store_true')
 parser.add_argument('-r', '--recursive', help='copy directories recursively', action='store_true')
 parser.add_argument('-t', '--target-directory', help='copy all SOURCE arguments into TARGET_DIRECTORY')
 #parser.add_argument('-z', '--zero', help='handle NULL delimited source list (assume input \'find -print0\')', action='store_true')
@@ -338,6 +340,12 @@ if args.recursive == False and len(args.SOURCE) == 1:
     logger.log(NOTSET + 1, 'Single file copy')
     if os.path.isfile(args.SOURCE[0]):
         try:
+            if len(args.keep_tree):
+                dst = args.DEST + '/' + args.SOURCE[0][len(args.keep_tree):]
+                args.DEST = os.path.normpath(dst)
+                (new_d, t) = os.path.split(dst)
+                if not os.path.exists(new_d):
+                    os.makedirs(new_d)
             shutil.copy(args.SOURCE[0], args.DEST)
         except Exception as e:
             logger.error(str(e))
@@ -359,9 +367,12 @@ try:
     else:
         logger.info("Destination {0} is not LTFS\n".format(args.DEST))
 except IOError as e:
-    if e.errno != 61 and e.errno != 93: # Not ENODATA, ENOATTR
+    if e.errno != 61 and e.errno != 93 and e.errno != 95: # Not ENODATA, ENOATTR, EOPNOTSUPP
         logger.error('Check destination (I/O):' + str(e))
         exit(2)
+    if e.errno == 95 and args.p:
+        logger.warning("{0} does not support xattr. Cannot use -p. Attributes will not be preserved during copy.".format(args.DEST))
+        args.p = False
     logger.warning("Destination {0} is not LTFS".format(args.DEST))
 except Exception as e:
     logger.error('Check destination:' + str(e))
