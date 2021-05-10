@@ -4,7 +4,7 @@
 #  OO_Copyright_BEGIN
 #
 #
-#  Copyright 2010, 2020 IBM Corp. All rights reserved.
+#  Copyright 2010, 2021 IBM Corp. All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
 #   modification, are permitted provided that the following conditions
@@ -72,6 +72,8 @@ class CopyItem:
             self.size  = os.path.getsize(self.src)
         except Exception as e:
             self.logger.error('Failed to get attribute of "{0}": {1}'.format(self.src, str(str(e))))
+            self.part = b'a'
+            self.start = 0
 
         return (self.vuuid, self.part, self.start)
 
@@ -92,7 +94,7 @@ class CopyItem:
                     # Set EAs of the destination file
                     (_, filename) = os.path.split(self.src)
                     for key in src_attributes:
-                        xattr.set(os.path.join(self.dst, filename), key, src_attributes[key])
+                        xattr.set(self.dst, key, src_attributes[key])
             else: #Only copy data
                 shutil.copy(self.src, self.dst)
         except Exception as e:

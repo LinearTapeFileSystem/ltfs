@@ -23,6 +23,8 @@ ltfs.pc
 .libs/
 messages/.lib
 .dirstamp
+# Files created by OS
+.DS_Store
 # Files for development
 GPATH
 GRTAGS
