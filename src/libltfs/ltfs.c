@@ -4229,7 +4229,7 @@ int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol)
 	return ret;
 }
 
-int get_rao_list(char *buf, struct ltfs_volume *vol)
+int ltfs_get_rao_list(char *buf, struct ltfs_volume *vol)
 {
 	int ret = -EDEV_UNKNOWN;
 	uint32_t MAXFILENUM = 2700;

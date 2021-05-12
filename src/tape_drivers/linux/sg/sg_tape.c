@@ -5098,7 +5098,7 @@ int sg_get_block_in_buffer(void *device, uint32_t *block)
 	return ret;
 }
 
-int sg_g_rao(void *device, const unsigned char *buf, const uint32_t num_of_files)
+int sg_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
 {
 	int ret = -EDEV_UNKNOWN;
 	int ret_ep = DEVICE_GOOD;
@@ -5178,7 +5178,7 @@ int sg_g_rao(void *device, const unsigned char *buf, const uint32_t num_of_files
 	return ret;
 }
 
-int sg_r_rao(void *device, const uint32_t num_of_files, char *ret_buf)
+int sg_rrao(void *device, const uint32_t num_of_files, char *ret_buf)
 {
 	int ret = -EDEV_UNKNOWN;
 	int ret_ep = DEVICE_GOOD;
@@ -5281,8 +5281,8 @@ struct tape_ops sg_handler = {
 	.write_attribute        = sg_write_attribute,
 	.read_attribute         = sg_read_attribute,
 	.allow_overwrite        = sg_allow_overwrite,
-	.g_rao                  = sg_g_rao,
-	.r_rao                  = sg_r_rao,
+	.grao                   = sg_grao,
+	.rrao                   = sg_rrao,
 	// May be command combination
 	.set_compression        = sg_set_compression,
 	.set_default            = sg_set_default,

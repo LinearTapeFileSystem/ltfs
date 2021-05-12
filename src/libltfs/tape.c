@@ -3610,7 +3610,7 @@ int tape_rao_request(struct device_data *dev, const uint32_t num_of_files, char 
 	}
 
 	//run GRAO
-	ret = dev->backend->g_rao(dev->backend_data, uds_descriptor, num_of_files);
+	ret = dev->backend->grao(dev->backend_data, uds_descriptor, num_of_files);
 	if (ret < 0){
 		ltfsmsg(LTFS_ERR, 17271E, "GRAO", ret); //GRAO command returns error
 		free(uds_descriptor);
@@ -3624,7 +3624,7 @@ int tape_rao_request(struct device_data *dev, const uint32_t num_of_files, char 
 	}
 
 	// run RRAO
-	ret = dev->backend->r_rao(dev->backend_data, num_of_files, ret_buf);
+	ret = dev->backend->rrao(dev->backend_data, num_of_files, ret_buf);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17271E, "RRAO", ret);
 		free(uds_descriptor);

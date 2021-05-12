@@ -1130,7 +1130,7 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 				ret = -LTFS_NO_MEMORY;
 			}
 		} else if (! strcmp(name, "ltfs.vendor.IBM.rao")) {
-			ret = get_rao_list(&buf, vol);
+			ret = ltfs_get_rao_list(&buf, vol);
 			ltfsmsg(LTFS_INFO, 19999I, "RAO command success:", &buf, ret );//!--- show dump for debug
 			if (ret < 0)
 				val = NULL;

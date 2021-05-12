@@ -936,7 +936,7 @@ struct tape_ops {
 	 * @param num_of_files The number of files to process for RAO.
 	 * @return 0 on success or a negative value on error
 	 */
-	int   (*g_rao)(void *device, const unsigned char *buf, const uint32_t num_of_files);
+	int   (*grao)(void *device, const unsigned char *buf, const uint32_t num_of_files);
 
 	/**
 	 * Submit the RRAO (Receive Recommended Access Order) command.
@@ -945,7 +945,7 @@ struct tape_ops {
 	 * @param[out] ret_buf rrao, rao result in binary. You need to parse it by yourself.
 	 * @return 0 on success or a negative value on error
 	 */
-	int   (*r_rao)(void *device, const uint32_t num_of_files, char *ret_buf);
+	int   (*rrao)(void *device, const uint32_t num_of_files, char *ret_buf);
 
 };
 
