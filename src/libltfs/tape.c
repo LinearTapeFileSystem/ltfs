@@ -3587,26 +3587,12 @@ int tape_rao_request(struct device_data *dev, const uint32_t num_of_files, char 
 
 	//check and construct uds descriptor
 	if (num_of_files >= 0) {
-		/* fetch supported uds size from drive */
-		ret = dev->backend->get_uds_rao(dev->backend_data, &dev->rao.max_uds_supported, &dev->rao.max_uds_size);
-		if (ret < 0) {
-			//Failed to get supported uds size from drive.
-			ltfsmsg(LTFS_ERR, 17268E);
-			return -ret;
-		}
-		/* check if uds size is supported on drive */
-		if (num_of_files >= (uint32_t)&dev->rao.max_uds_supported || \
-			num_of_files * COMMAND_DESCRIPTION_LENGTH >= (uint32_t)&dev->rao.max_uds_size) {
-			ltfsmsg(LTFS_ERR, 17269E, &dev->rao.max_uds_supported, &dev->rao.max_uds_size);
-			return -EDEV_INVALID_ARG;
-		}
 		/* create buffer */
 		uds_descriptor = calloc(num_of_files * COMMAND_DESCRIPTION_LENGTH, 1);
 		if (!uds_descriptor) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -EDEV_NO_MEMORY;
 		}
-		memset(uds_descriptor, 0, sizeof(uds_descriptor));
 	 	/* create UDS for each file and append everything to param list */
 		uint32_t i = 0;
 		for(i=0; i<num_of_files; i++) {

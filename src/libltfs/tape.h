@@ -88,8 +88,6 @@ extern "C" {
 
 struct rao_mod {
 	char *in_buf;
-	uint32_t max_uds_supported;
-	uint32_t max_uds_size;
 	struct in_grao_uds_info *in_grao_uds_info;
 };
 struct device_data {
