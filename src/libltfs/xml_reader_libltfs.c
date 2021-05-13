@@ -1855,6 +1855,8 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 	if (! reader) {
 		ltfsmsg(LTFS_ERR, 17015E);
 		xmlFreeParserInputBuffer(read_buf);
+		free(ctx->buf);
+		free(ctx);
 		return -LTFS_LIBXML2_FAILURE;
 	}
 
@@ -1865,6 +1867,8 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 		ltfsmsg(LTFS_ERR, 17015E);
 		xmlFreeTextReader(reader);
 		xmlFreeParserInputBuffer(read_buf);
+		free(ctx->buf);
+		free(ctx);
 		return -LTFS_LIBXML2_FAILURE;
 	}
 #endif
