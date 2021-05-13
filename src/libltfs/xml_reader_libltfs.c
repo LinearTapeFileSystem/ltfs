@@ -927,7 +927,8 @@ static int _xml_save_symlink_conflict( struct ltfs_index *idx, struct dentry *d)
 /**
  * Parse a file into the given directory.
  */
-static int _xml_parse_file(xmlTextReaderPtr reader, struct ltfs_index *idx, struct dentry *dir, struct name_list *filename)
+static int _xml_parse_file(xmlTextReaderPtr reader, struct ltfs_index *idx, struct dentry *dir,
+						   struct name_list *filename)
 {
 	int ret;
 	unsigned long long value_int;
@@ -1829,6 +1830,7 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 		return -LTFS_NO_MEMORY;
 	}
 	ctx->vol = vol;
+	ctx->err_code = 0;
 	ctx->current_pos = current_pos.block;
 	ctx->eod_pos = eod_pos;
 	ctx->saw_small_block = false;
@@ -1880,13 +1882,24 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 			ret = -LTFS_INDEX_INVALID;
 		}
 	} else if (ret == 0) {
-		if( ! ctx->saw_file_mark)
-			ret = 1;
+		if (ctx->err_code < 0) {
+			/* Error happens while reading tape */
+			ret = ctx->err_code;
+		} else {
+			if(!ctx->saw_file_mark) {
+				/* Intentionally positive value */
+				ret = LTFS_NO_TRAIL_FM;
+			}
+		}
 	}
+
 	if (doc)
 		xmlFreeDoc(doc);
 	xmlFreeTextReader(reader);
 	xmlFreeParserInputBuffer(read_buf);
+
+	free(ctx->buf);
+	free(ctx);
 
 #ifdef DEBUG
 	/* dump the tree if it isn't too large */

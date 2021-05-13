@@ -257,15 +257,16 @@ int xml_format_time(struct ltfs_timespec t, char** out);
  * the libxml2 I/O callback method.
  */
 struct xml_input_tape {
-	struct ltfs_volume *vol;    /**< LTFS volume to read */
-	uint64_t current_pos;       /**< Current block position of the drive. */
-	uint64_t eod_pos;           /**< EOD position of the current partition. */
-	bool saw_small_block;       /**< Have we seen a small block yet? */
-	bool saw_file_mark;         /**< If we saw a small blilock, was it a file mark? */
-	char *buf;                  /**< 1-block input buffer. */
-	uint32_t buf_size;          /**< Input buffer size. */
-	uint32_t buf_start;         /**< Offset of first valid byte in input buffer. */
-	uint32_t buf_used;          /**< Current input buffer usage. */
+	struct ltfs_volume *vol;            /**< LTFS volume to read */
+	int                err_code;        /**< Error code from tape backend */
+	uint64_t           current_pos;     /**< Current block position of the drive. */
+	uint64_t           eod_pos;         /**< EOD position of the current partition. */
+	bool               saw_small_block; /**< Have we seen a small block yet? */
+	bool               saw_file_mark;   /**< If we saw a small blilock, was it a file mark? */
+	char               *buf;            /**< 1-block input buffer. */
+	uint32_t           buf_size;        /**< Input buffer size. */
+	uint32_t           buf_start;       /**< Offset of first valid byte in input buffer. */
+	uint32_t           buf_used;        /**< Current input buffer usage. */
 };
 int xml_input_tape_read_callback(void *context, char *buffer, int len);
 int xml_input_tape_close_callback(void *context);

@@ -259,6 +259,7 @@
 #define LTFS_NEED_START_OVER      1200  /* Need operation needs to be started again */
 #define LTFS_LOCATE_ERROR         1201  /* Locate returns write-perm error */
 #define LTFS_STATS_DB_OPEN        1202  /* Failed to open a stats DB */
+#define LTFS_NO_TRAIL_FM          1203  /* There is no trailing FM after an index */
 
 #define LTFS_ERR_MAX              19999
 
