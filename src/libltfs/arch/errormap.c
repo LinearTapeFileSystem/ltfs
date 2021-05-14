@@ -288,6 +288,7 @@ static struct error_map fuse_error_list[] = {
 	{ LTFS_NEED_START_OVER,          "I1200E", EINVAL},
 	{ LTFS_LOCATE_ERROR,             "I1201E", EIO},
 	{ LTFS_STATS_DB_OPEN,            "I1202E", EIO},
+	{ LTFS_SAFENAME_FAIL,            "I1204E", EINVAL},
 	{ LTFS_NO_TRAIL_FM,              "I1203E", EINVAL},
 	{ LTFS_XML_READ_FAIL,            "I5000E", EINVAL},
 	{ LTFS_XML_CONST_FAIL,           "I5001E", EINVAL},

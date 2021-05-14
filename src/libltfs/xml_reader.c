@@ -389,6 +389,8 @@ int xml_parse_ll(long long *out_val, const char *val)
  * Parse a positive base-10 unsigned long long from a string.
  * This function does not print an error message because it usually doesn't
  * have enough information to say something helpful.
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 int xml_parse_ull(unsigned long long *out_val, const char *val)
 {
@@ -413,6 +415,8 @@ int xml_parse_ull(unsigned long long *out_val, const char *val)
  * Parse a positive base-16 unsigned long long from a string.
  * This function does not print an error message because it usually doesn't
  * have enough information to say something helpful.
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 int xml_parse_xll(unsigned long long *out_val, const char *val)
 {
@@ -436,7 +440,8 @@ int xml_parse_xll(unsigned long long *out_val, const char *val)
 /**
  * Parse a boolean value from a string. Per the W3C boolean datatype, "true" and "1" return true
  * and "false" and "0" return false.
- * @return 0 on success or a negative value on error.
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 int xml_parse_bool(bool *out_val, const char *value)
 {
@@ -457,6 +462,8 @@ int xml_parse_bool(bool *out_val, const char *value)
 
 /**
  * Parse a time from the XML file into a timespec structure.
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 int xml_parse_time(bool msg, const char *fmt_time, struct ltfs_timespec *rawtime)
 {

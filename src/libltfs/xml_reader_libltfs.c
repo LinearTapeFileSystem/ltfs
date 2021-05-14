@@ -265,6 +265,8 @@ static int _xml_parse_nametype_allow_zero_length(xmlTextReaderPtr reader, struct
 
 /**
  * Verify that a given string really does represent a partition (single character, a-z).
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 static int _xml_parse_partition(const char *val)
 {
@@ -369,6 +371,8 @@ static int _xml_parser_init(xmlTextReaderPtr reader, const char *top_name, int *
 
 /**
  * Parse a partition location from a label.
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 static int _xml_parse_label_location(xmlTextReaderPtr reader, struct ltfs_label *label)
 {
@@ -396,6 +400,8 @@ static int _xml_parse_label_location(xmlTextReaderPtr reader, struct ltfs_label 
 
 /**
  * Parse a partition map from an XML file, storing it in the given label structure.
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 static int _xml_parse_partition_map(xmlTextReaderPtr reader, struct ltfs_label *label)
 {
@@ -866,8 +872,9 @@ static int _xml_parse_xattrs(xmlTextReaderPtr reader, struct dentry *d)
 
 		if (! strcmp(name, "xattr")) {
 			assert_not_empty();
-			if (_xml_parse_one_xattr(reader, d) < 0)
-				return -1;
+			ret = _xml_parse_one_xattr(reader, d);
+			if (ret < 0)
+				return ret;
 
 		} else
 			ignore_unrecognized_tag();
@@ -879,12 +886,13 @@ static int _xml_parse_xattrs(xmlTextReaderPtr reader, struct dentry *d)
 
 /**
  * Parse a tape offset (a partition tag and a startblock tag) from an XML source.
+ *
  * @param reader the XML source
  * @param tag name of the tag containing the tape position. This function will read to the end
  *            of that tag, so it is not suitable for reading an extent list (which has other
  *            children that need to be parsed).
  * @param pos pointer to a structure where the offset will be stored
- * @return 0 on success or a negative value on error
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 static int _xml_parse_tapepos(xmlTextReaderPtr reader, const char *tag, struct tape_offset *pos)
 {
@@ -1242,8 +1250,9 @@ static int _xml_parse_dir_contents(xmlTextReaderPtr reader, struct dentry *dir, 
 	   The file or directory of which name contains invalid char is skipped in this step.
 	   After that update platfrom_safe_name regarding skipped file or directory as the second
 	   step. These steps make a prioritization of name mangling.*/
-	if (fs_update_platform_safe_names(dir, idx, list)!=0) {
-		return -1;
+	ret = fs_update_platform_safe_names(dir, idx, list);
+	if (ret < 0) {
+		return ret;
 	}
 
 	check_required_tags();
@@ -1660,8 +1669,9 @@ static int _xml_parse_symlink_target(xmlTextReaderPtr reader, int idx_version, s
 
 		if (! strcmp(name, "target")) {
 			d->isslink = true;
-			if (_xml_parse_nametype(reader, &d->target, true) < 0)
-				return -1;
+			ret = _xml_parse_nametype(reader, &d->target, true);
+			if (ret < 0)
+				return ret;
 		} else
 			ignore_unrecognized_tag();
 	}
