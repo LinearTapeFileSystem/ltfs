@@ -73,7 +73,7 @@ int xml_scan_text(xmlTextReaderPtr reader, const char **value)
 	int type;
 
 	if (xml_reader_read(reader) < 0)
-		return -1;
+		return -LTFS_XML_READ_FAIL;
 
 	type = xmlTextReaderNodeType(reader);
 	if (type == XML_ELEMENT_DECL)
@@ -84,11 +84,11 @@ int xml_scan_text(xmlTextReaderPtr reader, const char **value)
 		*value = (const char *)xmlTextReaderConstValue(reader);
 		if (!(*value)) {
 			ltfsmsg(LTFS_ERR, 17035E);
-			return -1;
+			return -LTFS_XML_CONST_FAIL;
 		}
 	} else {
 		ltfsmsg(LTFS_ERR, 17036E, type);
-		return -1;
+		return -LTFS_XML_WRONG_NODE;
 	}
 
 	return 0;
@@ -108,9 +108,11 @@ int xml_scan_text(xmlTextReaderPtr reader, const char **value)
 int xml_next_tag(xmlTextReaderPtr reader, const char *containing_name,
 	const char **name, int *type)
 {
+	int ret;
 	do {
-		if (xml_reader_read(reader) < 0)
-			return -1;
+		ret = xml_reader_read(reader);
+		if (ret < 0)
+			return ret;
 		*name = (const char *)xmlTextReaderConstName(reader);
 		*type = xmlTextReaderNodeType(reader);
 	} while (strcmp(*name, containing_name) && (*type) != XML_ELEMENT_NODE);
@@ -249,17 +251,19 @@ int xml_reader_read(xmlTextReaderPtr reader)
 	int ret = xmlTextReaderRead(reader);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17037E);
-		return -1;
+		return -LTFS_XML_READ_FAIL;
 	} else if (ret == 0) {
 		ltfsmsg(LTFS_ERR, 17038E);
-		return -1;
+		return -LTFS_XML_UNEXPECTED_EOF;
 	}
 	return 0;
 }
 
 /**
- * Parse a UUID from the tape into a provided buffer, converting to lower-case. The output buffer
- * must be at least 37 bytes.
+ * Parse a UUID from the tape into a provided buffer, converting to lower-case.
+ * The output buffer must be at least 37.
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 int xml_parse_uuid(char *out_val, const char *val)
 {
@@ -444,7 +448,7 @@ int xml_parse_bool(bool *out_val, const char *value)
 	else if (! strcmp(value, "false") || ! strcmp(value, "0"))
 		*out_val = false;
 	else {
-		ltfsmsg(LTFS_ERR, 17032E);
+		ltfsmsg(LTFS_ERR, 17032E, value);
 		return -1;
 	}
 

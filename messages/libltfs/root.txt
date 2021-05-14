@@ -561,11 +561,11 @@ v
 		17009E:string { "Cannot instantiate an LTFS label parser for a memory buffer." }
 		17010E:string { "Cannot parse XML label from memory." }
 		17011E:string { "Cannot instantiate an index parser for file \'%s\'." }
-		17012E:string { "Cannot parse index from file \'%s\'." }
+		17012E:string { "Cannot parse index from file \'%s\' (%d)." }
 		17013E:string { "Cannot parse index: failed to determine medium position (%d)." }
 		17014E:string { "Cannot parse index: failed to create XML parser input buffer." }
 		17015E:string { "Cannot parse index: failed to create XML reader." }
-		17016E:string { "Cannot parse index direct from medium." }
+		17016E:string { "Cannot parse index direct from medium (%d)." }
 		17017E:string { "XML parser: unexpected top-level tag \'%s\'." }
 		17018E:string { "XML parser: unsupported encoding \'%s\'." }
 		17019E:string { "XML parser: no schema version found." }
@@ -581,7 +581,7 @@ v
 		17029E:string { "XML parser: invalid UUID %s." }
 		17030E:string { "XML parser: failed to normalize %s \'%s\'." }
 		17031E:string { "XML parser: invalid %s \'%s\'." }
-		17032E:string { "XML parser: compression must be \'true\' (1) or \'false\' (0)." }
+		17032E:string { "XML parser: boolean must be \'true\' (1) or \'false\' (0) but it is \'%s\'." }
 		17033E:string { "XML parser: invalid partition \'%s\'." }
 		17034E:string { "XML parser: invalid time \'%s\' (%d)." }
 		17035E:string { "XML parser: expected a text node." }
@@ -651,7 +651,7 @@ v
 		17099E:string { "Failed to spawn the periodic sync thread (%d)." }
 
 		17100E:string { "XML parser: UID on the root directory must be 1." }
-		17101E:string { "XML parser: UID 1 is reserved for the root directory." }
+		17101E:string { "XML parser: UID 1 is reserved for the root directory (%s)." }
 		17102E:string { "Cannot set PEWS: Mode Sense for Device Configuration Extension failed (%d)." }
 		17103E:string { "Cannot set PEWS: Mode Select for Device Configuration Extension failed (%d)." }
 		17104E:string { "Cannot get PEWS: Mode Sense for Device Configuration Extension failed (%d)." }
@@ -809,6 +809,12 @@ v
 		17265I:string { "Skip writing the index because of %s." }
 		17266I:string { "Skip setting the append only mode because the drive doesn't seem to support it." }
 		17267E:string { "Locate command returns write-perm error (%d). Replace a return code to %d." }
+
+		17268E:string { "XML parser: Detected invalid %s in a label." }
+		17269W:string { "XML parser: Failed to parse a key name of xattr in %s. Skip one xattr." }
+		17270E:string { "XML parser: Detected invalid %s in a file (%s)." }
+		17271E:string { "Cannot save the conflicted info of symlink and extent: file %s." }
+		17272E:string { "XML parser: Detected invalid %s in a directory (%s)." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 

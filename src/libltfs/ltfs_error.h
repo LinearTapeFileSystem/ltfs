@@ -261,6 +261,61 @@
 #define LTFS_STATS_DB_OPEN        1202  /* Failed to open a stats DB */
 #define LTFS_NO_TRAIL_FM          1203  /* There is no trailing FM after an index */
 
+/*
+ * Error codes for the XML parser
+ */
+#define LTFS_XML_READ_FAIL        5000  /* Error happens in reading XML node */
+#define LTFS_XML_CONST_FAIL       5001  /* Error happens in reading XML const value */
+#define LTFS_XML_WRONG_NODE       5002  /* Unexpected node type is detected */
+#define LTFS_XML_UNEXPECTED_EOF   5003  /* Unexpected XML document end is detected */
+#define LTFS_XML_EMPTY_UNKNOWN    5004  /* Cannot detect a tags is empty or not */
+#define LTFS_XML_EMPTY            5005  /* The tag is empty */
+#define LTFS_XML_SKIP_FAIL        5006  /* Error skipping unrecognized tag */
+#define LTFS_XML_NO_REQUIRED_TAG  5007  /* Do not find required tag */
+#define LTFS_XML_DUPLICATED_TAG   5008  /* Duplicated tag is detected */
+#define LTFS_XML_OPEN_TAG         5009  /* XML tag is not closed correctly */
+#define LTFS_XML_SAVE_FAIL        5010  /* Cannot save the tag */
+#define LTFS_XML_WRONG_TOPTAG     5011  /* Unexpected top tag in the XML document */
+#define LTFS_XML_WRONG_ENCODING   5012  /* Unexpected encoding is detected */
+#define LTFS_XML_TOP_ATTR_FAIL    5013  /* Failed to get attribute of the top tag */
+#define LTFS_XML_WRONG_UUID       5014  /* Wrong UUID is detected */
+#define LTFS_XML_WRONG_GEN        5015  /* Cannot parse generation number correctly */
+#define LTFS_XML_WRONG_UTIME      5016  /* Cannot parse index's updatetime correctly */
+#define LTFS_XML_WRONG_LOC        5017  /* Wrong tape position of index or labal is detected */
+#define LTFS_XML_WRONG_LOC_PREV   5018  /* Wrong tape position of previous index is detected */
+#define LTFS_XML_WRONG_PA         5019  /* Unexpected policyupdate value is detected */
+#define LTFS_XML_WRONG_POLICY     5020  /* Wrong policy value is detected */
+#define LTFS_XML_TOO_LONG_COMMENT 5021  /* Too long index comment */
+#define LTFS_XML_WRONG_NEXT       5022  /* Wrong maxuid tag is detected */
+#define LTFS_XML_WRONG_RO_DIR     5023  /* Unexpected readonly value is detected in a dir */
+#define LTFS_XML_WRONG_MTIME_DIR  5024  /* Unexpected timestamp in dir mtime */
+#define LTFS_XML_WRONG_CRTIME_DIR 5025  /* Unexpected timestamp in dir creation time */
+#define LTFS_XML_WRONG_ATIME_DIR  5026  /* Unexpected timestamp in dir atime */
+#define LTFS_XML_WRONG_CTIME_DIR  5027  /* Unexpected timestamp in dir ctime */
+#define LTFS_XML_WRONG_BTIME_DIR  5028  /* Unexpected timestamp in dir backup time */
+#define LTFS_XML_XATTR_TYPE       5029  /* Unexpected xattr type */
+#define LTFS_XML_XATTR_SIZE       5030  /* Unexpected xattr size */
+#define LTFS_XML_WRONG_UID        5031  /* Unexpected UID number */
+#define LTFS_XML_INVALID_UID      5032  /* UID number validation is failed */
+#define LTFS_XML_WRONG_RO_F       5033  /* Unexpected readonly value is detected in a file */
+#define LTFS_XML_WRONG_MTIME_F    5034  /* Unexpected timestamp in file mtime */
+#define LTFS_XML_WRONG_CRTIME_F   5035  /* Unexpected timestamp in file creation time */
+#define LTFS_XML_WRONG_ATIME_F    5036  /* Unexpected timestamp in file atime */
+#define LTFS_XML_WRONG_CTIME_F    5037  /* Unexpected timestamp in file ctime */
+#define LTFS_XML_WRONG_BTIME_F    5038  /* Unexpected timestamp in file backup time */
+#define LTFS_XML_WRONG_SIZE       5039  /* Unexpected file size value */
+#define LTFS_XML_WRONG_PART       5040  /* Unexpected partition ID */
+#define LTFS_XML_WRONG_START_BLK  5041  /* Unexpected startblock */
+#define LTFS_XML_WRONG_OFFSET     5042  /* Unexpected offset */
+#define LTFS_XML_WRONG_BYTE_CNT   5043  /* Unexpected bytecount */
+#define LTFS_XML_WRONG_FILE_OFST  5044  /* Unexpected fileoffset */
+#define LTFS_XML_EXT_OVERLAP      5045  /* Extent list is overlapped */
+#define LTFS_XML_EXT_TOO_LONG     5046  /* Extent list is longer than file size */
+#define LTFS_XML_WRONG_FTIME_L    5047  /* Unexpected timestamp in tape format time in a label */
+#define LTFS_XML_WRONG_PART_MAP   5048  /* Unexpected partition map in a label */
+#define LTFS_XML_WRONG_BLOCKSIZE  5049  /* Unexpected blocksize in a label */
+#define LTFS_XML_WRONG_COMP       5050  /* Unexpected compression in a label */
+
 #define LTFS_ERR_MAX              19999
 
 /*

@@ -255,6 +255,59 @@ root:table {
 		I1202E:string{ "Failed to open a stats DB." }
 		I1203E:string{ "There is no trailing FM after an index." }
 
+		// Error codes for the XML parser
+		I5000E:string{ "Error happens in reading XML node." }
+		I5001E:string{ "Error happens in reading XML const value." }
+		I5002E:string{ "Unexpected node type is detected." }
+		I5003E:string{ "Unexpected XML document end is detected." }
+		I5004E:string{ "Cannot detect a tags is empty or not." }
+		I5005E:string{ "The tag is empty." }
+		I5006E:string{ "Error skipping unrecognized tag." }
+		I5007E:string{ "Do not find required tag." }
+		I5008E:string{ "Duplicated tag is detected." }
+		I5009E:string{ "XML tag is not closed correctly." }
+		I5010E:string{ "Cannot save the tag." }
+		I5011E:string{ "Unexpected top tag in the XML document." }
+		I5012E:string{ "Unexpected encoding is detected." }
+		I5013E:string{ "Failed to get attribute of the top tag." }
+		I5014E:string{ "Wrong UUID is detected." }
+		I5015E:string{ "Cannot parse generation number correctly." }
+		I5016E:string{ "Cannot parse index's updatetime correctly." }
+		I5017E:string{ "Wrong tape position of index or labal is detected." }
+		I5018E:string{ "Wrong tape position of previous index is detected." }
+		I5019E:string{ "Unexpected policyupdate value is detected." }
+		I5020E:string{ "Wrong policy value is detected." }
+		I5021E:string{ "Too long index comment." }
+		I5022E:string{ "Wrong maxuid tag is detected." }
+		I5023E:string{ "Unexpected readonly value is detected in a dir." }
+		I5024E:string{ "Unexpected timestamp in dir mtime." }
+		I5025E:string{ "Unexpected timestamp in dir creation time." }
+		I5026E:string{ "Unexpected timestamp in dir atime." }
+		I5027E:string{ "Unexpected timestamp in dir ctime." }
+		I5028E:string{ "Unexpected timestamp in dir backup time." }
+		I5029E:string{ "Unexpected xattr type." }
+		I5030E:string{ "Unexpected xattr size." }
+		I5031E:string{ "Unexpected UID number." }
+		I5032E:string{ "UID number validation is failed." }
+		I5033E:string{ "Unexpected readonly value is detected in a file." }
+		I5034E:string{ "Unexpected timestamp in file mtime." }
+		I5035E:string{ "Unexpected timestamp in file creation time." }
+		I5036E:string{ "Unexpected timestamp in file atime." }
+		I5037E:string{ "Unexpected timestamp in file ctime." }
+		I5038E:string{ "Unexpected timestamp in file backup time." }
+		I5039E:string{ "Unexpected file size value." }
+		I5040E:string{ "Unexpected partition ID." }
+		I5041E:string{ "Unexpected startblock." }
+		I5042E:string{ "Unexpected offset." }
+		I5043E:string{ "Unexpected bytecount." }
+		I5044E:string{ "Unexpected fileoffset." }
+		I5045E:string{ "Extent list is overlapped." }
+		I5046E:string{ "Extent list is longer than file size." }
+		I5047E:string{ "Unexpected timestamp in tape format time in a label." }
+		I5048E:string{ "Unexpected partition map in a label." }
+		I5049E:string{ "Unexpected blocksize in a label." }
+		I5050E:string{ "Unexpected compression in a label." }
+
 		// Special error codes
 		I9997E:string{ "Child process error (ltfsck/mkltfs): %s (%d)." }
 		I9998E:string{ "System error: %s (%d)." }
