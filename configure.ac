@@ -49,7 +49,7 @@ AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
 AM_PROG_AR
-AC_PROG_LIBTOOL
+LT_INIT
 
 dnl
 dnl Detecting OS
@@ -429,11 +429,12 @@ SAVE_CFLAGS=$CFLAGS
 CFLAGS="$CFLAGS ${LIBXML2_MODULE_CFLAGS}"
 AC_MSG_CHECKING(for XML_PARSE_HUGE)
 AC_CACHE_VAL(ac_cv_xml_huge,
-    AC_TRY_COMPILE([#include <libxml/parser.h>],
-                   [int foo = XML_PARSE_HUGE; return 0],
-                   ac_cv_xml_huge=yes,
-                   ac_cv_xml_huge=no
-                   ))
+   AC_COMPILE_IFELSE(
+	[AC_LANG_PROGRAM([#include <libxml/parser.h>],
+		   [int foo = XML_PARSE_HUGE; return 0;])],
+	[ac_cv_xml_huge=yes],
+	[ac_cv_xml_huge=no]
+   ))
 AC_MSG_RESULT($ac_cv_xml_huge)
 CFLAGS="$SAVE_CFLAGS"
 
