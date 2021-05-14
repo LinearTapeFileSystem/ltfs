@@ -1457,7 +1457,7 @@ static int _xml_parse_dirtree(xmlTextReaderPtr reader, struct dentry *parent,
 	/* Validate UID: root directory must have uid==1, other dentries must have nonzero UID */
 	/* TODO: would be nice to verify that there are no UID conflicts */
 	if (parent && dir->uid == 1) {
-		ltfsmsg(LTFS_ERR, 17101E);
+		ltfsmsg(LTFS_ERR, 17101E, dir->name.name);
 		return -LTFS_XML_INVALID_UID;
 	} else if (! parent && dir->uid != 1) {
 		ltfsmsg(LTFS_ERR, 17100E);

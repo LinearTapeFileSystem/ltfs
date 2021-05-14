@@ -559,7 +559,7 @@ v
 		17007E:string { "Cannot instantiate an LTFS label parser for file \'%s\'." }
 		17008E:string { "Cannot parse XML label from file \'%s\'." }
 		17009E:string { "Cannot instantiate an LTFS label parser for a memory buffer." }
-		17010E:string { "Cannot parse XML label from memory." }
+		17010E:string { "Cannot parse XML label from memory (%d)." }
 		17011E:string { "Cannot instantiate an index parser for file \'%s\'." }
 		17012E:string { "Cannot parse index from file \'%s\' (%d)." }
 		17013E:string { "Cannot parse index: failed to determine medium position (%d)." }
@@ -650,7 +650,7 @@ v
 		17098I:string { "Device Name = %s (%d.%d.%d.%d), Vendor ID = %s, Product ID = %s, Serial Number = %s, Product Name =%s." }
 		17099E:string { "Failed to spawn the periodic sync thread (%d)." }
 
-		17100E:string { "XML parser: UID on the root directory must be 1." }
+		17100E:string { "XML parser: UID on the root directory must be 1" }
 		17101E:string { "XML parser: UID 1 is reserved for the root directory (%s)." }
 		17102E:string { "Cannot set PEWS: Mode Sense for Device Configuration Extension failed (%d)." }
 		17103E:string { "Cannot set PEWS: Mode Select for Device Configuration Extension failed (%d)." }
