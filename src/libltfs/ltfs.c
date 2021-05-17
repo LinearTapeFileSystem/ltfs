@@ -1627,8 +1627,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 				else
 					ltfsmsg(LTFS_ERR, 11021E); /* read DP Index failed */
 				goto out_unlock;
-			}
-			else {
+			} else {
 				ltfsmsg(LTFS_DEBUG, 11025D); /* volume is consistent */
 				vol->mount_type = MOUNT_ERR_TAPE;
 			}

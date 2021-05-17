@@ -845,7 +845,7 @@ static struct name_list* fs_update_platform_safe_names_and_hash_table(struct den
 int fs_update_platform_safe_names(struct dentry* basedir, struct ltfs_index *idx, struct name_list *list)
 {
 	struct name_list *list_ptr, *list_tmp;
-	int rc = 0;
+	int ret = 0;
 
 	list = fs_update_platform_safe_names_and_hash_table(basedir, idx, list, false, false);	// normal loop
 	list = fs_update_platform_safe_names_and_hash_table(basedir, idx, list, true, false);	// add dup name
@@ -857,12 +857,12 @@ int fs_update_platform_safe_names(struct dentry* basedir, struct ltfs_index *idx
 			HASH_DEL(list, list_ptr);
 			free(list_ptr);
 		}
-		rc = -1;
+		ret = -LTFS_SAFENAME_FAIL;
 	}
 
 	HASH_CLEAR(hh, list);
 
-	return rc;
+	return ret;
 }
 
 /**
