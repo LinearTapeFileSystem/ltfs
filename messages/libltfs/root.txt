@@ -815,6 +815,8 @@ v
 		17270E:string { "XML parser: Detected invalid %s in a file (%s)." }
 		17271E:string { "Cannot save the conflicted info of symlink and extent: file %s." }
 		17272E:string { "XML parser: Detected invalid %s in a directory (%s)." }
+		17273E:string { "XML parser: Detected an I/O error on reading an index from the tape (%d)." }
+		17274E:string { "XML parser: Unexpected error code is detected (%d)." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 

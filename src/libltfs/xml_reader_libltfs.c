@@ -1951,21 +1951,22 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 
 	/* Generate the Index. */
 	ret = _xml_parse_schema(reader, vol->index, vol);
+	if (ctx->err_code < 0) {
+		/* Error happens while reading tape */
+		ltfsmsg(LTFS_ERR, 17273E, ctx->err_code);
+		ret = ctx->err_code;
+	}
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17016E, ret);
 		if (ret == -1) {
-			/* TODO: Need to return more descriptive error codes */
+			/* Unexpected error code, we need to investigate */
+			ltfsmsg(LTFS_ERR, 17274W, ret);
 			ret = -LTFS_INDEX_INVALID;
 		}
 	} else if (ret == 0) {
-		if (ctx->err_code < 0) {
-			/* Error happens while reading tape */
-			ret = ctx->err_code;
-		} else {
-			if(!ctx->saw_file_mark) {
-				/* Intentionally positive value */
-				ret = LTFS_NO_TRAIL_FM;
-			}
+		if(!ctx->saw_file_mark) {
+			/* Return positive value intentionally, for recovering later */
+			ret = LTFS_NO_TRAIL_FM;
 		}
 	}
 
