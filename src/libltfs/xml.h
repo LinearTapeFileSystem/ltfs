@@ -115,7 +115,7 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 /* standard parser variables */
 #define declare_parser(toptag) \
 	const char *name, *parent_tag = (toptag); \
-	int i, type, empty;
+	int i, type, empty, ret;
 
 #define declare_parser_vars_noloop(toptag) \
 	const char *name, *value, *parent_tag = (toptag); \
@@ -123,11 +123,11 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 
 #define declare_parser_vars(toptag) \
 	const char *name, *value, *parent_tag = (toptag); \
-	int i, type, empty;
+	int i, type, empty, ret;
 
 #define declare_parser_vars_symlinknode(toptag) \
 	const char *name, *parent_tag = (toptag); \
-	int type;
+	int type, ret;
 
 #define declare_parser_vars_symlink(toptag) \
 	const char *name, *parent_tag = (toptag); \
@@ -149,123 +149,141 @@ int xml_format_time(struct ltfs_timespec t, char** out);
  * NOTE: in order for break to work correctly, this macro is not wrapped in a do { ... } while (0)
  * loop. So be careful when using it! */
 #define get_next_tag() \
-	if (xml_next_tag(reader, parent_tag, &name, &type) < 0) \
-		return -1; \
-	if (type == XML_ELEMENT_DECL) \
+	ret = xml_next_tag(reader, parent_tag, &name, &type);	\
+	if (ret < 0)											\
+		return ret;											\
+	if (type == XML_ELEMENT_DECL)							\
 		break
 
 /* check standard tracking array for required tags which are not present. */
-#define check_required_tags() do { \
-	for (i=0; i<ntags_req; ++i) { \
-		if (! have_required_tags[i]) { \
-			ltfsmsg(LTFS_ERR, 17000E, parent_tag); \
-			return -1; \
-		} \
-	} \
-} while (0)
+#define check_required_tags()							\
+	do {												\
+		for (i=0; i<ntags_req; ++i) {					\
+			if (! have_required_tags[i]) {				\
+				ltfsmsg(LTFS_ERR, 17000E, parent_tag);	\
+				return -LTFS_XML_NO_REQUIRED_TAG;		\
+			}											\
+		}												\
+	} while (0)
 
 /* used for detecting missing and duplicated required tags during parsing */
-#define check_required_tag(i) do { \
-	if (have_required_tags[i]) { \
-		ltfsmsg(LTFS_ERR, 17001E, name); \
-		return -1; \
-	} \
-	have_required_tags[i] = true; \
-} while (0)
+#define check_required_tag(i)					\
+	do {										\
+		if (have_required_tags[i]) {			\
+			ltfsmsg(LTFS_ERR, 17001E, name);	\
+			return -LTFS_XML_NO_REQUIRED_TAG;	\
+		}										\
+		have_required_tags[i] = true;			\
+	} while (0)
 
 /* used for detecting missing and duplicated optional tags during parsing */
-#define check_optional_tag(i) do { \
-	if (have_optional_tags[i]) { \
-		ltfsmsg(LTFS_ERR, 17002E, name); \
-		return -1; \
-	} \
-	have_optional_tags[i] = true; \
-} while (0)
+#define check_optional_tag(i)					\
+	do {										\
+		if (have_optional_tags[i]) {			\
+			ltfsmsg(LTFS_ERR, 17002E, name);	\
+			return -LTFS_XML_DUPLICATED_TAG;	\
+		}										\
+		have_optional_tags[i] = true;			\
+	} while (0)
 
 /* assert that a tag is not empty. this only excludes true empty elements like <element/>. */
-#define assert_not_empty() do { \
-	empty = xmlTextReaderIsEmptyElement(reader); \
-	if (empty < 0) { \
-		ltfsmsg(LTFS_ERR, 17003E); \
-		return -1; \
-	} else if (empty > 0) { \
-		ltfsmsg(LTFS_ERR, 17004E, name); \
-		return -1; \
-	} \
-} while (0)
+#define assert_not_empty()								\
+	do {												\
+		empty = xmlTextReaderIsEmptyElement(reader);	\
+		if (empty < 0) {								\
+			ltfsmsg(LTFS_ERR, 17003E);					\
+			return -LTFS_XML_EMPTY_UNKNOWN;				\
+		} else if (empty > 0) {							\
+			ltfsmsg(LTFS_ERR, 17004E, name);			\
+			return -LTFS_XML_EMPTY;						\
+		}												\
+	} while (0)
 
 /* check whether a tag is empty. */
-#define check_empty() do { \
-	empty = xmlTextReaderIsEmptyElement(reader); \
-	if (empty < 0) { \
-		ltfsmsg(LTFS_ERR, 17003E); \
-		return -1; \
-	} \
-} while (0)
+#define check_empty()									\
+	do {												\
+		empty = xmlTextReaderIsEmptyElement(reader);	\
+		if (empty < 0) {								\
+			ltfsmsg(LTFS_ERR, 17003E);					\
+			return -LTFS_XML_EMPTY_UNKNOWN;				\
+		}												\
+	} while (0)
 
 /* consume the end of a tag, failing if there's extra content */
-#define check_tag_end(tagname) do { \
-	if (xml_next_tag(reader, (tagname), &name, &type) < 0 || type != XML_ELEMENT_DECL) { \
-		ltfsmsg(LTFS_ERR, 17005E, (tagname)); \
-		return -1; \
-	} \
-} while (0)
+#define check_tag_end(tagname)											\
+	do {																\
+		if (xml_next_tag(reader, (tagname), &name, &type) < 0 || type != XML_ELEMENT_DECL) { \
+			ltfsmsg(LTFS_ERR, 17005E, (tagname));						\
+			return -LTFS_XML_OPEN_TAG;									\
+		}																\
+	} while (0)
 
 /* get text from a tag, failing if the tag is empty (like <element/>) or contains
  * the empty string (like <element></element>). if successful, it
  * reads the text into "value". It does not consume the remainder of the tag. */
-#define get_tag_text() do { \
-	assert_not_empty(); \
-	if (xml_scan_text(reader, &value) < 0) \
-		return -1; \
-	if (strlen(value) == 0) { \
-		ltfsmsg(LTFS_ERR, 17004E, name); \
-		return -1; \
-	} \
-} while (0)
+#define get_tag_text()							\
+	do {										\
+		assert_not_empty();						\
+		ret = xml_scan_text(reader, &value);	\
+		if (ret < 0)							\
+			return ret;							\
+		if (strlen(value) == 0) {				\
+			ltfsmsg(LTFS_ERR, 17004E, name);	\
+			return -LTFS_XML_EMPTY;				\
+		}										\
+	} while (0)
 
-#define get_tag_text_allow_zero_length() do { \
-	assert_not_empty(); \
-	if (xml_scan_text(reader, &value) < 0) \
-		return -1; \
-} while (0)
+#define get_tag_text_allow_zero_length()		\
+	do {										\
+		assert_not_empty();						\
+		ret = xml_scan_text(reader, &value);	\
+		if (ret < 0)							\
+			return ret;							\
+	} while (0)
 
 /* get text from a tag. if successful, it reads the text into "value".
  * It does not consume the remainder of the tag. */
-#define get_tag_text_allow_empty() do { \
-	if (xml_scan_text(reader, &value) < 0) \
-		return -1; \
-} while (0)
+#define get_tag_text_allow_empty()				\
+	do {										\
+		ret = xml_scan_text(reader, &value);	\
+		if (ret < 0) {							\
+			return ret;							\
+		}										\
+	} while (0)
 
 /* issue a warning that the tag is unrecognized and will be ignored. */
-#define ignore_unrecognized_tag() do { \
-	ltfsmsg(LTFS_WARN, 17006W, name, parent_tag); \
-	if (xml_skip_tag(reader) < 0) \
-		return -1; \
-} while (0)
+#define ignore_unrecognized_tag()						\
+	do {												\
+		ltfsmsg(LTFS_WARN, 17006W, name, parent_tag);	\
+		if (xml_skip_tag(reader) < 0)					\
+			return -LTFS_XML_SKIP_FAIL;					\
+	} while (0)
 
 /* store a tag in a list of unrecognized tags, to be written back to tape later */
-#define preserve_unrecognized_tag(structure) do { \
-	if (xml_save_tag(reader, &(structure)->tag_count, &(structure)->preserved_tags) < 0) \
-		return -1; \
-	if (xml_skip_tag(reader) < 0) \
-		return -1; \
-} while (0)
+#define preserve_unrecognized_tag(structure)							\
+	do {																\
+		ret = xml_save_tag(reader, &(structure)->tag_count, &(structure)->preserved_tags); \
+		if (ret < 0)													\
+			return -LTFS_XML_SAVE_FAIL;									\
+		if (xml_skip_tag(reader) < 0)									\
+			return -LTFS_XML_SKIP_FAIL;									\
+	} while (0)
 
 /**
  * This structure is used to store state data when reading XML directly from tape using
  * the libxml2 I/O callback method.
  */
 struct xml_input_tape {
-	struct ltfs_volume *vol;    /**< LTFS volume to read */
-	uint64_t current_pos;       /**< Current block position of the drive. */
-	uint64_t eod_pos;           /**< EOD position of the current partition. */
-	bool saw_small_block;       /**< Have we seen a small block yet? */
-	bool saw_file_mark;         /**< If we saw a small blilock, was it a file mark? */
-	char *buf;                  /**< 1-block input buffer. */
-	uint32_t buf_size;          /**< Input buffer size. */
-	uint32_t buf_start;         /**< Offset of first valid byte in input buffer. */
-	uint32_t buf_used;          /**< Current input buffer usage. */
+	struct ltfs_volume *vol;            /**< LTFS volume to read */
+	int                err_code;        /**< Error code from tape backend */
+	uint64_t           current_pos;     /**< Current block position of the drive. */
+	uint64_t           eod_pos;         /**< EOD position of the current partition. */
+	bool               saw_small_block; /**< Have we seen a small block yet? */
+	bool               saw_file_mark;   /**< If we saw a small blilock, was it a file mark? */
+	char               *buf;            /**< 1-block input buffer. */
+	uint32_t           buf_size;        /**< Input buffer size. */
+	uint32_t           buf_start;       /**< Offset of first valid byte in input buffer. */
+	uint32_t           buf_used;        /**< Current input buffer usage. */
 };
 int xml_input_tape_read_callback(void *context, char *buffer, int len);
 int xml_input_tape_close_callback(void *context);

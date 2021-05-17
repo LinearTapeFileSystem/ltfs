@@ -429,7 +429,7 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *
 	if (ret < 0) {
 		ltfsmsg(LTFS_WARN, 11194W, ret);
 		return ret;
-	} else if (ret == 1)
+	} else if (ret == LTFS_NO_TRAIL_FM)
 		end_fm = false;
 
 	/* check volume UUID */
