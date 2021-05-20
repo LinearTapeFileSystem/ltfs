@@ -451,8 +451,8 @@ extern int camtape_get_info(void *device, struct tc_drive_info *info);
 extern int camtape_set_profiler(void *device, char *work_dir, bool enable);
 extern int camtape_get_timeout(struct timeout_tape *table, int op_code);
 
-extern int camtape_logsense_page(struct camtape_data *softc, const uint8_t page, const uint8_t subpage,
-								 unsigned char *buf, const size_t size);
+extern int camtape_logsense(void *device, const uint8_t page, const uint8_t subpage,
+							unsigned char *buf, const size_t size);
 
 /**
  * Get Dump
@@ -579,7 +579,7 @@ static inline bool is_dump_required_error(struct camtape_data *softc, int ret, b
 		log_page.parm_pointer = 0;
 		memset(log_page.data, 0, LOGSENSEPAGE);
 
-		rc = camtape_logsense_page(softc, log_page.page_code, 0, (unsigned char *)&log_page.data,
+		rc = camtape_logsense(softc, log_page.page_code, 0, (unsigned char *)&log_page.data,
 								   LOGSENSEPAGE);
 
 		ans = (rc == DEVICE_GOOD);
