@@ -1139,7 +1139,7 @@ int camtape_load(void *device, struct tc_position *pos)
 		/*
 		 * Non-IBM drive doesn't have cartridge type so need to assume from density code.
 		 */
-		softc->cart_type = assume_cart_type(priv->density_code);
+		softc->cart_type = assume_cart_type(softc->density_code);
 		if (buf[2] == 0x01)
 			softc->is_worm = true;
 	} else {
@@ -1686,7 +1686,7 @@ bailout:
  */
 #define MAX_UINT16 (0x0000FFFF)
 
-int camtape_logsense(struct camtape_data *softc, const uint8_t page, const uint8_t subpage,
+int camtape_logsense(void *device, const uint8_t page, const uint8_t subpage,
 					 unsigned char *buf, const size_t size)
 {
 	int rc = DEVICE_GOOD;
@@ -1694,6 +1694,8 @@ int camtape_logsense(struct camtape_data *softc, const uint8_t page, const uint8
 	struct scsi_log_sense *scsi_cmd;
 	union ccb *ccb = NULL;
 	int timeout;
+
+	struct camtape_data *softc = device;
 
 	unsigned int len = 0;
 	unsigned char *inner_buf = NULL;

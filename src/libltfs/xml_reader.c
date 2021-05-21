@@ -73,7 +73,7 @@ int xml_scan_text(xmlTextReaderPtr reader, const char **value)
 	int type;
 
 	if (xml_reader_read(reader) < 0)
-		return -1;
+		return -LTFS_XML_READ_FAIL;
 
 	type = xmlTextReaderNodeType(reader);
 	if (type == XML_ELEMENT_DECL)
@@ -84,11 +84,11 @@ int xml_scan_text(xmlTextReaderPtr reader, const char **value)
 		*value = (const char *)xmlTextReaderConstValue(reader);
 		if (!(*value)) {
 			ltfsmsg(LTFS_ERR, 17035E);
-			return -1;
+			return -LTFS_XML_CONST_FAIL;
 		}
 	} else {
 		ltfsmsg(LTFS_ERR, 17036E, type);
-		return -1;
+		return -LTFS_XML_WRONG_NODE;
 	}
 
 	return 0;
@@ -108,9 +108,11 @@ int xml_scan_text(xmlTextReaderPtr reader, const char **value)
 int xml_next_tag(xmlTextReaderPtr reader, const char *containing_name,
 	const char **name, int *type)
 {
+	int ret;
 	do {
-		if (xml_reader_read(reader) < 0)
-			return -1;
+		ret = xml_reader_read(reader);
+		if (ret < 0)
+			return ret;
 		*name = (const char *)xmlTextReaderConstName(reader);
 		*type = xmlTextReaderNodeType(reader);
 	} while (strcmp(*name, containing_name) && (*type) != XML_ELEMENT_NODE);
@@ -249,17 +251,19 @@ int xml_reader_read(xmlTextReaderPtr reader)
 	int ret = xmlTextReaderRead(reader);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17037E);
-		return -1;
+		return -LTFS_XML_READ_FAIL;
 	} else if (ret == 0) {
 		ltfsmsg(LTFS_ERR, 17038E);
-		return -1;
+		return -LTFS_XML_UNEXPECTED_EOF;
 	}
 	return 0;
 }
 
 /**
- * Parse a UUID from the tape into a provided buffer, converting to lower-case. The output buffer
- * must be at least 37 bytes.
+ * Parse a UUID from the tape into a provided buffer, converting to lower-case.
+ * The output buffer must be at least 37.
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 int xml_parse_uuid(char *out_val, const char *val)
 {
@@ -385,6 +389,8 @@ int xml_parse_ll(long long *out_val, const char *val)
  * Parse a positive base-10 unsigned long long from a string.
  * This function does not print an error message because it usually doesn't
  * have enough information to say something helpful.
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 int xml_parse_ull(unsigned long long *out_val, const char *val)
 {
@@ -409,6 +415,8 @@ int xml_parse_ull(unsigned long long *out_val, const char *val)
  * Parse a positive base-16 unsigned long long from a string.
  * This function does not print an error message because it usually doesn't
  * have enough information to say something helpful.
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 int xml_parse_xll(unsigned long long *out_val, const char *val)
 {
@@ -432,7 +440,8 @@ int xml_parse_xll(unsigned long long *out_val, const char *val)
 /**
  * Parse a boolean value from a string. Per the W3C boolean datatype, "true" and "1" return true
  * and "false" and "0" return false.
- * @return 0 on success or a negative value on error.
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 int xml_parse_bool(bool *out_val, const char *value)
 {
@@ -444,7 +453,7 @@ int xml_parse_bool(bool *out_val, const char *value)
 	else if (! strcmp(value, "false") || ! strcmp(value, "0"))
 		*out_val = false;
 	else {
-		ltfsmsg(LTFS_ERR, 17032E);
+		ltfsmsg(LTFS_ERR, 17032E, value);
 		return -1;
 	}
 
@@ -453,6 +462,8 @@ int xml_parse_bool(bool *out_val, const char *value)
 
 /**
  * Parse a time from the XML file into a timespec structure.
+ *
+ * @return 0 on success or -1 on error (intentionally -1)
  */
 int xml_parse_time(bool msg, const char *fmt_time, struct ltfs_timespec *rawtime)
 {
@@ -496,7 +507,7 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 	struct xml_input_tape *ctx = context;
 	ssize_t nread, nr2;
 	char *buf2;
-	int bytes_saved, bytes_remaining;
+	int bytes_saved, bytes_remaining, ret_sp;
 
 	if (len == 0)
 		return 0;
@@ -535,6 +546,7 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 			if (nread < 0) {
 				/* We know we're not at EOD, so read errors are unexpected. */
 				ltfsmsg(LTFS_ERR, 17039E, (int)nread);
+				ctx->err_code = nread;
 				return -1;
 			} else if ((size_t) nread < ctx->buf_size) {
 				/* Caught a small read. If this is a file mark, position before it. If
@@ -542,16 +554,19 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 				ctx->saw_small_block = true;
 				if (nread == 0) {
 					ctx->saw_file_mark = true;
-					if (tape_spacefm(ctx->vol->device, -1) < 0) {
+					ret_sp = tape_spacefm(ctx->vol->device, -1);
+					if (ret_sp < 0) {
 						ltfsmsg(LTFS_ERR, 17040E);
+						ctx->err_code = ret_sp;
 						return -1;
 					}
 				} else if (ctx->eod_pos == 0 ||
 					(ctx->eod_pos > 0 && ctx->current_pos < ctx->eod_pos)) {
 					/* Look for a trailing file mark. */
 					buf2 = malloc(ctx->vol->label->blocksize);
-					if (! buf2) {
+					if (!buf2) {
 						ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+						ctx->err_code = -LTFS_NO_MEMORY;
 						return -1;
 					}
 					nr2 = tape_read(ctx->vol->device, buf2, ctx->vol->label->blocksize, false,
@@ -560,11 +575,14 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 					errno = 0; /* Clear errno because some OSs set errno in free() */
 					if (nr2 < 0) { /* Still not at EOD, so read errors are cause for alarm. */
 						ltfsmsg(LTFS_ERR, 17041E, (int)nr2);
+						ctx->err_code = nr2;
 						return -1;
 					} else if (nr2 == 0) {
 						ctx->saw_file_mark = true;
-						if (tape_spacefm(ctx->vol->device, -1) < 0) {
+						ret_sp = tape_spacefm(ctx->vol->device, -1);
+						if (ret_sp < 0) {
 							ltfsmsg(LTFS_ERR, 17040E);
+							ctx->err_code = ret_sp;
 							return -1;
 						}
 					}
@@ -589,14 +607,10 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 	return len;
 }
 
-/**
- * Close callback for XML parser input using the libxml2 I/O routines. The input
- * buffer should be empty at this point, so just free the parser context.
+/** Close callback for XML parser input using the libxml2 I/O routines.
  */
 int xml_input_tape_close_callback(void *context)
 {
-	struct xml_input_tape *ctx = context;
-	free(ctx->buf);
-	free(ctx);
+	/* Do nothing */
 	return 0;
 }

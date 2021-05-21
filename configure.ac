@@ -3,7 +3,7 @@
 ;;  OO_Copyright_BEGIN
 ;;
 ;;
-;;  Copyright 2010, 2020 IBM Corp. All rights reserved.
+;;  Copyright 2010, 2021 IBM Corp. All rights reserved.
 ;;
 ;;  Redistribution and use in source and binary forms, with or without
 ;;   modification, are permitted provided that the following conditions
@@ -40,7 +40,6 @@ AC_INIT([LTFS], [2.5.0.0 (Prelim)], IBM corporation.)
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4])
-AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_HOST
 AC_CANONICAL_BUILD
 AC_CANONICAL_TARGET
@@ -50,7 +49,7 @@ AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
 AM_PROG_AR
-AC_PROG_LIBTOOL
+LT_INIT
 
 dnl
 dnl Detecting OS
@@ -391,7 +390,7 @@ fi
 dnl
 dnl Check for headers, types, structures, compiler characteristics
 dnl
-AC_CHECK_HEADERS([fcntl.h limits.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/mount.h sys/time.h termios.h unistd.h])
+AC_CHECK_HEADERS([fcntl.h limits.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/mount.h sys/time.h termios.h unistd.h sys/sysctl.h])
 AC_HEADER_STDBOOL
 AC_TYPE_MODE_T
 AC_TYPE_OFF_T
@@ -430,11 +429,12 @@ SAVE_CFLAGS=$CFLAGS
 CFLAGS="$CFLAGS ${LIBXML2_MODULE_CFLAGS}"
 AC_MSG_CHECKING(for XML_PARSE_HUGE)
 AC_CACHE_VAL(ac_cv_xml_huge,
-    AC_TRY_COMPILE([#include <libxml/parser.h>],
-                   [int foo = XML_PARSE_HUGE; return 0],
-                   ac_cv_xml_huge=yes,
-                   ac_cv_xml_huge=no
-                   ))
+   AC_COMPILE_IFELSE(
+	[AC_LANG_PROGRAM([#include <libxml/parser.h>],
+		   [int foo = XML_PARSE_HUGE; return 0;])],
+	[ac_cv_xml_huge=yes],
+	[ac_cv_xml_huge=no]
+   ))
 AC_MSG_RESULT($ac_cv_xml_huge)
 CFLAGS="$SAVE_CFLAGS"
 
