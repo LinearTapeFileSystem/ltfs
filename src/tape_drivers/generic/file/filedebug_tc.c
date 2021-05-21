@@ -2111,6 +2111,24 @@ int filedebug_allow_overwrite(void *device, const struct tc_position pos)
 	return DEVICE_GOOD;
 }
 
+/**
+ * GRAO command is currently unsupported on this device
+ */
+int filedebug_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
+{
+	int ret = -EDEV_UNSUPPORETD_COMMAND;
+	return ret;
+}
+
+/**
+ * RRAO command is currently unsupported on this device
+ */
+int filedebug_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *out_size)
+{
+	int ret = -EDEV_UNSUPPORETD_COMMAND;
+	return ret;
+}
+
 int filedebug_get_eod_status(void *device, int partition)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
@@ -2796,6 +2814,8 @@ struct tape_ops filedebug_handler = {
 	.write_attribute        = filedebug_write_attribute,
 	.read_attribute         = filedebug_read_attribute,
 	.allow_overwrite        = filedebug_allow_overwrite,
+	.grao                   = filedebug_grao,
+	.rrao                   = filedebug_rrao,
 	.set_compression        = filedebug_set_compression,
 	.set_default            = filedebug_set_default,
 	.get_cartridge_health   = filedebug_get_cartridge_health,

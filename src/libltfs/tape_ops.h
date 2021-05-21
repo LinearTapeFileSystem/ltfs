@@ -942,10 +942,11 @@ struct tape_ops {
 	 * Submit the RRAO (Receive Recommended Access Order) command.
 	 * This should be called after the GRAO command.
 	 * @param device A pointer to the tape device
-	 * @param[out] ret_buf rrao, rao result in binary. You need to parse it by yourself.
+	 * @param[out] out_buf rrao, rao result in binary. You need to parse it by yourself.
+	 * @param[out] out_size size of out_buf that is retuned.
 	 * @return 0 on success or a negative value on error
 	 */
-	int   (*rrao)(void *device, const uint32_t num_of_files, char *ret_buf);
+	int   (*rrao)(void *device, const uint32_t num_of_files, char *out_buf, size_t *out_size);
 
 };
 

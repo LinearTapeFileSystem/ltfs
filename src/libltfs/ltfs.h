@@ -168,6 +168,13 @@ struct device_data;
 
 #define LTFS_LIVELINK_EA_NAME         "ltfs.vendor.IBM.prefixLength"
 
+/* rao parameters */
+#define LTFS_OUT_FILE_EXTENSION       ".out"
+#define RAO_MAX_FILENUM                2700 /* Maximum file number allowed for RAO */
+#define LTFS_GEOMETORY_OFF            (0x00)
+#define LTFS_GEOMETORY_ON             (0x01)
+#define RAO_MAX_RET_SIZE              RAO_MAX_FILENUM * (32 + LTFS_GEOMETORY_OFF*20) + 8 /* Maximum size returned from rao */
+
 #define INTERRUPTED_GOTO(rc, label)				\
 	do{											\
 		if (ltfs_is_interrupted()) {			\
@@ -699,7 +706,11 @@ int ltfs_print_device_list(struct tape_ops *ops);
 void ltfs_enable_livelink_mode(struct ltfs_volume *vol);
 
 int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol);
-int ltfs_get_rao_list(char *buf, struct ltfs_volume *vol);
+
+int ltfs_get_rao_list(char *path, struct ltfs_volume *vol);
+int _ltfs_write_rao_file(char *write_data, char *file_path, size_t *write_size);
+int _ltfs_read_rao_file(char *read_data, uint32_t *num_of_files, char *file_path);
+
 #ifdef __cplusplus
 }
 #endif

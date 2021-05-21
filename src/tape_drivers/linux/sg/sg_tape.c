@@ -1213,7 +1213,7 @@ static int _get_uds_rao(void *device, uint32_t *max_uds_supported, uint32_t *max
 	cdb[1] = uds_sa;
 	ltfs_u32tobe(cdb + 2, rao_offset);
 	ltfs_u32tobe(cdb + 6, len);
-	cdb[10] = GEOMETORY_OFF; //UDS_TYPE
+	cdb[10] = LTFS_GEOMETORY_OFF; //UDS_TYPE
 
 	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
@@ -5105,15 +5105,15 @@ int sg_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
 
 	/* Precheck: Check supported uds size from drive */
 	uint32_t max_uds_supported;	//max size of files that can be handled
-	uint32_t max_uds_size;		//max size to be retunred in rrao (32 if GEOMETORY_OFF)
+	uint32_t max_uds_size;		//max size to be retunred in rrao (32 if LTFS_GEOMETORY_OFF)
 	ret = _get_uds_rao(device, &max_uds_supported, &max_uds_size);
 	if (ret < 0) {
 		//Failed to get supported uds size from drive.
-		ltfsmsg(LTFS_ERR, 17268E);
+		ltfsmsg(LTFS_ERR, 17275E);
 		return -ret;
 	}
 	if (num_of_files >= max_uds_supported) {
-			ltfsmsg(LTFS_ERR, 17269E, max_uds_supported, max_uds_size);
+			ltfsmsg(LTFS_ERR, 17276E, max_uds_supported, max_uds_size);
 			return -EDEV_INVALID_ARG;
 	}
 
@@ -5150,7 +5150,7 @@ int sg_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
 	cdb[0] = MAINTENANCE_OUT; //op_code
 	cdb[1] = 0x1D; //service action
 	cdb[2] = 0x2; //PROCESS, reorder UDS on
-	cdb[3] = GEOMETORY_OFF; //UDS_TYPE
+	cdb[3] = LTFS_GEOMETORY_OFF; //UDS_TYPE
 	ltfs_u32tobe(cdb + 6, len); //parameter list len starts from 6 byte, adding len to cbc 6-9
 
 	timeout = get_timeout(priv->timeouts, cdb[0]);
@@ -5178,7 +5178,7 @@ int sg_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
 	return ret;
 }
 
-int sg_rrao(void *device, const uint32_t num_of_files, char *ret_buf)
+int sg_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *out_size)
 {
 	int ret = -EDEV_UNKNOWN;
 	int ret_ep = DEVICE_GOOD;
@@ -5195,7 +5195,7 @@ int sg_rrao(void *device, const uint32_t num_of_files, char *ret_buf)
 	// 32 bytes are needed in uds, and 2*10 bytes additional descripter for geometry each, if on.
 	// \* num_of_files Each file will need uds.
 	// \+ 8, for reserved bytes at the beginning cdb.
-	uint64_t len		= num_of_files * (32 + GEOMETORY_OFF*20) + 8;
+	uint64_t len		= ( num_of_files * (32 + LTFS_GEOMETORY_OFF*20) ) + 8;
 
 	uint32_t uds_sa		= 0x1D;			//uds limits + service action
 	uint32_t rao_offset	= 0x0;			//Rao list offset. Set to zero.
@@ -5219,7 +5219,7 @@ int sg_rrao(void *device, const uint32_t num_of_files, char *ret_buf)
 	cdb[1] = uds_sa;
 	ltfs_u32tobe(cdb + 2, rao_offset);
 	ltfs_u32tobe(cdb + 6, len);
-	cdb[10] = GEOMETORY_OFF; //UDS_TYPE
+	cdb[10] = LTFS_GEOMETORY_OFF; //UDS_TYPE
 
 	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
@@ -5243,7 +5243,8 @@ int sg_rrao(void *device, const uint32_t num_of_files, char *ret_buf)
 			ret = ret_ep;
 	}
 
-	memcpy(ret_buf, buffer, len);
+	memcpy(out_buf, buffer, len);
+	memcpy(out_size, &len, sizeof(size_t));
 	free(buffer);
 
 	return ret;

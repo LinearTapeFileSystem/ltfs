@@ -1129,11 +1129,6 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 				val = NULL;
 				ret = -LTFS_NO_MEMORY;
 			}
-		} else if (! strcmp(name, "ltfs.vendor.IBM.rao")) {
-			ret = ltfs_get_rao_list(&buf, vol);
-			ltfsmsg(LTFS_INFO, 19999I, "RAO command success:", &buf, ret );//!--- show dump for debug
-			if (ret < 0)
-				val = NULL;
 		} else if ( (!strncmp(name, "ltfs.vendor.IBM.logPage.", strlen("ltfs.vendor.IBM.logPage."))) &&
 					(strlen(name) == strlen("ltfs.vendor.IBM.logPage.XX.XX")) ) {
 			char page_str[3]    = {0x00, 0x00, 0x00};
@@ -1392,6 +1387,16 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 			ltfs_set_syslog_level(level);
 		} else
 			ret = -LTFS_STRING_CONVERSION;
+		free(v);
+	} else if (! strcmp(name, "ltfs.vendor.IBM.rao")) {
+		char *v;
+		v = strndup(value, size);
+		if (! v) {
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+			return -LTFS_NO_MEMORY;
+		}
+		if (strlen(v) > PATH_MAX) return -LTFS_LARGE_XATTR; //file path size check
+		ret = ltfs_get_rao_list(v, vol);
 		free(v);
 	} else if (! strcmp(name, "ltfs.vendor.IBM.trace")) {
 		char *v;

@@ -3573,66 +3573,45 @@ int tape_set_profiler(struct device_data *dev, char *work_dir, bool enable)
 
 /**
  * Prepares GRAO parameter list, and sends rao request.
- * Before the request is sent, GRAO UDS segments passed from in_grao_uds_info is
- * appended to GRAO parameter list.
+ * All data should be set in rao before this is called.
  * @param dev a pointer to the tape device
- * @param num_of_files number of files to process in rao. 0 will clear rao list.
+ * @param rao a pointer to the rao data
  * @param [out] ret_buf the returned buffer from grao.
  * @return 0 on success or a negative value on error
  */
-int tape_rao_request(struct device_data *dev, const uint32_t num_of_files, char *ret_buf)
+int tape_rao_request(struct device_data *dev, struct rao_mod *rao)
 {
 	int ret = 0;
-	unsigned char *uds_descriptor;
 
-	//check and construct uds descriptor
-	if (num_of_files >= 0) {
-		/* create buffer */
-		uds_descriptor = calloc(num_of_files * COMMAND_DESCRIPTION_LENGTH, 1);
-		if (!uds_descriptor) {
-			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
-			return -EDEV_NO_MEMORY;
-		}
-	 	/* create UDS for each file and append everything to param list */
-		uint32_t i = 0;
-		for(i=0; i<num_of_files; i++) {
-			ltfs_u16tobe(uds_descriptor +  0 + i*32, 0x1E);					//[0-1] Discriptor length
-			ltfs_u32tobe(uds_descriptor +  5 + i*32, &dev->rao.in_grao_uds_info[i].user_identifier);	//[5-14] 10 byte application label data
-			uds_descriptor[15 + i*32] = &dev->rao.in_grao_uds_info[i].partition;						//[15] partition number
-			ltfs_u64tobe(uds_descriptor + 16 + i*32, &dev->rao.in_grao_uds_info[i].byteoffset_start);	// BEGINNING LOGICAL OBJECT IDENTIFIER
-			ltfs_u64tobe(uds_descriptor + 24 + i*32, &dev->rao.in_grao_uds_info[i].byteoffset_end);		// ENDING LOGICAL OBJECT IDENTIFIER
-		}
-	} else {
+	//check file size
+	if (rao->num_of_files <= 0) {
 		/* rao list will be cleared if call size is less than zero */
-		uds_descriptor = calloc(1, 0);
-		&dev->rao.in_buf == NULL;
-		ltfsmsg(LTFS_DEBUG, 17270D, "Clear Called");
+		rao->in_buf = NULL;
+		ltfsmsg(LTFS_DEBUG, 17277D, "Clear Called");
+	}
+
+	if (rao->in_buf == NULL){
+		return EDEV_INTERNAL_ERROR;
 	}
 
 	//run GRAO
-	ret = dev->backend->grao(dev->backend_data, uds_descriptor, num_of_files);
-	if (ret < 0){
-		ltfsmsg(LTFS_ERR, 17271E, "GRAO", ret); //GRAO command returns error
-		free(uds_descriptor);
+	ret = dev->backend->grao(dev->backend_data, rao->in_buf, rao->num_of_files);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 17278E, "GRAO", ret); //GRAO command returns error
 		return ret;
 	}
-	else if (num_of_files <= 0) {
+	else if (rao->num_of_files <= 0) {
 		/* rao list cleared */
-		ltfsmsg(LTFS_DEBUG, 17270D, "Clear Done");
-		free(uds_descriptor);
+		ltfsmsg(LTFS_DEBUG, 17277D, "Clear Done");
 		return ret;
 	}
 
 	// run RRAO
-	ret = dev->backend->rrao(dev->backend_data, num_of_files, ret_buf);
+	ret = dev->backend->rrao(dev->backend_data, rao->num_of_files, &rao->out_buf, &rao->out_size);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 17271E, "RRAO", ret);
-		free(uds_descriptor);
+		ltfsmsg(LTFS_ERR, 17278E, "RRAO", ret);
 		return ret;
 	}
-
-	// rrao successful
-	free(uds_descriptor);
 
 	return ret;
 }

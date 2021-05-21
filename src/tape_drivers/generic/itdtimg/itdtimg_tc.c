@@ -962,6 +962,24 @@ int itdtimage_allow_overwrite(void *device, const struct tc_position pos)
 	return DEVICE_GOOD;
 }
 
+/**
+ * GRAO command is currently unsupported on this device
+ */
+int itdtimage_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
+{
+	int ret = -EDEV_UNSUPPORETD_COMMAND;
+	return ret;
+}
+
+/**
+ * RRAO command is currently unsupported on this device
+ */
+int itdtimage_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *out_size)
+{
+	int ret = -EDEV_UNSUPPORETD_COMMAND;
+	return ret;
+}
+
 int itdtimage_get_eod_status(void *vstate, int partition)
 {
 	struct itdtimage_data *state = (struct itdtimage_data *)vstate;
@@ -1623,6 +1641,8 @@ struct tape_ops itdtimage_handler = {
 	.write_attribute		= itdtimage_write_attribute,
 	.read_attribute			= itdtimage_read_attribute,
 	.allow_overwrite		= itdtimage_allow_overwrite,
+	.grao 					= itdtimage_grao,
+	.rrao					= itdtimage_rrao,
 	.set_compression		= itdtimage_set_compression,
 	.set_default			= itdtimage_set_default,
 	.get_cartridge_health   = itdtimage_get_cartridge_health,

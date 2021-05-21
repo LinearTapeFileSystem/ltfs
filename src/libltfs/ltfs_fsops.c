@@ -1082,11 +1082,11 @@ start:
 	id->uid = d->uid;
 	id->ino = d->ino;
 
-	/* Save original value */
-	ret_restore = xattr_get(d, new_name_strip, value_restore, sizeof(value_restore), vol);
-
-	ret = xattr_set(d, new_name_strip, value, size, flags, vol);
 	if (dcache_initialized(vol)) {
+		/* Save original value */
+		ret_restore = xattr_get(d, new_name_strip, value_restore, sizeof(value_restore), vol);
+
+		ret = xattr_set(d, new_name_strip, value, size, flags, vol);
 		if (ret == 0) {
 			ret = dcache_setxattr(new_path, d, new_name_strip, value, size, flags, vol);
 			if (ret < 0) {
@@ -1097,9 +1097,10 @@ start:
 			}
 		}
 		dcache_close(d, true, true, vol);
-	} else
+	} else {
+		ret = xattr_set(d, new_name_strip, value, size, flags, vol);
 		fs_release_dentry(d);
-
+	}
 	if (NEED_REVAL(ret)) {
 		ret = ltfs_revalidate(write_lock, vol);
 		if (ret == 0)
