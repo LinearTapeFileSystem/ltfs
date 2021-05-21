@@ -5134,10 +5134,6 @@ int sg_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
 		return -EDEV_NO_MEMORY;
 	}
 
-	// build buffer
-	ltfs_u32tobe(buffer + 4, len - 8);
-	memcpy(buffer + 8, buf, len - 8);
-
 	/* Zero out the CDB and the result buffer */
 	ret = init_sg_io_header(&req);
 	if (ret < 0)
