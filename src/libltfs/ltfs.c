@@ -4270,7 +4270,7 @@ int ltfs_get_rao_list(char *path, struct ltfs_volume *vol)
 	}
 
 	/* write data to file */
-	ret = _ltfs_write_rao_file(rao.in_buf, path, rao.out_size);
+	ret = _ltfs_write_rao_file(rao.out_buf, path, rao.out_size);
 	if (ret < 0) {
 		goto out;
 	}
@@ -4301,7 +4301,7 @@ int _ltfs_write_rao_file(char *write_data, char *file_path, size_t *write_size)
 		ltfsmsg(LTFS_ERR, 17281E, "File open failed");
 		return -LTFS_FILE_ERR;
 	} else {
-		fwrite(write_data,sizeof(char),write_size,p);
+		fwrite(&write_data,sizeof(char),write_size,p);
 		fclose(p);
 		rc = DEVICE_GOOD;
 	}

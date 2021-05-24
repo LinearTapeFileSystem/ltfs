@@ -1186,7 +1186,7 @@ static int _get_uds_rao(void *device, uint32_t *max_uds_supported, uint32_t *max
 	unsigned char sense[MAXSENSE];
 	unsigned char cdb[CDB12_LEN];
 	int timeout;
-	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "GRAO";
+	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "RRAO";
 	char *msg = NULL;
 
 	/* uds mode preset */
