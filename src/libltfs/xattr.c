@@ -1395,7 +1395,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
-		if (strlen(v) > PATH_MAX) return -LTFS_LARGE_XATTR; //file path size check
+		if (strlen(v) > PATH_MAX) return -LTFS_LARGE_XATTR; /* file path size check */
 		ret = ltfs_get_rao_list(v, vol);
 		free(v);
 	} else if (! strcmp(name, "ltfs.vendor.IBM.trace")) {

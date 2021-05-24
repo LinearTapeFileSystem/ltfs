@@ -3583,7 +3583,7 @@ int tape_rao_request(struct device_data *dev, struct rao_mod *rao)
 {
 	int ret = 0;
 
-	//check file size
+	/* check file size */
 	if (rao->num_of_files <= 0) {
 		/* rao list will be cleared if call size is less than zero */
 		rao->in_buf = NULL;
@@ -3594,7 +3594,7 @@ int tape_rao_request(struct device_data *dev, struct rao_mod *rao)
 		return EDEV_INTERNAL_ERROR;
 	}
 
-	//run GRAO
+	/* run GRAO */
 	ret = dev->backend->grao(dev->backend_data, rao->in_buf, rao->num_of_files);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17278E, "GRAO", ret); //GRAO command returns error
@@ -3606,7 +3606,7 @@ int tape_rao_request(struct device_data *dev, struct rao_mod *rao)
 		return ret;
 	}
 
-	// run RRAO
+	/* run RRAO */
 	ret = dev->backend->rrao(dev->backend_data, rao->num_of_files, &rao->out_buf, &rao->out_size);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17278E, "RRAO", ret);

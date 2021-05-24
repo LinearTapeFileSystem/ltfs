@@ -4228,10 +4228,15 @@ int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol)
 	return ret;
 }
 
+/**
+ * Perform the RAO commands and save the results in a .out file.
+ * @param path The file location of the GRAO buffer to handle.
+ * @param vol LTFS volume. The label structure receives a new UUID and format time; all other
+ *            label fields should be filled in correctly before calling this function.
+ */
 int ltfs_get_rao_list(char *path, struct ltfs_volume *vol)
 {
 	int ret = -EDEV_UNKNOWN;
-	/* get rao */
 	ret = tape_device_lock(vol->device);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 12010E, __FUNCTION__);
@@ -4241,7 +4246,7 @@ int ltfs_get_rao_list(char *path, struct ltfs_volume *vol)
 	/* Prepare memory and read data from file */
 	struct rao_mod rao;
 	vol->device->rao = &rao;
-	char in_buf[RAO_MAX_RET_SIZE]; // read bytes is never larger than return size
+	char in_buf[RAO_MAX_RET_SIZE]; /* read bytes is never larger than return size */
 	rao.in_buf = &in_buf;
 
 	if (*path == NULL){
@@ -4275,7 +4280,6 @@ int ltfs_get_rao_list(char *path, struct ltfs_volume *vol)
 		goto out;
 	}
 
-	// success
 	goto out;
 
 out:
@@ -4360,7 +4364,7 @@ int _ltfs_read_rao_file(char *read_data, uint32_t *num_of_files, char *file_path
 	/* Input parser, counts how many files (num_of_files) there are in the input. */
 	/* The grao param list size should be Header(8 bytes) + ( UDS(32 bytes) * num_of_files ). */
 	if ( (size - 8) % 32 != 0 || size < 8+32 ) {
-		//data format is wrong
+		/* data format is wrong */
 		ltfsmsg(LTFS_ERR, 17282E, "Unreadable file format");
 		return -EDEV_INVALID_ARG;
 	}

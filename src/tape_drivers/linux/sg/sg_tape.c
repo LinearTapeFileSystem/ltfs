@@ -1190,9 +1190,9 @@ static int _get_uds_rao(void *device, uint32_t *max_uds_supported, uint32_t *max
 	char *msg = NULL;
 
 	/* uds mode preset */
-	uint32_t len		= 4;		//allocation length to be returned
-	uint32_t uds_sa		= 0x9D;		//uds limits 1b + service action
-	uint32_t rao_offset	= 0x0;		//Rao list offset. Set to zero.
+	uint32_t len		= 4;		/* allocation length to be returned */
+	uint32_t uds_sa		= 0x9D;		/* uds limits 1b + service action */
+	uint32_t rao_offset	= 0x0;		/* Rao list offset. Set to zero. */
 
 	/* Prepare the buffer */
 	unsigned char *buffer = calloc(1, len);
@@ -1213,7 +1213,7 @@ static int _get_uds_rao(void *device, uint32_t *max_uds_supported, uint32_t *max
 	cdb[1] = uds_sa;
 	ltfs_u32tobe(cdb + 2, rao_offset);
 	ltfs_u32tobe(cdb + 6, len);
-	cdb[10] = LTFS_GEOMETORY_OFF; //UDS_TYPE
+	cdb[10] = LTFS_GEOMETORY_OFF;	/* UDS_TYPE */
 
 	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
@@ -5104,11 +5104,11 @@ int sg_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
 	int ret_ep = DEVICE_GOOD;
 
 	/* Precheck: Check supported uds size from drive */
-	uint32_t max_uds_supported;	//max size of files that can be handled
-	uint32_t max_uds_size;		//max size to be retunred in rrao (32 if LTFS_GEOMETORY_OFF)
+	uint32_t max_uds_supported;	/* max size of files that can be handled */
+	uint32_t max_uds_size;		/* max size to be retunred in rrao (32 if LTFS_GEOMETORY_OFF) */
 	ret = _get_uds_rao(device, &max_uds_supported, &max_uds_size);
 	if (ret < 0) {
-		//Failed to get supported uds size from drive.
+		/* Failed to get supported uds size from drive. */
 		ltfsmsg(LTFS_ERR, 17275E);
 		return -ret;
 	}
@@ -5127,7 +5127,7 @@ int sg_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
 	char *msg = NULL;
 
 	/* Prepare the buffer (Parameter List) to transfer */
-	uint32_t len = 32 * num_of_files + 8; //(uds siz * num of file) + 0-7 byte header
+	uint32_t len = 32 * num_of_files + 8;			/* (uds siz * num of file) + 0-7 byte header */
 	unsigned char *buffer = calloc(1, len);
 	if (!buffer) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
@@ -5143,11 +5143,11 @@ int sg_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
 	memset(sense, 0, sizeof(sense));
 
 	/* Build CDB */
-	cdb[0] = MAINTENANCE_OUT; //op_code
-	cdb[1] = 0x1D; //service action
-	cdb[2] = 0x2; //PROCESS, reorder UDS on
-	cdb[3] = LTFS_GEOMETORY_OFF; //UDS_TYPE
-	ltfs_u32tobe(cdb + 6, len); //parameter list len starts from 6 byte, adding len to cbc 6-9
+	cdb[0] = MAINTENANCE_OUT;		/* op_code */
+	cdb[1] = 0x1D;					/* service action */
+	cdb[2] = 0x2;					/* PROCESS, reorder UDS on */
+	cdb[3] = LTFS_GEOMETORY_OFF;	/* UDS_TYPE */
+	ltfs_u32tobe(cdb + 6, len);		/* parameter list len starts from 6 byte, adding len to cbc 6-9 */
 
 	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
@@ -5187,14 +5187,14 @@ int sg_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *ou
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "RRAO";
 	char *msg = NULL;
 
-	// Allocation length to be returned.
-	// 32 bytes are needed in uds, and 2*10 bytes additional descripter for geometry each, if on.
-	// \* num_of_files Each file will need uds.
-	// \+ 8, for reserved bytes at the beginning cdb.
+	/* Allocation length to be returned.
+	/* 32 bytes are needed in uds, and 2*10 bytes additional descripter for geometry each, if on.
+	/*  \* num_of_files Each file will need uds.
+	/*  \+ 8, for reserved bytes at the beginning cdb. */
 	uint64_t len		= ( num_of_files * (32 + LTFS_GEOMETORY_OFF*20) ) + 8;
 
-	uint32_t uds_sa		= 0x1D;			//uds limits + service action
-	uint32_t rao_offset	= 0x0;			//Rao list offset. Set to zero.
+	uint32_t uds_sa		= 0x1D;			/* uds limits + service action */
+	uint32_t rao_offset	= 0x0;			/* Rao list offset. Set to zero. */
 
 	/* Prepare the buffer */
 	unsigned char *buffer = calloc(1, len);
@@ -5215,7 +5215,7 @@ int sg_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *ou
 	cdb[1] = uds_sa;
 	ltfs_u32tobe(cdb + 2, rao_offset);
 	ltfs_u32tobe(cdb + 6, len);
-	cdb[10] = LTFS_GEOMETORY_OFF; //UDS_TYPE
+	cdb[10] = LTFS_GEOMETORY_OFF; /* UDS_TYPE */
 
 	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
