@@ -173,7 +173,8 @@ struct device_data;
 #define RAO_MAX_FILENUM                2700 /* Maximum file number allowed for RAO */
 #define LTFS_GEOMETORY_OFF            (0x00)
 #define LTFS_GEOMETORY_ON             (0x01)
-#define RAO_MAX_RET_SIZE              RAO_MAX_FILENUM * (32 + LTFS_GEOMETORY_OFF*20) + 8 /* Maximum size returned from rao */
+ /* Maximum size allowed that is returned from RAO */
+#define RAO_MAX_RET_SIZE              RAO_MAX_FILENUM * (32 + LTFS_GEOMETORY_OFF*20) + 8
 
 #define INTERRUPTED_GOTO(rc, label)				\
 	do{											\

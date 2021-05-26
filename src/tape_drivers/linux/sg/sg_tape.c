@@ -5187,18 +5187,15 @@ int sg_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *ou
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "RRAO";
 	char *msg = NULL;
 
-	/* Allocation length to be returned.
-	/* 32 bytes are needed in uds, and 2*10 bytes additional descripter for geometry each, if on.
-	/*  \* num_of_files Each file will need uds.
-	/*  \+ 8, for reserved bytes at the beginning cdb. */
-	uint64_t len		= ( num_of_files * (32 + LTFS_GEOMETORY_OFF*20) ) + 8;
+	/* Allocation length to be returned, initial size enough to get additional data */
+	uint64_t len		= 8;
 
 	uint32_t uds_sa		= 0x1D;			/* uds limits + service action */
 	uint32_t rao_offset	= 0x0;			/* Rao list offset. Set to zero. */
 
 	/* Prepare the buffer */
-	unsigned char *buffer = calloc(1, len);
-	if (!buffer) {
+	unsigned char *tmp_buf = calloc(1, len);
+	if (!tmp_buf) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -EDEV_NO_MEMORY;
 	}
@@ -5226,7 +5223,7 @@ int sg_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *ou
 	req.cmd_len         = sizeof(cdb);
 	req.mx_sb_len       = sizeof(sense);
 	req.dxfer_len       = len;
-	req.dxferp          = buffer;
+	req.dxferp          = tmp_buf;
 	req.cmdp            = cdb;
 	req.sbp             = sense;
 	req.timeout         = SGConversion(timeout);
@@ -5237,8 +5234,31 @@ int sg_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *ou
 		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
 		if (ret_ep < 0)
 			ret = ret_ep;
+		free(tmp_buf);
+		return ret;
 	}
 
+	/* check tmp_buf size and reset len */
+	len = (uint64_t)ltfs_betou32(tmp_buf + 4);
+	free(tmp_buf);
+
+	/* Re-prepare the buffer and get full data */
+	unsigned char *buffer = calloc(1, len);
+	if (!buffer) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -EDEV_NO_MEMORY;
+	}
+	req.dxfer_len	= len;
+	req.dxferp		= buffer;
+
+	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
+	if (ret < 0) {
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
+	}
+
+	/* copy data */
 	memcpy(out_buf, buffer, len);
 	memcpy(out_size, &len, sizeof(size_t));
 	free(buffer);
