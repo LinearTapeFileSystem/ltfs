@@ -4247,9 +4247,9 @@ int ltfs_get_rao_list(char *path, struct ltfs_volume *vol)
 	struct rao_mod rao;
 	vol->device->rao = &rao;
 	char in_buf[RAO_MAX_RET_SIZE]; /* read bytes is never larger than return size */
-	rao.in_buf = &in_buf;
+	rao.in_buf = (char *)&in_buf;
 
-	if (*path == NULL){
+	if (path == NULL){
 		ret = -EDEV_INVALID_ARG;
 		goto out;
 	}
@@ -4305,7 +4305,7 @@ int _ltfs_write_rao_file(char *write_data, char *file_path, size_t *write_size)
 		ltfsmsg(LTFS_ERR, 17281E, "File open failed");
 		return -LTFS_FILE_ERR;
 	} else {
-		fwrite(&write_data,sizeof(char),write_size,p);
+		fwrite(&write_data, sizeof(char), (size_t)write_size, p);
 		fclose(p);
 		rc = DEVICE_GOOD;
 	}

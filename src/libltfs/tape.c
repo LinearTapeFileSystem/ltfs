@@ -3595,7 +3595,7 @@ int tape_rao_request(struct device_data *dev, struct rao_mod *rao)
 	}
 
 	/* run GRAO */
-	ret = dev->backend->grao(dev->backend_data, rao->in_buf, rao->num_of_files);
+	ret = dev->backend->grao(dev->backend_data, (const unsigned char *)rao->in_buf, rao->num_of_files);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17278E, "GRAO", ret); //GRAO command returns error
 		return ret;
@@ -3607,7 +3607,7 @@ int tape_rao_request(struct device_data *dev, struct rao_mod *rao)
 	}
 
 	/* run RRAO */
-	ret = dev->backend->rrao(dev->backend_data, rao->num_of_files, &rao->out_buf, &rao->out_size);
+	ret = dev->backend->rrao(dev->backend_data, rao->num_of_files, (char *)&rao->out_buf, (size_t *)&rao->out_size);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17278E, "RRAO", ret);
 		return ret;
