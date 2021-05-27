@@ -2712,6 +2712,24 @@ int lin_tape_ibmtape_allow_overwrite(void *device, const struct tc_position pos)
 }
 
 /**
+ * GRAO command is currently unsupported on this device
+ */
+int lin_tape_ibmtape_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
+{
+	int ret = -EDEV_UNSUPPORETD_COMMAND;
+	return ret;
+}
+
+/**
+ * RRAO command is currently unsupported on this device
+ */
+int lin_tape_ibmtape_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *out_size)
+{
+	int ret = -EDEV_UNSUPPORETD_COMMAND;
+	return ret;
+}
+
+/**
  * Set compression setting
  * @param device a pointer to the ibmtape backend
  * @param enable_compression enable: true, disable: false
@@ -4377,6 +4395,8 @@ struct tape_ops lin_tape_ibmtape_drive_handler = {
 	.write_attribute        = lin_tape_ibmtape_write_attribute,
 	.read_attribute         = lin_tape_ibmtape_read_attribute,
 	.allow_overwrite        = lin_tape_ibmtape_allow_overwrite,
+	.grao                   = lin_tape_ibmtape_grao,
+	.rrao                   = lin_tape_ibmtape_rrao,
 	// May be command combination
 	.set_compression        = lin_tape_ibmtape_set_compression,
 	.set_default            = lin_tape_ibmtape_set_default,

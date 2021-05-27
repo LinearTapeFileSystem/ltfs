@@ -2973,6 +2973,24 @@ int iokit_allow_overwrite(void *device, const struct tc_position pos)
 	return ret;
 }
 
+/**
+ * GRAO command is currently unsupported on this device
+ */
+int iokit_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
+{
+	int ret = -EDEV_UNSUPPORETD_COMMAND;
+	return ret;
+}
+
+/**
+ * RRAO command is currently unsupported on this device
+ */
+int iokit_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *out_size)
+{
+	int ret = -EDEV_UNSUPPORETD_COMMAND;
+	return ret;
+}
+
 int iokit_set_compression(void *device, const bool enable_compression, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
@@ -4290,6 +4308,8 @@ struct tape_ops iokit_handler = {
 	.write_attribute        = iokit_write_attribute,
 	.read_attribute         = iokit_read_attribute,
 	.allow_overwrite        = iokit_allow_overwrite,
+	.grao                   = iokit_grao,
+	.rrao                   = iokit_rrao,
 	// May be command combination
 	.set_compression        = iokit_set_compression,
 	.set_default            = iokit_set_default,

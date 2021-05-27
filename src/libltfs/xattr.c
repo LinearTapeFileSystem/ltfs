@@ -805,6 +805,7 @@ bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_volume *v
 			|| ! strcmp(name, "ltfs.vendor.IBM.cartridgeMountNode")
 			|| ! strcmp(name, "ltfs.vendor.IBM.logLevel")
 			|| ! strcmp(name, "ltfs.vendor.IBM.syslogLevel")
+			|| ! strcmp(name, "ltfs.vendor.IBM.rao")
 			|| ! strcmp(name, "ltfs.vendor.IBM.logPage")
 			|| ! strcmp(name, "ltfs.vendor.IBM.mediaMAM")
 			|| ! strncmp(name, "ltfs.vendor", strlen("ltfs.vendor")))
@@ -1386,6 +1387,16 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 			ltfs_set_syslog_level(level);
 		} else
 			ret = -LTFS_STRING_CONVERSION;
+		free(v);
+	} else if (! strcmp(name, "ltfs.vendor.IBM.rao")) {
+		char *v;
+		v = strndup(value, size);
+		if (! v) {
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+			return -LTFS_NO_MEMORY;
+		}
+		if (strlen(v) > PATH_MAX) return -LTFS_LARGE_XATTR; /* file path size check */
+		ret = ltfs_get_rao_list(v, vol);
 		free(v);
 	} else if (! strcmp(name, "ltfs.vendor.IBM.trace")) {
 		char *v;

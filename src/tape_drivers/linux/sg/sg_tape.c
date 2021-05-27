@@ -1169,6 +1169,80 @@ start:
 	return ret;
 }
 
+/**
+ * Local function to get the uds limits for device when submitting the GRAO command.
+ * @param device A pointer to the tape device
+ * @param[out] max_uds_supported max uds supported
+ * @param[out] max_uds_size max size supported
+ * @return 0 on success or a negative value on error
+ */
+static int _get_uds_rao(void *device, uint32_t *max_uds_supported, uint32_t *max_uds_size)
+{
+	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
+
+	struct sg_data *priv = (struct sg_data*)device;
+	sg_io_hdr_t req;
+	unsigned char sense[MAXSENSE];
+	unsigned char cdb[CDB12_LEN];
+	int timeout;
+	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "RRAO";
+	char *msg = NULL;
+
+	/* uds mode preset */
+	uint32_t len		= 4;		/* allocation length to be returned */
+	uint32_t uds_sa		= 0x9D;		/* uds limits 1b + service action */
+	uint32_t rao_offset	= 0x0;		/* Rao list offset. Set to zero. */
+
+	/* Prepare the buffer */
+	unsigned char *buffer = calloc(1, len);
+	if (!buffer) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -EDEV_NO_MEMORY;
+	}
+
+	/* Zero out the CDB and the result buffer */
+	ret = init_sg_io_header(&req);
+	if (ret < 0)
+		return ret;
+	memset(cdb, 0, sizeof(cdb));
+	memset(sense, 0, sizeof(sense));
+
+	/* Build CDB */
+	cdb[0] = MAINTENANCE_IN;
+	cdb[1] = uds_sa;
+	ltfs_u32tobe(cdb + 2, rao_offset);
+	ltfs_u32tobe(cdb + 6, len);
+	cdb[10] = LTFS_GEOMETORY_OFF;	/* UDS_TYPE */
+
+	timeout = get_timeout(priv->timeouts, cdb[0]);
+	if (timeout < 0)
+		return -EDEV_UNSUPPORETD_COMMAND;
+
+	/* Build request */
+	req.dxfer_direction = SCSI_FROM_TARGET_TO_INITIATOR;
+	req.cmd_len         = sizeof(cdb);
+	req.mx_sb_len       = sizeof(sense);
+	req.dxfer_len       = len;
+	req.dxferp          = buffer;
+	req.cmdp            = cdb;
+	req.sbp             = sense;
+	req.timeout         = SGConversion(timeout);
+	req.usr_ptr         = (void *)cmd_desc;
+
+	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
+	if (ret == DEVICE_GOOD) {
+		/* process returned buffer */
+		*max_uds_supported = (uint32_t)ltfs_betou16(buffer);
+		*max_uds_size = (uint32_t)ltfs_betou16(buffer + 2);
+	} else {
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
+	}
+	return ret;
+}
+
 /** SCSI command handling of REPORT SUPPORTED OPERATION CODES
  */
 static int _cdb_rsoc(void* device, unsigned char *buf, uint32_t len)
@@ -5016,6 +5090,174 @@ int sg_get_block_in_buffer(void *device, uint32_t *block)
 	return ret;
 }
 
+int sg_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
+{
+	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
+
+	/* Precheck: Check supported uds size from drive */
+	uint32_t max_uds_supported;	/* max size of files that can be handled */
+	uint32_t max_uds_size;		/* max size to be retunred in rrao (32 if LTFS_GEOMETORY_OFF) */
+	ret = _get_uds_rao(device, &max_uds_supported, &max_uds_size);
+	if (ret < 0) {
+		/* Failed to get supported uds size from drive. */
+		ltfsmsg(LTFS_ERR, 17275E);
+		return -ret;
+	}
+	if (num_of_files >= max_uds_supported) {
+			ltfsmsg(LTFS_ERR, 17276E, max_uds_supported, max_uds_size);
+			return -EDEV_INVALID_ARG;
+	}
+
+	/* GRAO starts here */
+	struct sg_data *priv = (struct sg_data*)device;
+	sg_io_hdr_t req;
+	unsigned char cdb[CDB12_LEN];
+	unsigned char sense[MAXSENSE];
+	int timeout;
+	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "GRAO";
+	char *msg = NULL;
+
+	/* Prepare the buffer (Parameter List) to transfer */
+	uint32_t len = 32 * num_of_files + 8;			/* (uds siz * num of file) + 0-7 byte header */
+	unsigned char *buffer = calloc(1, len);
+	if (!buffer) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -EDEV_NO_MEMORY;
+	}
+
+	/* Zero out the CDB and the result buffer */
+	ret = init_sg_io_header(&req);
+	if (ret < 0)
+		return ret;
+
+	memset(cdb, 0, sizeof(cdb));
+	memset(sense, 0, sizeof(sense));
+
+	/* Build CDB */
+	cdb[0] = MAINTENANCE_OUT;		/* op_code */
+	cdb[1] = 0x1D;					/* service action */
+	cdb[2] = 0x2;					/* PROCESS, reorder UDS on */
+	cdb[3] = LTFS_GEOMETORY_OFF;	/* UDS_TYPE */
+	ltfs_u32tobe(cdb + 6, len);		/* parameter list len starts from 6 byte, adding len to cbc 6-9 */
+
+	timeout = get_timeout(priv->timeouts, cdb[0]);
+	if (timeout < 0)
+		return -EDEV_UNSUPPORETD_COMMAND;
+
+	/* Build request */
+	req.dxfer_direction = SCSI_FROM_INITIATOR_TO_TARGET;
+	req.cmd_len         = sizeof(cdb);
+	req.mx_sb_len       = sizeof(sense);
+	req.dxfer_len       = len;
+	req.dxferp          = buffer;
+	req.cmdp            = cdb;
+	req.sbp             = sense;
+	req.timeout         = SGConversion(timeout);
+	req.usr_ptr         = (void *)cmd_desc;
+
+	if (ret < 0){
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
+	}
+	free(buffer);
+
+	return ret;
+}
+
+int sg_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *out_size)
+{
+	int ret = -EDEV_UNKNOWN;
+	int ret_ep = DEVICE_GOOD;
+
+	struct sg_data *priv = (struct sg_data*)device;
+	sg_io_hdr_t req;
+	unsigned char sense[MAXSENSE];
+	unsigned char cdb[CDB12_LEN];
+	int timeout;
+	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "RRAO";
+	char *msg = NULL;
+
+	/* Allocation length to be returned, initial size enough to get additional data */
+	uint64_t len		= 8;
+
+	uint32_t uds_sa		= 0x1D;			/* uds limits + service action */
+	uint32_t rao_offset	= 0x0;			/* Rao list offset. Set to zero. */
+
+	/* Prepare the buffer */
+	unsigned char *tmp_buf = calloc(1, len);
+	if (!tmp_buf) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -EDEV_NO_MEMORY;
+	}
+
+	/* Zero out the CDB and the result buffer */
+	ret = init_sg_io_header(&req);
+	if (ret < 0)
+		return ret;
+	memset(cdb, 0, sizeof(cdb));
+	memset(sense, 0, sizeof(sense));
+
+	/* Build CDB */
+	cdb[0] = MAINTENANCE_IN;
+	cdb[1] = uds_sa;
+	ltfs_u32tobe(cdb + 2, rao_offset);
+	ltfs_u32tobe(cdb + 6, len);
+	cdb[10] = LTFS_GEOMETORY_OFF; /* UDS_TYPE */
+
+	timeout = get_timeout(priv->timeouts, cdb[0]);
+	if (timeout < 0)
+		return -EDEV_UNSUPPORETD_COMMAND;
+
+	/* Build request */
+	req.dxfer_direction = SCSI_FROM_TARGET_TO_INITIATOR;
+	req.cmd_len         = sizeof(cdb);
+	req.mx_sb_len       = sizeof(sense);
+	req.dxfer_len       = len;
+	req.dxferp          = tmp_buf;
+	req.cmdp            = cdb;
+	req.sbp             = sense;
+	req.timeout         = SGConversion(timeout);
+	req.usr_ptr         = (void *)cmd_desc;
+
+	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
+	if (ret < 0){
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
+		free(tmp_buf);
+		return ret;
+	}
+
+	/* check tmp_buf size and reset len */
+	len = (uint64_t)ltfs_betou32(tmp_buf + 4);
+	free(tmp_buf);
+
+	/* Re-prepare the buffer and get full data */
+	unsigned char *buffer = calloc(1, len);
+	if (!buffer) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -EDEV_NO_MEMORY;
+	}
+	req.dxfer_len	= len;
+	req.dxferp		= buffer;
+
+	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
+	if (ret < 0) {
+		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
+		if (ret_ep < 0)
+			ret = ret_ep;
+	}
+
+	/* copy data */
+	memcpy(out_buf, buffer, len);
+	memcpy(out_size, &len, sizeof(size_t));
+	free(buffer);
+
+	return ret;
+}
+
 struct tape_ops sg_handler = {
 	.open                   = sg_open,
 	.reopen                 = sg_reopen,
@@ -5048,6 +5290,8 @@ struct tape_ops sg_handler = {
 	.write_attribute        = sg_write_attribute,
 	.read_attribute         = sg_read_attribute,
 	.allow_overwrite        = sg_allow_overwrite,
+	.grao                   = sg_grao,
+	.rrao                   = sg_rrao,
 	// May be command combination
 	.set_compression        = sg_set_compression,
 	.set_default            = sg_set_default,
