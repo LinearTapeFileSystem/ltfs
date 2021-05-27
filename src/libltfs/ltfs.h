@@ -709,8 +709,6 @@ void ltfs_enable_livelink_mode(struct ltfs_volume *vol);
 int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol);
 
 int ltfs_get_rao_list(char *path, struct ltfs_volume *vol);
-int _ltfs_write_rao_file(char *write_data, char *file_path, size_t *write_size);
-int _ltfs_read_rao_file(char *read_data, uint32_t *num_of_files, char *file_path);
 
 #ifdef __cplusplus
 }

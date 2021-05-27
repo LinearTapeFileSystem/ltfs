@@ -3599,8 +3599,7 @@ int tape_rao_request(struct device_data *dev, struct rao_mod *rao)
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17278E, "GRAO", ret); //GRAO command returns error
 		return ret;
-	}
-	else if (rao->num_of_files <= 0) {
+	} else if (rao->num_of_files <= 0) {
 		/* rao list cleared */
 		ltfsmsg(LTFS_DEBUG, 17277D, "Clear Done");
 		return ret;
