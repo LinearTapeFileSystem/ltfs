@@ -3218,6 +3218,24 @@ int scsipi_ibmtape_allow_overwrite(void *device, const struct tc_position pos)
 	return ret;
 }
 
+/**
+ * GRAO command is currently unsupported on this device
+ */
+int scsipi_ibmtape_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
+{
+	int ret = -EDEV_UNSUPPORETD_COMMAND;
+	return ret;
+}
+
+/**
+ * RRAO command is currently unsupported on this device
+ */
+int scsipi_ibmtape_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *out_size)
+{
+	int ret = -EDEV_UNSUPPORETD_COMMAND;
+	return ret;
+}
+
 int scsipi_ibmtape_set_compression(void *device, const bool enable_compression, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
@@ -4574,6 +4592,8 @@ struct tape_ops scsipi_ibmtape_handler = {
 	.write_attribute        = scsipi_ibmtape_write_attribute,
 	.read_attribute         = scsipi_ibmtape_read_attribute,
 	.allow_overwrite        = scsipi_ibmtape_allow_overwrite,
+	.grao                   = scsipi_ibmtape_grao,
+	.rrao                   = scsipi_ibmtape_rrao,
 	// May be command combination
 	.set_compression        = scsipi_ibmtape_set_compression,
 	.set_default            = scsipi_ibmtape_set_default,

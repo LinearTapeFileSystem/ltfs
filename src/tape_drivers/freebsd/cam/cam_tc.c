@@ -2312,6 +2312,24 @@ bailout:
 }
 
 /**
+ * GRAO command is currently unsupported on this device
+ */
+int camtape_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
+{
+	int ret = -EDEV_UNSUPPORETD_COMMAND;
+	return ret;
+}
+
+/**
+ * RRAO command is currently unsupported on this device
+ */
+int camtape_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *out_size)
+{
+	int ret = -EDEV_UNSUPPORETD_COMMAND;
+	return ret;
+}
+
+/**
  * Set compression setting
  * @param device a pointer to the camtape backend
  * @param enable_compression enable: true, disable: false
@@ -4135,6 +4153,8 @@ struct tape_ops camtape_drive_handler = {
 	.write_attribute        = camtape_write_attribute,
 	.read_attribute         = camtape_read_attribute,
 	.allow_overwrite        = camtape_allow_overwrite,
+	.grao                   = camtape_grao,
+	.rrao                   = camtape_rrao,
 	// May be command combination
 	.set_compression        = camtape_set_compression,
 	.set_default            = camtape_set_default,

@@ -75,6 +75,8 @@ extern "C" {
 #define MB   (KB * 1024)
 #define GB   (MB * 1024)
 
+#define COMMAND_DESCRIPTION_LENGTH (32)
+
 #define NEED_REVAL(ret) (ret == -EDEV_POR_OR_BUS_RESET	\
 						 || ret == -EDEV_MEDIUM_MAY_BE_CHANGED	\
 						 || ret == -EDEV_RESERVATION_PREEMPTED	\
@@ -83,6 +85,13 @@ extern "C" {
 		                 || ret == -EDEV_NEED_FAILOVER)
 
 #define IS_UNEXPECTED_MOVE(ret) (ret == -EDEV_MEDIUM_REMOVAL_REQ)
+
+struct rao_mod {
+	uint32_t num_of_files;    /* number of files to process */
+	char *in_buf;             /* buffer to set in grao */
+	char *out_buf;            /* buffer returned from rrao */
+	size_t *out_size;         /* buffer size returned in out_buf */
+};
 
 struct device_data {
 	struct tc_position position;          /**< Current head position */
@@ -106,6 +115,8 @@ struct device_data {
 	ltfs_mutex_t backend_mutex;           /**< Mutex to control backend access */
 	ltfs_mutex_t read_only_flag_mutex;    /**< Mutex to control read_only access */
 	char *serial_number;                  /**< Serial number for identification */
+
+	struct rao_mod *rao;                  /**< RAO related module */
 };
 
 int tape_device_alloc(struct device_data **device);
@@ -228,6 +239,7 @@ int tape_is_mountable(struct device_data *dev, char *barcode,
 					  unsigned char cart_type, unsigned char density);
 int tape_is_reformattable(struct device_data *dev, unsigned char cart_type, unsigned char density);
 int tape_set_profiler(struct device_data *dev, char *work_dir, bool enable);
+int tape_rao_request(struct device_data *dev, struct rao_mod *rao);
 
 static inline char* tape_get_serialnumber(struct device_data *dev)
 {

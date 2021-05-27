@@ -4227,3 +4227,148 @@ int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol)
 
 	return ret;
 }
+
+static int _ltfs_write_rao_file(char *write_data, char *file_path, size_t *write_size)
+{
+	int rc = -EDEV_UNKNOWN;
+	char *path;
+
+	rc = asprintf(&path, "%s%s", file_path, LTFS_OUT_FILE_EXTENSION);
+	if (rc < 0) {
+		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
+		return -LTFS_NO_MEMORY;
+	}
+
+	FILE *p;
+	p = fopen(path, "wb");
+	if (!p) {
+		ltfsmsg(LTFS_ERR, 17281E, "File open failed");
+		return -LTFS_FILE_ERR;
+	} else {
+		fwrite(&write_data, sizeof(char), (size_t)write_size, p);
+		fclose(p);
+		rc = DEVICE_GOOD;
+	}
+
+	return rc;
+}
+
+static int _ltfs_read_rao_file(char *read_data, uint32_t *num_of_files, char *file_path)
+{
+	int rc = -EDEV_UNKNOWN;
+	char *path;
+	int size = 0;
+
+	rc = asprintf(&path, "%s", file_path);
+	if (rc < 0) {
+		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
+		return -LTFS_NO_MEMORY;
+	}
+
+	/* file reader */
+	FILE *p;
+	p = fopen(path, "rb");
+	if (!p) {
+		ltfsmsg(LTFS_ERR, 17282E, "File open failed");
+		return -EDEV_INVALID_ARG;
+	}
+
+	rc = fseeko(p, 0LL, SEEK_END);
+	if(rc < 0){
+		ltfsmsg(LTFS_ERR, 17282E, "File seek failed");
+		return -LTFS_FILE_ERR;
+	}
+	size = ftello(p);
+
+	if (size >= RAO_MAX_RET_SIZE) {
+		ltfsmsg(LTFS_ERR, 17282E, "File size is too big");
+		return -EDEV_INVALID_ARG;
+	} else if (size < 0) {
+		ltfsmsg(LTFS_ERR, 17282E, "File seek failed");
+		return -LTFS_FILE_ERR;
+	}
+
+	rc = fseeko(p,0,SEEK_SET);
+	if (rc < 0) {
+		ltfsmsg(LTFS_ERR, 17282E, "File seek failed");
+		return -LTFS_FILE_ERR;
+	}
+
+	rc = fread(read_data, sizeof(char), size, p);
+	fclose(p);
+	if (rc < 0) {
+		ltfsmsg(LTFS_ERR, 17282E, "File read failed");
+		return -LTFS_FILE_ERR;
+	}
+
+	/* Input parser, counts how many files (num_of_files) there are in the input. */
+	/* The grao param list size should be Header(8 bytes) + ( UDS(32 bytes) * num_of_files ). */
+	if ( (size - 8) % 32 != 0 || size < 8+32 ) {
+		/* data format is wrong */
+		ltfsmsg(LTFS_ERR, 17282E, "Unreadable file format");
+		return -EDEV_INVALID_ARG;
+	}
+	*num_of_files = (size - 8) / 32;
+
+	return rc;
+}
+
+/**
+ * Perform the RAO commands and save the results in a .out file.
+ * @param path The file location of the GRAO buffer to handle.
+ * @param vol LTFS volume. The label structure receives a new UUID and format time; all other
+ *            label fields should be filled in correctly before calling this function.
+ */
+int ltfs_get_rao_list(char *path, struct ltfs_volume *vol)
+{
+	int ret = -EDEV_UNKNOWN;
+	ret = tape_device_lock(vol->device);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 12010E, __FUNCTION__);
+		return ret;
+	}
+
+	/* Prepare memory and read data from file */
+	struct rao_mod rao;
+	vol->device->rao = &rao;
+	char in_buf[RAO_MAX_RET_SIZE]; /* read bytes is never larger than return size */
+	rao.in_buf = (char *)&in_buf;
+
+	if (path == NULL){
+		ret = -EDEV_INVALID_ARG;
+		goto out;
+	}
+
+	/* get rao */
+	uint32_t *tmp_num = &rao.num_of_files;
+	ret = _ltfs_read_rao_file(rao.in_buf, tmp_num, path);
+	if (ret < 0) {
+		goto out;
+	}
+
+	/* file size check */
+	if (rao.num_of_files >= RAO_MAX_FILENUM) {
+		ltfsmsg(LTFS_ERR, 17279E, RAO_MAX_FILENUM, rao.num_of_files);
+		ret = -EDEV_INVALID_ARG;
+		goto out;
+	}
+
+	/* Send RAO request*/
+	ret = tape_rao_request(vol->device, vol->device->rao);
+	if (ret < 0) {
+		goto out;
+	}
+
+	/* write data to file */
+	ret = _ltfs_write_rao_file(rao.out_buf, path, rao.out_size);
+	if (ret < 0) {
+		goto out;
+	}
+
+	goto out;
+
+out:
+	tape_device_unlock(vol->device);
+	vol->device->rao = NULL;
+	return ret;
+}

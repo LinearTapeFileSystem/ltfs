@@ -3559,7 +3559,7 @@ int tape_is_reformattable(struct device_data *dev, unsigned char cart_type, unsi
  * Enable profiler function
  * @param device a pointer to the tape device
  * @param work_dir work directory to store profiler data
- * @paran enable enable or disable profiler function of this backend
+ * @param enable enable or disable profiler function of this backend
  * @return 0 on success or a negative value on error
  */
 int tape_set_profiler(struct device_data *dev, char *work_dir, bool enable)
@@ -3569,4 +3569,48 @@ int tape_set_profiler(struct device_data *dev, char *work_dir, bool enable)
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
 
 	return dev->backend->set_profiler(dev->backend_data, work_dir, enable);
+}
+
+/**
+ * Prepares GRAO parameter list, and sends rao request.
+ * All data should be set in rao before this is called.
+ * @param dev a pointer to the tape device
+ * @param rao a pointer to the rao data
+ * @param [out] ret_buf the returned buffer from grao.
+ * @return 0 on success or a negative value on error
+ */
+int tape_rao_request(struct device_data *dev, struct rao_mod *rao)
+{
+	int ret = 0;
+
+	/* check file size */
+	if (rao->num_of_files <= 0) {
+		/* rao list will be cleared if call size is less than zero */
+		rao->in_buf = NULL;
+		ltfsmsg(LTFS_DEBUG, 17277D, "Clear Called");
+	}
+
+	if (rao->in_buf == NULL){
+		return EDEV_INTERNAL_ERROR;
+	}
+
+	/* run GRAO */
+	ret = dev->backend->grao(dev->backend_data, (const unsigned char *)rao->in_buf, rao->num_of_files);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 17278E, "GRAO", ret); //GRAO command returns error
+		return ret;
+	} else if (rao->num_of_files <= 0) {
+		/* rao list cleared */
+		ltfsmsg(LTFS_DEBUG, 17277D, "Clear Done");
+		return ret;
+	}
+
+	/* run RRAO */
+	ret = dev->backend->rrao(dev->backend_data, rao->num_of_files, (char *)&rao->out_buf, (size_t *)&rao->out_size);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 17278E, "RRAO", ret);
+		return ret;
+	}
+
+	return ret;
 }
