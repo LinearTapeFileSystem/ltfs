@@ -81,6 +81,11 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
+/* O_BINARY is defined only in MinGW */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
@@ -4228,89 +4233,97 @@ int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol)
 	return ret;
 }
 
-static int _ltfs_write_rao_file(char *write_data, char *file_path, size_t *write_size)
+static int _ltfs_write_rao_file(char *file_path_org, unsigned char *buf, size_t len)
 {
-	int rc = -EDEV_UNKNOWN;
+	int  ret = -EDEV_UNKNOWN;
 	char *path;
+	int  fd = -1;
+	ssize_t size = 0;
 
-	rc = asprintf(&path, "%s%s", file_path, LTFS_OUT_FILE_EXTENSION);
-	if (rc < 0) {
+	ret = asprintf(&path, "%s%s", file_path_org, LTFS_OUT_FILE_EXTENSION);
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
 
-	FILE *p;
-	p = fopen(path, "wb");
-	if (!p) {
+	fd = open(path,
+			  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
+			  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+	if (fd < 0) {
 		ltfsmsg(LTFS_ERR, 17281E, "File open failed");
-		return -LTFS_FILE_ERR;
-	} else {
-		fwrite(&write_data, sizeof(char), (size_t)write_size, p);
-		fclose(p);
-		rc = DEVICE_GOOD;
+		free(path);
+		ret = -errno;
+		return ret;
 	}
 
-	return rc;
+	size = write(fd, buf, len);
+	if (size < 0) {
+		ltfsmsg(LTFS_ERR, 17281E, "File write failed");
+		ret = -errno;
+		goto out;
+	} else if (size != (ssize_t)len) {
+		ltfsmsg(LTFS_ERR, 17281E, "Written size is wrong");
+		ret = LTFS_FILE_ERR;
+		goto out;
+	} else {
+		ret = 0;
+	}
+
+	fsync(fd); /* Make sure the data is written to the device */
+
+out:
+	close(fd);
+	return ret;
 }
 
-static int _ltfs_read_rao_file(char *read_data, uint32_t *num_of_files, char *file_path)
+static int _ltfs_read_rao_file(char *file_path, unsigned char *buf,
+							   size_t len, uint32_t *in_size)
 {
-	int rc = -EDEV_UNKNOWN;
+	int  ret = -EDEV_UNKNOWN;
 	char *path;
-	int size = 0;
+	int  fd = -1;
+	struct stat sbuf;
+	ssize_t size = 0;
 
-	rc = asprintf(&path, "%s", file_path);
-	if (rc < 0) {
+	ret = asprintf(&path, "%s", file_path);
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
 
-	/* file reader */
-	FILE *p;
-	p = fopen(path, "rb");
-	if (!p) {
+	fd = open(path, O_RDONLY | O_BINARY);
+	if (fd < 0) {
 		ltfsmsg(LTFS_ERR, 17282E, "File open failed");
-		return -EDEV_INVALID_ARG;
+		free(path);
+		ret = -errno;
+		return ret;
+	}
+	free(path);
+
+	ret = fstat(fd, &sbuf);
+	if (ret < 0) {
+		ret = -errno;
+		ltfsmsg(LTFS_ERR, 17282E, "File stat failed");
+		goto out;
 	}
 
-	rc = fseeko(p, 0LL, SEEK_END);
-	if(rc < 0){
-		ltfsmsg(LTFS_ERR, 17282E, "File seek failed");
-		return -LTFS_FILE_ERR;
-	}
-	size = ftello(p);
-
-	if (size >= RAO_MAX_RET_SIZE) {
-		ltfsmsg(LTFS_ERR, 17282E, "File size is too big");
-		return -EDEV_INVALID_ARG;
-	} else if (size < 0) {
-		ltfsmsg(LTFS_ERR, 17282E, "File seek failed");
-		return -LTFS_FILE_ERR;
-	}
-
-	rc = fseeko(p,0,SEEK_SET);
-	if (rc < 0) {
-		ltfsmsg(LTFS_ERR, 17282E, "File seek failed");
-		return -LTFS_FILE_ERR;
-	}
-
-	rc = fread(read_data, sizeof(char), size, p);
-	fclose(p);
-	if (rc < 0) {
+	size = read(fd, buf, len);
+	if (size < 0) {
 		ltfsmsg(LTFS_ERR, 17282E, "File read failed");
-		return -LTFS_FILE_ERR;
+		ret = -errno;
+		goto out;
+	} if (size != (ssize_t)sbuf.st_size) {
+		ltfsmsg(LTFS_ERR, 17282E, "Read size is wrong");
+		ret = LTFS_FILE_ERR;
+		goto out;
+	} else {
+		ret = 0;
+		*in_size = (uint32_t)size;
 	}
 
-	/* Input parser, counts how many files (num_of_files) there are in the input. */
-	/* The grao param list size should be Header(8 bytes) + ( UDS(32 bytes) * num_of_files ). */
-	if ( (size - 8) % 32 != 0 || size < 8+32 ) {
-		/* data format is wrong */
-		ltfsmsg(LTFS_ERR, 17282E, "Unreadable file format");
-		return -EDEV_INVALID_ARG;
-	}
-	*num_of_files = (size - 8) / 32;
-
-	return rc;
+out:
+	close(fd);
+	return ret;
 }
 
 /**
@@ -4322,53 +4335,49 @@ static int _ltfs_read_rao_file(char *read_data, uint32_t *num_of_files, char *fi
 int ltfs_get_rao_list(char *path, struct ltfs_volume *vol)
 {
 	int ret = -EDEV_UNKNOWN;
+	struct rao_mod rao;
+
+	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
+
+	memset(&rao, 0, sizeof(struct rao_mod));
+	rao.in_buf = calloc(1, RAO_MAX_RET_SIZE);
+	if (!rao.in_buf) {
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs_get_rao_list: out_buf");
+		return -ENOMEM;
+	}
+
+	rao.out_buf = calloc(1, RAO_MAX_RET_SIZE);
+	if (!rao.out_buf) {
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs_get_rao_list: out_buf");
+		free(rao.in_buf);
+		return -ENOMEM;
+	}
+
+	rao.buf_size = RAO_MAX_RET_SIZE;
+
 	ret = tape_device_lock(vol->device);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 12010E, __FUNCTION__);
 		return ret;
 	}
 
-	/* Prepare memory and read data from file */
-	struct rao_mod rao;
-	vol->device->rao = &rao;
-	char in_buf[RAO_MAX_RET_SIZE]; /* read bytes is never larger than return size */
-	rao.in_buf = (char *)&in_buf;
-
-	if (path == NULL){
-		ret = -EDEV_INVALID_ARG;
-		goto out;
-	}
-
 	/* get rao */
-	uint32_t *tmp_num = &rao.num_of_files;
-	ret = _ltfs_read_rao_file(rao.in_buf, tmp_num, path);
+	ret = _ltfs_read_rao_file(path, rao.in_buf, RAO_MAX_RET_SIZE, &rao.in_size);
 	if (ret < 0) {
 		goto out;
 	}
 
-	/* file size check */
-	if (rao.num_of_files >= RAO_MAX_FILENUM) {
-		ltfsmsg(LTFS_ERR, 17279E, RAO_MAX_FILENUM, rao.num_of_files);
-		ret = -EDEV_INVALID_ARG;
-		goto out;
-	}
-
 	/* Send RAO request*/
-	ret = tape_rao_request(vol->device, vol->device->rao);
+	ret = tape_rao_request(vol->device, &rao);
 	if (ret < 0) {
 		goto out;
 	}
 
 	/* write data to file */
-	ret = _ltfs_write_rao_file(rao.out_buf, path, rao.out_size);
-	if (ret < 0) {
-		goto out;
-	}
-
-	goto out;
+	ret = _ltfs_write_rao_file(path, rao.out_buf, rao.out_size);
 
 out:
 	tape_device_unlock(vol->device);
-	vol->device->rao = NULL;
 	return ret;
 }

@@ -87,10 +87,11 @@ extern "C" {
 #define IS_UNEXPECTED_MOVE(ret) (ret == -EDEV_MEDIUM_REMOVAL_REQ)
 
 struct rao_mod {
-	uint32_t num_of_files;    /* number of files to process */
-	char *in_buf;             /* buffer to set in grao */
-	char *out_buf;            /* buffer returned from rrao */
-	size_t *out_size;         /* buffer size returned in out_buf */
+	unsigned char *in_buf;  /**< buffer to set in grao */
+	unsigned char *out_buf; /**< buffer returned from rrao */
+	size_t        buf_size; /**< buffer size of in_buf and out_buf */
+	uint32_t      in_size;  /**< Valid length of in_buf */
+	size_t        out_size; /**< Valid length of out_buf */
 };
 
 struct device_data {
@@ -115,8 +116,6 @@ struct device_data {
 	ltfs_mutex_t backend_mutex;           /**< Mutex to control backend access */
 	ltfs_mutex_t read_only_flag_mutex;    /**< Mutex to control read_only access */
 	char *serial_number;                  /**< Serial number for identification */
-
-	struct rao_mod *rao;                  /**< RAO related module */
 };
 
 int tape_device_alloc(struct device_data **device);
