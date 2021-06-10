@@ -2314,7 +2314,7 @@ bailout:
 /**
  * GRAO command is currently unsupported on this device
  */
-int camtape_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
+int camtape_grao(void *device, unsigned char *buf, const uint32_t len)
 {
 	int ret = -EDEV_UNSUPPORETD_COMMAND;
 	return ret;
@@ -2323,7 +2323,7 @@ int camtape_grao(void *device, const unsigned char *buf, const uint32_t num_of_f
 /**
  * RRAO command is currently unsupported on this device
  */
-int camtape_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *out_size)
+int camtape_rrao(void *device, unsigned char *buf, const uint32_t len, size_t *out_size)
 {
 	int ret = -EDEV_UNSUPPORETD_COMMAND;
 	return ret;
