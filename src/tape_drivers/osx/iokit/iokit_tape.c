@@ -2976,7 +2976,7 @@ int iokit_allow_overwrite(void *device, const struct tc_position pos)
 /**
  * GRAO command is currently unsupported on this device
  */
-int iokit_grao(void *device, const unsigned char *buf, const uint32_t num_of_files)
+int iokit_grao(void *device, unsigned char *buf, const uint32_t len)
 {
 	int ret = -EDEV_UNSUPPORETD_COMMAND;
 	return ret;
@@ -2985,7 +2985,7 @@ int iokit_grao(void *device, const unsigned char *buf, const uint32_t num_of_fil
 /**
  * RRAO command is currently unsupported on this device
  */
-int iokit_rrao(void *device, const uint32_t num_of_files, char *out_buf, size_t *out_size)
+int iokit_rrao(void *device, unsigned char *buf, const uint32_t len, size_t *out_size)
 {
 	int ret = -EDEV_UNSUPPORETD_COMMAND;
 	return ret;

@@ -721,11 +721,12 @@ int tape_test_unit_ready(struct device_data *dev)
 	}
 
 	ret = _tape_test_unit_ready(dev);
-	if (ret < 0)
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 12029E, ret);
-
-	dev->previous_exist.tv_sec = ts_now.tv_sec;
-	dev->previous_exist.tv_nsec = ts_now.tv_nsec;
+	} else {
+		dev->previous_exist.tv_sec = ts_now.tv_sec;
+		dev->previous_exist.tv_nsec = ts_now.tv_nsec;
+	}
 
 	return ret;
 }
@@ -3576,39 +3577,23 @@ int tape_set_profiler(struct device_data *dev, char *work_dir, bool enable)
  * All data should be set in rao before this is called.
  * @param dev a pointer to the tape device
  * @param rao a pointer to the rao data
- * @param [out] ret_buf the returned buffer from grao.
  * @return 0 on success or a negative value on error
  */
 int tape_rao_request(struct device_data *dev, struct rao_mod *rao)
 {
 	int ret = 0;
 
-	/* check file size */
-	if (rao->num_of_files <= 0) {
-		/* rao list will be cleared if call size is less than zero */
-		rao->in_buf = NULL;
-		ltfsmsg(LTFS_DEBUG, 17277D, "Clear Called");
-	}
-
-	if (rao->in_buf == NULL){
-		return EDEV_INTERNAL_ERROR;
-	}
-
 	/* run GRAO */
-	ret = dev->backend->grao(dev->backend_data, (const unsigned char *)rao->in_buf, rao->num_of_files);
+	ret = dev->backend->grao(dev->backend_data, rao->in_buf, rao->in_size);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 17278E, "GRAO", ret); //GRAO command returns error
-		return ret;
-	} else if (rao->num_of_files <= 0) {
-		/* rao list cleared */
-		ltfsmsg(LTFS_DEBUG, 17277D, "Clear Done");
+		ltfsmsg(LTFS_INFO, 17275I, "GRAO", ret); //GRAO command returns error
 		return ret;
 	}
 
 	/* run RRAO */
-	ret = dev->backend->rrao(dev->backend_data, rao->num_of_files, (char *)&rao->out_buf, (size_t *)&rao->out_size);
+	ret = dev->backend->rrao(dev->backend_data, rao->out_buf, rao->buf_size, &rao->out_size);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 17278E, "RRAO", ret);
+		ltfsmsg(LTFS_INFO, 17275I, "RRAO", ret);
 		return ret;
 	}
 
