@@ -3586,14 +3586,14 @@ int tape_rao_request(struct device_data *dev, struct rao_mod *rao)
 	/* run GRAO */
 	ret = dev->backend->grao(dev->backend_data, rao->in_buf, rao->in_size);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 17278E, "GRAO", ret); //GRAO command returns error
+		ltfsmsg(LTFS_INFO, 17275I, "GRAO", ret); //GRAO command returns error
 		return ret;
 	}
 
 	/* run RRAO */
 	ret = dev->backend->rrao(dev->backend_data, rao->out_buf, rao->buf_size, &rao->out_size);
 	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 17278E, "RRAO", ret);
+		ltfsmsg(LTFS_INFO, 17275I, "RRAO", ret);
 		return ret;
 	}
 

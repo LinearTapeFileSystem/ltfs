@@ -1960,7 +1960,7 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 		ltfsmsg(LTFS_ERR, 17016E, ret);
 		if (ret == -1) {
 			/* Unexpected error code, we need to investigate */
-			ltfsmsg(LTFS_ERR, 17274W, ret);
+			ltfsmsg(LTFS_WARN, 17274W, ret);
 			ret = -LTFS_INDEX_INVALID;
 		}
 	} else if (ret == 0) {

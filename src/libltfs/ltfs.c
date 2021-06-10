@@ -4250,7 +4250,7 @@ static int _ltfs_write_rao_file(char *file_path_org, unsigned char *buf, size_t 
 			  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
 			  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 	if (fd < 0) {
-		ltfsmsg(LTFS_ERR, 17281E, "File open failed");
+		ltfsmsg(LTFS_INFO, 17276I, path, errno);
 		free(path);
 		ret = -errno;
 		return ret;
@@ -4258,11 +4258,11 @@ static int _ltfs_write_rao_file(char *file_path_org, unsigned char *buf, size_t 
 
 	size = write(fd, buf, len);
 	if (size < 0) {
-		ltfsmsg(LTFS_ERR, 17281E, "File write failed");
+		ltfsmsg(LTFS_INFO, 17277I, path, errno);
 		ret = -errno;
 		goto out;
 	} else if (size != (ssize_t)len) {
-		ltfsmsg(LTFS_ERR, 17281E, "Written size is wrong");
+		ltfsmsg(LTFS_INFO, 17278I, path, size, (ssize_t)len);
 		ret = LTFS_FILE_ERR;
 		goto out;
 	} else {
@@ -4272,6 +4272,7 @@ static int _ltfs_write_rao_file(char *file_path_org, unsigned char *buf, size_t 
 	fsync(fd); /* Make sure the data is written to the device */
 
 out:
+	free(path);
 	close(fd);
 	return ret;
 }
@@ -4293,27 +4294,26 @@ static int _ltfs_read_rao_file(char *file_path, unsigned char *buf,
 
 	fd = open(path, O_RDONLY | O_BINARY);
 	if (fd < 0) {
-		ltfsmsg(LTFS_ERR, 17282E, "File open failed");
+		ltfsmsg(LTFS_INFO, 17279I, path, errno);
 		free(path);
 		ret = -errno;
 		return ret;
 	}
-	free(path);
 
 	ret = fstat(fd, &sbuf);
 	if (ret < 0) {
 		ret = -errno;
-		ltfsmsg(LTFS_ERR, 17282E, "File stat failed");
+		ltfsmsg(LTFS_INFO, 17280I, path, errno);
 		goto out;
 	}
 
 	size = read(fd, buf, len);
 	if (size < 0) {
-		ltfsmsg(LTFS_ERR, 17282E, "File read failed");
+		ltfsmsg(LTFS_INFO, 17281I, path, errno);
 		ret = -errno;
 		goto out;
 	} if (size != (ssize_t)sbuf.st_size) {
-		ltfsmsg(LTFS_ERR, 17282E, "Read size is wrong");
+		ltfsmsg(LTFS_INFO, 17282I, path, size, (ssize_t)sbuf.st_size);
 		ret = LTFS_FILE_ERR;
 		goto out;
 	} else {
@@ -4322,6 +4322,7 @@ static int _ltfs_read_rao_file(char *file_path, unsigned char *buf,
 	}
 
 out:
+	free(path);
 	close(fd);
 	return ret;
 }

@@ -816,14 +816,14 @@ v
 		17272E:string { "XML parser: Detected invalid %s in a directory (%s)." }
 		17273E:string { "XML parser: Detected an I/O error on reading an index from the tape (%d)." }
 		17274W:string { "XML parser: Unexpected error code is detected (%d)." }
-		17275E:string { "Failed to get supported uds size from drive." }
-		17276E:string { "Too many files to process on this drive. Valid size: max_uds_supported: %u, max_uds_size: %u." }
-		17277D:string { "RAO list clear: %s." }
-		17278E:string { "RAO command returns error on %s (%d)." }
-		17279E:string { "File number exceeds the maximum limit for RAO. Maximum file supported: %u, given: %u." }
-		17280E:string { "Error occured when reading file set for RAO: %s." }
-		17281E:string { "Failed to create RAO output file: %s." }
-		17282E:string { "Failed to read RAO input file: %s." }
+		17275I:string { "RAO command returns error on %s (%d)." }
+		17276I:string { "Failed to create RAO output file: %s (%d)." }
+		17277I:string { "Failed to write to RAO output file: %s (%d)." }
+		17278I:string { "Written length to RAO output file is unexpected: %s (Actual %ld, Expected %ld)." }
+		17279I:string { "Failed to open RAO input file: %s (%d)." }
+		17280I:string { "Failed to get the length of the RAO input file: %s (%d)." }
+		17281I:string { "Failed to read from RAO input file: %s (%d)." }
+		17282I:string { "Read length from RAO input file is unexpected: %s (Actual %ld, Expected %ld)." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 
