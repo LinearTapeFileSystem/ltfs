@@ -856,14 +856,12 @@ int iokit_open(const char *devname, void **handle)
 	}
 	strncpy(priv->drive_serial, id_data.unit_serial, UNIT_SERIAL_LENGTH - 1);
 
-	/* Convert vendor_id in inq buffer to integer based id */
-	priv->vendor = get_vendor_id(id_data.vendor_id);
-
 	/* Check the drive is supportable */
 	struct supported_device **cur = get_supported_devs(priv->vendor);
 	while(cur && *cur) {
 		if((! strncmp(id_data.vendor_id, (*cur)->vendor_id, strlen((*cur)->vendor_id)) ) &&
 		   (! strncmp(id_data.product_id, (*cur)->product_id, strlen((*cur)->product_id)) ) ) {
+			priv->vendor = (*cur)->vendor_type;
 			drive_type = (*cur)->drive_type;
 			break;
 		}
@@ -2315,7 +2313,8 @@ int iokit_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 	memset(&buffer, 0, LOGSENSEPAGE);
 
 	if ((IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) ||
-		(priv->vendor == VENDOR_HP && IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x06))) {
+		(priv->vendor == VENDOR_HP && IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x06)) ||
+		(priv->vendor == VENDOR_QUANTUM_B && IS_LTO(priv->drive_type))) {
 
 		/* Use LogPage 0x31 */
 		ret = iokit_logsense(device, (uint8_t)LOG_TAPECAPACITY, (uint8_t)0, (void *)buffer, LOGSENSEPAGE);

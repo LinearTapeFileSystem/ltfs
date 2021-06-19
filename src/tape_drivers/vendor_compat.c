@@ -281,20 +281,6 @@ struct error_table standard_tape_errors[] = {
 	{0xFFFFFF, -EDEV_UNKNOWN,                   "Unknown Error code"},
 };
 
-int get_vendor_id(char* vendor)
-{
-	if (!strncmp(vendor, IBM_VENDOR_ID, strlen(IBM_VENDOR_ID)))
-		return VENDOR_IBM;
-	else if (!strncmp(vendor, HP_VENDOR_ID, strlen(HP_VENDOR_ID)))
-		return VENDOR_HP;
-	else if (!strncmp(vendor, HPE_VENDOR_ID, strlen(HPE_VENDOR_ID)))
-		return VENDOR_HP;
-	else if (!strncmp(vendor, QUANTUM_VENDOR_ID, strlen(QUANTUM_VENDOR_ID)))
-		return VENDOR_QUANTUM;
-	else
-		return VENDOR_UNKNOWN;
-}
-
 struct supported_device **get_supported_devs(int vendor)
 {
 	struct supported_device **cur = NULL;

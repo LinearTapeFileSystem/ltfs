@@ -279,13 +279,11 @@ int camtape_open(const char *devname, void **handle)
 	ltfsmsg(LTFS_INFO, 31229I, vendor);
 
 	/* Check the drive is supportable */
-	softc->vendor = get_vendor_id(vendor);
 	struct supported_device **cur = get_supported_devs(softc->vendor);
 	while(*cur) {
-		if ((! strncmp((char*)softc->cd->inq_data.vendor, (*cur)->vendor_id,
-					   strlen((*cur)->vendor_id)) ) &&
-		   (! strncmp((char*)softc->cd->inq_data.product, (*cur)->product_id,
-					  strlen((*cur)->product_id)) ) ) {
+		if ((! strncmp((char*)softc->cd->inq_data.vendor, (*cur)->vendor_id, strlen((*cur)->vendor_id)) ) &&
+			(! strncmp((char*)softc->cd->inq_data.product, (*cur)->product_id, strlen((*cur)->product_id)) ) ) {
+			priv->vendor = (*cur)->vendor_type;
 			drive_type = (*cur)->drive_type;
 			break;
 		}
@@ -1786,7 +1784,8 @@ int camtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REMAINCAP));
 	if ((IS_LTO(softc->drive_type) && (DRIVE_GEN(softc->drive_type) == 0x05)) ||
-		(softc->vendor == VENDOR_HP && IS_LTO(softc->drive_type) && (DRIVE_GEN(softc->drive_type) == 0x06))) {
+		(softc->vendor == VENDOR_HP && IS_LTO(softc->drive_type) && (DRIVE_GEN(softc->drive_type) == 0x06)) ||
+		(softc->vendor == VENDOR_QUANTUM_B && IS_LTO(softc->drive_type))) {
 
 		/* Issue LogPage 0x31 */
 		rc = camtape_logsense(device, LOG_TAPECAPACITY, (uint8_t)0, logdata, LOGSENSEPAGE);

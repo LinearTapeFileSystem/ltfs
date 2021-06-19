@@ -63,10 +63,10 @@
 #include "libltfs/ltfs_endian.h"
 
 struct supported_device *hp_supported_drives[] = {
-		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 5-SCSI",  DRIVE_LTO5,    "[Ultrium 5-SCSI]" ),  /* HP Ultrium Gen 5  */
-		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 6-SCSI",  DRIVE_LTO6,    "[Ultrium 6-SCSI]" ),  /* HP Ultrium Gen 6  */
-		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 7-SCSI",  DRIVE_LTO7,    "[Ultrium 7-SCSI]" ),  /* HP Ultrium Gen 7  */
-		TAPEDRIVE( HPE_VENDOR_ID, "Ultrium 8-SCSI",  DRIVE_LTO8,    "[Ultrium 8-SCSI]" ),  /* HPE Ultrium Gen 8 */
+		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 5-SCSI",  VENDOR_HP, DRIVE_LTO5,    "[Ultrium 5-SCSI]" ),  /* HP Ultrium Gen 5  */
+		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 6-SCSI",  VENDOR_HP, DRIVE_LTO6,    "[Ultrium 6-SCSI]" ),  /* HP Ultrium Gen 6  */
+		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 7-SCSI",  VENDOR_HP, DRIVE_LTO7,    "[Ultrium 7-SCSI]" ),  /* HP Ultrium Gen 7  */
+		TAPEDRIVE( HPE_VENDOR_ID, "Ultrium 8-SCSI",  VENDOR_HP, DRIVE_LTO8,    "[Ultrium 8-SCSI]" ),  /* HPE Ultrium Gen 8 */
 		/* End of supported_devices */
 		NULL
 };
