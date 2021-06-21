@@ -149,11 +149,12 @@ static inline int _sense2errorcode(uint32_t sense, struct error_table *table, ch
 struct supported_device {
 	char vendor_id[VENDOR_ID_LENGTH + 1];
 	char product_id[PRODUCT_ID_LENGTH + 1];
+	int  vendor_type;
 	int  drive_type;
 	char product_name[PRODUCT_NAME_LENGTH + 1];
 };
 
-#define TAPEDRIVE(v, p, t, n) &(struct supported_device){ v, p, t, n }
+#define TAPEDRIVE(v, p, vt, dt, n) &(struct supported_device){ v, p, vt, dt, n }
 
 #define TAPE_FAMILY_MASK       (0xF000)
 #define TAPE_FAMILY_ENTERPRISE (0x1000)
@@ -177,7 +178,8 @@ enum {
 	VENDOR_UNKNOWN = 0,
 	VENDOR_IBM,
 	VENDOR_HP,
-	VENDOR_QUANTUM,
+	VENDOR_QUANTUM,   /* Quantum model C */
+	VENDOR_QUANTUM_B, /* Quantum model B */
 };
 
 enum {
