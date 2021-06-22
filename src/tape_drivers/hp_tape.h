@@ -65,8 +65,9 @@
 extern "C" {
 #endif
 
-#define HP_VENDOR_ID  "HP"
-#define HPE_VENDOR_ID "HPE"
+#define HP_VENDOR_ID       "HP"
+#define HPE_VENDOR_ID      "HPE"
+#define TANDBERG_VENDOR_ID "TANDBERG"
 
 extern struct error_table hp_tape_errors[];
 
