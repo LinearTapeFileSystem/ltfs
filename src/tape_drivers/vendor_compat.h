@@ -65,7 +65,7 @@ extern "C" {
 
 extern struct error_table standard_tape_errors[];
 
-struct supported_device **get_supported_devs(int vendor);
+struct supported_device **get_supported_devs(const char *vendor_str);
 bool drive_has_supported_fw(int vendor, int drive_type, const unsigned char * const revision);
 unsigned char assume_cart_type(const unsigned char dc);
 int  is_supported_tape(unsigned char type, unsigned char density, bool *is_worm);

@@ -857,7 +857,7 @@ int iokit_open(const char *devname, void **handle)
 	strncpy(priv->drive_serial, id_data.unit_serial, UNIT_SERIAL_LENGTH - 1);
 
 	/* Check the drive is supportable */
-	struct supported_device **cur = get_supported_devs(priv->vendor);
+	struct supported_device **cur = get_supported_devs(id_data.vendor_id);
 	while(cur && *cur) {
 		if((! strncmp(id_data.vendor_id, (*cur)->vendor_id, strlen((*cur)->vendor_id)) ) &&
 		   (! strncmp(id_data.product_id, (*cur)->product_id, strlen((*cur)->product_id)) ) ) {

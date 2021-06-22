@@ -488,7 +488,7 @@ static int _raw_open(struct sg_data *priv)
 		return ret;
 	}
 
-	struct supported_device **cur = get_supported_devs(priv->vendor);
+	struct supported_device **cur = get_supported_devs(id_data.vendor_id);
 	while(*cur) {
 		if((! strncmp(id_data.vendor_id, (*cur)->vendor_id, strlen((*cur)->vendor_id)) ) &&
 		   (! strncmp(id_data.product_id, (*cur)->product_id, strlen((*cur)->product_id)) ) ) {

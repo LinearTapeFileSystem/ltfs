@@ -279,7 +279,7 @@ int camtape_open(const char *devname, void **handle)
 	ltfsmsg(LTFS_INFO, 31229I, vendor);
 
 	/* Check the drive is supportable */
-	struct supported_device **cur = get_supported_devs(softc->vendor);
+	struct supported_device **cur = get_supported_devs((char *)softc->cd->inq_data.vendor);
 	while(*cur) {
 		if ((! strncmp((char*)softc->cd->inq_data.vendor, (*cur)->vendor_id, strlen((*cur)->vendor_id)) ) &&
 			(! strncmp((char*)softc->cd->inq_data.product, (*cur)->product_id, strlen((*cur)->product_id)) ) ) {
