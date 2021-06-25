@@ -287,13 +287,13 @@ struct supported_device **get_supported_devs(const char *vendor_str)
 
 	if (! strncmp(vendor_str, IBM_VENDOR_ID, strlen(IBM_VENDOR_ID)))
 		cur = ibm_supported_drives;
-	else if (! strncmp(vendor_str, HP_VENDOR_ID, strlen(IBM_VENDOR_ID)))
+	else if (! strncmp(vendor_str, HP_VENDOR_ID, strlen(HP_VENDOR_ID)))
 		cur = hp_supported_drives;
-	else if (! strncmp(vendor_str, HPE_VENDOR_ID, strlen(IBM_VENDOR_ID)))
+	else if (! strncmp(vendor_str, HPE_VENDOR_ID, strlen(HPE_VENDOR_ID)))
 		cur = hp_supported_drives;
-	else if (! strncmp(vendor_str, TANDBERG_VENDOR_ID, strlen(IBM_VENDOR_ID)))
+	else if (! strncmp(vendor_str, TANDBERG_VENDOR_ID, strlen(TANDBERG_VENDOR_ID)))
 		cur = hp_supported_drives;
-	else if (! strncmp(vendor_str, QUANTUM_VENDOR_ID, strlen(IBM_VENDOR_ID)))
+	else if (! strncmp(vendor_str, QUANTUM_VENDOR_ID, strlen(QUANTUM_VENDOR_ID)))
 		cur = quantum_supported_drives;
 
 	return cur;
