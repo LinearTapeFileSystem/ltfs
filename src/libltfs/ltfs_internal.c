@@ -986,25 +986,33 @@ int _ltfs_make_lost_found(tape_block_t ip_eod, tape_block_t dp_eod,
  * Find the appropriate append address for a partition at which calling ltfs_write_index() will
  * correctly restore consistency to the partition.
  *
- * @param dev The ltfs device to work on
- * @param part The partition to examine
+ * @param vol The ltfs volume to work on
+ * @param partid The partition to examine
  * @param block The starting block of the final index on the partition
  * @return 0 if eod is the appropriate append address, >0 for the absolute block address to append
  *         at, <0 on error
  */
-static int _ltfs_find_append_blk_after_idx(struct device_data *dev, tape_partition_t part, tape_block_t block) {
+static int _ltfs_find_append_blk_after_idx(struct ltfs_volume *vol, char partid, tape_block_t block) {
 	unsigned int n_fm_after = 0;
 	struct tc_position idx_pos;
 	struct tc_position final_fm_pos;
 	int ret = 0;
 
-	idx_pos.partition = part;
+	idx_pos.partition = ltfs_part_id2num(partid, vol);
 	idx_pos.block = block;
-	check_err(tape_seek(dev, &idx_pos), 11020E, out);
+	ret = tape_seek(vol->device, &idx_pos);
+	if (ret != 0) {
+		if (partid == vol->label->partid_ip)
+			ltfsmsg(LTFS_ERR, 11023E);
+		else {
+			ltfsmsg(LTFS_ERR, 11020E);
+		}
+		goto out;
+	}
 	while(ret == 0) {
-		ret = tape_spacefm(dev, 1);
+		ret = tape_spacefm(vol->device, 1);
 		if (ret == 0) {
-			tape_update_position(dev, &final_fm_pos);
+			tape_update_position(vol->device, &final_fm_pos);
 			n_fm_after++;
 		} else {
 			if (ret != -EDEV_EOD_DETECTED) {
@@ -1165,7 +1173,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 
 	/* Set append position for data partition to end of trailing data. */
 	if (dp_have_index && dp_blocks_after) {
-		ret = _ltfs_find_append_blk_after_idx(vol->device, dp_num, dp_index->selfptr.block);
+		ret = _ltfs_find_append_blk_after_idx(vol, vol->label->partid_dp, dp_index->selfptr.block);
 		if (ret < 0) {
 			goto out_unlock;
 		} else {
@@ -1177,7 +1185,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 
 	/* Set append position for index partition to end of trailing data or preceding data */
 	if (ip_have_index && ip_blocks_after) {
-		ret = _ltfs_find_append_blk_after_idx(vol->device, ip_num, ip_index->selfptr.block);
+		ret = _ltfs_find_append_blk_after_idx(vol, vol->label->partid_ip, ip_index->selfptr.block);
 		if (ret <0) {
 			goto out_unlock;
 		} else {
