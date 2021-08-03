@@ -124,7 +124,7 @@ root:table {
 		11029E:string { "Cannot mount volume: failed to save the append position for the index partition." }
 		11030I:string { "Failed to sync volume (%d). Stop the periodic sync thread." }
 		//unused 11030E:string { "Cannot release the device lock (%s)." }
-		//11031D:string { "Volume mounted successfully." }
+		11031I:string { "Volume mounted successfully %s (Gen = %lld, (%c, %lld) -> (%c, %lld), %s)." }
 		11032D:string { "Unmounting the volume." }
 		11033E:string { "Cannot unmount: failed to write an index." }
 		11034I:string { "Volume unmounted successfully." }
@@ -778,7 +778,7 @@ v
 		17233E:string { "Failed to kick gcore." }
 		17234W:string { "The index read from the tape uses a newer version of the LTFS format than the one supported by this software. If this tape is modified, the index downgrades to format version %s from %d.%d.%d." }
 		17235I:string { "Writing index of %s to %c (Reason: %s, %lld files) %s." }
-		17236I:string { "Wrote index of %s (%c, %s)." }
+		17236I:string { "Wrote index of %s (Gen = %lld, Part = %c, Pos = %lld, %s)." }
 		17237E:string { "WORM related error (%s)." }
 		17238I:string { "WORM status updated (%s=>%d) '%s'." }
 		17239E:string { "Failed to update density (%s) %d." }
