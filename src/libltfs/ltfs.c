@@ -115,6 +115,17 @@ const char *ltfs_format_version()
 	return LTFS_INDEX_VERSION_STR;
 }
 
+static inline char* _get_barcode(struct ltfs_volume *vol)
+{
+	char *barcode = NULL;
+
+	if (vol->label->barcode[0] != ' ')
+		barcode = vol->label->barcode;
+	else
+		barcode =  LTFS_NO_BARCODE;
+
+	return barcode;
+}
 
 /**
  * Initialize the LTFS functions, currently the XML parser and the logging component.
@@ -1473,6 +1484,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 	/* TODO: is_worm_recovery_mount should be set by user via option */
 	int vollock = UNLOCKED_MAM;
 	char *vl_print = NULL;
+	char *barcode = NULL;
 
 	ltfsmsg(LTFS_INFO, 11005I);
 
@@ -1782,6 +1794,17 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 		vol->lock_status = vol->index->vollock;
 	}
 
+	barcode = _get_barcode(vol);
+
+	ltfsmsg(LTFS_INFO, 11031I,
+			barcode,
+			(unsigned long long)vol->index->generation,
+			vol->index->selfptr.partition,
+			(unsigned long long)vol->index->selfptr.block,
+			vol->index->backptr.partition,
+			(unsigned long long)vol->index->backptr.block,
+			tape_get_serialnumber(vol->device));
+
 out_unlock:
 	if (index && vol->index)
 		ltfs_index_free(&index);
@@ -1841,10 +1864,7 @@ void ltfs_set_index_dirty(bool locking, bool atime, struct ltfs_index *idx)
 			ltfs_mutex_unlock(&idx->dirty_lock);
 
 		if (!was_dirty && idx->dirty) {
-			if (idx->root->vol->label->barcode[0] != ' ')
-				ltfsmsg(LTFS_INFO, 11337I, true, idx->root->vol->label->barcode, idx->root->vol);
-			else
-				ltfsmsg(LTFS_INFO, 11337I, true, LTFS_NO_BARCODE, idx->root->vol);
+			ltfsmsg(LTFS_INFO, 11337I, true, _get_barcode(idx->root->vol), idx->root->vol);
 		}
 	}
 }
@@ -1870,10 +1890,7 @@ void ltfs_unset_index_dirty(bool update_version, struct ltfs_index *idx)
 		ltfs_mutex_unlock(&idx->dirty_lock);
 
 		if (was_dirty && !idx->dirty) {
-			if (idx->root->vol->label->barcode[0] != ' ')
-				ltfsmsg(LTFS_INFO, 11337I, false, idx->root->vol->label->barcode, idx->root->vol);
-			else
-				ltfsmsg(LTFS_INFO, 11337I, false, LTFS_NO_BARCODE, idx->root->vol);
+			ltfsmsg(LTFS_INFO, 11337I, false, _get_barcode(idx->root->vol), idx->root->vol);
 		}
 	}
 }
@@ -2176,7 +2193,7 @@ void ltfs_set_work_dir(const char *dir, struct ltfs_volume *vol)
 
 /**
  * Configure EOD (end of data) checking for a volume. This should be done before
- * calling ltfs_mount.
+ * calling ltfs_mount
  * The EOD check is enabled by default.
  */
 void ltfs_set_eod_check(bool use, struct ltfs_volume *vol)
@@ -2289,10 +2306,7 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		return ret;
 	}
 
-	if (vol->label->barcode[0] == ' ' || vol->label->barcode[0] == '\0')
-		bc_print = LTFS_NO_BARCODE;
-	else
-		bc_print = vol->label->barcode;
+	bc_print = _get_barcode(vol);
 
 	if (write_perm) {
 		ltfsmsg(LTFS_INFO, 11343I, bc_print);
@@ -2470,7 +2484,12 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	 * ignore failures when updating MAM parameters. */
 	ltfs_update_cart_coherency(vol);
 
-	ltfsmsg(LTFS_INFO, 17236I, bc_print, partition, tape_get_serialnumber(vol->device));
+	ltfsmsg(LTFS_INFO, 17236I,
+			bc_print,
+			(unsigned long long)vol->index->generation,
+			vol->index->selfptr.partition,
+			(unsigned long long)vol->index->selfptr.block,
+			tape_get_serialnumber(vol->device));
 
 	/* update append position */
 	if (partition == ltfs_ip_id(vol)) {
@@ -2552,13 +2571,9 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, 
 		return -ENOMEM;
 	}
 
-	if (vol->label->barcode[0] != ' ') {
-		ltfsmsg(LTFS_INFO, 17235I, vol->label->barcode, 'Z', "Volume Cache",
-				(unsigned long long)vol->index->file_count, path);
-	} else {
-		ltfsmsg(LTFS_INFO, 17235I, LTFS_NO_BARCODE, 'Z', "Volume Cache",
-				(unsigned long long)vol->index->file_count, path);
-	}
+
+	ltfsmsg(LTFS_INFO, 17235I, _get_barcode(vol), 'Z', "Volume Cache",
+			(unsigned long long)vol->index->file_count, path);
 
 	ret = xml_schema_to_file(path, vol->index->creator, reason, vol->index);
 	if (ret < 0) {
@@ -2574,10 +2589,12 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, 
 		ltfsmsg(LTFS_ERR, 17184E, errno);
 	}
 
-	if (vol->label->barcode[0] != ' ')
-		ltfsmsg(LTFS_INFO, 17236I, vol->label->barcode, 'Z', path);
-	else
-		ltfsmsg(LTFS_INFO, 17236I, LTFS_NO_BARCODE, 'Z', path);
+	ltfsmsg(LTFS_INFO, 17236I,
+			_get_barcode(vol),
+			(unsigned long long)vol->index->generation,
+			'Z',
+			(unsigned long long)vol->index->selfptr.block,
+			path);
 
 	free(path);
 	return ret;
@@ -3160,10 +3177,7 @@ int ltfs_revalidate(bool have_write_lock, struct ltfs_volume *vol)
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
-	if (vol->label->barcode[0] != ' ')
-		ltfsmsg(LTFS_INFO, 11312I, vol->label->barcode);
-	else
-		ltfsmsg(LTFS_INFO, 11312I, LTFS_NO_BARCODE);
+	ltfsmsg(LTFS_INFO, 11312I, _get_barcode(vol));
 
 	/* Block other libltfs operations until revalidation finishes */
 	ltfs_thread_mutex_lock(&vol->reval_lock);
@@ -3352,15 +3366,9 @@ out:
 	releasewrite_mrsw(&vol->lock);
 
 	if (ret < 0) {
-		if (vol->label->barcode[0] != ' ')
-			ltfsmsg(LTFS_ERR, 11313E, ret, vol->label->barcode);
-		else
-			ltfsmsg(LTFS_ERR, 11313E, ret, LTFS_NO_BARCODE);
+		ltfsmsg(LTFS_ERR, 11313E, ret, _get_barcode(vol));
 	} else {
-		if (vol->label->barcode[0] != ' ')
-			ltfsmsg(LTFS_INFO, 11340I, vol->label->barcode);
-		else
-			ltfsmsg(LTFS_INFO, 11340I, LTFS_NO_BARCODE);
+		ltfsmsg(LTFS_INFO, 11340I, _get_barcode(vol));
 	}
 
 	return ret;
@@ -3402,10 +3410,7 @@ start:
 		releaseread_mrsw(&vol->lock);
 
 	if (dirty) {
-		if (vol->label->barcode[0] == ' ' || vol->label->barcode[0] == '\0')
-			bc_print = LTFS_NO_BARCODE;
-		else
-			bc_print = vol->label->barcode;
+		bc_print = _get_barcode(vol);
 
 		ltfsmsg(LTFS_INFO, 11338I, bc_print, vol->device->serial_number);
 
