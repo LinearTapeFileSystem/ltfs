@@ -17,11 +17,11 @@ LTFS Format Specification is specified data placement, shape of index and names 
 
 The table below show status of the LTFS format Specification
 
-  | Version | Status of SNIA                   | Status of ISO   |
-  |:-:      |:-:                               |:-:              |
-  | 2.2     | [Published the Technical Position](http://snia.org/sites/default/files/LTFS_Format_2.2.0_Technical_Position.pdf) | Published       |
-  | 2.3.1   | [Published the Technical Position](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.3.1_TechPosition.pdf) | -               |
-  | 2.4     | [Published the Technical Position](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.4.0_TechPosition.pdf) | On going        |
+  | Version | Status of SNIA                                                                                               | Status of ISO             |
+  |:-------:|:------------------------------------------------------------------------------------------------------------:|:-------------------------:|
+  | 2.2     | [Published](http://snia.org/sites/default/files/LTFS_Format_2.2.0_Technical_Position.pdf)                    | Published as `20919:2016` |
+  | 2.3.1   | [Published](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.3.1_TechPosition.PDF) | -                         |
+  | 2.4     | [Published](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.4.0_TechPosition.pdf) | -                         |
 
 ## How to use the LTFS (Quick start)
 
