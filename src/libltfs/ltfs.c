@@ -1461,6 +1461,51 @@ int ltfs_start_mount(bool trial, struct ltfs_volume *vol)
 	return 0;
 }
 
+static inline int _ltfs_search_index_wp(bool recover_symlink, bool can_skip_ip,
+										struct tc_position *seekpos, struct ltfs_volume *vol)
+{
+	int ret = 0;
+	tape_block_t end_pos, index_end_pos;
+	bool fm_after, blocks_after;
+
+	ltfsmsg(LTFS_INFO, 17284I, "IP");
+	ret = ltfs_seek_index(vol->label->partid_ip, &end_pos, &index_end_pos, &fm_after,
+						  &blocks_after, recover_symlink, vol);
+	if (ret) {
+		if (can_skip_ip) {
+			ltfsmsg(LTFS_INFO, 17289I);
+			vol->ip_coh.count = 0;
+			vol->ip_coh.set_id = 0;
+		} else {
+			ltfsmsg(LTFS_ERR, 17285E, "IP", ret);
+			return -LTFS_INDEX_INVALID;
+		}
+	}
+
+	ltfsmsg(LTFS_INFO, 17284I, "DP");
+	ret = ltfs_seek_index(vol->label->partid_dp, &end_pos, &index_end_pos, &fm_after,
+						  &blocks_after, recover_symlink, vol);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 17285E, "DP", ret);
+		return -LTFS_INDEX_INVALID;
+	}
+
+	/* Use the latest index on the tape */
+	ltfsmsg(LTFS_INFO, 17288I,
+			(unsigned long long)vol->ip_coh.count, (unsigned long long)vol->ip_coh.set_id,
+			(unsigned long long)vol->dp_coh.count, (unsigned long long)vol->dp_coh.set_id);
+
+	if (vol->ip_coh.count > vol->dp_coh.count) {
+		seekpos->partition = ltfs_part_id2num(vol->label->partid_ip, vol);
+		seekpos->block = vol->ip_coh.set_id;
+	} else {
+		seekpos->partition = ltfs_part_id2num(vol->label->partid_dp, vol);
+		seekpos->block = vol->dp_coh.set_id;
+	}
+
+	return 0;
+}
+
 /**
  * Read LTFS data structures from a tape, checking for consistency (and restoring it
  * if possible). This function doesn't bother locking vol->index, as it must complete before any
@@ -1602,8 +1647,26 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 				 */
 				ltfsmsg(LTFS_INFO, 17264I, "DP", vl_print);
 			}
-			seekpos.partition = ltfs_part_id2num(vol->label->partid_dp, vol);
-			seekpos.block = vol->dp_coh.set_id;
+
+			if (volume_change_ref != vol->dp_coh.volume_change_ref) {
+				/*
+				 * Cannot trust the index info on MAM, search the last indexes
+				 * This would happen when the drive returns an error against acquiring the VCR
+				 * while write error handling.
+				 */
+				ltfsmsg(LTFS_INFO, 17283I,
+						(unsigned long long)vol->dp_coh.volume_change_ref,
+						(unsigned long long)volume_change_ref);
+
+				ret = _ltfs_search_index_wp(recover_symlink, false, &seekpos, vol);
+				if (ret < 0)
+					goto out_unlock;
+
+			} else {
+				ltfsmsg(LTFS_INFO, 17286I, "DP", (unsigned long long)volume_change_ref);
+				seekpos.partition = ltfs_part_id2num(vol->label->partid_dp, vol);
+				seekpos.block = vol->dp_coh.set_id;
+			}
 		} else {
 			if (vollock != PWE_MAM_DP && vollock != PWE_MAM) {
 				/*
@@ -1612,12 +1675,36 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 				 * so this condition wouldn't happen logically.
 				 */
 				ltfsmsg(LTFS_INFO, 17264I, "IP", vl_print);
-				tape_takedump_drive(vol->device, false);
 			}
-			seekpos.partition = ltfs_part_id2num(vol->label->partid_ip, vol);
-			seekpos.block = vol->ip_coh.set_id;
-			read_ip = true;
+
+			if (volume_change_ref != vol->ip_coh.volume_change_ref) {
+				/*
+				 * Cannot trust the index info on MAM, search the last indexes
+				 * This would happen when the drive returns an error against acquiring the VCR
+				 * while write error handling.
+				 */
+				ltfsmsg(LTFS_INFO, 17283I,
+						(unsigned long long)vol->dp_coh.volume_change_ref,
+						(unsigned long long)volume_change_ref);
+
+				/* Index of IP could be corrupted. So set skip flag */
+				ret = _ltfs_search_index_wp(recover_symlink, true, &seekpos, vol);
+				if (ret < 0)
+					goto out_unlock;
+
+			} else {
+				ltfsmsg(LTFS_INFO, 17286I, "IP", (unsigned long long)volume_change_ref);
+				seekpos.partition = ltfs_part_id2num(vol->label->partid_ip, vol);
+				seekpos.block = vol->ip_coh.set_id;
+			}
 		}
+
+		if (vol->label->part_num2id[seekpos.partition] == vol->label->partid_ip)
+			read_ip = true;
+
+		ltfsmsg(LTFS_INFO, 17287I,
+				vol->label->part_num2id[seekpos.partition],
+				(unsigned long long)seekpos.block);
 
 		ret = tape_seek(vol->device, &seekpos);
 		if (ret == -EDEV_EOD_DETECTED) {
