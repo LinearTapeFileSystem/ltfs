@@ -124,7 +124,7 @@ root:table {
 		11029E:string { "Cannot mount volume: failed to save the append position for the index partition." }
 		11030I:string { "Failed to sync volume (%d). Stop the periodic sync thread." }
 		//unused 11030E:string { "Cannot release the device lock (%s)." }
-		11031I:string { "Volume mounted successfully %s (Gen = %lld, (%c, %lld) -> (%c, %lld), %s)." }
+		11031I:string { "Volume mounted successfully. %s : Gen = %lld / (%c, %lld) -> (%c, %lld) / %s." }
 		11032D:string { "Unmounting the volume." }
 		11033E:string { "Cannot unmount: failed to write an index." }
 		11034I:string { "Volume unmounted successfully." }
@@ -427,7 +427,7 @@ root:table {
 		11330I:string { "Loading cartridge." }
 		11331E:string { "Failed to load the cartridge (%s)." }
 		11332I:string { "Load successful." }
-		11333I:string { "A cartridge with write-perm error is detected on %s. Seek the newest index (IP Gen = %llu, VCR = %llu) (DP Gen = %llu, VCR = %llu) (VCR = %llu)." }
+		11333I:string { "A cartridge with write-perm error is detected on %s. Seek the newest index (IP: Gen = %llu, VCR = %llu) (DP: Gen = %llu, VCR = %llu) (VCR = %llu)." }
 		11334I:string { "Remove extent : %s (%llu, %llu)." }
 		11335D:string { "Get physical block position (%d - %d)." }
 		11336I:string { "The attribute does not exist. Ignore the expected error." }
@@ -824,6 +824,13 @@ v
 		17280I:string { "Failed to get the length of the RAO input file: %s (%d)." }
 		17281I:string { "Failed to read from RAO input file: %s (%d)." }
 		17282I:string { "Read length from RAO input file is unexpected: %s (Actual %ld, Expected %ld)." }
+		17283I:string { "Detected unmatched VCR value between MAM and VCR (%llu, %llu)." }
+		17284I:string { "Seaching the final index in %s." }
+		17285E:string { "Failed to search the final index in %s (%d)." }
+		17286I:string { "VCR value is matched between %s-MAM and VCR (%llu)." }
+		17287I:string { "Making R/O mount from the location (%c, %llu)." }
+		17288I:string { "Detected the final indexes (IP: Gen = %llu, Pos = %llu) (DP: Gen = %llu, Pos = %llu)." }
+		17289I:string { "Skip parsing the final index on IP." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 
