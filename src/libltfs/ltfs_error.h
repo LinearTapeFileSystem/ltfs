@@ -517,4 +517,16 @@
 #define MKLTFS_USAGE_SYNTAX_ERROR PROG_USAGE_SYNTAX_ERROR /* Wrong argument */
 #define MKLTFS_CANCELED_BY_USER   PROG_CANCELED_BY_USER   /* Canceled by user */
 
+/* Status code for ltfsindextool
+ * The maximum return code from the program is 0xFF.
+ */
+#define INDEXTOOL_NO_ERRORS          PROG_NO_ERRORS          /* No error and the cartridge is not modified */
+#define INDEXTOOL_CORRECTED          PROG_TREAT_SUCCESS      /* Recover correctly, the cartridge is modified */
+#define INDEXTOOL_REBOOT_REQUIRED    PROG_REBOOT_REQUIRED    /* Reboot required */
+#define INDEXTOOL_UNCORRECTED        PROG_UNCORRECTED        /* Cannot recover, the cartridge is modified */
+#define INDEXTOOL_OPERATIONAL_ERROR  PROG_OPERATIONAL_ERROR  /* Get device error while processing, the cartridge may be modified */
+#define INDEXTOOL_USAGE_SYNTAX_ERROR PROG_USAGE_SYNTAX_ERROR /* Wrong argument */
+#define INDEXTOOL_CANCELED_BY_USER   PROG_CANCELED_BY_USER   /* Canceled by user */
+#define INDEXTOOL_SHARED_LIB_ERROR   PROG_SHARED_LIB_ERROR   /* Library error */
+
 #endif /* __ltfs_error_h__ */

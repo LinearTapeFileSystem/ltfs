@@ -49,6 +49,7 @@
 RESOURCES = \
 	libbin_mkltfs_dat.a \
 	libbin_ltfsck_dat.a \
+	libbin_ltfsindextool_dat.a \
 	libbin_ltfs_dat.a \
 	libkmi_simple_dat.a \
 	libkmi_flatfile_dat.a \
