@@ -1,0 +1,241 @@
+<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+          <!ENTITY dhcommand "ltfsindextool">
+          <!ENTITY gnu       "<acronym>GNU</acronym>">
+          ]>
+
+<reference>
+  <title>IBM Spectrum Archive Command Reference</title>
+
+  <refentry>
+    <refmeta>
+      <refentrytitle>
+        <command>&dhcommand;</command>
+      </refentrytitle>
+      <manvolnum>8</manvolnum>
+      <refmiscinfo>IBM Spectrum Archive</refmiscinfo>
+    </refmeta>
+
+    <refnamediv>
+      <refname>&dhcommand;</refname>
+      <refpurpose>Format a tape in the drive to LTFS format</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+      <cmdsynopsis>
+        <command>&dhcommand;</command>
+        <arg choice="req"><option>-d <replaceable>name</replaceable></option></arg>
+        <arg><option>-f</option></arg>
+        <arg><option>-s <replaceable>id</replaceable></option></arg>
+        <arg><option>-n <replaceable>name</replaceable></option></arg>
+        <arg><option>-r <replaceable>rules</replaceable></option></arg>
+        <arg><option>-w</option></arg>
+        <arg><option>-q</option></arg>
+        <arg><option>-t</option></arg>
+        <arg><option>-V</option></arg>
+        <arg><option>-h</option></arg>
+        <arg><option>-p</option></arg>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+
+    <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+        <command>&dhcommand;</command> is a program to format a media for use with
+        the IBM Spectrum Archive.
+      </para>
+    </refsect1>
+
+    <refsect1>
+      <title>OPTIONS</title>
+      <para>
+        These programs follow the usual &gnu; command line syntax,
+        with long options starting with two dashes ('-').  A summary of
+        options is included below.  For a complete description, see the
+        <application>Info</application> files.
+      </para>
+
+      <variablelist>
+        <varlistentry>
+          <term><option>-d, --device=<replaceable>name</replaceable></option></term>
+          <listitem>
+            <para>
+              Tape device name (required). On Linux, <replaceable>name</replaceable> is like
+              '/dev/IBMtape0', on OSX, <replaceable>name</replaceable> is like '0'
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-f, --force</option></term>
+          <listitem>
+            <para>Force to format medium</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-s, --tape-serial=<replaceable>id</replaceable></option></term>
+          <listitem>
+            <para>Tape serial number (6 alphanumeric ASCII characters)</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-n, --volume-name=<replaceable>name</replaceable></option></term>
+          <listitem>
+            <para>Tape volume name (empty by default)</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-r, --rules=<replaceable>rules</replaceable></option></term>
+          <listitem>
+            <para>
+              Rules for choosing files to write to the index partition.
+              The syntax of the rule argument is:
+            </para>
+            <simplelist>
+              <member>    size=1M</member>
+              <member>    size=1M/name=pattern</member>
+              <member>    size=1M/name=pattern1:pattern2:pattern3</member>
+            </simplelist>
+            <para>
+              A file is written to the index partition if it is no larger
+              than the given size AND matches at least one of the name
+              patterns (if specified). The size argument accepts K, M, and G
+              suffixes. Name patterns might contain the special characters
+              '?' (match any single character) and '*' (match zero or more
+              characters).
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>--no-override</option></term>
+          <listitem>
+            <para>Disallow mount-time data placement policy changes</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-w, --wipe</option></term>
+          <listitem>
+            <para>Restore the LTFS medium to an unpartitioned medium (format to a legacy scratch medium)</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-q, --quiet</option></term>
+          <listitem>
+            <para>Suppress progress information and general messages</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-t, --trace</option></term>
+          <listitem>
+            <para>Enable function call tracing</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>--syslogtrace</option></term>
+          <listitem>
+            <para>Enable diagnostic output to stderr and syslog</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-V, --version</option></term>
+          <listitem>
+            <para>Version information</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-h, --help</option></term>
+          <listitem>
+            <para>Show help information</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-p, --advanced-help</option></term>
+          <listitem>
+            <para>Full help, including advanced options</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <example>
+        <title>USAGE EXAMPLE</title>
+        <programlisting>
+          /home/piste/ltfs05-sde/bin/mkltfs --device=/dev/IBMtape0 --rules="size=100K"
+          /home/piste/ltfs05-sde/bin/mkltfs --device=/dev/IBMtape0 --rules="size=1M/name=*.jpg"
+          /home/piste/ltfs05-sde/bin/mkltfs --device=/dev/IBMtape0 --rules="size=1M/name=*.jpg:*.png"
+        </programlisting>
+      </example>
+    </refsect1>
+
+    <refsect1>
+      <title>ADVANCED OPTIONS (Experimental)</title>
+      <para>
+        The options described here is experimental functions.
+      </para>
+      <para>
+        These programs follow the usual &gnu; command line syntax,
+        with long options starting with two dashes ('-').  A summary of
+        options is included below.  For a complete description, see the
+        <application>Info</application> files.
+      </para>
+
+      <variablelist>
+        <varlistentry>
+          <term><option>-i, --config=<replaceable>name</replaceable></option></term>
+          <listitem>
+            <para>Use the specified configuration file (default: )</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-e, --backend=<replaceable>name</replaceable></option></term>
+          <listitem>
+            <para>Use the specified tape device backend (default: )</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>--kmi-backend=<replaceable>name</replaceable></option></term>
+          <listitem>
+            <para>Use the specified key manager interface backend (default: none)</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-b, --blocksize=<replaceable>num</replaceable></option></term>
+          <listitem>
+            <para>Set the LTFS record size (default: 524288)</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-c, --no-compression</option></term>
+          <listitem>
+            <para>Disable compression on the volume</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-k, --keep-capacity</option></term>
+          <listitem>
+            <para>Keep the tape medium's total capacity proportion</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-x, --fulltrace</option></term>
+          <listitem>
+            <para>Enable full function call tracing (slow)</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>--long-wipe</option></term>
+          <listitem>
+            <para>
+              Unformat the medium and erase any data on the tape by overwriting special data pattern.
+              This operation takes over 3 hours. Once you start, you cannot interrupt it.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsect1>
+
+    <refsect1>
+      <title>SEE ALSO</title>
+      <para>ltfs-sde(8), ltfsck(8), tape-backend(4), kmi-backend(4), ltfs.conf(5).</para>
+    </refsect1>
+
+  </refentry>
+
+</reference>

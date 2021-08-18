@@ -101,6 +101,7 @@ struct indextool_opts {
 #define PART_BOTH  (-1)
 #define START_POS  (5)
 #define OUTPUT_DIR "."
+#define KEY_MAX_OFFSET  (0x30)
 
 static const char *short_options = "i:e:d:p:s:o:b:qthV";
 static struct option long_options[] = {
@@ -164,7 +165,7 @@ static int ltfs_capture_index_raw(tape_partition_t   part,
 	int ret = 0, fd = -1;
 	ssize_t nread, nwrite, index_len = 0;
 	struct tc_position pos;
-	char *buf = NULL, *key = NULL;
+	char *buf = NULL, *key = NULL, check_buf[KEY_MAX_OFFSET + 1];
 
 	pos.partition = part;
 	pos.block = start_pos;
@@ -199,7 +200,9 @@ static int ltfs_capture_index_raw(tape_partition_t   part,
 		}
 		pos.block++;
 
-		key = strnstr(buf, "<ltfsindex", blocksize);
+		memset(check_buf, 0x00, KEY_MAX_OFFSET + 1);
+		strncpy(check_buf, buf, KEY_MAX_OFFSET);
+		key = strstr(check_buf, "<ltfsindex");
 		if (key && (key - buf < 0x30)) {
 			ltfsmsg(LTFS_ERR, 19529I,
 					(unsigned int)pos.partition, (unsigned long long)(pos.block - 1));
