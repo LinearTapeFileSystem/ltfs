@@ -1,0 +1,109 @@
+//
+//
+//  OO_Copyright_BEGIN
+//
+//
+//  Copyright 2010, 2020 IBM Corp. All rights reserved.
+//
+//  Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions
+//  are met:
+//  1. Redistributions of source code must retain the above copyright
+//     notice, this list of conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright
+//     notice, this list of conditions and the following disclaimer in the
+//  documentation and/or other materials provided with the distribution.
+//  3. Neither the name of the copyright holder nor the names of its
+//     contributors may be used to endorse or promote products derived from
+//     this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
+//
+//
+//  OO_Copyright_END
+//
+
+// Messages for ltfsindextool.
+root:table {
+	messages:table {
+		start_id:int { 19500 }
+		end_id: int { 19989 }
+		19500I:string { "Starting ltfsindextool, %s version %s, log level %d." }
+		19501E:string { "Cannot allocate LTFS volume structure." }
+		19502I:string { "%s." }
+		19503I:string { "GCC version is %s." }
+		19504I:string { "Capture all indexes from both partitions." }
+		19505I:string { "Capture all indexes from (%u, %llu)." }
+		19506D:string { "Opening the device." }
+		19507D:string { "Device opened." }
+		19508E:string { "Cannot open backend \'%s\'." }
+		19509E:string { "Cannot open key manager interface backend \'%s\'." }
+		19510E:string { "Cannot open device \'%s\' (%d)." }
+		19511E:string { "Could not initialize the key manager interface plug-in. \'%s\' (%d)." }
+		19512E:string { "Key manager interface backend option parsing failed." }
+		19513E:string { "Tape backend option parsing failed." }
+		19514E:string { "Unknown option '%s %s'." }
+		19515E:string { "Cannot set up tape device." }
+		19516E:string { "Cannot allocate the read buffer." }
+		19517E:string { "Cannot seek to the start position (%u, %llu, %d)." }
+		19518E:string { "Cannot get the current position (%d)." }
+		19519E:string { "Cannot read a block (%u, %llu, %ld)." }
+		19520D:string { "Closing the device." }
+		19521W:string { "Cannot unload backend." }
+		19522D:string { "Device closed." }
+		19523I:string { "Failed to capture index (%d)." }
+		19524I:string { "Captured indexes successfully." }
+		19525D:string { "Validating command line options." }
+		19526E:string { "File name to check or device name to capture must be specified." }
+		19527D:string { "Command line options are valid." }
+		19528W:string { "Cannot unload key manager interface backend." }
+		19529I:string { "Reading an index from (%u, %llu)." }
+		19530I:string { "Block in (%u, %llu) does not look an index, seek to next position (%d)." }
+		19531E:string { "Cannot seek to the next position (%u, %llu, %d)." }
+		19532E:string { "Cannot allocate the file name." }
+		19533E:string { "Cannot open the file %s (%d)." }
+		19534I:string { "Reached to EOD (%u, %llu)." }
+		19535I:string { "Reached to EOD but cannot get the position (%d)." }
+		19536E:string { "Cannot write a block (%ld, %d)." }
+		19537I:string { "Detected the end of the index (%u, %llu)." }
+		19538E:string { "Detected the EOD in the middle of index (%u, %llu)." }
+		19539I:string { "Wrote an index, length is %llu." }
+		19540E:string { "Partition number must be 0 or 1." }
+		19541E:string { "Operation mode is wrong." }
+		19542I:string { "Launched by \"%s\"." }
+		19543I:string { "Checking the index file \"%s\"." }
+		19544I:string { "Checked the index successfully." }
+		19545E:string { "Failed to check the index (%d)." }
+		19546I:string { "%s version %s." }
+		19547I:string { "Creating an index file: %s" }
+		19548E:string { "Start position shall be 5 or larger (%llu)." }
+
+		// Help messages
+		19900I:string { "Usage: %s [options] [filename]" }
+		19901I:string { "Available options are:" }
+		19902I:string { "  -d, --device=<name>        Tape device (Capture index to specified file when this option is specified. Otherwise run check process with specified file)" }
+		19903I:string { "  -p, --partition=<part_num> Partition number 0 or 1, capture both partitions if not specified" }
+		19904I:string { "  -s, --start-pos=<block>    Block number to start capturing (default: %d)" }
+		19905I:string { "      --output-dir=<dir>     Directory to store captured indexes (default: \'%s\')" }
+		19906I:string { "  -b, --blocksize=<num>      Specify the LTFS record size (default: %d)" }
+		19907I:string { "  -i, --config=<file>        Use the specified configuration file (default: %s)" }
+		19908I:string { "  -e, --backend=<name>       Use the specified tape device backend (default: %s)" }
+		19909I:string { "      --kmi-backend=<name>   Use the specified key manager interface backend (default: %s)" }
+		19910I:string { "  -q, --quiet                Suppress progress information and general messages" }
+		19911I:string { "  -t, --trace                Enable function call tracing" }
+		19912I:string { "  -V, --version             Version information" }
+		19913I:string { "  -h, --help                 This help" }
+		19914I:string { "Usage example:" }
+		19915I:string { "  %s --device=%s -p=%d" }
+	}
+}

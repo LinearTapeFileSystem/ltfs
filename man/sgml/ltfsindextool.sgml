@@ -1,0 +1,159 @@
+<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+          <!ENTITY dhcommand "ltfsindextool">
+          <!ENTITY gnu       "<acronym>GNU</acronym>">
+          ]>
+
+<reference>
+  <title>LTFS Command Reference</title>
+
+  <refentry>
+    <refmeta>
+      <refentrytitle>
+        <command>&dhcommand;</command>
+      </refentrytitle>
+      <manvolnum>8</manvolnum>
+      <refmiscinfo>LTFS</refmiscinfo>
+    </refmeta>
+
+    <refnamediv>
+      <refname>&dhcommand;</refname>
+      <refpurpose>Low level index checking tool for LTFS</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+      <cmdsynopsis>
+        <command>&dhcommand;</command>
+        <arg><option>-d <replaceable>name</replaceable></option></arg>
+        <arg><option>-p <replaceable>part_num</replaceable></option></arg>
+        <arg><option>-s <replaceable>block</replaceable></option></arg>
+        <arg><option>-b <replaceable>num</replaceable></option></arg>
+        <arg><option>-i <replaceable>file</replaceable></option></arg>
+        <arg><option>-e <replaceable>name</replaceable></option></arg>
+        <arg><option>-q</option></arg>
+        <arg><option>-t</option></arg>
+        <arg><option>-V</option></arg>
+        <arg><option>-h</option></arg>
+        <arg><option>-p</option></arg>
+        <arg><replaceable>filename</replaceable></arg>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+
+    <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+        <command>&dhcommand;</command> is a low level index checking tool.
+      </para>
+      <para>
+        There are 2 features. One is captureing indexes on a tape, the other is checking captured index from a file.
+        The command runs as index checking mode when filename is specified. It runs as index capturing mode when
+        -d option is specified. It runs as index checking mode when both filename and -d option are specified.
+        -p, -s --output-dir, -b is available only when it runs under index captureing mode. They would be ignored
+        when it runs under index checking mode.
+      </para>
+    </refsect1>
+
+    <refsect1>
+      <title>OPTIONS</title>
+      <para>
+        These programs follow the usual &gnu; command line syntax,
+        with long options starting with two dashes ('-').  A summary of
+        options is included below.  For a complete description, see the
+        <application>Info</application> files.
+      </para>
+
+      <variablelist>
+        <varlistentry>
+          <term><option>-d, --device=<replaceable>name</replaceable></option></term>
+          <listitem>
+            <para>
+              Tape device name to capture indexes. On Linux, <replaceable>name</replaceable> is like
+              '/dev/IBMtape0', on OSX, <replaceable>name</replaceable> is like '0'.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-p, --partition=<replaceable>part_num</replaceable></option></term>
+          <listitem>
+            <para>Partition to capture indexes. Shall be 0 or 1. Capture indexes on both partitions</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-s, --start-pos=<replaceable>block</replaceable></option></term>
+          <listitem>
+            <para>Block number to start capturing indexes</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>--output-dir=<replaceable>dir</replaceable></option></term>
+          <listitem>
+            <para>Directory to store captured indexes</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-b, --blocksize=<replaceable>num</replaceable></option></term>
+          <listitem>
+            <para>Specify the LTFS record size</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-i, --config=<replaceable>name</replaceable></option></term>
+          <listitem>
+            <para>Use the specified configuration file</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-e, --backend=<replaceable>name</replaceable></option></term>
+          <listitem>
+            <para>Use the specified tape device backend</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>--kmi-backend=<replaceable>name</replaceable></option></term>
+          <listitem>
+            <para>Use the specified key manager interface backend (default: none)</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-q, --quiet</option></term>
+          <listitem>
+            <para>Suppress progress information and general messages</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-t, --trace</option></term>
+          <listitem>
+            <para>Enable function call tracing</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-V, --version</option></term>
+          <listitem>
+            <para>Version information</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-h, --help</option></term>
+          <listitem>
+            <para>Show help information</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <example>
+        <title>USAGE EXAMPLE</title>
+        <programlisting>
+          ltfsindextool -d /dev/sg10
+          ltfsindextool -d /dev/sg10 -p 1 --output-dir=/foo
+          ltfsindextool -d ltfs-index-1-35.xml
+        </programlisting>
+      </example>
+    </refsect1>
+
+    <refsect1>
+      <title>SEE ALSO</title>
+      <para>ltfs(8), mkltfs(8), ltfsck(8), tape-backend(4), kmi-backend(4), ltfs.conf(5).</para>
+    </refsect1>
+
+  </refentry>
+
+</reference>

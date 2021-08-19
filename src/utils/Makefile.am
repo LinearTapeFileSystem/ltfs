@@ -33,7 +33,7 @@
 #  OO_Copyright_END
 #
 
-bin_PROGRAMS = mkltfs ltfsck
+bin_PROGRAMS = mkltfs ltfsck ltfsindextool
 
 nobase_bin_SCRIPTS = ltfs_ordered_copy
 
@@ -50,3 +50,9 @@ ltfsck_DEPENDENCIES = ../libltfs/libltfs.la ../../messages/libbin_ltfsck_dat.a
 ltfsck_LDADD = ../libltfs/libltfs.la
 ltfsck_LDFLAGS = @AM_LDFLAGS@ -L../../messages -lbin_ltfsck_dat
 ltfsck_CPPFLAGS = @AM_CPPFLAGS@ -I .. -fPIC
+
+ltfsindextool_SOURCES = ltfsindextool.c
+ltfsindextool_DEPENDENCIES = ../libltfs/libltfs.la ../../messages/libbin_ltfsindextool_dat.a ../../messages/libbin_mkltfs_dat.a
+ltfsindextool_LDADD = ../libltfs/libltfs.la
+ltfsindextool_LDFLAGS = @AM_LDFLAGS@ -L../../messages -lbin_ltfsindextool_dat
+ltfsindextool_CPPFLAGS = @AM_CPPFLAGS@ -I .. -fPIC

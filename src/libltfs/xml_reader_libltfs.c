@@ -1838,7 +1838,7 @@ int xml_schema_from_file(const char *filename, struct ltfs_index *idx, struct lt
 	reader = xmlReaderForFile(filename, NULL, XML_PARSE_NOERROR | XML_PARSE_NOWARNING | XML_PARSE_HUGE);
 	if (! reader) {
 		ltfsmsg(LTFS_ERR, 17011E, filename);
-		return -1;
+		return -LTFS_FILE_ERR;
 	}
 
 	/* Workaround for old libxml2 version on OS X 10.5: the method used to preserve

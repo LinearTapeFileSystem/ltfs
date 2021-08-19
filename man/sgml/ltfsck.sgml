@@ -4,7 +4,7 @@ M<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
           ]>
 
 <reference>
-  <title>IBM Spectrum Archive Command Reference</title>
+  <title>LTFS Command Reference</title>
 
   <refentry>
     <refmeta>
@@ -12,7 +12,7 @@ M<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
         <command>&dhcommand;</command>
       </refentrytitle>
       <manvolnum>8</manvolnum>
-      <refmiscinfo>IBM Spectrum Archive</refmiscinfo>
+      <refmiscinfo>LTFS</refmiscinfo>
     </refmeta>
 
     <refnamediv>
@@ -51,7 +51,7 @@ M<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
       <title>DESCRIPTION</title>
       <para>
         <command>&dhcommand;</command> is a program to recover an inconsistent
-        LTFS formatted medium and roll back utility of the IBM Spectrum Archive.
+        LTFS formatted medium and roll back utility of the LTFS.
       </para>
     </refsect1>
 
@@ -228,7 +228,7 @@ M<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
 
     <refsect1>
       <title>SEE ALSO</title>
-      <para>ltfs-sde(8), mkltfs(8), tape-backend(4), kmi-backend(4), ltfs.conf(5).</para>
+      <para>ltfs(8), mkltfs(8), ltfsindextool(8), tape-backend(4), kmi-backend(4), ltfs.conf(5).</para>
     </refsect1>
 
   </refentry>
