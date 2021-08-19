@@ -340,6 +340,12 @@ static int _indextool_validate_options(char *prg_name, struct indextool_opts *op
 		return 1;
 	}
 
+	/* Validate start position */
+	if (opt->start_pos < START_POS) {
+		ltfsmsg(LTFS_ERR, 19548E, (unsigned long long)opt->start_pos);
+		return 1;
+	}
+
 	ltfsmsg(LTFS_DEBUG, 19527D);
 	return 0;
 }

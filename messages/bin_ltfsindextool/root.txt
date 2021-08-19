@@ -86,6 +86,7 @@ root:table {
 		19545E:string { "Failed to check the index (%d)." }
 		19546I:string { "%s version %s." }
 		19547I:string { "Creating an index file: %s" }
+		19548E:string { "Start position shall be 5 or larger (%llu)." }
 
 		// Help messages
 		19900I:string { "Usage: %s [options] [filename]" }

@@ -45,8 +45,10 @@
       </para>
       <para>
         There are 2 features. One is captureing indexes on a tape, the other is checking captured index from a file.
-        -d option or filename shall be specified. Capture indexes on a tape to specified file
-        when -d option is specified. Otherwise run check process with specified file)
+        The command runs as index checking mode when filename is specified. It runs as index capturing mode when
+        -d option is specified. It runs as index checking mode when both filename and -d option are specified.
+        -p, -s --output-dir, -b is available only when it runs under index captureing mode. They would be ignored
+        when it runs under index checking mode.
       </para>
     </refsect1>
 
@@ -64,7 +66,7 @@
           <term><option>-d, --device=<replaceable>name</replaceable></option></term>
           <listitem>
             <para>
-              Tape device name (required). On Linux, <replaceable>name</replaceable> is like
+              Tape device name to capture indexes. On Linux, <replaceable>name</replaceable> is like
               '/dev/IBMtape0', on OSX, <replaceable>name</replaceable> is like '0'.
             </para>
           </listitem>
@@ -72,7 +74,7 @@
         <varlistentry>
           <term><option>-p, --partition=<replaceable>part_num</replaceable></option></term>
           <listitem>
-            <para>Partition to capture indexes. Shall be 0 or 1</para>
+            <para>Partition to capture indexes. Shall be 0 or 1. Capture indexes on both partitions</para>
           </listitem>
         </varlistentry>
         <varlistentry>
