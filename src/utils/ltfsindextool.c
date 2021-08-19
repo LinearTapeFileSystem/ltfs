@@ -266,12 +266,12 @@ static int ltfs_capture_index_raw(tape_partition_t   part,
 				ltfsmsg(LTFS_INFO, 19530I,
 						(unsigned int)pos.partition,
 						(unsigned long long)(pos.block - 1),
-						key - buf);
+						(int)(key - buf));
 			else
 				ltfsmsg(LTFS_INFO, 19530I,
 						(unsigned int)pos.partition,
 						(unsigned long long)(pos.block - 1),
-						0);
+						(int)0);
 
 			/* Do nothig at (nread == 0) because tape hits a FM */
 			if (nread > 0) {
@@ -354,7 +354,7 @@ static int check_index(struct ltfs_volume *vol, struct indextool_opts *opt, void
 	ret = xml_schema_from_file(opt->filename, vol->index, vol);
 
 	if (!ret) {
-		ltfsmsg(LTFS_INFO, 19544I, ret);
+		ltfsmsg(LTFS_INFO, 19544I);
 	} else {
 		ltfsmsg(LTFS_ERR, 19545E, ret);
 	}
@@ -516,7 +516,7 @@ static void show_usage(char *appname, struct config_file *config, bool full)
 	plugin_usage(appname, "kmi", config);
 	fprintf(stderr, "\n");
 	ltfsresult(19914I); /* Usage example: */
-	ltfsresult(19915I, appname, devname, "0");
+	ltfsresult(19915I, appname, devname, 0);
 	free(devname);
 }
 

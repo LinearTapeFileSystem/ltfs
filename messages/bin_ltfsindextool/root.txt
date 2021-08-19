@@ -57,7 +57,7 @@ root:table {
 		19516E:string { "Cannot allocate the read buffer." }
 		19517E:string { "Cannot seek to the start position (%u, %llu, %d)." }
 		19518E:string { "Cannot get the current position (%d)." }
-		19519E:string { "Cannot read a block (%u, %llu, %d)." }
+		19519E:string { "Cannot read a block (%u, %llu, %ld)." }
 		19520D:string { "Closing the device." }
 		19521W:string { "Cannot unload backend." }
 		19522D:string { "Device closed." }
@@ -74,7 +74,7 @@ root:table {
 		19533E:string { "Cannot open the file %s (%d)." }
 		19534I:string { "Reached to EOD (%u, %llu)." }
 		19535I:string { "Reached to EOD but cannot get the position (%d)." }
-		19536E:string { "Cannot write a block (%d, %d)." }
+		19536E:string { "Cannot write a block (%ld, %d)." }
 		19537I:string { "Detected the end of the index (%u, %llu)." }
 		19538E:string { "Detected the EOD in the middle of index (%u, %llu)." }
 		19539I:string { "Wrote an index, length is %llu." }
@@ -91,7 +91,7 @@ root:table {
 		19900I:string { "Usage: %s [options] [filename]" }
 		19901I:string { "Available options are:" }
 		19902I:string { "  -d, --device=<name>        Tape device (Capture index to specified file when this option is specified. Otherwise run check process with specified file)" }
-		19903I:string { "  -p, --partition=<part_num> Partition number 0 or 1" }
+		19903I:string { "  -p, --partition=<part_num> Partition number 0 or 1, capture both partitions if not specified" }
 		19904I:string { "  -s, --start-pos=<block>    Block number to start capturing (default: %d)" }
 		19905I:string { "      --output-dir=<dir>     Directory to store captured indexes (default: \'%s\')" }
 		19906I:string { "  -b, --blocksize=<num>      Specify the LTFS record size (default: %d)" }
