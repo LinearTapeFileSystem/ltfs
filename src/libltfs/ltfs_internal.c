@@ -989,10 +989,11 @@ int _ltfs_make_lost_found(tape_block_t ip_eod, tape_block_t dp_eod,
  * @param vol The ltfs volume to work on
  * @param partid The partition to examine
  * @param block The starting block of the final index on the partition
+ * @param fix allow simple fixes to make the volume consistent?
  * @return 0 if eod is the appropriate append address, >0 for the absolute block address to append
  *         at, <0 on error
  */
-static int _ltfs_find_append_blk_after_idx(struct ltfs_volume *vol, char partid, tape_block_t block) {
+static int _ltfs_find_append_blk_after_idx(struct ltfs_volume *vol, char partid, tape_block_t block, bool fix) {
 	unsigned int n_fm_after = 0;
 	struct tc_position idx_pos;
 	struct tc_position final_fm_pos;
@@ -1021,12 +1022,23 @@ static int _ltfs_find_append_blk_after_idx(struct ltfs_volume *vol, char partid,
 		}
 	}
 	ret = 0;
-	if (n_fm_after == 2 ) {
+	switch (n_fm_after){
+	case 0:
+	case 1:
+		/* Append block does not need to be altered */
+		break;
+	case 2:
 		/* (index | data | ... eod) - unexpected fm after data, possible incomplete index */
-		ret = final_fm_pos.block-1;
-	} else if (n_fm_after > 2) {
+		if (fix) {
+			ret = final_fm_pos.block-1;
+		} else {
+			ret = -LTFS_OP_TO_INV;
+		}
+		break;
+	default:
 		/* (index | data | ??? | ... eod) - invalid format*/
 		ret = -LTFS_OP_TO_INV;
+		break;
 	}
 out:
 	return ret;
@@ -1043,7 +1055,8 @@ out:
  *
  * @param fix allow simple fixes to make the tape consistent?
  *            Here, simple means writing an additional logically unmodified copy
- *            or copies of an index file already present on the tape.
+ *            or copies of an index file already present on the tape. Also
+ *            allows truncating incomplete index at the end of the partition.
  * @param deep Allow fancy recovery procedures? In particular, this flag enables recovery in the
  *             case where extra blocks (after the last index file on a partition) are found on the
  *             tape. The nature of this recovery is controlled by the recover_extra flag.
@@ -1173,7 +1186,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 
 	/* Set append position for data partition to end of trailing data. */
 	if (dp_have_index && dp_blocks_after) {
-		ret = _ltfs_find_append_blk_after_idx(vol, vol->label->partid_dp, dp_index->selfptr.block);
+		ret = _ltfs_find_append_blk_after_idx(vol, vol->label->partid_dp, dp_index->selfptr.block, fix);
 		if (ret < 0) {
 			goto out_unlock;
 		} else {
@@ -1185,7 +1198,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 
 	/* Set append position for index partition to end of trailing data or preceding data */
 	if (ip_have_index && ip_blocks_after) {
-		ret = _ltfs_find_append_blk_after_idx(vol, vol->label->partid_ip, ip_index->selfptr.block);
+		ret = _ltfs_find_append_blk_after_idx(vol, vol->label->partid_ip, ip_index->selfptr.block, fix);
 		if (ret <0) {
 			goto out_unlock;
 		} else {
