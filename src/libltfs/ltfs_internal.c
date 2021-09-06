@@ -983,6 +983,68 @@ int _ltfs_make_lost_found(tape_block_t ip_eod, tape_block_t dp_eod,
 }
 
 /**
+ * Find the appropriate append address for a partition at which calling ltfs_write_index() will
+ * correctly restore consistency to the partition.
+ *
+ * @param vol The ltfs volume to work on
+ * @param partid The partition to examine
+ * @param block The starting block of the final index on the partition
+ * @param fix allow simple fixes to make the volume consistent?
+ * @return 0 if eod is the appropriate append address, >0 for the absolute block address to append
+ *         at, <0 on error
+ */
+static int _ltfs_find_append_blk_after_idx(struct ltfs_volume *vol, char partid, tape_block_t block, bool fix) {
+	unsigned int n_fm_after = 0;
+	struct tc_position idx_pos;
+	struct tc_position final_fm_pos;
+	int ret = 0;
+
+	idx_pos.partition = ltfs_part_id2num(partid, vol);
+	idx_pos.block = block;
+	ret = tape_seek(vol->device, &idx_pos);
+	if (ret != 0) {
+		if (partid == vol->label->partid_ip)
+			ltfsmsg(LTFS_ERR, 11023E);
+		else {
+			ltfsmsg(LTFS_ERR, 11020E);
+		}
+		goto out;
+	}
+	while(ret == 0) {
+		ret = tape_spacefm(vol->device, 1);
+		if (ret == 0) {
+			tape_update_position(vol->device, &final_fm_pos);
+			n_fm_after++;
+		} else {
+			if (ret != -EDEV_EOD_DETECTED) {
+				goto out;
+			}
+		}
+	}
+	ret = 0;
+	switch (n_fm_after){
+	case 0:
+	case 1:
+		/* Append block does not need to be altered */
+		break;
+	case 2:
+		/* (index | data | ... eod) - unexpected fm after data, possible incomplete index */
+		if (fix) {
+			ret = final_fm_pos.block-1;
+		} else {
+			ret = -LTFS_OP_TO_INV;
+		}
+		break;
+	default:
+		/* (index | data | ??? | ... eod) - invalid format*/
+		ret = -LTFS_OP_TO_INV;
+		break;
+	}
+out:
+	return ret;
+}
+
+/**
  * Check a volume for physical consistency. This should be called when there is some doubt about
  * the validity of the MAM parameters; it reads index files from both partitions and verifies
  * that everything seems sane. This function does not check the partition labels; use
@@ -993,7 +1055,8 @@ int _ltfs_make_lost_found(tape_block_t ip_eod, tape_block_t dp_eod,
  *
  * @param fix allow simple fixes to make the tape consistent?
  *            Here, simple means writing an additional logically unmodified copy
- *            or copies of an index file already present on the tape.
+ *            or copies of an index file already present on the tape. Also
+ *            allows truncating incomplete index at the end of the partition.
  * @param deep Allow fancy recovery procedures? In particular, this flag enables recovery in the
  *             case where extra blocks (after the last index file on a partition) are found on the
  *             tape. The nature of this recovery is controlled by the recover_extra flag.
@@ -1121,8 +1184,28 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 	if (ret < 0)
 		goto out_unlock;
 
-	/* Set append position for index partition. */
-	if (ip_have_index && ! ip_blocks_after) {
+	/* Set append position for data partition to end of trailing data. */
+	if (dp_have_index && dp_blocks_after) {
+		ret = _ltfs_find_append_blk_after_idx(vol, vol->label->partid_dp, dp_index->selfptr.block, fix);
+		if (ret < 0) {
+			goto out_unlock;
+		} else {
+			dp_eod = ret;
+			check_err(tape_set_append_position(vol->device, dp_num, dp_eod),
+				11222E, out_unlock);
+		}
+	}
+
+	/* Set append position for index partition to end of trailing data or preceding data */
+	if (ip_have_index && ip_blocks_after) {
+		ret = _ltfs_find_append_blk_after_idx(vol, vol->label->partid_ip, ip_index->selfptr.block, fix);
+		if (ret <0) {
+			goto out_unlock;
+		} else {
+			ip_eod = ret;
+			check_err(tape_set_append_position(vol->device, ip_num, ip_eod),
+				11222E, out_unlock);
+		}
 		check_err(tape_set_append_position(vol->device, ip_num, ip_index->selfptr.block - 1),
 			11222E, out_unlock);
 	}
