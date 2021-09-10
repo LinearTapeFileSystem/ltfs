@@ -57,7 +57,7 @@
 #include <ICU/unicode/ustring.h>
 #include <ICU/unicode/utypes.h>
 #include <ICU/unicode/ucnv.h>
-#ifdef ICU6x
+#ifdef USE_UNORM2
 #include <ICU/unicode/unorm2.h>
 #else
 #include <ICU/unicode/unorm.h>
@@ -67,7 +67,7 @@
 #include <unicode/ustring.h>
 #include <unicode/utypes.h>
 #include <unicode/ucnv.h>
-#ifdef ICU6x
+#ifdef USE_UNORM2
 #include <unicode/unorm2.h>
 #else
 #include <unicode/unorm.h>
@@ -649,13 +649,13 @@ int _pathname_foldcase_icu(const UChar *src, UChar **dest)
 }
 
 /**
- * ICU5x/ICU6x handle: gets a reference to a singleton unorm2 object (ICU6x) or to a constant
+ * ICU5x/USE_UNORM2 handle: gets a reference to a singleton unorm2 object (USE_UNORM2) or to a constant
  * value that we can use to differentiate between NFC and NFD modes (ICU5x). Neither should be
  * freed after use.
  */
 static inline void *_unorm_handle(bool nfc, UErrorCode *err)
 {
-#ifdef ICU6x
+#ifdef USE_UNORM2
 	*err = U_ZERO_ERROR;
 	return (void *) unorm2_getInstance(NULL, "nfc", nfc ? UNORM2_COMPOSE : UNORM2_DECOMPOSE, err);
 #else
@@ -666,7 +666,7 @@ static inline void *_unorm_handle(bool nfc, UErrorCode *err)
 static inline UNormalizationCheckResult _unorm_quickCheck(void *handle, const UChar *src, UChar **dest, UErrorCode *err)
 {
 	*err = U_ZERO_ERROR;
-#ifdef ICU6x
+#ifdef USE_UNORM2
 	const UNormalizer2 *n2 = (const UNormalizer2 *) handle;
 	return unorm2_quickCheck(n2, src, -1, err);
 #else
@@ -678,7 +678,7 @@ static inline UNormalizationCheckResult _unorm_quickCheck(void *handle, const UC
 static inline int32_t _unorm_normalize(void *handle, const UChar *src, UChar **dest, int32_t len, UErrorCode *err)
 {
 	*err = U_ZERO_ERROR;
-#ifdef ICU6x
+#ifdef USE_UNORM2
 	const UNormalizer2 *n2 = (const UNormalizer2 *) handle;
 	return unorm2_normalize(n2, src, -1, dest ? *dest : NULL, len, err);
 #else
