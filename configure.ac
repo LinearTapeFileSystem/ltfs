@@ -152,22 +152,13 @@ AC_ARG_ENABLE([snmp],
 AC_MSG_RESULT([$snmp])
 
 dnl
-dnl Handle --enable-new-locking (default: depend on platform)
-dnl NetBSD: old locking is broken, force new locking
-dnl others: default to old locking
+dnl Handle --enable-new-locking (default: yes)
 dnl
-if test "x${host_netbsd}" = "xyes"
-then
-    use_new_locking_default=yes
-else
-    use_new_locking_default=no
-fi
-
 AC_MSG_CHECKING([whether to enable new locking system or not])
 AC_ARG_ENABLE([new-locking],
     [AS_HELP_STRING([--enable-new-locking],[Use new locking system or not])],
     [use_new_locking=$enableval],
-    [use_new_locking=$use_new_locking_default]
+    [use_new_locking=yes]
 )
 AC_MSG_RESULT([$use_new_locking])
 
@@ -337,16 +328,20 @@ fi
 dnl
 dnl Check for ICU
 dnl
-ICU_MODULE_CFLAGS="`icu-config --cppflags 2> /dev/null`";
+AC_MSG_CHECKING(ICU version)
+ICU_MODULE_VERSION="`icu-config --version 2> /dev/null`";
+ICU_MODULE_CFLAGS=" `icu-config --cppflags 2> /dev/null`";
 ICU_MODULE_LIBS="`icu-config --ldflags 2> /dev/null`";
-if test -z "$ICU_MODULE_LIBS"
+AC_MSG_RESULT([$ICU_MODULE_VERSION])
+
+if test -z "$ICU_MODULE_VERSION"
 then
     PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
 fi
 
-AC_MSG_CHECKING([use latest ICU])
+AC_MSG_CHECKING([for using ICU6x (unorm2) functions forcibly])
 AC_ARG_ENABLE([icu_6x],
-    [AS_HELP_STRING([--enable-icu-6x],[Support handling of ICU 6x functions])],
+    [AS_HELP_STRING([--enable-icu-6x],[Force to use ICU6x (unorm2) functions])],
     [icu_6x=$enableval],
     [icu_6x=no]
 )
@@ -354,13 +349,16 @@ AC_MSG_RESULT([$icu_6x])
 
 if test "x${icu_6x}" = "xyes"
 then
-    AC_MSG_CHECKING(for ICU version)
-    ICU_MODULE_VERSION="`icu-config --version 2> /dev/null`";
-    if test "${ICU_MODULE_VERSION%%.*}" -ge "60"
+    AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -D USE_UNORM2"
+else
+    AC_MSG_CHECKING(for using unorm2 functions)
+    if test "${ICU_MODULE_VERSION%%.*}" -ge "56"
     then
-        AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -D ICU6x"
+        AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -D USE_UNORM2"
+        AC_MSG_RESULT(yes)
+    else
+        AC_MSG_RESULT(no)
     fi
-    AC_MSG_RESULT([$ICU_MODULE_VERSION])
 fi
 
 dnl
@@ -483,7 +481,7 @@ fi
 
 if test "x$warning_as_error" = "xyes"
 then
-    AM_CFLAGS="${AM_CFLAGS} -Werror -Wno-deprecated-declarations"
+    AM_CFLAGS="${AM_CFLAGS} -Werror"
 fi
 
 if test "x$use_new_locking" = "xyes"
