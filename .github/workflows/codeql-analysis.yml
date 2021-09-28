@@ -64,7 +64,7 @@ jobs:
     #    uses a compiled language
 
     - run: |
-       apt -q -y update && apt -q -y upgrade && apt -q -y install build-essential automake autoconf libtool pkg-config libicu66 icu-devtools libicu-dev libxml2-dev uuid-dev fuse libfuse-dev libsnmp-dev
+       apt-get update -q -y update && apt -q -y upgrade && apt-get -y install build-essential automake autoconf libtool pkg-config libicu66 icu-devtools libicu-dev libxml2-dev uuid-dev fuse libfuse-dev libsnmp-dev
        ls .github/workflows
        ./autogen.sh
        ./configure
