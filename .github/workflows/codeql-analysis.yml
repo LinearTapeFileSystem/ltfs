@@ -72,5 +72,5 @@ jobs:
     #   ./configure
     #   make
 
-    -name: Perform CodeQL Analysis
+    - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
