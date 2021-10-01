@@ -53,8 +53,8 @@ jobs:
 
     # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
     # If this step fails, then you should remove it and run the build manually (see below)
-    #- name: Autobuild
-    #  uses: github/codeql-action/autobuild@v1
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v1
 
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 https://git.io/JvXDl
@@ -63,14 +63,16 @@ jobs:
     #    and modify them (or add more) to build your code if your project
     #    uses a compiled language
 
-    - run: |
-       sudo apt-get -q -y update
-       sudo apt-get -q -y upgrade
-       sudo apt-get -y install build-essential automake autoconf libtool pkg-config libicu66 icu-devtools libicu-dev libxml2-dev uuid-dev fuse libfuse-dev libsnmp-dev
-       sudo cp .github/workflows/icu-config /usr/bin/icu-config
-       ./autogen.sh
-       ./configure
-       make
+    #- run: |
+    #   sudo apt-get -q -y update
+    #   sudo apt-get -q -y upgrade
+    #   sudo apt-get -y install build-essential automake autoconf libtool pkg-config libicu66 icu-devtools libicu-dev libxml2-dev uuid-dev fuse libfuse-dev libsnmp-dev
+    #   sudo cp .github/workflows/icu-config /usr/bin/icu-config
+    #   ./autogen.sh
+    #   ./configure
+    #   make
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
+      with:
+        queries: /home/runner/work/_temp/codeql_databases/cpp-queries-builtin.qls
