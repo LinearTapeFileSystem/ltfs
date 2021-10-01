@@ -70,7 +70,7 @@ jobs:
        sudo cp .github/workflows/icu-config /usr/bin/icu-config
        ./autogen.sh
        ./configure
-       codeql database create cpp-database --language=cpp --command=make
+       make
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
