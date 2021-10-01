@@ -72,12 +72,5 @@ jobs:
     #   ./configure
     #   make
 
-    - if: matrix.language == 'cpp'
-      name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
-      with:
-        queries: /home/runner/work/_temp/codeql_databases/cpp-queries-builtin.qls
-
-    - if: matrix.language == 'python'
-      name: Perform CodeQL Analysis
+    -name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
