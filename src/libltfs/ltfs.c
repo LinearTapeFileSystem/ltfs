@@ -3532,10 +3532,24 @@ start:
 		}
 		ret = ltfs_write_index(partition, reason, vol);
 		if (IS_WRITE_PERM(-ret) && partition == ltfs_dp_id(vol)) {
+			/*
+			 * TODO: Need to determine the last record on DP of the tape and cleanup
+			 *       all extents on the volume. Because this write perm have a chance
+			 *       to happen in the cases below.
+			 *
+			 *       1. File contents lastly written (and got a write perm on tape drive's flush)
+			 *       2. Index written in ltfs_write_index()
+			 *
+			 *       Extents cleaning is required in case1, otherwise LTFS writes an index
+			 *       which has unwritten record on the tape.
+			 *
+			 *       For now, write the same index on IP and return an error against a sync
+			 *       request.
+			 */
 			ret_r = ltfs_write_index(ltfs_ip_id(vol), SYNC_WRITE_PERM, vol);
 			if (!ret_r) {
 				ltfsmsg(LTFS_INFO, 11344I, bc_print);
-				ret = ret_r;
+				ret = LTFS_SYNC_FAIL_ON_DP;
 			} else {
 				ltfsmsg(LTFS_ERR, 11345E, bc_print);
 				ltfsmsg(LTFS_ERR, 11346E, bc_print);
