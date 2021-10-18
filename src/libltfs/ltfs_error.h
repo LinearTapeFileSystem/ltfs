@@ -261,6 +261,7 @@
 #define LTFS_STATS_DB_OPEN        1202  /* Failed to open a stats DB */
 #define LTFS_NO_TRAIL_FM          1203  /* There is no trailing FM after an index */
 #define LTFS_SAFENAME_FAIL        1204  /* Failed to update safename */
+#define LTFS_SYNC_FAIL_ON_DP      1205  /* Unwritten file contents exists in sync */
 
 /*
  * Error codes for the XML parser

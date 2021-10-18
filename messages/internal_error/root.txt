@@ -255,6 +255,7 @@ root:table {
 		I1202E:string{ "Failed to open a stats DB." }
 		I1203E:string{ "There is no trailing FM after an index." }
 		I1204E:string{ "Failed to update safename." }
+		I1205E:string{ "Unwritten file contents exists in sync." }
 
 		// Error codes for the XML parser
 		I5000E:string{ "Error happens in reading XML node." }
