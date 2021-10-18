@@ -1,0 +1,12 @@
+#!/bin/sh
+
+opts=$1
+
+case $opts in
+  '--cppflags')
+    echo '' ;;
+  '--ldflags')
+    echo '-licuuc -licudata' ;;
+  *)
+    echo '/usr/lib/x86_64-linux-gnu/icu/pkgdata.inc' ;;
+esac
