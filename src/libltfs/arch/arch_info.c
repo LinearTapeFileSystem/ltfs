@@ -112,18 +112,19 @@ void show_runtime_system_info(void)
 				}
 				strcat(path, "/etc/");
 				strcat(path, dent->d_name);
-				if(stat(path, &stat_rel) != -1 && S_ISREG(stat_rel.st_mode)) {
-					fd = open(path, O_RDONLY);
-					if( fd == -1) {
-						ltfsmsg(LTFS_WARN, 17088W);
-					} else {
+				fd = open(path, O_RDONLY);
+				if( fd == -1) {
+					ltfsmsg(LTFS_WARN, 17088W);
+				} else {
+					if (fstat(fd, &stat_rel) != -1 && S_ISREG(stat_rel.st_mode)) {
 						memset(destribution, 0, sizeof(destribution));
 						read(fd, destribution, sizeof(destribution));
 						if((tmp = strchr(destribution, '\n')) != NULL)
 							*tmp = '\0';
 						ltfsmsg(LTFS_INFO, 17089I, destribution);
-						close(fd);
 					}
+
+					close(fd);
 				}
 				free(path);
 			}
