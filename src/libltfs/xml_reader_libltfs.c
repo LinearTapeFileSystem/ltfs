@@ -95,8 +95,9 @@ static int decode_entry_name(char **new_name, const char *name)
 
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 
+	/* Always, length must be shorter than original but allocate null termination space */
 	len = strlen(name);
-	tmp_name = malloc(len * sizeof(UChar));
+	tmp_name = malloc((len * sizeof(UChar)) + 1);
 	buf_decode[2] = '\0';
 
 	while (i < len) {
