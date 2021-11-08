@@ -1,6 +1,5 @@
 ![](https://img.shields.io/github/issues/lineartapefilesystem/ltfs.svg)
 ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)
-[![CodeFactor](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs/badge)](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs)
 [![BSD License](http://img.shields.io/badge/license-BSD-blue.svg?style=flat)](LICENSE)
 
 # Linear Tape File System (LTFS)
@@ -88,6 +87,7 @@ These instructions will get you a copy of the project up and running on your loc
   | IBM     | LTO6                    | None              |
   | IBM     | LTO7                    | None              |
   | IBM     | LTO8                    | HB81              |
+  | IBM     | LTO9                    | None              |
   | IBM     | TS1140                  | 3694              |
   | IBM     | TS1150                  | None              |
   | IBM     | TS1155                  | None              |
@@ -96,10 +96,12 @@ These instructions will get you a copy of the project up and running on your loc
   | HP      | LTO6                    | T.B.D.            |
   | HP      | LTO7                    | T.B.D.            |
   | HP      | LTO8                    | T.B.D.            |
+  | HP      | LTO9                    | T.B.D.            |  
   | Quantum | LTO5 (Only Half Height) | T.B.D.            |
   | Quantum | LTO6 (Only Half Height) | T.B.D.            |
   | Quantum | LTO7 (Only Half Height) | T.B.D.            |
   | Quantum | LTO8 (Only Half Height) | T.B.D.            |
+  | Quantum | LTO9 (Only Half Height) | T.B.D.            |  
 
 ## Installing
 
@@ -206,9 +208,9 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
   | CentOS 7                          | ppc64le | Probably OK |
   | Fedora 28                         | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)|
   | Ubuntu 16.04 LTS                  | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master)|
-  | Ubuntu 16.04 LTS                  | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
+  | Ubuntu 16.04 LTS                  | ppc64le | Probably OK |
   | Ubuntu 18.04 LTS                  | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master)|
-  | Ubuntu 18.04 LTS                  | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
+  | Ubuntu 18.04 LTS                  | ppc64le | Probably OK |
   | Ubuntu 20.04 LTS (Need icu-config)| x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2020.04%20Build%20Job/badge.svg?branch=master)|
   | Debian 9                          | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)|
   | Debian 10 (Need icu-config)       | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian10%20Build%20Job/badge.svg?branch=master)|
@@ -256,8 +258,8 @@ make install
 
   | OS            | Xcode  | Package system | Status      |
   |:-:            |:-:     |:-:             |:-:          |
-  | macOS 10.14.6 | 11.3   | Homebrew       | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
-
+  | macOS 10.14.6 | 11.3   | Homebrew       | Probably OK |
+  
 ### Build and install on FreeBSD
 
 Note that on FreeBSD, the usual 3rd party man directory is /usr/local/man. Configure defaults to using /usr/local/share/man.  So, override it on the command line to avoid having man pages put in the wrong place.
