@@ -1,6 +1,5 @@
 ![](https://img.shields.io/github/issues/lineartapefilesystem/ltfs.svg)
 ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)
-[![CodeFactor](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs/badge)](https://www.codefactor.io/repository/github/lineartapefilesystem/ltfs)
 [![BSD License](http://img.shields.io/badge/license-BSD-blue.svg?style=flat)](LICENSE)
 
 # About this branch
@@ -23,6 +22,7 @@ At this time, the target of this project to meet is the [LTFS format specificati
   | IBM     | LTO6                    | None              |
   | IBM     | LTO7                    | None              |
   | IBM     | LTO8                    | HB81              |
+  | IBM     | LTO9                    | None              |
   | IBM     | TS1140                  | 3694              |
   | IBM     | TS1150                  | None              |
   | IBM     | TS1155                  | None              |
@@ -31,10 +31,12 @@ At this time, the target of this project to meet is the [LTFS format specificati
   | HP      | LTO6                    | T.B.D.            |
   | HP      | LTO7                    | T.B.D.            |
   | HP      | LTO8                    | T.B.D.            |
+  | HP      | LTO9                    | T.B.D.            |  
   | Quantum | LTO5 (Only Half Height) | T.B.D.            |
   | Quantum | LTO6 (Only Half Height) | T.B.D.            |
   | Quantum | LTO7 (Only Half Height) | T.B.D.            |
   | Quantum | LTO8 (Only Half Height) | T.B.D.            |
+  | Quantum | LTO9 (Only Half Height) | T.B.D.            |  
 
 ## LTFS Format Specifications
 
@@ -147,9 +149,9 @@ In some systems, you might need `sudo ldconfig -v` after `make install` to load 
   | CentOS 7                           | ppc64le | OK - Not checked automatically                                                                                                        |
   | Fedora 28                          | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)            |
   | Ubuntu 16.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master)      |
-  | Ubuntu 16.04 LTS                   | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
+  | Ubuntu 16.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                        |
   | Ubuntu 18.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master)      |
-  | Ubuntu 18.04 LTS                   | ppc64le | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
+  | Ubuntu 18.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                        |
   | Ubuntu 20.04 LTS (Need icu-config) | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2020.04%20Build%20Job/badge.svg?branch=master)      |
   | Debian 9                           | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)             |
   | Debian 10 (Need icu-config)        | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian10%20Build%20Job/badge.svg?branch=master)            |
@@ -197,7 +199,7 @@ make install
 
   | OS            | Xcode | Package system | Status                                                                                                                                |
   |:-------------:|:-----:|:--------------:|:-------------------------------------------------------------------------------------------------------------------------------------:|
-  | macOS 10.14.6 | 11.3  | Homebrew       | [![Build Status](https://travis-ci.org/LinearTapeFileSystem/ltfs.svg?branch=master)](https://travis-ci.org/LinearTapeFileSystem/ltfs) |
+  | macOS 10.14.6 | 11.3  | Homebrew       | OK - Not checked automatically                                                                                                        |
   | macOS 10.15   | 12.4  | Homebrew       | OK - Not checked automatically                                                                                                        |
   | macOS 11      | 12.4  | Homebrew       | OK - Not checked automatically                                                                                                        |
 
@@ -217,7 +219,7 @@ make install
   | Version | Arch    | Status                         |
   |:-------:|:-------:|:------------------------------:|
   | 11      | x86\_64 | OK - Not checked automatically |
-  | 12      | x86\_64  | OK - Not checked automatically |
+  | 12      | x86\_64 | OK - Not checked automatically |
 
 ### Build and install on NetBSD
 
