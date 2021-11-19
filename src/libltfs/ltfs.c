@@ -2380,7 +2380,7 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	bool generation_inc = false;
 	struct tc_position physical_selfptr;
 	char *cache_path_save = NULL;
-	bool write_perm = (strcmp(reason, SYNCWRITE_PERM) == 0);
+	bool write_perm = (strcmp(reason, SYNC_WRITE_PERM) == 0);
 	bool update_vollock = false;
 	int volstat = -1, new_volstat = 0;
 	char *bc_print = NULL;
