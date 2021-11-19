@@ -3549,7 +3549,7 @@ start:
 			ret_r = ltfs_write_index(ltfs_ip_id(vol), SYNC_WRITE_PERM, vol);
 			if (!ret_r) {
 				ltfsmsg(LTFS_INFO, 11344I, bc_print);
-				ret = LTFS_SYNC_FAIL_ON_DP;
+				ret = -LTFS_SYNC_FAIL_ON_DP;
 			} else {
 				ltfsmsg(LTFS_ERR, 11345E, bc_print);
 				ltfsmsg(LTFS_ERR, 11346E, bc_print);
