@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2021 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -47,6 +47,10 @@
 **                  Lucas C. Villa Real
 **                  IBM Almaden Research Center
 **                  lucasvr@us.ibm.com
+**
+**                  Atsushi Abe
+**                  IBM Tokyo Lab., Japan
+**                  piste@jp.ibm.com
 **
 *************************************************************************************
 */
@@ -1037,7 +1041,7 @@ int ltfs_fsops_setxattr(const char *path, const char *name, const char *value, s
 		goto out_free;
 	}
 
-	new_name_strip = _xattr_strip_name(new_name);
+	new_name_strip = xattr_strip_name(new_name);
 	if (! new_name_strip) {
 		/* Namespace is not supported (Linux) */
 		ret = -LTFS_XATTR_NAMESPACE;
@@ -1153,7 +1157,7 @@ int ltfs_fsops_getxattr(const char *path, const char *name, char *value, size_t 
 			ltfsmsg(LTFS_ERR, 11125E, ret);
 		goto out_free;
 	}
-	new_name_strip = _xattr_strip_name(new_name);
+	new_name_strip = xattr_strip_name(new_name);
 	if (! new_name_strip) {
 		/* Namespace is not supported (Linux) */
 		ret = -LTFS_NO_XATTR;
@@ -1305,7 +1309,7 @@ int ltfs_fsops_removexattr(const char *path, const char *name, ltfs_file_id *id,
 			ltfsmsg(LTFS_ERR, 11137E, ret);
 		goto out_free;
 	}
-	new_name_strip = _xattr_strip_name(new_name);
+	new_name_strip = xattr_strip_name(new_name);
 	if (! new_name_strip) {
 		/* Namespace is not supported (Linux) */
 		ret = -LTFS_NO_XATTR;

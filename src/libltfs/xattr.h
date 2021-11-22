@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2021 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -48,6 +48,10 @@
 **                  IBM Almaden Research Center
 **                  lucasvr@us.ibm.com
 **
+**                  Atsushi Abe
+**                  IBM Tokyo Lab., Japan
+**                  piste@jp.ibm.com
+**
 *************************************************************************************
 */
 
@@ -73,14 +77,11 @@ int xattr_get(struct dentry *d, const char *name, char *value, size_t size,
 int xattr_list(struct dentry *d, char *list, size_t size, struct ltfs_volume *vol);
 int xattr_remove(struct dentry *d, const char *name, struct ltfs_volume *vol);
 
-int _xattr_get_string(const char *val, char **outval, const char *msg);
-int _xattr_get_u64(uint64_t val, char **outval, const char *msg);
-
 /** For internal use only */
 int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t size,
 	struct xattr_info *xattr);
 int xattr_do_remove(struct dentry *d, const char *name, bool force, struct ltfs_volume *vol);
-const char *_xattr_strip_name(const char *name);
+const char *xattr_strip_name(const char *name);
 int xattr_set_mountpoint_length(struct dentry *d, const char* value, size_t size);
 
 #ifdef __cplusplus

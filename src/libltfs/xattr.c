@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2021 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -48,6 +48,10 @@
 **                  IBM Almaden Research Center
 **                  lucasvr@us.ibm.com
 **
+**                  Atsushi Abe
+**                  IBM Tokyo Lab., Japan
+**                  piste@jp.ibm.com
+**
 *************************************************************************************
 */
 
@@ -64,515 +68,238 @@
 #include "ltfs_internal.h"
 #include "arch/time_internal.h"
 
-int _xattr_seek(struct xattr_info **out, struct dentry *d, const char *name);
-int _xattr_lock_dentry(const char *name, bool modify, struct dentry *d, struct ltfs_volume *vol);
-void _xattr_unlock_dentry(const char *name, bool modify, struct dentry *d, struct ltfs_volume *vol);
-const char *_xattr_strip_name(const char *name);
-int _xattr_list_physicals(struct dentry *d, char *list, size_t size);
-bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_volume *vol);
-int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char *name,
-	struct ltfs_volume *vol);
-int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
-	size_t size, struct ltfs_volume *vol);
-int _xattr_remove_virtual(struct dentry *d, const char *name, struct ltfs_volume *vol);
-bool _xattr_is_worm_ea(const char *name);
-
 /* Helper functions for formatting virtual EA output */
-int _xattr_get_cartridge_health(cartridge_health_info *h, int64_t *val, char **outval,
-	const char *msg, struct ltfs_volume *vol);
-int _xattr_get_cartridge_health_u64(cartridge_health_info *h, uint64_t *val, char **outval,
-	const char *msg, struct ltfs_volume *vol);
-int _xattr_get_cartridge_capacity(struct device_capacity *cap, unsigned long *val, char **outval,
-	const char *msg, struct ltfs_volume *vol);
-int _xattr_get_time(struct ltfs_timespec *val, char **outval, const char *msg);
-int _xattr_get_dentry_time(struct dentry *d, struct ltfs_timespec *val, char **outval,
-	const char *msg);
-int _xattr_get_string(const char *val, char **outval, const char *msg);
-int _xattr_get_tapepos(struct tape_offset *val, char **outval, const char *msg);
-int _xattr_get_partmap(struct ltfs_label *label, char **outval, const char *msg);
-int _xattr_get_version(int version, char **outval, const char *msg);
-
-int _xattr_set_time(struct dentry *d, struct ltfs_timespec *out, const char *value, size_t size,
-	const char *msg, struct ltfs_volume *vol);
-
-int _xattr_get_vendorunique_xattr(char **outval, const char *msg, struct ltfs_volume *vol);
-int _xattr_set_vendorunique_xattr(const char *name, const char *value, size_t size, struct ltfs_volume *vol);
-
-int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t size,
-	struct xattr_info *xattr)
+static int _xattr_get_cartridge_health(cartridge_health_info *h, int64_t *val, char **outval,
+	const char *msg, struct ltfs_volume *vol)
 {
-	int ret = 0;
-
-	/* clear existing xattr or set up new one */
-	if (xattr) {
-		if (xattr->value) {
-			free(xattr->value);
-			xattr->value = NULL;
-		}
-	} else {
-		xattr = (struct xattr_info *) calloc(1, sizeof(struct xattr_info));
-		if (! xattr) {
-			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr");
+	int ret = ltfs_get_cartridge_health(h, vol);
+	if (ret == 0) {
+		ret = asprintf(outval, "%"PRId64, *val);
+		if (ret < 0) {
+			ltfsmsg(LTFS_ERR, 10001E, msg);
+			*outval = NULL;
 			return -LTFS_NO_MEMORY;
 		}
-		xattr->key.name = strdup(name);
-		if (! xattr->key.name) {
-			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr key");
-			ret = -LTFS_NO_MEMORY;
-			goto out_free;
-		}
-		xattr->key.percent_encode = fs_is_percent_encode_required(xattr->key.name);
-		TAILQ_INSERT_HEAD(&d->xattrlist, xattr, list);
-	}
-
-	/* copy new value */
-	xattr->size = size;
-	if (size > 0) {
-		xattr->value = (char *)malloc(size);
-		if (! xattr->value) {
-			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr value");
-			ret = -LTFS_NO_MEMORY;
-			goto out_remove;
-		}
-		memcpy(xattr->value, value, size);
-	}
-	return 0;
-
-out_remove:
-	TAILQ_REMOVE(&d->xattrlist, xattr, list);
-out_free:
-	if (xattr->key.name)
-		free(xattr->key.name);
-	free(xattr);
+	} else
+		*outval = NULL;
 	return ret;
 }
 
-/**
- * Set an extended attribute.
- * @param d File or directory to set the xattr on.
- * @param name Name to set.
- * @param value Value to set, may be binary, not necessarily null-terminated.
- * @param size Size of value in bytes.
- * @param flags XATTR_REPLACE to fail if xattr doesn't exist, XATTR_CREATE to fail if it does
- *              exist, or 0 to ignore any existing value.
- * @return 0 on success or a negative value on error.
- */
-int xattr_set(struct dentry *d, const char *name, const char *value, size_t size,
-	int flags, struct ltfs_volume *vol)
+static int _xattr_get_cartridge_health_u64(cartridge_health_info *h, uint64_t *val, char **outval,
+										   const char *msg, struct ltfs_volume *vol)
 {
-	struct xattr_info *xattr;
-	bool replace, create;
-	int ret;
-	bool is_worm_cart = false;
-	bool disable_worm_ea = false;
-	char *new_value="1";
-	bool write_idx = false;
-
-	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(value, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
-	if (size > LTFS_MAX_XATTR_SIZE)
-		return -LTFS_LARGE_XATTR; /* this is the error returned by ext3 when the xattr is too large */
-
-	replace = flags & XATTR_REPLACE;
-	create = flags & XATTR_CREATE;
-
-	ret = _xattr_lock_dentry(name, true, d, vol);
-	if (ret < 0)
-		return ret;
-
-	ret = tape_get_worm_status(vol->device, &is_worm_cart);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 17237E, "set xattr: cart stat");
-		ret = -LTFS_XATTR_ERR;
-		goto out_unlock;
-	}
-
-	if ((is_worm_cart && (d->is_immutable || (d->is_appendonly && strcmp(name, "ltfs.vendor.IBM.immutable"))))
-		|| (!is_worm_cart && (d->is_immutable || d->is_appendonly) && !_xattr_is_worm_ea(name))) {
-		/* EA cannot be set in case of immutable/appendonly */
-		ltfsmsg(LTFS_ERR, 17237E, "set xattr: WORM entry");
-		ret = -LTFS_RDONLY_XATTR;
-		goto out_unlock;
-	}
-
-	/* Check if this is a user-writeable virtual xattr */
-	if (_xattr_is_virtual(d, name, vol)) {
-		ret = _xattr_set_virtual(d, name, value, size, vol);
-		if (ret == -LTFS_NO_XATTR)
-			ret = -LTFS_RDONLY_XATTR;
-		goto out_unlock;
-	}
-
-	/* In the future, there could be user-writeable reserved xattrs. For now, just deny
-	 * writes to all reserved xattrs not covered by the user-writeable virtual xattrs above. */
-	if (strcasestr(name, "ltfs") == name && strcmp(name, "ltfs.spannedFileOffset") && strcmp(name, "ltfs.mediaPool.name") &&
-				strcasestr(name, "ltfs.permissions.") != name && !_xattr_is_worm_ea(name)) {
-		ret = -LTFS_RDONLY_XATTR;
-		goto out_unlock;
-	}
-
-	acquirewrite_mrsw(&d->meta_lock);
-
-	/* Search for existing xattr with this name. */
-	ret = _xattr_seek(&xattr, d, name);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 11122E, ret);
-		releasewrite_mrsw(&d->meta_lock);
-		goto out_unlock;
-	}
-	if (create && xattr) {
-		releasewrite_mrsw(&d->meta_lock);
-		ret = -LTFS_XATTR_EXISTS;
-		goto out_unlock;
-	} else if (replace && ! xattr) {
-		releasewrite_mrsw(&d->meta_lock);
-		ret = -LTFS_NO_XATTR;
-		goto out_unlock;
-	}
-	if (_xattr_is_worm_ea(name)) {
-		disable_worm_ea = (strncmp(value, "0", size) == 0);
-
-		if (is_worm_cart && disable_worm_ea) {
-			ltfsmsg(LTFS_ERR, 17237E, "set xattr: clear WORM");
-			releasewrite_mrsw(&d->meta_lock);
-			ret = -LTFS_XATTR_ERR;
-			goto out_unlock;
-		}
-		if (!disable_worm_ea) {
-			/* All values other than 0 is treated as 1 */
-			value = new_value;
-			size = strlen(new_value);
-		}
-	}
-
-	if (!strcmp(name, "ltfs.mediaPool.name")) {
-		ret = tape_set_media_pool_info(vol, value, size, true);
+	int ret = ltfs_get_cartridge_health(h, vol);
+	if (ret == 0 && (int64_t)(*val) != UNSUPPORTED_CARTRIDGE_HEALTH) {
+		ret = asprintf(outval, "%"PRIu64, *val);
 		if (ret < 0) {
-			releasewrite_mrsw(&d->meta_lock);
-			goto out_unlock;
+			ltfsmsg(LTFS_ERR, 10001E, msg);
+			*outval = NULL;
+			ret = -LTFS_NO_MEMORY;
 		}
-		write_idx = true;
-	}
-
-	/* Set extended attribute */
-	ret = xattr_do_set(d, name, value, size, xattr);
-	if (ret < 0) {
-		releasewrite_mrsw(&d->meta_lock);
-		goto out_unlock;
-	}
-
-	/* update metadata */
-	if (!strcmp(name, "ltfs.vendor.IBM.immutable")) {
-		d->is_immutable = !disable_worm_ea;
-		ltfsmsg(LTFS_INFO, 17238I, "immutable", d->is_immutable, d->name.name);
-	}
-	else if (!strcmp(name, "ltfs.vendor.IBM.appendonly")) {
-		d->is_appendonly = !disable_worm_ea;
-		ltfsmsg(LTFS_INFO, 17238I, "appendonly", d->is_appendonly, d->name.name);
-	}
-
-	get_current_timespec(&d->change_time);
-	releasewrite_mrsw(&d->meta_lock);
-	d->dirty = true;
-	ltfs_set_index_dirty(true, false, vol->index);
-
-	if (write_idx)
-		ret = ltfs_sync_index(SYNC_EA, false, vol);
-	else
-		ret = 0;
-
-out_unlock:
-	_xattr_unlock_dentry(name, true, d, vol);
+	} else if (ret == 0) {
+		ret = asprintf(outval, "%"PRId64, UNSUPPORTED_CARTRIDGE_HEALTH);
+		if (ret < 0) {
+			ltfsmsg(LTFS_ERR, 10001E, msg);
+			*outval = NULL;
+			ret = -LTFS_NO_MEMORY;
+		}
+	} else
+		*outval = NULL;
 	return ret;
 }
 
-/**
- * Get an extended attribute. Returns an error if the provided buffer is not large enough
- * to contain the attribute value.
- * @param d File/directory to check
- * @param name Xattr name
- * @param value On success, contains xattr value
- * @param size Output buffer size in bytes
- * @param vol LTFS volume
- * @return if size is nonzero, number of bytes returned in the value buffer. if size is zero,
- *         number of bytes in the xattr value. returns a negative value on error. If the
- *         operation needs to be restarted, then -LTFS_RESTART_OPERATION is returned instead.
- */
-int xattr_get(struct dentry *d, const char *name, char *value, size_t size,
-	struct ltfs_volume *vol)
+static int _xattr_get_cartridge_capacity(struct device_capacity *cap, unsigned long *val,
+										 char **outval, const char *msg, struct ltfs_volume *vol)
 {
-	struct xattr_info *xattr = NULL;
-	int ret;
-
-	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
-	if (size > 0 && ! value) {
-		ltfsmsg(LTFS_ERR, 11123E);
-		return -LTFS_BAD_ARG;
-	}
-
-	ret = _xattr_lock_dentry(name, false, d, vol);
-	if (ret < 0)
-		return ret;
-
-	/* Try to get a virtual xattr first. */
-	if (_xattr_is_virtual(d, name, vol)) {
-		ret = _xattr_get_virtual(d, value, size, name, vol);
-		if (ret == -LTFS_DEVICE_FENCED) {
-			_xattr_unlock_dentry(name, false, d, vol);
-			ret = ltfs_wait_revalidation(vol);
-			return (ret == 0) ? -LTFS_RESTART_OPERATION : ret;
-		} else if (NEED_REVAL(ret)) {
-			_xattr_unlock_dentry(name, false, d, vol);
-			ret = ltfs_revalidate(false, vol);
-			return (ret == 0) ? -LTFS_RESTART_OPERATION : ret;
-		} else if (IS_UNEXPECTED_MOVE(ret)) {
-			vol->reval = -LTFS_REVAL_FAILED;
-			_xattr_unlock_dentry(name, false, d, vol);
-			return ret;
-		}else if (ret != -LTFS_NO_XATTR) {
-			/* if ltfs.sync is specified, don't print any message */
-			if (ret < 0 && ret != -LTFS_RDONLY_XATTR)
-				ltfsmsg(LTFS_ERR, 11128E, ret);
-			goto out_unlock;
+	double scale = vol->label->blocksize / 1048576.0;
+	int ret = ltfs_capacity_data_unlocked(cap, vol);
+	if (ret == 0) {
+		ret = asprintf(outval, "%lu", (unsigned long)((*val) * scale));
+		if (ret < 0) {
+			ltfsmsg(LTFS_ERR, 10001E, msg);
+			*outval = NULL;
+			return -LTFS_NO_MEMORY;
 		}
-	}
-
-	acquireread_mrsw(&d->meta_lock);
-
-	/* Look for a real xattr. */
-	ret = _xattr_seek(&xattr, d, name);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 11129E, ret);
-		releaseread_mrsw(&d->meta_lock);
-		goto out_unlock;
-	}
-
-	/* Generate output. */
-	ret = 0;
-	if (! xattr) {
-		/* There's no such extended attribute */
-		ret = -LTFS_NO_XATTR;
-	} else if (size && xattr->size > size) {
-		/* There is no space to fill the buffer */
-		ret = -LTFS_SMALL_BUFFER;
-	} else if (size) {
-		/* Copy the extended attribute to the requester */
-		memcpy(value, xattr->value, xattr->size);
-		ret = xattr->size;
-	} else /* size is zero */ {
-		/* Return how many bytes will be necessary to read this xattr */
-		ret = xattr->size;
-	}
-
-	releaseread_mrsw(&d->meta_lock);
-
-out_unlock:
-	_xattr_unlock_dentry(name, false, d, vol);
+	} else
+		*outval = NULL;
 	return ret;
 }
 
-/**
- * Copy a list of extended attribute names to a user-provided buffer.
- * @param d File/directory to get the list of extended attributes from
- * @param list Output buffer for xattr names
- * @param size Output buffer size in bytes
- * @param vol LTFS volume
- * @return number of bytes in buffer on success, or a negative value on error.
- */
-int xattr_list(struct dentry *d, char *list, size_t size, struct ltfs_volume *vol)
-{
-	int ret, nbytes = 0;
-
-	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
-	if (size > 0 && ! list) {
-		ltfsmsg(LTFS_ERR, 11130E);
-		return -LTFS_BAD_ARG;
-	}
-
-	acquireread_mrsw(&d->meta_lock);
-
-	/* Fill the buffer with only real xattrs. */
-	if (size)
-		memset(list, 0, size);
-
-	ret = _xattr_list_physicals(d, list, size);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 11133E, ret);
-		goto out;
-	}
-	nbytes += ret;
-
-	/*
-	 * There used to be an _xattr_list_virtuals function which was called here.
-	 * Listing virtual xattrs causes problems with files copied from LTFS to another filesystem
-	 * which are attempted to be brought back. Since the copy utility may also copy the
-	 * reserved virtual extended attributes, the copy operation will fail with permission
-	 * denied problems.
-	 */
-
-	/* Was the buffer large enough? */
-	if (size && (size_t)nbytes > size)
-		ret = -LTFS_SMALL_BUFFER;
-
-out:
-	releaseread_mrsw(&d->meta_lock);
-	if (ret < 0)
-		return ret;
-	return nbytes;
-}
-
-/**
- * Actually remove an extended attribute.
- * @param dentry dentry to operate on
- * @param name xattr name to delete
- * @param force true to force removal, false to verify namespaces first
- * @param vol LTFS volume
- * @return 0 on success or a negative value on error
- */
-int xattr_do_remove(struct dentry *d, const char *name, bool force, struct ltfs_volume *vol)
+static int _xattr_get_time(struct ltfs_timespec *val, char **outval, const char *msg)
 {
 	int ret;
-	struct xattr_info *xattr;
+
+	ret = xml_format_time(*val, outval);
+	if (! (*outval)) {
+		ltfsmsg(LTFS_ERR, 11145E, msg);
+		return -LTFS_NO_MEMORY;
+	}
+
+	return ret;
+}
+
+static int _xattr_get_dentry_time(struct dentry *d, struct ltfs_timespec *val, char **outval,
+								  const char *msg)
+{
+	int ret;
+	acquireread_mrsw(&d->meta_lock);
+	ret = _xattr_get_time(val, outval, msg);
+	releaseread_mrsw(&d->meta_lock);
+	return ret;
+}
+
+static int _xattr_get_string(const char *val, char **outval, const char *msg)
+{
+	if (! val)
+		return 0;
+	*outval = strdup(val);
+	if (! (*outval)) {
+		ltfsmsg(LTFS_ERR, 10001E, msg);
+		return -LTFS_NO_MEMORY;
+	}
+	return 0;
+}
+
+static int _xattr_get_u64(uint64_t val, char **outval, const char *msg)
+{
+	int ret = asprintf(outval, "%"PRIu64, val);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 10001E, msg);
+		*outval = NULL;
+		ret = -LTFS_NO_MEMORY;
+	}
+	return ret;
+}
+
+static int _xattr_get_tapepos(struct tape_offset *val, char **outval, const char *msg)
+{
+	int ret = asprintf(outval, "%c:%"PRIu64, val->partition, val->block);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 10001E, msg);
+		return -LTFS_NO_MEMORY;
+	}
+	return 0;
+}
+
+static int _xattr_get_partmap(struct ltfs_label *label, char **outval, const char *msg)
+{
+	int ret = asprintf(outval, "I:%c,D:%c", label->partid_ip, label->partid_dp);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 10001E, msg);
+		return -LTFS_NO_MEMORY;
+	}
+	return 0;
+}
+
+static int _xattr_get_version(int version, char **outval, const char *msg)
+{
+	int ret;
+	if (version == 10000) {
+		*outval = strdup("1.0");
+		if (! (*outval)) {
+			ltfsmsg(LTFS_ERR, 10001E, msg);
+			return -LTFS_NO_MEMORY;
+		}
+	} else {
+		ret = asprintf(outval, "%d.%d.%d", version/10000, (version % 10000)/100, version % 100);
+		if (ret < 0) {
+			ltfsmsg(LTFS_ERR, 10001E, msg);
+			return -LTFS_NO_MEMORY;
+		}
+	}
+	return 0;
+}
+
+static int _xattr_set_time(struct dentry *d, struct ltfs_timespec *out, const char *value,
+						   size_t size, const char *msg, struct ltfs_volume *vol)
+{
+	int ret;
+	struct ltfs_timespec t;
+	char *value_null_terminated;
+
+	value_null_terminated = malloc(size + 1);
+	if (! value_null_terminated) {
+		ltfsmsg(LTFS_ERR, 10001E, msg);
+		return -LTFS_NO_MEMORY;
+	}
+	memcpy(value_null_terminated, value, size);
+	value_null_terminated[size] = '\0';
+
+	ret = xml_parse_time(false, value_null_terminated, &t);
+	free(value_null_terminated);
+	if (ret < 0)
+		return -LTFS_BAD_ARG;
 
 	acquirewrite_mrsw(&d->meta_lock);
-
-	/* Look for a real extended attribute. */
-	ret = _xattr_seek(&xattr, d, name);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 11140E, ret);
-		releasewrite_mrsw(&d->meta_lock);
-		return ret;
-	} else if (! xattr) {
-		releasewrite_mrsw(&d->meta_lock);
-		return -LTFS_NO_XATTR;
-	}
-
-	if (! force) {
-		/* If this xattr is in the reserved namespace, the user can't remove it. */
-		/* TODO: in the future, there could be user-removable reserved xattrs. */
-		if (strcasestr(name, "ltfs") == name && strcmp(name, "ltfs.spannedFileOffset") &&
-						strcasestr(name, "ltfs.permissions.") != name && !_xattr_is_worm_ea(name) ) {
-			releasewrite_mrsw(&d->meta_lock);
-			return -LTFS_RDONLY_XATTR;
-		}
-	}
-
-	/* Remove the xattr. */
-	TAILQ_REMOVE(&d->xattrlist, xattr, list);
-	get_current_timespec(&d->change_time);
+	*out = t;
+	d->dirty = true;
 	releasewrite_mrsw(&d->meta_lock);
 
-	free(xattr->key.name);
-	if (xattr->value)
-		free(xattr->value);
-	free(xattr);
-
-	return 0;
+	ltfs_set_index_dirty(true, false, vol->index);
+	return ret;
 }
 
-/**
- * Remove an extended attribute.
- * @param d File/directory to operate on
- * @param name Extended attribute name to delete
- * @param vol LTFS volume
- * @return 0 on success or a negative value on error
- */
-int xattr_remove(struct dentry *d, const char *name, struct ltfs_volume *vol)
+static int _xattr_get_vendorunique_xattr(char **outval, const char *msg, struct ltfs_volume *vol)
 {
 	int ret;
-	bool is_worm_cart = false;
 
-	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
+	ret = ltfs_get_vendorunique_xattr(msg, outval, vol);
+	if (ret != 0)
+		*outval = NULL;
 
-	ret = _xattr_lock_dentry(name, true, d, vol);
-	if (ret < 0)
-		return ret;
-
-	ret = tape_get_worm_status(vol->device, &is_worm_cart);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 17237E, "remove xattr: cart stat");
-		ret = -LTFS_XATTR_ERR;
-		goto out_dunlk;
-	}
-
-	if ((d->is_immutable || d->is_appendonly)
-		&& (is_worm_cart || !_xattr_is_worm_ea(name))) {
-		/* EA cannot be removed in case of immutable/appendonly */
-		ltfsmsg(LTFS_ERR, 17237E, "remove xattr: WORM entry");
-		ret = -LTFS_RDONLY_XATTR;
-		goto out_dunlk;
-	}
-
-	/* If this xattr is virtual, try the virtual removal function. */
-	if (_xattr_is_virtual(d, name, vol)) {
-		ret = _xattr_remove_virtual(d, name, vol);
-		if (ret == -LTFS_NO_XATTR)
-			ret = -LTFS_RDONLY_XATTR; /* non-removable virtual xattr */
-		goto out_dunlk;
-	}
-
-	ret = xattr_do_remove(d, name, false, vol);
-	if (ret < 0)
-		goto out_dunlk;
-
-	if (!strcmp(name, "ltfs.vendor.IBM.immutable")) {
-		d->is_immutable = false;
-		ltfsmsg(LTFS_INFO, 17238I, "immutable", d->is_immutable, d->name.name);
-	}
-	else if (!strcmp(name, "ltfs.vendor.IBM.appendonly")) {
-		d->is_appendonly = false;
-		ltfsmsg(LTFS_INFO, 17238I, "appendonly", d->is_appendonly, d->name.name);
-	}
-
-	d->dirty = true;
-	ltfs_set_index_dirty(true, false, vol->index);
-
-out_dunlk:
-	_xattr_unlock_dentry(name, true, d, vol);
 	return ret;
 }
 
+static int _xattr_set_vendorunique_xattr(const char *name, const char *value, size_t size,
+										 struct ltfs_volume *vol)
+{
+	int ret;
+
+	ret = ltfs_set_vendorunique_xattr(name, value, size, vol);
+
+	return ret;
+}
 
 /**
- * set LTFS_LIVELINK_EA_NAME
- * @param path file path
- * @param d File operate on
- * @param vol LTFS volume
- * @return 0 on success or a negative value on error
+ * Check xattr name is WORM related one or not
+ *
+ * @param name EA name to check
+ * @return true if name is related WORM. Otherwise false.
  */
-int xattr_set_mountpoint_length(struct dentry *d, const char* value, size_t size )
+static inline bool _xattr_is_worm_ea(const char *name)
 {
-#ifdef POSIXLINK_ONLY
-	return 0;
-#else
-	int ret=0;
-	struct xattr_info *xattr;
-
-	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(value, -LTFS_NULL_ARG);
-
-	acquireread_mrsw(&d->meta_lock);
-	ret = _xattr_seek(&xattr, d, LTFS_LIVELINK_EA_NAME);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 11129E, ret);
-		releaseread_mrsw(&d->meta_lock);
-		goto out_set;
+	if (!strcmp(name, "ltfs.vendor.IBM.immutable") || !strcmp(name, "ltfs.vendor.IBM.appendonly")) {
+		/* WORM related xattr */
+		return true;
 	}
-	ret = xattr_do_set(d, LTFS_LIVELINK_EA_NAME, value, size, xattr);
-	releaseread_mrsw(&d->meta_lock);
-
-out_set:
-	return ret;
-#endif
+	return false;
 }
 
+/**
+ * Check xattr name is stored VEA or not
+ *
+ * Extended attribute starts from 'ltfs.' is reserved and treated as Virtual Extended Attribute (VEA)
+ * and they aren't stored into index. But 'ltfs.permissions.*' and 'ltfs.hash.*' is introduced from
+ * LTFS Format Spec 2.4 to store values into index.
+ * This function checks provided name shall be stored VEA or not.
+ *
+ * @param name EA name to check
+ * @return true if name is stored VEA. Otherwise false.
+ */
+static inline bool _xattr_is_stored_vea(const char *name)
+{
+	if (strcmp(name, "ltfs.spannedFileOffset") &&
+		strcmp(name, "ltfs.mediaPool.name") &&
+		strcasestr(name, "ltfs.permissions.") != name &&
+		strcasestr(name, "ltfs.hash.") != name)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+/* Local functions */
 
 /**
  * Search for an xattr with the given name. Must call this function with a lock on
@@ -582,7 +309,7 @@ out_set:
  * @param name Name to search for.
  * @return 1 if xattr was found, 0 if not, or a negative value on error.
  */
-int _xattr_seek(struct xattr_info **out, struct dentry *d, const char *name)
+static int _xattr_seek(struct xattr_info **out, struct dentry *d, const char *name)
 {
 	struct xattr_info *entry;
 
@@ -608,7 +335,7 @@ int _xattr_seek(struct xattr_info **out, struct dentry *d, const char *name)
  * @param vol LTFS volume.
  * @return 0 on success or -LTFS_REVAL_FAILED if the medium is invalid.
  */
-int _xattr_lock_dentry(const char *name, bool modify, struct dentry *d, struct ltfs_volume *vol)
+static int _xattr_lock_dentry(const char *name, bool modify, struct dentry *d, struct ltfs_volume *vol)
 {
 	/* EAs that read the extent list need to take the contents_lock */
 	if (! strcmp(name, "ltfs.startblock")
@@ -628,33 +355,13 @@ int _xattr_lock_dentry(const char *name, bool modify, struct dentry *d, struct l
  * @param d Dentry under consideration.
  * @param vol LTFS volume.
  */
-void _xattr_unlock_dentry(const char *name, bool modify, struct dentry *d, struct ltfs_volume *vol)
+static void _xattr_unlock_dentry(const char *name, bool modify, struct dentry *d, struct ltfs_volume *vol)
 {
 	/* EAs that read the extent list need to take the contents_lock */
 	if (! strcmp(name, "ltfs.startblock")
 		|| ! strcmp(name, "ltfs.partition")) {
 		releaseread_mrsw(&d->contents_lock);
 	}
-}
-
-/**
- * Strip a Linux namespace prefix from the given xattr name and return the position of the suffix.
- * If the name is "user.X", return the "X" portion. Otherwise, return an error.
- * This function does nothing on Mac OS X.
- * @param name Name to strip.
- * @return A pointer to the name suffix, or NULL to indicate an invalid name. On Mac OS X,
- *         always returns @name.
- */
-const char *_xattr_strip_name(const char *name)
-{
-#if (defined (__APPLE__) || defined (mingw_PLATFORM))
-	return name;
-#else
-	if (strstr(name, "user.") == name)
-		return name + 5;
-	else
-		return NULL;
-#endif
 }
 
 /**
@@ -665,7 +372,7 @@ const char *_xattr_strip_name(const char *name)
  * @param size Output buffer size, may be 0.
  * @return Number of bytes in listed extended attributes, or a negative value on error.
  */
-int _xattr_list_physicals(struct dentry *d, char *list, size_t size)
+static int _xattr_list_physicals(struct dentry *d, char *list, size_t size)
 {
 	struct xattr_info *entry;
 	char *prefix = "\0", *new_name;
@@ -718,7 +425,7 @@ out:
  * @param vol LTFS volume to which the dentry belongs.
  * @return true if the name exists and is virtual, false otherwise.
  */
-bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_volume *vol)
+static bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_volume *vol)
 {
 	/* xattrs on all dentries */
 	if (! strcmp(name, "ltfs.createTime")
@@ -826,8 +533,8 @@ bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_volume *v
  *         -LTFS_NO_XATTR if no such readable virtual xattr exists,
  *         -LTFS_RDONLY_XATTR for write-only virtual EAs, or another negative value on error.
  */
-int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char *name,
-	struct ltfs_volume *vol)
+static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char *name,
+					   struct ltfs_volume *vol)
 {
 	int ret = -LTFS_NO_XATTR;
 	char *val = NULL;
@@ -1209,8 +916,8 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
  * @return 0 on success, -LTFS_NO_XATTR if the xattr is not a settable virtual xattr,
  *         or another negative value on error.
  */
-int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
-	size_t size, struct ltfs_volume *vol)
+static int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
+							  size_t size, struct ltfs_volume *vol)
 {
 	int ret = 0;
 
@@ -1556,7 +1263,7 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
  * @return 0 on success, -LTFS_NO_XATTR if the xattr is not a removable virtual xattr, or another
  *         negative value on error.
  */
-int _xattr_remove_virtual(struct dentry *d, const char *name, struct ltfs_volume *vol)
+static int _xattr_remove_virtual(struct dentry *d, const char *name, struct ltfs_volume *vol)
 {
 	int ret = 0;
 
@@ -1586,201 +1293,496 @@ int _xattr_remove_virtual(struct dentry *d, const char *name, struct ltfs_volume
 	return ret;
 }
 
-int _xattr_get_cartridge_health(cartridge_health_info *h, int64_t *val, char **outval,
-	const char *msg, struct ltfs_volume *vol)
+/* Global functions */
+
+int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t size,
+	struct xattr_info *xattr)
 {
-	int ret = ltfs_get_cartridge_health(h, vol);
-	if (ret == 0) {
-		ret = asprintf(outval, "%"PRId64, *val);
-		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, 10001E, msg);
-			*outval = NULL;
-			return -LTFS_NO_MEMORY;
-		}
-	} else
-		*outval = NULL;
-	return ret;
-}
+	int ret = 0;
 
-int _xattr_get_cartridge_health_u64(cartridge_health_info *h, uint64_t *val, char **outval,
-	const char *msg, struct ltfs_volume *vol)
-{
-	int ret = ltfs_get_cartridge_health(h, vol);
-	if (ret == 0 && (int64_t)(*val) != UNSUPPORTED_CARTRIDGE_HEALTH) {
-		ret = asprintf(outval, "%"PRIu64, *val);
-		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, 10001E, msg);
-			*outval = NULL;
-			ret = -LTFS_NO_MEMORY;
-		}
-	} else if (ret == 0) {
-		ret = asprintf(outval, "%"PRId64, UNSUPPORTED_CARTRIDGE_HEALTH);
-		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, 10001E, msg);
-			*outval = NULL;
-			ret = -LTFS_NO_MEMORY;
-		}
-	} else
-		*outval = NULL;
-	return ret;
-}
-
-int _xattr_get_cartridge_capacity(struct device_capacity *cap, unsigned long *val, char **outval,
-	const char *msg, struct ltfs_volume *vol)
-{
-	double scale = vol->label->blocksize / 1048576.0;
-	int ret = ltfs_capacity_data_unlocked(cap, vol);
-	if (ret == 0) {
-		ret = asprintf(outval, "%lu", (unsigned long)((*val) * scale));
-		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, 10001E, msg);
-			*outval = NULL;
-			return -LTFS_NO_MEMORY;
-		}
-	} else
-		*outval = NULL;
-	return ret;
-}
-
-int _xattr_get_time(struct ltfs_timespec *val, char **outval, const char *msg)
-{
-	int ret;
-
-	ret = xml_format_time(*val, outval);
-	if (! (*outval)) {
-		ltfsmsg(LTFS_ERR, 11145E, msg);
-		return -LTFS_NO_MEMORY;
-	}
-
-	return ret;
-}
-
-int _xattr_get_dentry_time(struct dentry *d, struct ltfs_timespec *val, char **outval,
-	const char *msg)
-{
-	int ret;
-	acquireread_mrsw(&d->meta_lock);
-	ret = _xattr_get_time(val, outval, msg);
-	releaseread_mrsw(&d->meta_lock);
-	return ret;
-}
-
-int _xattr_get_string(const char *val, char **outval, const char *msg)
-{
-	if (! val)
-		return 0;
-	*outval = strdup(val);
-	if (! (*outval)) {
-		ltfsmsg(LTFS_ERR, 10001E, msg);
-		return -LTFS_NO_MEMORY;
-	}
-	return 0;
-}
-
-int _xattr_get_u64(uint64_t val, char **outval, const char *msg)
-{
-	int ret = asprintf(outval, "%"PRIu64, val);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 10001E, msg);
-		*outval = NULL;
-		ret = -LTFS_NO_MEMORY;
-	}
-	return ret;
-}
-
-int _xattr_get_tapepos(struct tape_offset *val, char **outval, const char *msg)
-{
-	int ret = asprintf(outval, "%c:%"PRIu64, val->partition, val->block);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 10001E, msg);
-		return -LTFS_NO_MEMORY;
-	}
-	return 0;
-}
-
-int _xattr_get_partmap(struct ltfs_label *label, char **outval, const char *msg)
-{
-	int ret = asprintf(outval, "I:%c,D:%c", label->partid_ip, label->partid_dp);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 10001E, msg);
-		return -LTFS_NO_MEMORY;
-	}
-	return 0;
-}
-
-int _xattr_get_version(int version, char **outval, const char *msg)
-{
-	int ret;
-	if (version == 10000) {
-		*outval = strdup("1.0");
-		if (! (*outval)) {
-			ltfsmsg(LTFS_ERR, 10001E, msg);
-			return -LTFS_NO_MEMORY;
+	/* clear existing xattr or set up new one */
+	if (xattr) {
+		if (xattr->value) {
+			free(xattr->value);
+			xattr->value = NULL;
 		}
 	} else {
-		ret = asprintf(outval, "%d.%d.%d", version/10000, (version % 10000)/100, version % 100);
-		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, 10001E, msg);
+		xattr = (struct xattr_info *) calloc(1, sizeof(struct xattr_info));
+		if (! xattr) {
+			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr");
 			return -LTFS_NO_MEMORY;
 		}
+		xattr->key.name = strdup(name);
+		if (! xattr->key.name) {
+			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr key");
+			ret = -LTFS_NO_MEMORY;
+			goto out_free;
+		}
+		xattr->key.percent_encode = fs_is_percent_encode_required(xattr->key.name);
+		TAILQ_INSERT_HEAD(&d->xattrlist, xattr, list);
 	}
+
+	/* copy new value */
+	xattr->size = size;
+	if (size > 0) {
+		xattr->value = (char *)malloc(size);
+		if (! xattr->value) {
+			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr value");
+			ret = -LTFS_NO_MEMORY;
+			goto out_remove;
+		}
+		memcpy(xattr->value, value, size);
+	}
+	return 0;
+
+out_remove:
+	TAILQ_REMOVE(&d->xattrlist, xattr, list);
+out_free:
+	if (xattr->key.name)
+		free(xattr->key.name);
+	free(xattr);
+	return ret;
+}
+
+/**
+ * Set an extended attribute.
+ * @param d File or directory to set the xattr on.
+ * @param name Name to set.
+ * @param value Value to set, may be binary, not necessarily null-terminated.
+ * @param size Size of value in bytes.
+ * @param flags XATTR_REPLACE to fail if xattr doesn't exist, XATTR_CREATE to fail if it does
+ *              exist, or 0 to ignore any existing value.
+ * @return 0 on success or a negative value on error.
+ */
+int xattr_set(struct dentry *d, const char *name, const char *value, size_t size,
+	int flags, struct ltfs_volume *vol)
+{
+	struct xattr_info *xattr;
+	bool replace, create;
+	int ret;
+	bool is_worm_cart = false;
+	bool disable_worm_ea = false;
+	char *new_value="1";
+	bool write_idx = false;
+
+	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(value, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
+	if (size > LTFS_MAX_XATTR_SIZE)
+		return -LTFS_LARGE_XATTR; /* this is the error returned by ext3 when the xattr is too large */
+
+	replace = flags & XATTR_REPLACE;
+	create = flags & XATTR_CREATE;
+
+	ret = _xattr_lock_dentry(name, true, d, vol);
+	if (ret < 0)
+		return ret;
+
+	ret = tape_get_worm_status(vol->device, &is_worm_cart);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 17237E, "set xattr: cart stat");
+		ret = -LTFS_XATTR_ERR;
+		goto out_unlock;
+	}
+
+	if ((is_worm_cart && (d->is_immutable || (d->is_appendonly && strcmp(name, "ltfs.vendor.IBM.immutable"))))
+		|| (!is_worm_cart && (d->is_immutable || d->is_appendonly) && !_xattr_is_worm_ea(name))) {
+		/* EA cannot be set in case of immutable/appendonly */
+		ltfsmsg(LTFS_ERR, 17237E, "set xattr: WORM entry");
+		ret = -LTFS_RDONLY_XATTR;
+		goto out_unlock;
+	}
+
+	/* Check if this is a user-writeable virtual xattr */
+	if (_xattr_is_virtual(d, name, vol)) {
+		ret = _xattr_set_virtual(d, name, value, size, vol);
+		if (ret == -LTFS_NO_XATTR)
+			ret = -LTFS_RDONLY_XATTR;
+		goto out_unlock;
+	}
+
+	/* In the future, there could be user-writeable reserved xattrs. For now, just deny
+	 * writes to all reserved xattrs not covered by the user-writeable virtual xattrs above. */
+	if (strcasestr(name, "ltfs") == name && !_xattr_is_stored_vea(name) && !_xattr_is_worm_ea(name)) {
+		ret = -LTFS_RDONLY_XATTR;
+		goto out_unlock;
+	}
+
+	acquirewrite_mrsw(&d->meta_lock);
+
+	/* Search for existing xattr with this name. */
+	ret = _xattr_seek(&xattr, d, name);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 11122E, ret);
+		releasewrite_mrsw(&d->meta_lock);
+		goto out_unlock;
+	}
+	if (create && xattr) {
+		releasewrite_mrsw(&d->meta_lock);
+		ret = -LTFS_XATTR_EXISTS;
+		goto out_unlock;
+	} else if (replace && ! xattr) {
+		releasewrite_mrsw(&d->meta_lock);
+		ret = -LTFS_NO_XATTR;
+		goto out_unlock;
+	}
+	if (_xattr_is_worm_ea(name)) {
+		disable_worm_ea = (strncmp(value, "0", size) == 0);
+
+		if (is_worm_cart && disable_worm_ea) {
+			ltfsmsg(LTFS_ERR, 17237E, "set xattr: clear WORM");
+			releasewrite_mrsw(&d->meta_lock);
+			ret = -LTFS_XATTR_ERR;
+			goto out_unlock;
+		}
+		if (!disable_worm_ea) {
+			/* All values other than 0 is treated as 1 */
+			value = new_value;
+			size = strlen(new_value);
+		}
+	}
+
+	if (!strcmp(name, "ltfs.mediaPool.name")) {
+		ret = tape_set_media_pool_info(vol, value, size, true);
+		if (ret < 0) {
+			releasewrite_mrsw(&d->meta_lock);
+			goto out_unlock;
+		}
+		write_idx = true;
+	}
+
+	/* Set extended attribute */
+	ret = xattr_do_set(d, name, value, size, xattr);
+	if (ret < 0) {
+		releasewrite_mrsw(&d->meta_lock);
+		goto out_unlock;
+	}
+
+	/* update metadata */
+	if (!strcmp(name, "ltfs.vendor.IBM.immutable")) {
+		d->is_immutable = !disable_worm_ea;
+		ltfsmsg(LTFS_INFO, 17238I, "immutable", d->is_immutable, d->name.name);
+	}
+	else if (!strcmp(name, "ltfs.vendor.IBM.appendonly")) {
+		d->is_appendonly = !disable_worm_ea;
+		ltfsmsg(LTFS_INFO, 17238I, "appendonly", d->is_appendonly, d->name.name);
+	}
+
+	get_current_timespec(&d->change_time);
+	releasewrite_mrsw(&d->meta_lock);
+	d->dirty = true;
+	ltfs_set_index_dirty(true, false, vol->index);
+
+	if (write_idx)
+		ret = ltfs_sync_index(SYNC_EA, false, vol);
+	else
+		ret = 0;
+
+out_unlock:
+	_xattr_unlock_dentry(name, true, d, vol);
+	return ret;
+}
+
+/**
+ * Get an extended attribute. Returns an error if the provided buffer is not large enough
+ * to contain the attribute value.
+ * @param d File/directory to check
+ * @param name Xattr name
+ * @param value On success, contains xattr value
+ * @param size Output buffer size in bytes
+ * @param vol LTFS volume
+ * @return if size is nonzero, number of bytes returned in the value buffer. if size is zero,
+ *         number of bytes in the xattr value. returns a negative value on error. If the
+ *         operation needs to be restarted, then -LTFS_RESTART_OPERATION is returned instead.
+ */
+int xattr_get(struct dentry *d, const char *name, char *value, size_t size,
+	struct ltfs_volume *vol)
+{
+	struct xattr_info *xattr = NULL;
+	int ret;
+
+	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
+	if (size > 0 && ! value) {
+		ltfsmsg(LTFS_ERR, 11123E);
+		return -LTFS_BAD_ARG;
+	}
+
+	ret = _xattr_lock_dentry(name, false, d, vol);
+	if (ret < 0)
+		return ret;
+
+	/* Try to get a virtual xattr first. */
+	if (_xattr_is_virtual(d, name, vol)) {
+		ret = _xattr_get_virtual(d, value, size, name, vol);
+		if (ret == -LTFS_DEVICE_FENCED) {
+			_xattr_unlock_dentry(name, false, d, vol);
+			ret = ltfs_wait_revalidation(vol);
+			return (ret == 0) ? -LTFS_RESTART_OPERATION : ret;
+		} else if (NEED_REVAL(ret)) {
+			_xattr_unlock_dentry(name, false, d, vol);
+			ret = ltfs_revalidate(false, vol);
+			return (ret == 0) ? -LTFS_RESTART_OPERATION : ret;
+		} else if (IS_UNEXPECTED_MOVE(ret)) {
+			vol->reval = -LTFS_REVAL_FAILED;
+			_xattr_unlock_dentry(name, false, d, vol);
+			return ret;
+		}else if (ret != -LTFS_NO_XATTR) {
+			/* if ltfs.sync is specified, don't print any message */
+			if (ret < 0 && ret != -LTFS_RDONLY_XATTR)
+				ltfsmsg(LTFS_ERR, 11128E, ret);
+			goto out_unlock;
+		}
+	}
+
+	acquireread_mrsw(&d->meta_lock);
+
+	/* Look for a real xattr. */
+	ret = _xattr_seek(&xattr, d, name);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 11129E, ret);
+		releaseread_mrsw(&d->meta_lock);
+		goto out_unlock;
+	}
+
+	/* Generate output. */
+	ret = 0;
+	if (! xattr) {
+		/* There's no such extended attribute */
+		ret = -LTFS_NO_XATTR;
+	} else if (size && xattr->size > size) {
+		/* There is no space to fill the buffer */
+		ret = -LTFS_SMALL_BUFFER;
+	} else if (size) {
+		/* Copy the extended attribute to the requester */
+		memcpy(value, xattr->value, xattr->size);
+		ret = xattr->size;
+	} else /* size is zero */ {
+		/* Return how many bytes will be necessary to read this xattr */
+		ret = xattr->size;
+	}
+
+	releaseread_mrsw(&d->meta_lock);
+
+out_unlock:
+	_xattr_unlock_dentry(name, false, d, vol);
+	return ret;
+}
+
+/**
+ * Copy a list of extended attribute names to a user-provided buffer.
+ * @param d File/directory to get the list of extended attributes from
+ * @param list Output buffer for xattr names
+ * @param size Output buffer size in bytes
+ * @param vol LTFS volume
+ * @return number of bytes in buffer on success, or a negative value on error.
+ */
+int xattr_list(struct dentry *d, char *list, size_t size, struct ltfs_volume *vol)
+{
+	int ret, nbytes = 0;
+
+	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
+	if (size > 0 && ! list) {
+		ltfsmsg(LTFS_ERR, 11130E);
+		return -LTFS_BAD_ARG;
+	}
+
+	acquireread_mrsw(&d->meta_lock);
+
+	/* Fill the buffer with only real xattrs. */
+	if (size)
+		memset(list, 0, size);
+
+	ret = _xattr_list_physicals(d, list, size);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 11133E, ret);
+		goto out;
+	}
+	nbytes += ret;
+
+	/*
+	 * There used to be an _xattr_list_virtuals function which was called here.
+	 * Listing virtual xattrs causes problems with files copied from LTFS to another filesystem
+	 * which are attempted to be brought back. Since the copy utility may also copy the
+	 * reserved virtual extended attributes, the copy operation will fail with permission
+	 * denied problems.
+	 */
+
+	/* Was the buffer large enough? */
+	if (size && (size_t)nbytes > size)
+		ret = -LTFS_SMALL_BUFFER;
+
+out:
+	releaseread_mrsw(&d->meta_lock);
+	if (ret < 0)
+		return ret;
+	return nbytes;
+}
+
+/**
+ * Actually remove an extended attribute.
+ * @param dentry dentry to operate on
+ * @param name xattr name to delete
+ * @param force true to force removal, false to verify namespaces first
+ * @param vol LTFS volume
+ * @return 0 on success or a negative value on error
+ */
+int xattr_do_remove(struct dentry *d, const char *name, bool force, struct ltfs_volume *vol)
+{
+	int ret;
+	struct xattr_info *xattr;
+
+	acquirewrite_mrsw(&d->meta_lock);
+
+	/* Look for a real extended attribute. */
+	ret = _xattr_seek(&xattr, d, name);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 11140E, ret);
+		releasewrite_mrsw(&d->meta_lock);
+		return ret;
+	} else if (! xattr) {
+		releasewrite_mrsw(&d->meta_lock);
+		return -LTFS_NO_XATTR;
+	}
+
+	if (! force) {
+		/* If this xattr is in the reserved namespace, the user can't remove it. */
+		/* TODO: in the future, there could be user-removable reserved xattrs. */
+		if (strcasestr(name, "ltfs") == name && !_xattr_is_stored_vea(name) && !_xattr_is_worm_ea(name)) {
+			releasewrite_mrsw(&d->meta_lock);
+			return -LTFS_RDONLY_XATTR;
+		}
+	}
+
+	/* Remove the xattr. */
+	TAILQ_REMOVE(&d->xattrlist, xattr, list);
+	get_current_timespec(&d->change_time);
+	releasewrite_mrsw(&d->meta_lock);
+
+	free(xattr->key.name);
+	if (xattr->value)
+		free(xattr->value);
+	free(xattr);
+
 	return 0;
 }
 
-int _xattr_set_time(struct dentry *d, struct ltfs_timespec *out, const char *value, size_t size,
-	const char *msg, struct ltfs_volume *vol)
+/**
+ * Remove an extended attribute.
+ * @param d File/directory to operate on
+ * @param name Extended attribute name to delete
+ * @param vol LTFS volume
+ * @return 0 on success or a negative value on error
+ */
+int xattr_remove(struct dentry *d, const char *name, struct ltfs_volume *vol)
 {
 	int ret;
-	struct ltfs_timespec t;
-	char *value_null_terminated;
+	bool is_worm_cart = false;
 
-	value_null_terminated = malloc(size + 1);
-	if (! value_null_terminated) {
-		ltfsmsg(LTFS_ERR, 10001E, msg);
-		return -LTFS_NO_MEMORY;
-	}
-	memcpy(value_null_terminated, value, size);
-	value_null_terminated[size] = '\0';
+	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
-	ret = xml_parse_time(false, value_null_terminated, &t);
-	free(value_null_terminated);
+	ret = _xattr_lock_dentry(name, true, d, vol);
 	if (ret < 0)
-		return -LTFS_BAD_ARG;
+		return ret;
 
-	acquirewrite_mrsw(&d->meta_lock);
-	*out = t;
-	d->dirty = true;
-	releasewrite_mrsw(&d->meta_lock);
-
-	ltfs_set_index_dirty(true, false, vol->index);
-	return ret;
-}
-
-int _xattr_get_vendorunique_xattr(char **outval, const char *msg, struct ltfs_volume *vol)
-{
-	int ret;
-
-	ret = ltfs_get_vendorunique_xattr(msg, outval, vol);
-	if (ret != 0)
-		*outval = NULL;
-
-	return ret;
-}
-
-int _xattr_set_vendorunique_xattr(const char *name, const char *value, size_t size, struct ltfs_volume *vol)
-{
-	int ret;
-
-	ret = ltfs_set_vendorunique_xattr(name, value, size, vol);
-
-	return ret;
-}
-
-bool _xattr_is_worm_ea(const char *name)
-{
-	if (!strcmp(name, "ltfs.vendor.IBM.immutable") || !strcmp(name, "ltfs.vendor.IBM.appendonly")) {
-		/* WORM related xattr */
-		return true;
+	ret = tape_get_worm_status(vol->device, &is_worm_cart);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 17237E, "remove xattr: cart stat");
+		ret = -LTFS_XATTR_ERR;
+		goto out_dunlk;
 	}
-	return false;
+
+	if ((d->is_immutable || d->is_appendonly)
+		&& (is_worm_cart || !_xattr_is_worm_ea(name))) {
+		/* EA cannot be removed in case of immutable/appendonly */
+		ltfsmsg(LTFS_ERR, 17237E, "remove xattr: WORM entry");
+		ret = -LTFS_RDONLY_XATTR;
+		goto out_dunlk;
+	}
+
+	/* If this xattr is virtual, try the virtual removal function. */
+	if (_xattr_is_virtual(d, name, vol)) {
+		ret = _xattr_remove_virtual(d, name, vol);
+		if (ret == -LTFS_NO_XATTR)
+			ret = -LTFS_RDONLY_XATTR; /* non-removable virtual xattr */
+		goto out_dunlk;
+	}
+
+	ret = xattr_do_remove(d, name, false, vol);
+	if (ret < 0)
+		goto out_dunlk;
+
+	if (!strcmp(name, "ltfs.vendor.IBM.immutable")) {
+		d->is_immutable = false;
+		ltfsmsg(LTFS_INFO, 17238I, "immutable", d->is_immutable, d->name.name);
+	}
+	else if (!strcmp(name, "ltfs.vendor.IBM.appendonly")) {
+		d->is_appendonly = false;
+		ltfsmsg(LTFS_INFO, 17238I, "appendonly", d->is_appendonly, d->name.name);
+	}
+
+	d->dirty = true;
+	ltfs_set_index_dirty(true, false, vol->index);
+
+out_dunlk:
+	_xattr_unlock_dentry(name, true, d, vol);
+	return ret;
+}
+
+/**
+ * Strip a Linux namespace prefix from the given xattr name and return the position of the suffix.
+ * If the name is "user.X", return the "X" portion. Otherwise, return an error.
+ * This function does nothing on Mac OS X.
+ * @param name Name to strip.
+ * @return A pointer to the name suffix, or NULL to indicate an invalid name. On Mac OS X,
+ *         always returns @name.
+ */
+const char *xattr_strip_name(const char *name)
+{
+#if (defined (__APPLE__) || defined (mingw_PLATFORM))
+	return name;
+#else
+	if (strstr(name, "user.") == name)
+		return name + 5;
+	else
+		return NULL;
+#endif
+}
+
+/**
+ * set LTFS_LIVELINK_EA_NAME
+ * @param path file path
+ * @param d File operate on
+ * @param vol LTFS volume
+ * @return 0 on success or a negative value on error
+ */
+int xattr_set_mountpoint_length(struct dentry *d, const char* value, size_t size )
+{
+#ifdef POSIXLINK_ONLY
+	return 0;
+#else
+	int ret=0;
+	struct xattr_info *xattr;
+
+	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(value, -LTFS_NULL_ARG);
+
+	acquireread_mrsw(&d->meta_lock);
+	ret = _xattr_seek(&xattr, d, LTFS_LIVELINK_EA_NAME);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 11129E, ret);
+		releaseread_mrsw(&d->meta_lock);
+		goto out_set;
+	}
+	ret = xattr_do_set(d, LTFS_LIVELINK_EA_NAME, value, size, xattr);
+	releaseread_mrsw(&d->meta_lock);
+
+out_set:
+	return ret;
+#endif
 }
