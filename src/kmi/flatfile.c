@@ -198,7 +198,6 @@ int flatfile_get_key(unsigned char **keyalias, unsigned char **key, void * const
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 15552E);
 			if (dk_list) {
-				memset(dk_list, 0, strlen((char *) dk_list));
 				free(dk_list);
 			}
 			return ret;
@@ -210,7 +209,6 @@ int flatfile_get_key(unsigned char **keyalias, unsigned char **key, void * const
 /*
  *  Cache DK and DKi for revalidation at tape drive POR
  *	if (dk_list) {
- *		memset(dk_list, 0, strlen((char *) dk_list));
  *		free(dk_list);
  *		dk_list = NULL;
  *	}

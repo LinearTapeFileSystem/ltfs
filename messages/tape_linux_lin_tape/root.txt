@@ -68,7 +68,7 @@ root:table {
 		30423I:string { "Opening a device through ibmtape driver (%s)." }
 		30424E:string { "%s: medium is already mounted or in use." }
 		30425I:string { "Cannot open device \'%s\' (%d)." }
-		30426W:string { "Device \'%s\' must be opened in read-only mode." }
+		30426W:string { "Device \'%s\' must be opened in read-write mode." }
 		30427I:string { "Cannot open device: inquiry failed (%d)." }
 		30428I:string { "Product ID is \'%s\'." }
 		30429I:string { "Vendor ID is %s." }

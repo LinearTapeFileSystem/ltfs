@@ -175,18 +175,18 @@ int ltfs_request_profiler_stop(void);
 /*
  *  Definitions for LTFS request trace
  */
-#pragma pack(1)
+#pragma pack(push, 1)
 struct profiler_entry {
 	uint64_t time;
 	uint32_t req_num;
 	uint32_t tid;
 };
-#pragma pack(0)
+#pragma pack(pop)
 
 #define PROF_ENTRY_SIZE      (sizeof(struct profiler_entry))
 #define REQ_PROF_ENTRY_SIZE  PROF_ENTRY_SIZE /* Don't record information fields in profler data */
 
-#pragma pack(1)
+#pragma pack(push, 1)
 struct request_entry {
 	uint64_t time;
 	uint32_t req_num;
@@ -194,7 +194,7 @@ struct request_entry {
 	uint64_t info1;
 	uint64_t info2;
 };
-#pragma pack(0)
+#pragma pack(pop)
 
 #define REQ_TRACE_ENTRY_SIZE (sizeof(struct request_entry))
 #define REQ_TRACE_SIZE       (4 * 1024 * 1024) /* 4MB */

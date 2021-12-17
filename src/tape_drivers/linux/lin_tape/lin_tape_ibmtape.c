@@ -1056,7 +1056,7 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 
 	priv->fd = open(devfile, O_RDWR | O_NDELAY);
 	if (priv->fd < 0) {
-		priv->fd = open(devname, O_RDONLY | O_NDELAY);
+		priv->fd = open(devfile, O_RDONLY | O_NDELAY);
 		if (priv->fd < 0) {
 			if (errno == EAGAIN) {
 				ltfsmsg(LTFS_ERR, 30424E, devname);
