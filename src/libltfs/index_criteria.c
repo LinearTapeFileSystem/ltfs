@@ -199,7 +199,8 @@ bool index_criteria_find_option(const char *str, const char *substr,
  */
 int index_criteria_parse_size(const char *criteria, size_t len, struct index_criteria *ic)
 {
-	int ret = 0, multiplier = 1, sizelen = 0;
+	int ret = 0, multiplier = 1;
+	size_t sizelen = 0;
 	char rule[len+1], last, *ptr;
 
 	sizelen = strlen("size=");
