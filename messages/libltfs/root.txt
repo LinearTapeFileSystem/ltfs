@@ -237,7 +237,7 @@ root:table {
 		11140E:string { "Cannot remove extended attribute: failed to look up the xattr (%d)." }
 		11141E:string { "Cannot list physical xattrs: failed to generate namespace prefix (%d)." }
 		11142E:string { "Cannot list physical xattrs: failed to convert key to system locale (%d)." }
-		11143E:string { "Specified length of buffer is too short. (%d)" }
+		11143E:string { "Specified length of buffer is too short. (%u)" }
 		//unused 11144E:string { "Cannot list physical xattrs: failed to convert key to system locale (%d)." }
 		11145E:string { "Cannot get attribute %s: failed to generate the time string." }
 		11146E:string { "Invalid index criteria option \'%s\'." }
