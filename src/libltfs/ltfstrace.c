@@ -97,7 +97,7 @@
  * Definition for LTFS trace header information
  */
 #define LTFS_TRACE_SIGNATURE "LTFS_TRC"
-#pragma pack(1)
+#pragma pack(push, 1)
 struct trace_header {
 	char signature[8];               /**< Signature for LTFS trace */
 	uint32_t header_size;            /**< Size of trace header */
@@ -108,12 +108,12 @@ struct trace_header {
 	uint32_t trace_size;             /**< Whole size of trace (all headers and bodies) */
 	uint32_t crc;                    /**< CRC (reserved for future use) */
 };
-#pragma pack(0)
+#pragma pack(pop)
 
 /*
  * Definitions for LTFS Request header information
  */
-#pragma pack(1)
+#pragma pack(push, 1)
 struct request_header {
 	uint32_t header_size;            /**< Size of request header */
 	uint32_t num_of_req_trace;       /**< Number of request trace descriptrs (always 1) */
@@ -123,12 +123,12 @@ struct request_header {
 	} req_t_desc;                    /**< Request header descriptor */
 	uint32_t crc;                    /**< CRC (reserved for future use) */
 };
-#pragma pack(0)
+#pragma pack(pop)
 
 /*
  * Definitions for LTFS function trace header
  */
-#pragma pack(1)
+#pragma pack(push, 1)
 struct function_trace_header {
 	uint32_t header_size;		/**< Size of function trace header */
 	uint32_t num_of_fn_trace;	/**< Number of function trace */
@@ -139,19 +139,19 @@ struct function_trace_header {
 	} *req_t_desc;
 	uint32_t crc;                    /**< CRC (reserved for future use) */
 };
-#pragma pack(0)
+#pragma pack(pop)
 
 /*
  * Definitions for LTFS function trace data
  */
-#pragma pack(1)
+#pragma pack(push, 1)
 struct function_entry {
 	uint64_t time;
 	uint64_t function;
 	uint64_t info1;
 	uint64_t info2;
 };
-#pragma pack(0)
+#pragma pack(pop)
 
 #define FN_TRACE_ENTRY_SIZE (sizeof(struct function_entry))
 

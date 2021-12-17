@@ -199,10 +199,16 @@ bool index_criteria_find_option(const char *str, const char *substr,
  */
 int index_criteria_parse_size(const char *criteria, size_t len, struct index_criteria *ic)
 {
-	int ret = 0, multiplier = 1;
+	int ret = 0, multiplier = 1, sizelen = 0;
 	char rule[len+1], last, *ptr;
 
-	snprintf(rule, len-strlen("size="), "%s", criteria + strlen("size="));
+	sizelen = strlen("size=");
+	if ((len - sizelen) < 0) {
+		ltfsmsg(LTFS_ERR, 11143E, len);
+		return -LTFS_POLICY_INVALID;
+	}
+
+	snprintf(rule, len - sizelen, "%s", criteria + sizelen);
 
 	for (ptr=&rule[0]; *ptr; ptr++) {
 		if (isalpha(*ptr) && *(ptr+1) && isalpha(*(ptr+1))) {
