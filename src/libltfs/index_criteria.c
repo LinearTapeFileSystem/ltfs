@@ -203,11 +203,12 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 	char rule[len+1], last, *ptr;
 
 	sizelen = strlen("size=");
-	if ((len - sizelen) < 0) {
+	if (len <= sizelen) {
 		ltfsmsg(LTFS_ERR, 11143E, len);
 		return -LTFS_POLICY_INVALID;
 	}
 
+	memset(rule, 0, sizeof(rule));
 	snprintf(rule, len - sizelen, "%s", criteria + sizelen);
 
 	for (ptr=&rule[0]; *ptr; ptr++) {
