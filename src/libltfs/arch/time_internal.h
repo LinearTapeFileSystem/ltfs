@@ -76,12 +76,12 @@ struct ltfs_timespec {
 #define TIMER_TYPE_OSX     (0x0000000000000001)
 #define TIMER_TYPE_WINDOWS (0x0000000000000002)
 
-#pragma pack(1)
+#pragma pack(push, 1)
 struct timer_info {
 	uint64_t type;
 	uint64_t base;
 };
-#pragma pack(0)
+#pragma pack(pop)
 
 #define LTFS_TIME_T_MAX (253402300799) /* 9999/12/31 23:59:59 UTC */
 #define LTFS_TIME_T_MIN (-62167219200) /* 0000/01/01 00:00:00 UTC */
