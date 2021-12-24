@@ -283,7 +283,7 @@ int camtape_open(const char *devname, void **handle)
 	while(*cur) {
 		if ((! strncmp((char*)softc->cd->inq_data.vendor, (*cur)->vendor_id, strlen((*cur)->vendor_id)) ) &&
 			(! strncmp((char*)softc->cd->inq_data.product, (*cur)->product_id, strlen((*cur)->product_id)) ) ) {
-			priv->vendor = (*cur)->vendor_type;
+			softc->vendor = (*cur)->vendor_type;
 			drive_type = (*cur)->drive_type;
 			break;
 		}
