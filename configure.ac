@@ -572,6 +572,7 @@ fi
 if test "x${host_mac}" = "xno"
 then
     MODULE_CHECK_LD='-Wl,--no-undefined,--as-needed'
+    AM_LDFLAGS="${AM_LDFLAGS} -ldl"
 fi
 
 AM_CFLAGS=`echo ${AM_CFLAGS} | ${SED} 's|-D_FORTIFY_SOURCE=. ||g'`
