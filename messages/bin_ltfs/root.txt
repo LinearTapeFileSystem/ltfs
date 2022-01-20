@@ -3,7 +3,7 @@
 //  OO_Copyright_BEGIN
 //
 //
-//  Copyright 2010, 2020 IBM Corp. All rights reserved.
+//  Copyright 2010, 2022 IBM Corp. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //   modification, are permitted provided that the following conditions
@@ -52,7 +52,7 @@ root:table {
 		//unused 14010E:string { "Cannot load I/O scheduler \'%s\'." }
 		14011E:string { "Cannot allocate LTFS volume structure." }
 		14012E:string { "Tape backend option parsing failed." }
-		14013E:string { "Cannot mount the volume." }
+		14013E:string { "Cannot mount the volume from %s." }
 		//unused 14014E:string { "Cannot duplicate index criteria." }
 		14015W:string { "Volume does not allow index criteria override. Ignoring user-specified criteria." }
 		14016E:string { "Cannot format data placement rules (%d)." }
@@ -152,7 +152,13 @@ root:table {
 		14113I:string { "Specified mount point is listed if succeeded." }
 		14114E:string { "Cannot initialize the open file table." }
 		14115E:string { "Invalid scsi_append_only_mode option: %s." }
-                14116E:string { "This medium is not supported (%d)." }
+		14116E:string { "This medium is not supported (%d)." }
+		14117I:string { "Metadata only rollback mount is specified. Mounting as meta read-only from %s." }
+		14118E:string { "Unexpected mount option is specified for read only (%d)." }
+		14119I:string { "Rollback mount from index file is specified. Mounting as read-only from %s." }
+		14120W:string { "Cannot access to directory %s, disabled index capture mode (%d)." }
+		14121I:string { "Index will be captured at %s at update" }
+		14122I:string { "Index will not be captured." }
 
 		// 14150 - 14199 are reserved for LE+
 
@@ -209,7 +215,7 @@ root:table {
 		// Reserved 14434E
 		// Reserved 14435I
 		14436I:string { "    -o device_list            Show available tape devices" }
-		14437I:string { "    -o rollback_mount=<gen>   Attempt to mount on previous index generation (read-only mount)" }
+		14437I:string { "    -o rollback_mount=<gen|index_file>  Attempt to mount on previous index generation on tape or specified index file (read-only mount)" }
 		// Reserved 14438I
 		14439I:string { "    -o noeject                Do not eject the cartridge after unmount (default)" }
 		14440I:string { "    -o noatime                Do not update index if only access times have changed (default)" }
@@ -227,7 +233,7 @@ root:table {
 		// Reserved 14451I
 		// Reserved 14454I
 		14455I:string { "    -o kmi_backend=<name>     Key manager interface implementation to use (default: %s, use \"none\" to disable)" }
-		14456I:string { "    -o capture_index          Capture latest index to work directory at unmount" }
+		14456I:string { "    -o capture_index=<dir>    Capture index to the specified directory by dir when index is updated" }
 		// Reserved 14457I
 		// Reserved 14458I
 		// Reserved 14459I

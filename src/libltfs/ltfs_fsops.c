@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2021 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -1797,6 +1797,10 @@ ssize_t ltfs_fsops_read(struct dentry *d, char *buf, size_t count, off_t offset,
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	if (d->isdir)
 		return -LTFS_ISDIRECTORY;
+
+	if (vol->mount_type == MOUNT_ROLLBACK_META) {
+		return -LTFS_DEVICE_UNREADY;
+	}
 
 	if (iosched_initialized(vol))
 		ret = iosched_read(d, buf, count, offset, vol);

@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -47,6 +47,10 @@
 **                  Lucas C. Villa Real
 **                  IBM Almaden Research Center
 **                  lucasvr@us.ibm.com
+**
+**                  Atsushi Abe
+**                  IBM Tokyo Lab., Japan
+**                  piste@jp.ibm.com
 **
 *************************************************************************************
 */
@@ -127,7 +131,7 @@ struct ltfs_fuse_data {
 	unsigned int rollback_gen;     /**< Target generation to roll back mount */
 	int release_device;            /**< Release device? */
 	int allow_other;               /**< Allow all users to access the volume? */
-	int capture_index;             /**< Capture index information to work directory at unmount */
+	char *capture_dir;             /**< Directory to capture index information  */
 	char *symlink_str;             /**< Symbolic Link type fetched by option (live or posix)*/
 	char *str_append_only_mode;    /**< option sting of scsi_append_only_mode */
 	int append_only_mode;          /**< Use append-only mode */

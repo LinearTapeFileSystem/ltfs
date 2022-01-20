@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -61,11 +61,6 @@
 #include "tape.h"
 #include "pathname.h"
 #include "arch/time_internal.h"
-
-/* O_BINARY is defined only in MinGW */
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
 
 /* Structure to control EE's file offset cache and sync file list */
 struct ltfsee_cache
@@ -400,24 +395,24 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 	HASH_ITER(hh, dir->child_list, list_ptr, list_tmp) {
 		if (list_ptr->d->isdir) {
 
-			if (list_ptr->d->vol->index_cache_path && !strcmp(list_ptr->d->name.name, ".LTFSEE_DATA")) {
-				ret = asprintf(&offset_name, "%s.%s", list_ptr->d->vol->index_cache_path, "offsetcache.new");
+			if (list_ptr->d->vol->index_cache_path_w && !strcmp(list_ptr->d->name.name, ".LTFSEE_DATA")) {
+				ret = asprintf(&offset_name, "%s.%s", list_ptr->d->vol->index_cache_path_w, "offsetcache.new");
 				if (ret > 0) {
 					offset->fp = fopen(offset_name, "w");
 					free(offset_name);
 					if (!offset->fp)
-						ltfsmsg(LTFS_WARN, 17248W, "offset cache", list_ptr->d->vol->index_cache_path);
+						ltfsmsg(LTFS_WARN, 17248W, "offset cache", list_ptr->d->vol->index_cache_path_w);
 				} else
-					ltfsmsg(LTFS_WARN, 17247W, "offset cache", list_ptr->d->vol->index_cache_path);
+					ltfsmsg(LTFS_WARN, 17247W, "offset cache", list_ptr->d->vol->index_cache_path_w);
 
-				ret = asprintf(&sync_name, "%s.%s", list_ptr->d->vol->index_cache_path, "synclist.new");
+				ret = asprintf(&sync_name, "%s.%s", list_ptr->d->vol->index_cache_path_w, "synclist.new");
 				if (ret > 0) {
 					sync->fp = fopen(sync_name, "w");
 					free(sync_name);
 					if (!sync->fp)
-						ltfsmsg(LTFS_WARN, 17248W, "sync list", list_ptr->d->vol->index_cache_path);
+						ltfsmsg(LTFS_WARN, 17248W, "sync list", list_ptr->d->vol->index_cache_path_w);
 				} else
-					ltfsmsg(LTFS_WARN, 17247W, "sync list", list_ptr->d->vol->index_cache_path);
+					ltfsmsg(LTFS_WARN, 17247W, "sync list", list_ptr->d->vol->index_cache_path_w);
 			}
 
 			xml_mktag(_xml_write_dirtree(writer, list_ptr->d, idx, offset, sync), -1);
@@ -726,7 +721,7 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 				unlink(offset_name);
 				rename(offset_new, offset_name);
 				fd = open(offset_name, O_RDWR | O_BINARY,
-						  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+						  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP );
 				if (fd >= 0) {
 					fsync(fd);
 					close(fd);
@@ -747,7 +742,7 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 				unlink(sync_name);
 				rename(sync_new, sync_name);
 				fd = open(sync_name, O_RDWR | O_BINARY,
-						  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+						  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP );
 				if (fd >= 0) {
 					fsync(fd);
 					close(fd);
@@ -844,8 +839,8 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 
 	out_ctx->fd       = -1;
 	out_ctx->errno_fd = 0;
-	if (vol->index_cache_path)
-		xml_acquire_file_lock(vol->index_cache_path, &out_ctx->fd, &bk, true);
+	if (vol->index_cache_path_w)
+		xml_acquire_file_lock(vol->index_cache_path_w, &out_ctx->fd, &bk, true);
 
 	out_ctx->buf_size = vol->label->blocksize;
 	out_ctx->buf_used = 0;
@@ -859,7 +854,7 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 	if (! write_buf) {
 		ltfsmsg(LTFS_ERR, 17053E);
 		if (out_ctx->fd >= 0)
-			xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, false);
+			xml_release_file_lock(vol->index_cache_path_w, out_ctx->fd, bk, false);
 		free(out_ctx->buf);
 		free(out_ctx);
 		return -LTFS_LIBXML2_FAILURE;
@@ -870,7 +865,7 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 	if (! writer) {
 		ltfsmsg(LTFS_ERR, 17054E);
 		if (out_ctx->fd >= 0)
-			xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, false);
+			xml_release_file_lock(vol->index_cache_path_w, out_ctx->fd, bk, false);
 		xmlOutputBufferClose(write_buf);
 		free(out_ctx->buf);
 		free(out_ctx);
@@ -893,7 +888,7 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 			else if (out_ctx->errno_fd) ret = out_ctx->errno_fd;
 
 			if (out_ctx->fd >= 0)
-				xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, true);
+				xml_release_file_lock(vol->index_cache_path_w, out_ctx->fd, bk, true);
 		} else {
 			/* New index is successfully sent to the internal buffer of tape drive */
 			immed = (strcmp(reason, SYNC_FORMAT) == 0); /* Use immediate write FM only at format */
@@ -903,14 +898,14 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 				 * All buffered data, new index and following FM is written on tape correctly.
 				 * It's time to unveil the offset cache and sync cache to other programs.
 				 */
-				if (vol->index_cache_path)
-					_commit_offset_caches(vol->index_cache_path, vol->index);
+				if (vol->index_cache_path_w)
+					_commit_offset_caches(vol->index_cache_path_w, vol->index);
 			} else {
 				ltfsmsg(LTFS_ERR, 11084E, ret);
 			}
 
 			if (out_ctx->fd >= 0)
-				xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, false);
+				xml_release_file_lock(vol->index_cache_path_w, out_ctx->fd, bk, false);
 		}
 
 		/* Update the creator string */
@@ -928,7 +923,7 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 	} else {
 		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_tape: creator string");
 		xmlFreeTextWriter(writer);
-		xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, true);
+		xml_release_file_lock(vol->index_cache_path_w, out_ctx->fd, bk, true);
 		ret = -LTFS_NO_MEMORY;
 	}
 

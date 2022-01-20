@@ -3,7 +3,7 @@
 //  OO_Copyright_BEGIN
 //
 //
-//  Copyright 2010, 2020 IBM Corp. All rights reserved.
+//  Copyright 2010, 2022 IBM Corp. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //   modification, are permitted provided that the following conditions
@@ -151,6 +151,10 @@ root:table {
 		16109E:string { "This operation is not allowed on this medium (%s)." }
 		16110E:string { "The --salvage-rollback-points option was specified against a normal cartridge." }
 		16111I:string { "The recovery process is skipped because of a locked cartridge (%d)." }
+		16112W:string { "Cannot rename %s to %s (%d)." }
+		16113W:string { "Cannot access to directory %s, disabled index capture mode (%d)." }
+		16114I:string { "Index will be captured in %s." }
+		16115I:string { "Index will not be captured." }
 
 		// Help messages
 		16400I:string { "Usage: %s [options] filesys" }
@@ -180,7 +184,7 @@ root:table {
 				"                                  (Must be used for a cartridge that cannot be recovered by a normal option.)" }
 		16422I:string { "  -m, --full-index-info           Display full index information (Effective only for -l option)" }
 		16423I:string { "      --kmi-backend=<name>        Override the default key manager interface backend" }
-		16424I:string { "      --capture-index             Capture index information to the current directory (-g is effective for this option)" }
+		16424I:string { "      --capture-index=<dir>       Capture indexes to the specified directory (-g is effective for this option)" }
 		16425I:string { "      --syslogtrace               Enable diagnostic output to stderr and syslog" }
 		16426I:string { "  -V, --version                   Version information" }
 		16427I:string { "      --salvage-rollback-points   List the rollback points of the cartridge that has no EOD" }

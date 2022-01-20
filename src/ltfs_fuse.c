@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -1165,9 +1165,6 @@ void ltfs_fuse_umount(void *userdata)
 		kmi_destroy(priv->data);
 
 	ltfs_unmount(SYNC_UNMOUNT, priv->data);
-
-	if (priv->capture_index)
-		ltfs_save_index_to_disk(priv->work_directory, SYNC_UNMOUNT, false, priv->data);
 
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_UNMOUNT), 0, 0);
 }

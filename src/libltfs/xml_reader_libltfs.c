@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -1485,10 +1485,12 @@ static int _xml_parse_dirtree(xmlTextReaderPtr reader, struct dentry *parent,
  * with the nodes found during the scanning.
  * @param reader Source of XML data
  * @param idx LTFS index
+ * @param skip_dir skip parse directory and file
  * @param vol LTFS volume to which the index belongs. May be NULL.
  * @return 0 on success or a negative value on error.
  */
-static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, struct ltfs_volume *vol)
+static int _xml_parse_schema(xmlTextReaderPtr reader, bool skip_dir,
+							 struct ltfs_index *idx, struct ltfs_volume *vol)
 {
 	unsigned long long value_int;
 	declare_parser_vars("ltfsindex");
@@ -1584,9 +1586,13 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 		} else if (! strcmp(name, "directory")) {
 			check_required_tag(6);
 			assert_not_empty();
-			ret = _xml_parse_dirtree(reader, NULL, idx, vol, NULL);
-			if (ret < 0)
-				return ret;
+			if (skip_dir) {
+				xml_skip_tag(reader);
+			} else {
+				ret = _xml_parse_dirtree(reader, NULL, idx, vol, NULL);
+				if (ret < 0)
+					return ret;
+			}
 
 		} else if (! strcmp(name, "previousgenerationlocation")) {
 			check_optional_tag(0);
@@ -1824,7 +1830,7 @@ int xml_label_from_mem(const char *buf, int buf_size, struct ltfs_label *label)
  * with the nodes found during the scanning.
  * @param filename XML input file.
  * @param idx LTFS index.
- * @param vol LTFS volume to which the index belongs. May be NULL.
+ * @param vol LTFS volume to which the index belongs. NULL can be .
  * @return 0 on success or a negative value on error.
  */
 int xml_schema_from_file(const char *filename, struct ltfs_index *idx, struct ltfs_volume *vol)
@@ -1846,7 +1852,7 @@ int xml_schema_from_file(const char *filename, struct ltfs_index *idx, struct lt
 	 * unknown tags modifies the behavior of xmlFreeTextReader so that an additional
 	 * xmlDocFree call is required to free all memory. */
 	doc = xmlTextReaderCurrentDoc(reader);
-	ret = _xml_parse_schema(reader, idx, vol);
+	ret = _xml_parse_schema(reader, false, idx, vol);
 	if (ret < 0)
 		ltfsmsg(LTFS_ERR, 17012E, filename, ret);
 	if (doc)
@@ -1869,13 +1875,14 @@ int xml_schema_from_file(const char *filename, struct ltfs_index *idx, struct lt
  * the file mark.
  * @param eod_pos EOD block position for the current partition, or 0 to assume EOD will not be
  *                encountered during parsing.
+ * @param skip_dir skip parsing directory
  * @param vol LTFS volume.
  * @return 0 on success, 1 if parsing succeeded but no file mark was encountered,
  *         or a negative value on error.
  */
-int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
+int xml_schema_from_tape(uint64_t eod_pos, bool skip_dir, struct ltfs_volume *vol)
 {
-	int ret;
+	int ret, bk = -1;
 	struct tc_position current_pos;
 	struct xml_input_tape *ctx;
 	xmlParserInputBufferPtr read_buf;
@@ -1902,15 +1909,21 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 		free(ctx);
 		return -LTFS_NO_MEMORY;
 	}
-	ctx->vol = vol;
-	ctx->err_code = 0;
-	ctx->current_pos = current_pos.block;
-	ctx->eod_pos = eod_pos;
+
+	ctx->fd              = -1;
+	ctx->errno_fd        = 0;
+	if (vol->index_cache_path_r)
+		xml_acquire_file_lock(vol->index_cache_path_r, &ctx->fd, &bk, true);
+
+	ctx->vol             = vol;
+	ctx->err_code        = 0;
+	ctx->current_pos     = current_pos.block;
+	ctx->eod_pos         = eod_pos;
 	ctx->saw_small_block = false;
-	ctx->saw_file_mark = false;
-	ctx->buf_size = vol->label->blocksize;
-	ctx->buf_start = 0;
-	ctx->buf_used = 0;
+	ctx->saw_file_mark   = false;
+	ctx->buf_size        = vol->label->blocksize;
+	ctx->buf_start       = 0;
+	ctx->buf_used        = 0;
 
 	/* Create input buffer pointer. */
 	read_buf = xmlParserInputBufferCreateIO(xml_input_tape_read_callback,
@@ -1918,6 +1931,8 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 											ctx, XML_CHAR_ENCODING_NONE);
 	if (! read_buf) {
 		ltfsmsg(LTFS_ERR, 17014E);
+		if (ctx->fd >= 0)
+			xml_release_file_lock(vol->index_cache_path_r, ctx->fd, bk, false);
 		free(ctx->buf);
 		free(ctx);
 		return -LTFS_LIBXML2_FAILURE;
@@ -1928,6 +1943,8 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 	if (! reader) {
 		ltfsmsg(LTFS_ERR, 17015E);
 		xmlFreeParserInputBuffer(read_buf);
+		if (ctx->fd >= 0)
+			xml_release_file_lock(vol->index_cache_path_r, ctx->fd, bk, false);
 		free(ctx->buf);
 		free(ctx);
 		return -LTFS_LIBXML2_FAILURE;
@@ -1940,6 +1957,8 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 		ltfsmsg(LTFS_ERR, 17015E);
 		xmlFreeTextReader(reader);
 		xmlFreeParserInputBuffer(read_buf);
+		if (ctx->fd >= 0)
+			xml_release_file_lock(vol->index_cache_path_r, ctx->fd, bk, false);
 		free(ctx->buf);
 		free(ctx);
 		return -LTFS_LIBXML2_FAILURE;
@@ -1951,7 +1970,7 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 	doc = xmlTextReaderCurrentDoc(reader);
 
 	/* Generate the Index. */
-	ret = _xml_parse_schema(reader, vol->index, vol);
+	ret = _xml_parse_schema(reader, skip_dir, vol->index, vol);
 	if (ctx->err_code < 0) {
 		/* Error happens while reading tape */
 		ltfsmsg(LTFS_ERR, 17273E, ctx->err_code);
@@ -1975,6 +1994,9 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 		xmlFreeDoc(doc);
 	xmlFreeTextReader(reader);
 	xmlFreeParserInputBuffer(read_buf);
+
+	if (ctx->fd >= 0)
+		xml_release_file_lock(vol->index_cache_path_r, ctx->fd, bk, false);
 
 	free(ctx->buf);
 	free(ctx);

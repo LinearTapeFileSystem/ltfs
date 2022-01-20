@@ -209,11 +209,12 @@ M<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
           </listitem>
         </varlistentry>
         <varlistentry>
-          <term><option>--capture-index</option></term>
+          <term><option>--capture-index=<replaceable>dir</replaceable></option></term>
           <listitem>
             <para>
-              Capture index information to the current directory
-              (-g is effective for this option)
+              Capture indexes read successfully to the specified directory by dir. (-g is effective for this option)
+              File name of each index is [BARCODE]-[GEN]-[PARTITION].xml if tape serial (barcode)
+              is specified at format time. Otherwise it is [VOL_UUID]-[GEN]-[PARTITION].xml.
             </para>
           </listitem>
         </varlistentry>

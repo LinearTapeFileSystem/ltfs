@@ -156,9 +156,12 @@
           </listitem>
         </varlistentry>
         <varlistentry>
-          <term><option>-o rollback_mount=<replaceable>gen</replaceable></option></term>
+          <term><option>-o rollback_mount=<replaceable>gen|index_file</replaceable></option></term>
           <listitem>
-            <para>Attempt to mount on previous index generation (read-only mount)</para>
+            <para>Attempt to mount on previous index generation on tape or specified index file by read-only mode</para>
+            <para>
+              When both index_file and device name is specified on -o devname option, normal read-only mount is attempted.
+              When index_file is only specified, meta-data read-only mode is attempted. EAGAIN would be returned at accessing contents of file.
           </listitem>
         </varlistentry>
         <varlistentry>
@@ -356,9 +359,13 @@
           </listitem>
         </varlistentry>
         <varlistentry>
-          <term><option>-o capture_index</option></term>
+          <term><option>--capture-index=<replaceable>dir</replaceable></option></term>
           <listitem>
-            <para>Capture latest index to work directory at unmount</para>
+            <para>
+              Capture index to the specified directory by dir when index is updated.
+              File name of each index is [BARCODE]-[GEN]-[PARTITION].xml if tape serial (barcode)
+              is specified at format time. Otherwise it is [VOL_UUID]-[GEN]-[PARTITION].xml.
+            </para>
           </listitem>
         </varlistentry>
         <varlistentry>

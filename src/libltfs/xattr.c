@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2021 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -1516,6 +1516,12 @@ int xattr_get(struct dentry *d, const char *name, char *value, size_t size,
 
 	/* Try to get a virtual xattr first. */
 	if (_xattr_is_virtual(d, name, vol)) {
+
+		if (vol->mount_type == MOUNT_ROLLBACK_META) {
+			_xattr_unlock_dentry(name, false, d, vol);
+			return -LTFS_DEVICE_UNREADY;
+		}
+
 		ret = _xattr_get_virtual(d, value, size, name, vol);
 		if (ret == -LTFS_DEVICE_FENCED) {
 			_xattr_unlock_dentry(name, false, d, vol);

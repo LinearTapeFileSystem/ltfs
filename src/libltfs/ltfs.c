@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -79,11 +79,6 @@
 
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif
-
-/* O_BINARY is defined only in MinGW */
-#ifndef O_BINARY
-#define O_BINARY 0
 #endif
 
 volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
@@ -420,8 +415,10 @@ void _ltfs_volume_free(bool force, struct ltfs_volume **volume)
 			free((*volume)->mountpoint);
 		if ((*volume)->t_attr)
 			free((*volume)->t_attr);
-		if ((*volume)->index_cache_path)
-			free((*volume)->index_cache_path);
+		if ((*volume)->index_cache_path_w)
+			free((*volume)->index_cache_path_w);
+		if ((*volume)->index_cache_path_r)
+			free((*volume)->index_cache_path_r);
 		destroy_mrsw(&(*volume)->lock);
 		ltfs_thread_mutex_destroy(&(*volume)->reval_lock);
 		ltfs_thread_cond_destroy(&(*volume)->reval_cond);
@@ -551,6 +548,13 @@ start:
 	ret = ltfs_get_volume_lock(false, vol);
 	if (ret < 0)
 		return ret;
+
+	if (vol->mount_type == MOUNT_ROLLBACK_META) {
+		/* Return good when volume is meta-data mount mode */
+		releaseread_mrsw(&vol->lock);
+		return 0;
+	}
+
 	ret = tape_device_lock(vol->device);
 	if (ret == -LTFS_DEVICE_FENCED) {
 		ret = ltfs_wait_revalidation(vol);
@@ -647,6 +651,14 @@ start:
 	ret = ltfs_get_volume_lock(false, vol);
 	if (ret < 0)
 		return ret;
+
+	if (vol->mount_type == MOUNT_ROLLBACK_META) {
+		/* Return good when volume is meta-data mount mode */
+		releaseread_mrsw(&vol->lock);
+		return 0;
+		//return -LTFS_DEVICE_UNREADY;
+	}
+
 	ret = ltfs_capacity_data_unlocked(cap, vol);
 	if (ret == -LTFS_DEVICE_FENCED) {
 		ret = ltfs_wait_revalidation(vol);
@@ -1531,7 +1543,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 	char *vl_print = NULL;
 	char *barcode = NULL;
 
-	ltfsmsg(LTFS_INFO, 11005I);
+	ltfsmsg(LTFS_INFO, 11005I, "device");
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
@@ -1724,7 +1736,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 			goto out_unlock;
 		} else {
 			INTERRUPTED_GOTO(ret, out_unlock);
-			ret = ltfs_read_index(0, false, vol);
+			ret = ltfs_read_index(0, false, false, vol);
 			if (ret < 0) {
 				if (read_ip)
 					ltfsmsg(LTFS_ERR, 11024E); /* read IP Index failed */
@@ -1757,7 +1769,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 				goto out_unlock;
 			} else {
 				INTERRUPTED_GOTO(ret, out_unlock);
-				ret = ltfs_read_index(0, false, vol);
+				ret = ltfs_read_index(0, false, false, vol);
 				if (ret < 0) {
 					ltfsmsg(LTFS_ERR, 11021E); /* read DP Index failed */
 					goto out_unlock;
@@ -1786,7 +1798,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 				goto out_unlock;
 			} else {
 				INTERRUPTED_GOTO(ret, out_unlock);
-				ret = ltfs_read_index(0, false, vol);
+				ret = ltfs_read_index(0, false, false, vol);
 				if (ret < 0) {
 					ltfsmsg(LTFS_ERR, 11024E); /* read IP Index failed */
 					goto out_unlock;
@@ -1813,17 +1825,17 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 	INTERRUPTED_GOTO(ret, out_unlock);
 	if(gen != 0 && gen != vol->index->generation) {
 		if(is_worm_recovery_mount){
-			ret = ltfs_traverse_index_no_eod(vol, ltfs_ip_id(vol), gen, NULL, NULL, NULL);
+			ret = ltfs_traverse_index_no_eod(vol, ltfs_ip_id(vol), gen, false, NULL, NULL, NULL);
 			if(ret < 0)
-				ret = ltfs_traverse_index_no_eod(vol, ltfs_dp_id(vol), gen, NULL, NULL, NULL);
+				ret = ltfs_traverse_index_no_eod(vol, ltfs_dp_id(vol), gen, false, NULL, NULL, NULL);
 		} else if(vol->traverse_mode == TRAVERSE_FORWARD){
-			ret = ltfs_traverse_index_forward(vol, ltfs_ip_id(vol), gen, NULL, NULL, NULL);
+			ret = ltfs_traverse_index_forward(vol, ltfs_ip_id(vol), gen, false, NULL, NULL, NULL);
 			if(ret < 0)
-				ret = ltfs_traverse_index_forward(vol, ltfs_dp_id(vol), gen, NULL, NULL, NULL);
+				ret = ltfs_traverse_index_forward(vol, ltfs_dp_id(vol), gen, false, NULL, NULL, NULL);
 		} else {
-			ret = ltfs_traverse_index_backward(vol, ltfs_ip_id(vol), gen, NULL, NULL, NULL);
+			ret = ltfs_traverse_index_backward(vol, ltfs_ip_id(vol), gen, false, NULL, NULL, NULL);
 			if(ret < 0)
-				ret = ltfs_traverse_index_backward(vol, ltfs_dp_id(vol), gen, NULL, NULL, NULL);
+				ret = ltfs_traverse_index_backward(vol, ltfs_dp_id(vol), gen, false, NULL, NULL, NULL);
 		}
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 17079E, gen);
@@ -1898,6 +1910,62 @@ out_unlock:
 	else if (index && !vol->index)
 		vol->index = index;
 
+	if (ret < 0 && vol->index)
+		ltfs_index_free(&vol->index);
+
+	return ret;
+}
+
+/**
+ * Mount LTFS volume from provided index file
+ * Volume shall be mounted as read-only to avoid illegal data update.
+ *
+ * @param filename file name of the index
+ * @param label_check check label on tape (for R/O mount with data access) on true
+ * @param vol the volume to load
+ * @return 0 on success or a negative value on error.
+ */
+int ltfs_mount_indexfile(char* filename, bool label_check, struct ltfs_volume *vol)
+{
+	int ret = 0;
+
+	ltfsmsg(LTFS_INFO, 11005I, filename);
+
+	CHECK_ARG_NULL(filename, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
+
+	if (label_check) {
+		/* load tape, read indexes, set compression */
+		ret = ltfs_start_mount(false, vol);
+		if (ret < 0) {
+			/* ltfs_start_mount() generated an appropriate error message */
+			goto out_unlock;
+		}
+		ltfsmsg(LTFS_DEBUG, 11013D); /* partition labels are valid */
+		vol->mount_type = MOUNT_ROLLBACK;
+	} else {
+		/* Assume 512KB block*/
+		vol->label->blocksize = 512 * KB;
+		vol->mount_type = MOUNT_ROLLBACK_META;
+	}
+
+	vol->first_locate.tv_sec = 0;
+	vol->first_locate.tv_nsec = 0;
+
+	ret = ltfs_read_indexfile(filename, false, vol);
+
+	if (label_check) {
+		if (strcmp(vol->index->vol_uuid, vol->label->vol_uuid)) {
+			/*
+			 * Volume UUID in label and it on index is not matched.
+			 * Actual UUID is not printed to avoid illegal modification by hand.
+			 */
+			ltfsmsg(LTFS_ERR, 17290E);
+			ret = -LTFS_LABEL_MISMATCH;
+		}
+	}
+
+out_unlock:
 	if (ret < 0 && vol->index)
 		ltfs_index_free(&vol->index);
 
@@ -2001,7 +2069,8 @@ int ltfs_unmount(char *reason, struct ltfs_volume *vol)
 
 start:
 	ret = ltfs_get_volume_lock(true, vol);
-	if (!ret) {
+	if (!ret && vol->mount_type != MOUNT_ROLLBACK_META) {
+
 		ret = tape_get_cart_volume_lock_status(vol->device, &vollock);
 
 		if (vol->mount_type == MOUNT_NORMAL &&
@@ -2427,12 +2496,12 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		 (vol->ip_index_file_end && vol->index->selfptr.partition == ltfs_ip_id(vol)))) {
 
 		/* Surpress on-disk index cache write on the recursive call */
-		cache_path_save = vol->index_cache_path;
-		vol->index_cache_path = NULL;
+		cache_path_save = vol->index_cache_path_w;
+		vol->index_cache_path_w = NULL;
 		ret = ltfs_write_index(ltfs_dp_id(vol), reason, vol);
 
 		/* Restore cache path to handle on-disk index cache */
-		vol->index_cache_path = cache_path_save;
+		vol->index_cache_path_w = cache_path_save;
 		cache_path_save = NULL;
 
 		if (NEED_REVAL(ret))
@@ -2625,11 +2694,11 @@ out_write_perm:
  * Write down the state of the current LTFS file system to a XML file on disk.
  * Acquires a write lock on vol->index->root->lock.
  * @param work_dir LTFS work directory.
- * @param need_gen include generation number to file name
+ * @param id partition ID or 0
  * @param vol LTFS volume
  * @return 0 on success or a negative value on error
  */
-int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, struct ltfs_volume *vol)
+int ltfs_save_index_to_disk(const char *work_dir, char * reason, char id, struct ltfs_volume *vol)
 {
 	char *path;
 	int ret;
@@ -2641,13 +2710,13 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, 
 
 	/* Write the schema to a file on disk */
 	ltfsmsg(LTFS_DEBUG, 17182D, vol->label->vol_uuid, vol->label->barcode);
-	if (need_gen) {
-		if (strcmp(vol->label->barcode, "      "))
-			ret = asprintf(&path, "%s/%s-%d.schema", work_dir, vol->label->barcode, vol->index->generation);
+	if (id) {
+		if (HAVE_BARCODE(vol))
+			ret = asprintf(&path, "%s/%s-%d-%c.schema", work_dir, vol->label->barcode, vol->index->generation, id);
 		else
-			ret = asprintf(&path, "%s/%s-%d.schema", work_dir, vol->label->vol_uuid, vol->index->generation);
+			ret = asprintf(&path, "%s/%s-%d-%c.schema", work_dir, vol->label->vol_uuid, vol->index->generation, id);
 	} else {
-		if (strcmp(vol->label->barcode, "      "))
+		if (HAVE_BARCODE(vol))
 			ret = asprintf(&path, "%s/%s.schema", work_dir, vol->label->barcode);
 		else
 			ret = asprintf(&path, "%s/%s.schema", work_dir, vol->label->vol_uuid);
@@ -2658,8 +2727,7 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, 
 		return -ENOMEM;
 	}
 
-
-	ltfsmsg(LTFS_INFO, 17235I, _get_barcode(vol), 'Z', "Volume Cache",
+	ltfsmsg(LTFS_INFO, 17235I, _get_barcode(vol), id ? id : 'Z', "Volume Cache",
 			(unsigned long long)vol->index->file_count, path);
 
 	ret = xml_schema_to_file(path, vol->index->creator, reason, vol->index);
@@ -2671,7 +2739,7 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, 
 	}
 
 	/* Change index file's mode */
-	if (chmod(path, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) {
+	if (chmod(path, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) {
 		ret = -errno;
 		ltfsmsg(LTFS_ERR, 17184E, errno);
 	}
@@ -2679,7 +2747,7 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, 
 	ltfsmsg(LTFS_INFO, 17236I,
 			_get_barcode(vol),
 			(unsigned long long)vol->index->generation,
-			'Z',
+			id ? id : 'Z',
 			(unsigned long long)vol->index->selfptr.block,
 			path);
 
@@ -2777,7 +2845,7 @@ int ltfs_set_barcode(const char *barcode, struct ltfs_volume *vol)
 		}
 		strcpy(vol->label->barcode, barcode);
 	} else
-		strcpy(vol->label->barcode, "      ");
+		strcpy(vol->label->barcode, NO_BARCODE);
 	return 0;
 }
 
@@ -3583,13 +3651,14 @@ start:
  * @param vol LTFS volume
  * @param partition partition to traverse
  * @param gen generation to search. 0 to search all
+ * @param skip_dir skip parsing directory
  * @param func call back function to call when an index is find. NULL not to call
  * @param list this pointer is specified as 3rd arguments of call back function
  * @param priv private data for call back function
  * @return 0 on success or a negative value on error
  */
 int ltfs_traverse_index_no_eod(struct ltfs_volume *vol, char partition, unsigned int gen,
-								f_index_found func, void **list, void* priv)
+							   bool skip_dir, f_index_found func, void **list, void* priv)
 {
 	int ret, func_ret;
 
@@ -3602,7 +3671,7 @@ int ltfs_traverse_index_no_eod(struct ltfs_volume *vol, char partition, unsigned
 	while (true) {
 		ltfs_index_free(&vol->index);
 		ltfs_index_alloc(&vol->index, vol);
-		ret = ltfs_read_index(0, false, vol);
+		ret = ltfs_read_index(0, false, skip_dir, vol);
 		if (ret < 0 && ret != -LTFS_UNSUPPORTED_INDEX_VERSION) {
 			ltfsmsg(LTFS_ERR, 17075E, 'N', (int)vol->device->position.block, partition);
 			return ret;
@@ -3656,13 +3725,14 @@ int ltfs_traverse_index_no_eod(struct ltfs_volume *vol, char partition, unsigned
  * @param vol LTFS volume
  * @param partition partition to traverse
  * @param gen generation to search. 0 to search all
+ * @param skip_dir skip parsing directory
  * @param func call back function to call when an index is find. NULL not to call
  * @param list this pointer is specified as 3rd arguments of call back function
  * @param priv private data for call back function
  * @return 0 on success or a negative value on error
  */
 int ltfs_traverse_index_forward(struct ltfs_volume *vol, char partition, unsigned int gen,
-								f_index_found func, void **list, void* priv)
+								bool skip_dir, f_index_found func, void **list, void* priv)
 {
 	int ret, func_ret;
 	struct tape_offset last_index;
@@ -3685,7 +3755,7 @@ int ltfs_traverse_index_forward(struct ltfs_volume *vol, char partition, unsigne
 	while (last_index.block >= vol->device->position.block) {
 		ltfs_index_free(&vol->index);
 		ltfs_index_alloc(&vol->index, vol);
-		ret = ltfs_read_index(0, false, vol);
+		ret = ltfs_read_index(0, false, skip_dir, vol);
 		if (ret < 0 && ret != -LTFS_UNSUPPORTED_INDEX_VERSION) {
 			ltfsmsg(LTFS_ERR, 17075E, 'F', (int)vol->device->position.block, partition);
 			return ret;
@@ -3740,12 +3810,13 @@ int ltfs_traverse_index_forward(struct ltfs_volume *vol, char partition, unsigne
  * @param vol LTFS volume
  * @param partition partition to traverse
  * @param gen generation to search. 0 to search all
+ * @param skip_dir skip parsing directory
  * @param func call back function to call when an index is find. NULL not to call
  * @param list this pointer is specified as 3rd arguments of call back function
  * @return 0 on success or a negative value on error
  */
 int ltfs_traverse_index_backward(struct ltfs_volume *vol, char partition, unsigned int gen,
-								 f_index_found func, void **list, void* priv)
+								 bool skip_dir, f_index_found func, void **list, void* priv)
 {
 	int ret, func_ret;
 
@@ -3761,7 +3832,7 @@ int ltfs_traverse_index_backward(struct ltfs_volume *vol, char partition, unsign
 
 		ltfs_index_free(&vol->index);
 		ltfs_index_alloc(&vol->index, vol);
-		ret = ltfs_read_index(0, false, vol);
+		ret = ltfs_read_index(0, false, skip_dir, vol);
 		if (ret < 0 && ret != -LTFS_UNSUPPORTED_INDEX_VERSION) {
 			ltfsmsg(LTFS_ERR, 17075E, 'B', (int)vol->device->position.block, partition);
 			return ret;
@@ -3932,7 +4003,7 @@ static int _ltfs_detect_final_rec_dp(struct ltfs_volume *vol, struct tc_position
 
 	INTERRUPTED_RETURN();
 	ltfsmsg(LTFS_INFO, 17120I, "DP", (unsigned long long)seekpos.partition, (unsigned long long)seekpos.block);
-	ret = ltfs_read_index(0, false, vol);
+	ret = ltfs_read_index(0, false, false, vol);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17121E, "DP",  ret);
 		return ret;
@@ -4108,7 +4179,7 @@ int ltfs_recover_eod(struct ltfs_volume *vol)
 			 * In index partition, Index will be overwritten.
 			 * Read an index only current partition is DP.
 			 */
-			ret = ltfs_read_index(0, false, vol);
+			ret = ltfs_read_index(0, false, false, vol);
 			if (ret < 0)
 				return ret;
 		}

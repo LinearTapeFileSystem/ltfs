@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -47,6 +47,10 @@
 **                  Lucas C. Villa Real
 **                  IBM Almaden Research Center
 **                  lucasvr@us.ibm.com
+**
+**                  Atsushi Abe
+**                  IBM Tokyo Lab., Japan
+**                  piste@jp.ibm.com
 **
 *************************************************************************************
 */
@@ -507,7 +511,7 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 	struct xml_input_tape *ctx = context;
 	ssize_t nread, nr2;
 	char *buf2;
-	int bytes_saved, bytes_remaining, ret_sp;
+	int bytes_saved, bytes_remaining, ret_sp, ret_fd;
 
 	if (len == 0)
 		return 0;
@@ -541,8 +545,20 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 
 			/* Try to read a block into the buffer. */
 			nread = tape_read(ctx->vol->device, ctx->buf, ctx->buf_size, false,
-				ctx->vol->kmi_handle);
+							  ctx->vol->kmi_handle);
 			++ctx->current_pos;
+
+			/* Write down the data read to the read cache */
+			if (ctx->fd > 0 && nread > 0) {
+				ret_fd = write(ctx->fd, ctx->buf, nread);
+				if (ret_fd < 0) {
+					ltfsmsg(LTFS_ERR, 17244E, (int)errno);
+					ctx->errno_fd = -LTFS_CACHE_IO;
+					return -1;
+				}
+			}
+
+			/* Condition check of data read */
 			if (nread < 0) {
 				/* We know we're not at EOD, so read errors are unexpected. */
 				ltfsmsg(LTFS_ERR, 17039E, (int)nread);
