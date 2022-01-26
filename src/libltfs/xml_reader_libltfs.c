@@ -1830,7 +1830,7 @@ int xml_label_from_mem(const char *buf, int buf_size, struct ltfs_label *label)
  * with the nodes found during the scanning.
  * @param filename XML input file.
  * @param idx LTFS index.
- * @param vol LTFS volume to which the index belongs. NULL can be .
+ * @param vol LTFS volume to which the index belongs. Can be NULL.
  * @return 0 on success or a negative value on error.
  */
 int xml_schema_from_file(const char *filename, struct ltfs_index *idx, struct ltfs_volume *vol)
