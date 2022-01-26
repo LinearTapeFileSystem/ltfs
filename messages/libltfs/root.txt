@@ -831,7 +831,7 @@ v
 		17287I:string { "Making R/O mount from the location (%c, %llu)." }
 		17288I:string { "Detected the final indexes (IP: Gen = %llu, Pos = %llu) (DP: Gen = %llu, Pos = %llu)." }
 		17289I:string { "Skip parsing the final index on IP." }
-		17290E:string { "UUID in the index is not matched to the label." }
+		17290E:string { "UUID in the index does not match the label." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 
