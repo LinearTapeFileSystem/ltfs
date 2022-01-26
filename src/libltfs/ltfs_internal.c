@@ -485,8 +485,7 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, bool skip_dir, struc
  * @param filename file name of index
  * @param recover_symlink recover symlink conflict
  * @param vol the volume
- * @return 0 on success, 1 if index file does not end with a file mark (but is otherwise valid),
- *         or a negative value on error.
+ * @return 0 on success, or a negative value on error.
  */
 int ltfs_read_indexfile(char* filename, bool recover_symlink, struct ltfs_volume *vol)
 {
