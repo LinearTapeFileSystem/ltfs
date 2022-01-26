@@ -949,7 +949,11 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	} else {
 		fsname = calloc(1, strlen(fsname_base) + 1);
 	}
-
+	if (!fsname) {
+		/* Memory allocation failed */
+		ltfsmsg(LTFS_ERR, 10001E, "fsname");
+		return -ENOMEM;
+	}
 	/*  Setup signal handler to terminate cleanly */
 	ret = ltfs_set_signal_handlers();
 	if (ret < 0) {
