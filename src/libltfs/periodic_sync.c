@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -43,6 +43,7 @@
 ** AUTHOR:          Atsushi Abe
 **                  IBM Yamato, Japan
 **                  PISTE@jp.ibm.com
+**
 *************************************************************************************
 */
 
@@ -84,6 +85,12 @@ ltfs_thread_return periodic_sync_thread(void* data)
 								   priv->period_sec);
 		if (! priv->keepalive)
 			break;
+
+		if (priv->vol->mount_type == MOUNT_ROLLBACK ||
+			priv->vol->mount_type == MOUNT_ROLLBACK_META) {
+			/* Never call sync on R/O mount */
+			continue;
+		}
 
 		ltfs_request_trace(FUSE_REQ_ENTER(REQ_SYNC), 0, 0);
 

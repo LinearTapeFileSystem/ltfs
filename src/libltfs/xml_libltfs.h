@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -36,7 +36,7 @@
 **
 ** COMPONENT NAME:  IBM Linear Tape File System
 **
-** FILE NAME:       xml.h
+** FILE NAME:       xml_libltfs.h
 **
 ** DESCRIPTION:     Prototypes for XML read/write functions.
 **
@@ -47,6 +47,10 @@
 **                  Lucas C. Villa Real
 **                  IBM Almaden Research Center
 **                  lucasvr@us.ibm.com
+**
+**                  Atsushi Abe
+**                  IBM Tokyo Lab., Japan
+**                  piste@jp.ibm.com
 **
 *************************************************************************************
 */
@@ -85,7 +89,7 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol);
 int xml_label_from_file(const char *filename, struct ltfs_label *label);
 int xml_label_from_mem(const char *buf, int buf_size, struct ltfs_label *label);
 int xml_schema_from_file(const char *filename, struct ltfs_index *idx, struct ltfs_volume *vol);
-int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol);
+int xml_schema_from_tape(uint64_t eod_pos, bool skip_dir, struct ltfs_volume *vol);
 int xml_extent_symlink_info_from_file(const char *filename, struct dentry *d);
 
 #endif /* __xml_libltfs_h */

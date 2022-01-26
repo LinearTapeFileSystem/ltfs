@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -43,6 +43,10 @@
 ** AUTHORS:         Brian Biskeborn
 **                  IBM Almaden Research Center
 **                  bbiskebo@us.ibm.com
+**
+**                  Atsushi Abe
+**                  IBM Tokyo Lab., Japan
+**                  piste@jp.ibm.com
 **
 *************************************************************************************
 */
@@ -384,11 +388,13 @@ out_free:
  * This function does not read over another file mark
  * @param eod_pos EOD position for current partition, or 0 to assume that EOD will not be
  *                encountered during parsing.
+ * @param recover_symlink recover symlink conflict
+ * @param skip_dir skip parsing directory
  * @param vol the volume
  * @return 0 on success, 1 if index file does not end with a file mark (but is otherwise valid),
  *         or a negative value on error.
  */
-int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *vol)
+int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, bool skip_dir, struct ltfs_volume *vol)
 {
 	int ret, ret_sym;
 	struct tc_position pos;
@@ -410,7 +416,7 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *
 	}
 
 	/* Parse and validate the schema */
-	ret = xml_schema_from_tape(eod_pos, vol);
+	ret = xml_schema_from_tape(eod_pos, skip_dir, vol);
 	if ( vol->index->symerr_count ) {
 		if ( recover_symlink ) {
 			ret_sym = ltfs_split_symlink( vol );
@@ -471,6 +477,49 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *
 	}
 
 	return end_fm ? 0 : 1;
+}
+
+/**
+ * Read an index file from file, storing the result in the given volume.
+ *
+ * @param filename file name of index
+ * @param recover_symlink recover symlink conflict
+ * @param vol the volume
+ * @return 0 on success, or a negative value on error.
+ */
+int ltfs_read_indexfile(char* filename, bool recover_symlink, struct ltfs_volume *vol)
+{
+	int ret, ret_sym;
+
+	ltfs_index_free(&vol->index);
+	ret = ltfs_index_alloc(&vol->index, vol);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 11297E, ret);
+		return ret;
+	}
+
+	/* Parse and validate the schema */
+	ret = xml_schema_from_file(filename, vol->index, vol);
+	if ( vol->index->symerr_count ) {
+		if ( recover_symlink ) {
+			ret_sym = ltfs_split_symlink( vol );
+			if (ret_sym < 0) {
+				ret = ret_sym;
+			} else if (ret == -LTFS_SYMLINK_CONFLICT) {
+				ret = 0;
+			}
+		} else {
+			ltfsmsg(LTFS_ERR, 11321E);
+		}
+		free( vol->index->symlink_conflict );
+		vol->index->symerr_count = 0;
+	}
+
+	if (ret < 0) {
+		ltfsmsg(LTFS_WARN, 11194W, ret);
+	}
+
+	return ret;
 }
 
 /**
@@ -540,7 +589,7 @@ int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_e
 
 		/* try to read an index file */
 		check_err(tape_spacefm(vol->device, 1), 11202E, out);
-		ret = ltfs_read_index(*eod_pos, recover_symlink, vol);
+		ret = ltfs_read_index(*eod_pos, recover_symlink, false, vol);
 		if (ret < 0) { /* no index file found: go back 2 file marks and try again */
 			ltfsmsg(LTFS_DEBUG, 11204D);
 
@@ -704,7 +753,7 @@ int _ltfs_check_pointers(struct ltfs_index *ip_index, struct ltfs_index *dp_inde
 				ret = tape_seek(vol->device, &seekpos);
 				if (ret < 0)
 					return ret;
-				ret = ltfs_read_index(0, false, vol);
+				ret = ltfs_read_index(0, false, true, vol);
 				if (ret < 0)
 					return ret;
 				dp_backptr = vol->index->backptr.block;

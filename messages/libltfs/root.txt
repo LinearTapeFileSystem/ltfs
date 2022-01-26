@@ -3,7 +3,7 @@
 //  OO_Copyright_BEGIN
 //
 //
-//  Copyright 2010, 2020 IBM Corp. All rights reserved.
+//  Copyright 2010, 2022 IBM Corp. All rights reserved.
 //
 //  Redistribution and use in source and binary forms, with or without
 //   modification, are permitted provided that the following conditions
@@ -97,7 +97,7 @@ root:table {
 		11002E:string { "Cannot instantiate LTFS volume: failed to allocate index data." }
 		11003E:string { "Cannot retrieve device capacity data (%d)." }
 		11004E:string { "Cannot take the device lock (%s)." }
-		11005I:string { "Mounting the volume." }
+		11005I:string { "Mounting the volume from %s." }
 		11006E:string { "Cannot read volume: failed to load the tape." }
 		11007D:string { "Tape is loaded." }
 		11008D:string { "Reading partition labels." }
@@ -831,6 +831,7 @@ v
 		17287I:string { "Making R/O mount from the location (%c, %llu)." }
 		17288I:string { "Detected the final indexes (IP: Gen = %llu, Pos = %llu) (DP: Gen = %llu, Pos = %llu)." }
 		17289I:string { "Skip parsing the final index on IP." }
+		17290E:string { "UUID in the index does not match the label." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 

@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -48,6 +48,10 @@
 **                  IBM Almaden Research Center
 **                  lucasvr@us.ibm.com
 **
+**                  Atsushi Abe
+**                  IBM Tokyo Lab., Japan
+**                  piste@jp.ibm.com
+**
 *************************************************************************************
 */
 
@@ -60,11 +64,6 @@
 #include "tape.h"
 #include "pathname.h"
 #include "arch/time_internal.h"
-
-/* O_BINARY is defined only in MinGW */
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
 
 /**
  * Format a raw timespec structure for the XML file.
@@ -321,7 +320,7 @@ int xml_acquire_file_lock(const char *file, int *fd, int *bk_fd, bool is_write)
 	/* Open specified file to lock */
 	*fd = open(file,
 			  O_RDWR | O_CREAT | O_BINARY,
-			  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH );
+			  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP );
 	if (*fd < 0) {
 		/* Failed to open the advisory lock '%s' (%d) */
 		errno_save = errno;
@@ -397,7 +396,7 @@ retry:
 		}
 		*bk_fd = open(backup_file,
 					  O_RDWR | O_CREAT | O_BINARY | O_TRUNC,
-					  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH );
+					  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP );
 		if (*bk_fd < 0) {
 			ltfsmsg(LTFS_ERR, 17246E, "backup file creation", errno);
 			errno_save = errno;

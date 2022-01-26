@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -96,27 +96,27 @@ enum {
 };
 
 struct other_check_opts {
-	struct config_file *config; /**< Configurate data read from the global LTFS config file. */
-	char *devname;              /**< Device to format */
-	char *backend_path;         /**< Path to tape backend shared library */
-	char *kmi_backend_name;     /**< Name or path to the key manager interface backend library */
-	int  op_mode;               /**< Operation mode */
-	int  search_mode;           /**< Search mode for index */
-	char *str_gen;              /**< Rollback point specified by command line (generation)*/
-	unsigned int point_gen;     /**< Rollback point (generation) */
-	bool erase_history;         /**< overwrite existing data at rollback */
-	bool recover_blocks;        /**< Recover unreferenced blocks at the ends of the partitions? */
-	bool deep_recovery;         /**< Recover EOD missing cartridge? */
-	int verbosity;              /**< Print extra messages? */
-	char *prg_name;             /**< Program name */
-	bool quiet;                 /**< Suppress information messages */
-	bool trace;                 /**< Generate debug output */
-	bool syslogtrace;           /**< Generate debug output to stderr and syslog*/
-	bool fulltrace;             /**< Trace function calls */
-	int  traverse_mode;         /**< Traverse strategy for listing index */
-	bool full_index_info;       /**< Print full index infomation in list mode */
-	bool capture_index;         /**< Capture index in list mode */
-	bool salvage_points;		/**< List rollback points from no-EOD cartridge? */
+	struct config_file *config;           /**< Configurate data read from the global LTFS config file. */
+	char               *devname;          /**< Device to format */
+	char               *backend_path;     /**< Path to tape backend shared library */
+	char               *kmi_backend_name; /**< Name or path to the key manager interface backend library */
+	int                op_mode;           /**< Operation mode */
+	int                search_mode;       /**< Search mode for index */
+	char               *str_gen;          /**< Rollback point specified by command line (generation)*/
+	unsigned int       point_gen;         /**< Rollback point (generation) */
+	bool               erase_history;     /**< overwrite existing data at rollback */
+	bool               recover_blocks;    /**< Recover unreferenced blocks at the ends of the partitions? */
+	bool               deep_recovery;     /**< Recover EOD missing cartridge? */
+	int                verbosity;          /**< Print extra messages? */
+	char               *prg_name;         /**< Program name */
+	bool               quiet;             /**< Suppress information messages */
+	bool               trace;             /**< Generate debug output */
+	bool               syslogtrace;       /**< Generate debug output to stderr and syslog*/
+	bool               fulltrace;         /**< Trace function calls */
+	int                traverse_mode;     /**< Traverse strategy for listing index */
+	bool               full_index_info;   /**< Print full index infomation in list mode */
+	char               *capture_dir;      /**< Capture index in list mode and it's directory */
+	bool               salvage_points;    /**< List rollback points from no-EOD cartridge? */
 };
 
 struct index_info
@@ -167,7 +167,7 @@ static struct option long_options[] = {
 	{"generation",           1, 0, 'g'},
 	{"traverse",             1, 0, 'v'},
 	{"kmi-backend",          1, 0, '-'},
-	{"capture-index",        0, 0, '+'},
+	{"capture-index",        1, 0, '+'},
 	{"rollback"            , 0, 0, 'r'},
 	{"no-rollback"         , 0, 0, 'n'},
 	{"full-recovery"       , 0, 0, 'f'},
@@ -350,7 +350,7 @@ int main(int argc, char **argv)
 				break;
 			case '+':
 				opt.op_mode = MODE_LIST_POINT;
-				opt.capture_index = true;
+				opt.capture_dir = strdup(optarg);
 				break;
 			case 'r':
 				opt.op_mode = MODE_ROLLBACK;
@@ -840,7 +840,8 @@ void _print_index_header(bool full_info)
 void _print_index(struct ltfs_volume *vol, struct index_info *list, struct other_check_opts *opt)
 {
 	struct tm *t_st;
-	int i;
+	char *new_path = NULL;
+	int i, ret;
 
 	if(!opt)
 		return;
@@ -935,8 +936,26 @@ void _print_index(struct ltfs_volume *vol, struct index_info *list, struct other
 	else
 		printf("            No commit message\n");
 
-	if (opt->capture_index)
-		ltfs_save_index_to_disk(".", NULL, true, vol);
+	/* Rename reading xml to official name */
+	if (vol->index_cache_path_r && opt->capture_dir) {
+		if (HAVE_BARCODE(vol))
+			ret = asprintf(&new_path, "%s/%s-%d-%c.schema", opt->capture_dir, vol->label->barcode,
+						   vol->index->generation, list->selfptr.partition);
+		else
+			ret = asprintf(&new_path, "%s/%s-%d-%c.schema", opt->capture_dir, vol->label->vol_uuid,
+						   vol->index->generation, list->selfptr.partition);
+
+		if (ret < 0) {
+			ltfsmsg(LTFS_ERR, 10001E, "_print_index: path");
+			return;
+		}
+
+		ret = rename(vol->index_cache_path_r, new_path);
+		if (ret < 0) {
+			ltfsmsg(LTFS_WARN, 16112W, vol->index_cache_path_r, new_path, errno);
+		}
+		free(new_path);
+	}
 
 	return;
 }
@@ -968,7 +987,7 @@ void print_index_array(struct ltfs_volume *vol, struct index_info *list, void *o
 
 	while (cur) {
 		_print_index(vol, cur, opt);
-		cur = cur-> next;
+		cur = cur->next;
 	}
 
 	return;
@@ -1280,11 +1299,11 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 	}
 
 	/* Find target index */
-	ret = ltfs_traverse_index_backward(vol, ltfs_ip_id(vol), opt->point_gen,
+	ret = ltfs_traverse_index_backward(vol, ltfs_ip_id(vol), opt->point_gen, false,
 									   search_index_by_gen, (void *)(&(r.target_info)), (void *)opt);
 	if (ret == -LTFS_NO_INDEX) {
 		if (opt->erase_history) {
-			ret = ltfs_traverse_index_forward(vol, ltfs_dp_id(vol), opt->point_gen,
+			ret = ltfs_traverse_index_forward(vol, ltfs_dp_id(vol), opt->point_gen, false,
 											  search_index_by_gen, (void *)(&(r.target_info)), (void *)opt);
 			if (ret == -LTFS_NO_INDEX) {
 				ltfsmsg(LTFS_ERR, 16072E, ret);
@@ -1294,7 +1313,7 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 				return LTFSCK_OPERATIONAL_ERROR;;
 			}
 		} else {
-			ret = ltfs_traverse_index_backward(vol, ltfs_dp_id(vol), opt->point_gen,
+			ret = ltfs_traverse_index_backward(vol, ltfs_dp_id(vol), opt->point_gen, false,
 											   search_index_by_gen, (void *)(&(r.target_info)), (void *)opt);
 			if (ret !=  LTFSCK_NO_ERRORS) {
 				ltfsmsg(LTFS_ERR, 16072E, ret);
@@ -1352,7 +1371,7 @@ out_destroy:
 
 int list_rollback_points_normal(struct ltfs_volume *vol, struct other_check_opts *opt)
 {
-	int ret = LTFSCK_NO_ERRORS;
+	int ret = LTFSCK_NO_ERRORS, fd = -1;
 
 	/* Load tape and read labels */
 	ret = load_tape(vol);
@@ -1372,14 +1391,41 @@ int list_rollback_points_normal(struct ltfs_volume *vol, struct other_check_opts
 		}
 	}
 
+	/* Configure index capturing */
+	if (opt->capture_dir) {
+		/* Confirm the directory and construct read cache path */
+		ret = asprintf(&vol->index_cache_path_r, "%s/reading_index.xml", opt->capture_dir);
+
+		if (ret > 0) {
+			fd = open(vol->index_cache_path_r, O_WRONLY | O_BINARY | O_CREAT,
+					  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+			if (fd < 0) {
+				ltfsmsg(LTFS_WARN, 16113W, opt->capture_dir, errno);
+				free(vol->index_cache_path_r);
+				vol->index_cache_path_r = NULL;
+			} else {
+				ltfsmsg(LTFS_INFO, 16114I, opt->capture_dir);
+				close(fd);
+				fd = -1;
+			}
+		} else {
+			ltfsmsg(LTFS_ERR, 10001E, "capture_dir");
+			ltfs_volume_free(&vol);
+			return 1;
+		}
+	} else {
+		ltfsmsg(LTFS_INFO, 16115I);
+	}
+
+	/* Print header */
 	_print_index_header(opt->full_index_info);
 
 	/* read index from the index partition */
 	if(opt->traverse_mode == TRAVERSE_FORWARD)
-		ret = ltfs_traverse_index_forward(vol, ltfs_ip_id(vol), opt->point_gen,
+		ret = ltfs_traverse_index_forward(vol, ltfs_ip_id(vol), opt->point_gen, true,
 										  print_a_index_noheader, NULL, (void *)opt);
 	else
-		ret = ltfs_traverse_index_backward(vol, ltfs_ip_id(vol), opt->point_gen,
+		ret = ltfs_traverse_index_backward(vol, ltfs_ip_id(vol), opt->point_gen, true,
 										   print_a_index_noheader, NULL, (void *)opt);
 	if (ret !=  LTFSCK_NO_ERRORS) {
 		ltfsmsg(LTFS_ERR, 16075E, ret);
@@ -1388,10 +1434,10 @@ int list_rollback_points_normal(struct ltfs_volume *vol, struct other_check_opts
 
 	/* read index from the data partition */
 	if(opt->traverse_mode == TRAVERSE_FORWARD)
-		ret = ltfs_traverse_index_forward(vol, ltfs_dp_id(vol), opt->point_gen,
+		ret = ltfs_traverse_index_forward(vol, ltfs_dp_id(vol), opt->point_gen, true,
 										  print_a_index_noheader, NULL, (void *)opt);
 	else
-		ret = ltfs_traverse_index_backward(vol, ltfs_dp_id(vol), opt->point_gen,
+		ret = ltfs_traverse_index_backward(vol, ltfs_dp_id(vol), opt->point_gen, true,
 										   print_a_index_noheader, NULL, (void *)opt);
 	if (ret !=  LTFSCK_NO_ERRORS) {
 		ltfsmsg(LTFS_ERR, 16076E, ret);
@@ -1427,7 +1473,7 @@ int list_rollback_points_no_eod(struct ltfs_volume *vol, struct other_check_opts
 
 	/* Read index from the data partition */
 	/* We don't need to read IP because index in DP is always newer (or same) than IP in case of WORM */
-	ret = ltfs_traverse_index_no_eod(vol, ltfs_dp_id(vol), opt->point_gen,
+	ret = ltfs_traverse_index_no_eod(vol, ltfs_dp_id(vol), opt->point_gen, true,
 									  print_a_index_noheader, NULL, (void *)opt);
 	if (ret !=  LTFSCK_NO_ERRORS) {
 		ltfsmsg(LTFS_ERR, 16076E, ret);
@@ -1487,7 +1533,7 @@ int _ltfsck_validate_options(struct other_check_opts *opt)
 		else if (opt->traverse_mode == TRAVERSE_BACKWARD)
 			ltfsmsg(LTFS_INFO, 16084I);
 
-		if (opt->capture_index && opt->search_mode == SEARCH_BY_GEN) {
+		if (opt->capture_dir && opt->search_mode == SEARCH_BY_GEN) {
 			if (!opt->str_gen) {
 				ltfsmsg(LTFS_ERR, 16004E);
 				return LTFSCK_USAGE_SYNTAX_ERROR;
