@@ -656,7 +656,6 @@ start:
 		/* Return good when volume is meta-data mount mode */
 		releaseread_mrsw(&vol->lock);
 		return 0;
-		//return -LTFS_DEVICE_UNREADY;
 	}
 
 	ret = ltfs_capacity_data_unlocked(cap, vol);
