@@ -1485,7 +1485,7 @@ static int _xml_parse_dirtree(xmlTextReaderPtr reader, struct dentry *parent,
  * with the nodes found during the scanning.
  * @param reader Source of XML data
  * @param idx LTFS index
- * @param skip_dir skip parse directory and file
+ * @param skip_dir skip parsing directory and file
  * @param vol LTFS volume to which the index belongs. May be NULL.
  * @return 0 on success or a negative value on error.
  */
