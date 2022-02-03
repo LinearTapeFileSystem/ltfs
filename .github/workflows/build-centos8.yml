@@ -12,6 +12,6 @@ jobs:
         uses: actions/checkout@v1
       - name: Build LTFS
         id: build
-        uses: LinearTapeFileSystem/CentOS8-Build@v1.3
+        uses: LinearTapeFileSystem/CentOS8-Build@v1.4
         with:
           destination: '/tmp/ltfs'
