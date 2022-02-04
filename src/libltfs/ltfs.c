@@ -3024,7 +3024,7 @@ int ltfs_format_tape(struct ltfs_volume *vol, int density_code)
 	/* Format the tape */
 	INTERRUPTED_RETURN();
 	ltfsmsg(LTFS_INFO, 11097I);
-	ret = tape_format(vol->device, ltfs_part_id2num(vol->label->partid_ip, vol), density_code);
+	ret = tape_format(vol->device, ltfs_part_id2num(vol->label->partid_ip, vol), density_code, false);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 11098E, ret);
 		return ret;
