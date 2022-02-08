@@ -228,6 +228,14 @@
             </para>
           </listitem>
         </varlistentry>
+        <varlistentry>
+          <term><option>--destructive</option></term>
+          <listitem>
+            <para>
+              Use destructive format/unformat. This operation takes longer time in the LTO9 drive or later because of the media optimization procedure.
+            </para>
+          </listitem>
+        </varlistentry>
       </variablelist>
     </refsect1>
 

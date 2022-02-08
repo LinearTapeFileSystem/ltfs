@@ -127,5 +127,6 @@ root:table {
 		15422I:string { "      --syslogtrace               Enable diagnostic output to stderr and syslog" }
 		15423I:string { "  -V, --version             Version information" }
 		15424I:string { "      --long-wipe           Unformat the medium and erase any data on the tape by overwriting special data pattern.\n                            This operation takes over 3 hours. Once you start, you cannot interrupt it" }
+		15425I:string { "      --destructive         Use destructive format/unformat. This operation takes longer time\n                            in the LTO9 drive or later because of the media optimization procedure" }
 	}
 }

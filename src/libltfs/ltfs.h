@@ -654,8 +654,8 @@ int ltfs_set_volume_name(const char *volname, struct ltfs_volume *vol);
 int ltfs_set_partition_map(char dp, char ip, int dp_num, int ip_num, struct ltfs_volume *vol);
 int ltfs_reset_capacity(bool reset, struct ltfs_volume *vol);
 int ltfs_write_label(tape_partition_t partition, struct ltfs_volume *vol);
-int ltfs_format_tape(struct ltfs_volume *vol, int density_code);
-int ltfs_unformat_tape(struct ltfs_volume *vol, bool long_erase);
+int ltfs_format_tape(struct ltfs_volume *vol, int density_code, bool destructive);
+int ltfs_unformat_tape(struct ltfs_volume *vol, bool long_erase, bool destructive);
 bool ltfs_is_dirty(struct ltfs_volume *vol);
 int ltfs_load_all_attributes(struct ltfs_volume *vol);
 
