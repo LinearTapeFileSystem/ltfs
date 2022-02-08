@@ -1512,7 +1512,14 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 
 	if (index_part == UINT32_MAX) {
 		mp_medium_partition[19] = 0x00; /* No additional partition, means one-partitioned */
-		mp_medium_partition[20] = 0x80 | (mp_medium_partition[20] & 0x1F); /* Set FDP=1, SDP=0, IDP=0 ==> FIXED DATA PARTITION */
+		mp_medium_partition[20] = 0x20 | (mp_medium_partition[20] & 0x1F); /* Set FDP=0, SDP=0, IDP=1 ==> FIXED DATA PARTITION */
+
+		mp_medium_partition[22] = 0x08;
+
+		mp_medium_partition[24] = 0xFF;
+		mp_medium_partition[25] = 0xFF;
+		mp_medium_partition[26] = 0x00;
+		mp_medium_partition[27] = 0x00;
 	} else {
 		if (index_part == 1) {
 			mp_medium_partition[19] = 0x01;
