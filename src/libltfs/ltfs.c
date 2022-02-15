@@ -1959,7 +1959,7 @@ int ltfs_mount_indexfile(char* filename, bool label_check, struct ltfs_volume *v
 			 * Volume UUID in label and it on index is not matched.
 			 * Actual UUID is not printed to avoid illegal modification by hand.
 			 */
-			ltfsmsg(LTFS_ERR, 17290E);
+			ltfsmsg(LTFS_ERR, 17292E);
 			ret = -LTFS_LABEL_MISMATCH;
 		}
 	}
@@ -3008,9 +3008,12 @@ int ltfs_write_label(tape_partition_t partition, struct ltfs_volume *vol)
  * the device.
  * @param vol LTFS volume. The label structure receives a new UUID and format time; all other
  *            label fields should be filled in correctly before calling this function.
+ * @param density_code density code to format. Used in IBM enterprise tape
+ * @param destructive use destructive format in MEDIUM_FORMAT command. The FORMAT field is
+ *                    specified to 2h. This might trigger the media optimization in LTO9 or later
  * @return 0 on success or a negative value on error.
  */
-int ltfs_format_tape(struct ltfs_volume *vol, int density_code)
+int ltfs_format_tape(struct ltfs_volume *vol, int density_code, bool destructive)
 {
 	int ret;
 	struct tc_drive_param cart_param;
@@ -3090,8 +3093,11 @@ int ltfs_format_tape(struct ltfs_volume *vol, int density_code)
 
 	/* Format the tape */
 	INTERRUPTED_RETURN();
-	ltfsmsg(LTFS_INFO, 11097I);
-	ret = tape_format(vol->device, ltfs_part_id2num(vol->label->partid_ip, vol), density_code);
+	if (destructive)
+		ltfsmsg(LTFS_INFO, 17290I);
+	else
+		ltfsmsg(LTFS_INFO, 11097I);
+	ret = tape_format(vol->device, ltfs_part_id2num(vol->label->partid_ip, vol), density_code, destructive);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 11098E, ret);
 		return ret;
@@ -3153,9 +3159,11 @@ int ltfs_format_tape(struct ltfs_volume *vol, int density_code)
  * the device.
  * @param vol LTFS volume.
  * @param long_wipe invoke long erase after un-partitioning
+ * @param destructive use destructive unformat in MEDIUM_FORMAT command. The FORMAT field is
+ *                    specified to 2h. This might trigger the media optimization in LTO9 or later
  * @return 0 on success or a negative value on error.
  */
-int ltfs_unformat_tape(struct ltfs_volume *vol, bool long_wipe)
+int ltfs_unformat_tape(struct ltfs_volume *vol, bool long_wipe, bool destructive)
 {
 	int ret;
 
@@ -3181,8 +3189,14 @@ int ltfs_unformat_tape(struct ltfs_volume *vol, bool long_wipe)
 
 	/* Unformat the tape */
 	INTERRUPTED_RETURN();
-	ltfsmsg(LTFS_INFO, 17071I);
-	ret = tape_unformat(vol->device);
+	if (destructive) {
+		ltfsmsg(LTFS_INFO, 17291I);
+		ret = tape_unformat_hard(vol->device);
+	}
+	else {
+		ltfsmsg(LTFS_INFO, 17071I);
+		ret = tape_unformat(vol->device);
+	}
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17072E, ret);
 		return ret;

@@ -173,8 +173,9 @@ ssize_t tape_read(struct device_data *dev, char *buf, size_t count, const bool u
 
 int tape_erase(struct device_data *dev, bool long_erase);
 int tape_reset_capacity(struct device_data *dev);
-int tape_format(struct device_data *dev, tape_partition_t index_part, int density_code);
+int tape_format(struct device_data *dev, tape_partition_t index_part, int density_code, bool hard);
 int tape_unformat(struct device_data *dev);
+int tape_unformat_hard(struct device_data *dev);
 ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool ignore_less, bool ignore_nospc);
 int tape_write_filemark(struct device_data *dev, uint8_t count, bool ignore_less, bool ignore_nospc, bool immed);
 
