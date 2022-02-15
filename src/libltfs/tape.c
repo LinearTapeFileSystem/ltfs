@@ -1459,14 +1459,18 @@ static int tape_update_density(struct device_data *dev, int density_code)
 /**
  * Format tape for LTFS (make dual-partition tape)
  * @param dev device to format
- * @param index_part partition number for index partition
+ * @param index_part partition number for index partition, unformat a tape when UINT32_MAX is specified
+ * @param hard use the hard format (Destroy all data and make 2 partition medium). It might take a
+ *             longer time than soft format because of the media optimization feature
+ *             (media calibration) in LTO9 drive or later.
  * @return 0 on success or a negative value on error
  */
-int tape_format(struct device_data *dev, tape_partition_t index_part, int density_code)
+int tape_format(struct device_data *dev, tape_partition_t index_part, int density_code, bool hard)
 {
 	int ret;
 	unsigned char mp_medium_partition[TC_MP_MEDIUM_PARTITION_SIZE+4];
 	int page_length = TC_MP_MEDIUM_PARTITION_SIZE;
+	TC_FORMAT_TYPE format_type = TC_FORMAT_PARTITION;
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
@@ -1505,23 +1509,41 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 	/* Set appropriate values to the page and Issue Mode Select */
 	mp_medium_partition[0]  = 0x00;
 	mp_medium_partition[1]  = 0x00;
-	mp_medium_partition[19] = 0x01;
-	mp_medium_partition[20] = 0x20 | (mp_medium_partition[20] & 0x1F); /* Set FDP=0, SDP=0, IDP=1 ==> User Setting */
-	mp_medium_partition[22] = 0x09; /* Set partition unit as gigabytes (10^9) */
-	if (index_part == 1) {
-		mp_medium_partition[24] = 0xFF; /* Set Partition0 Capacity */
+
+	if (index_part == UINT32_MAX) {
+		mp_medium_partition[19] = 0x00; /* No additional partition, means one-partitioned */
+		mp_medium_partition[20] = 0x20 | (mp_medium_partition[20] & 0x1F); /* Set FDP=0, SDP=0, IDP=1 ==> FIXED DATA PARTITION */
+
+		mp_medium_partition[22] = 0x08;
+
+		mp_medium_partition[24] = 0xFF;
 		mp_medium_partition[25] = 0xFF;
-		/* Set Partition1 Capacity to 1GB, This value will round up to minimum partition size in FCR3175-r2 */
-		/* This field meaning will be chnaged in FCR3175-r3. In r3 n of "minumim partition size * n" should be specified. */
-		/* If set this parameter to 1, we can support both specs. */
-		/* In r2, this value is rounded up to minimum partition size. In r3, this value is the correct value.*/
-		mp_medium_partition[26] = 0x00; /* Set Partition1 Capacity */
-		mp_medium_partition[27] = 1;    /* will round up to minimum partition size */
+		mp_medium_partition[26] = 0x00;
+		mp_medium_partition[27] = 0x00;
 	} else {
-		mp_medium_partition[24] = 0x00; /* Set Partition0 Capacity */
-		mp_medium_partition[25] = 1;    /* will round up to minimum partition size */
-		mp_medium_partition[26] = 0xFF; /* Set Partition1 Capacity */
-		mp_medium_partition[27] = 0xFF;
+		if (index_part == 1) {
+			mp_medium_partition[19] = 0x01;
+			mp_medium_partition[20] = 0x20 | (mp_medium_partition[20] & 0x1F); /* Set FDP=0, SDP=0, IDP=1 ==> User Setting */
+			mp_medium_partition[22] = 0x09; /* Set partition unit as gigabytes (10^9) */
+
+			mp_medium_partition[24] = 0xFF; /* Set Partition0 Capacity */
+			mp_medium_partition[25] = 0xFF;
+			/* Set Partition1 Capacity to 1GB, This value will round up to minimum partition size in FCR3175-r2 */
+			/* This field meaning will be chnaged in FCR3175-r3. In r3 n of "minumim partition size * n" should be specified. */
+			/* If set this parameter to 1, we can support both specs. */
+			/* In r2, this value is rounded up to minimum partition size. In r3, this value is the correct value.*/
+			mp_medium_partition[26] = 0x00; /* Set Partition1 Capacity */
+			mp_medium_partition[27] = 1;    /* will round up to minimum partition size */
+		} else {
+			mp_medium_partition[19] = 0x01;
+			mp_medium_partition[20] = 0x20 | (mp_medium_partition[20] & 0x1F); /* Set FDP=0, SDP=0, IDP=1 ==> User Setting */
+			mp_medium_partition[22] = 0x09; /* Set partition unit as gigabytes (10^9) */
+
+			mp_medium_partition[24] = 0x00; /* Set Partition0 Capacity */
+			mp_medium_partition[25] = 1;    /* will round up to minimum partition size */
+			mp_medium_partition[26] = 0xFF; /* Set Partition1 Capacity */
+			mp_medium_partition[27] = 0xFF;
+		}
 	}
 
 	if (mp_medium_partition[17] > 0x0A) {
@@ -1534,8 +1556,11 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 		page_length
 		);
 
-	/* Issue Format Medium (destroy all medium data and make 2-partitition medium) */
-	ret = dev->backend->format(dev->backend_data, TC_FORMAT_DEST_PART, NULL, NULL, NULL);
+	/* Issue Format Medium (Make partitioned medium) */
+	if (hard)
+		format_type = TC_FORMAT_DEST_PART;
+
+	ret = dev->backend->format(dev->backend_data, format_type, NULL, NULL, NULL);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 12053E, ret);
 		return ret;
@@ -1547,11 +1572,29 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 }
 
 /**
- * Unformat tape (make single partition tape)
+ * Unformat tape (make single partition tape with hard method)
+ * LTO9 or later drive might triggers the media optimization feature (media calibration)
+ * when FORMAT_MEDIUM command is issued. It might take a long time to unformat.
  * @param dev device to format
  * @return 0 on success or a negative value on error
  */
 int tape_unformat(struct device_data *dev)
+{
+	int ret;
+
+	ret = tape_format(dev, UINT32_MAX, 0, false);
+
+	return ret;
+}
+
+/**
+ * Unformat tape (make single partition tape with hard method)
+ * LTO9 or later drive might triggers the media optimization feature (media calibration)
+ * when FORMAT_MEDIUM command is issued. It might take a long time to unformat.
+ * @param dev device to format
+ * @return 0 on success or a negative value on error
+ */
+int tape_unformat_hard(struct device_data *dev)
 {
 	int ret;
 	struct tc_position bom = { .partition = 0, .block = 0, .filemarks = 0 };
@@ -1582,8 +1625,7 @@ int tape_unformat(struct device_data *dev)
 	}
 
 	/* Reset partition space flag */
-	dev->partition_space[0] =
-	dev->partition_space[1] = PART_WRITABLE;
+	dev->partition_space[0] = dev->partition_space[1] = PART_WRITABLE;
 
 	return 0;
 }

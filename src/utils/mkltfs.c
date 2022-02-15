@@ -105,7 +105,8 @@ struct other_format_opts {
 	bool trace;                 /**< Debug mode indicator */
 	bool syslogtrace;           /**< Generate debug output to stderr and syslog*/
 	bool fulltrace;             /**< Full trace mode indicator */
-	bool long_wipe;				/**< Clean up whole tape by long erase? */
+	bool long_wipe;             /**< Clean up whole tape by long erase? */
+	bool destructive;           /**< Use destructive FORMAT_MEDIUM or not */
 };
 
 /* Forward declarations */
@@ -130,6 +131,7 @@ static struct option long_options[] = {
 	{"keep-capacity",   0, 0, 'k'},
 	{"wipe",            0, 0, 'w'},
 	{"long-wipe",       0, 0, '+'},
+	{"destructive",     0, 0, '&'},
 	{"force",           0, 0, 'f'},
 	{"quiet",           0, 0, 'q'},
 	{"trace",           0, 0, 't'},
@@ -182,6 +184,7 @@ void show_usage(char *appname, struct config_file *config, bool full)
 		ltfsresult(15419I);                         /* -k, --keep-capacity */
 		ltfsresult(15417I);                         /* -x, --fulltrace */
 		ltfsresult(15424I);                         /* --long-wipe */
+		ltfsresult(15425I);                         /* --destructive */
 		fprintf(stderr, "\n");
 		plugin_usage(appname, "driver", config);
 		fprintf(stderr, "\n");
@@ -265,6 +268,7 @@ int main(int argc, char **argv)
 	opt.quiet = false;
 	opt.blocksize = LTFS_DEFAULT_BLOCKSIZE;
 	opt.long_wipe = false;
+	opt.destructive = false;
 
 	/* Check for a config file path given on the command line */
 	while (true) {
@@ -341,6 +345,9 @@ int main(int argc, char **argv)
 			case '+':
 				opt.unformat = true;
 				opt.long_wipe = true;
+				break;
+			case '&':
+				opt.destructive = true;
 				break;
 			case 'q':
 				opt.quiet = true;
@@ -669,7 +676,7 @@ int format_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *ar
 	/* Create partitions and write labels and indices to the tape */
 	ltfsmsg(LTFS_INFO, 15010I, DATA_PART_ID, DATA_PART_NUM);
 	ltfsmsg(LTFS_INFO, 15011I, INDEX_PART_ID, INDEX_PART_NUM);
-	ret = ltfs_format_tape(vol, 0);
+	ret = ltfs_format_tape(vol, 0, opt->destructive);
 	if (ret < 0) {
 		if (ret == -LTFS_INTERRUPTED) {
 			ltfsmsg(LTFS_ERR, 15045E);
@@ -814,7 +821,7 @@ int unformat_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *
 	ltfsmsg(LTFS_DEBUG, 15007D);
 
 	/* Create 1 partition cartridge */
-	ret = ltfs_unformat_tape(vol, opt->long_wipe);
+	ret = ltfs_unformat_tape(vol, opt->long_wipe, opt->destructive);
 	if (ret < 0) {
 		if (ret == -LTFS_INTERRUPTED) {
 			ltfsmsg(LTFS_ERR, 15046E);
