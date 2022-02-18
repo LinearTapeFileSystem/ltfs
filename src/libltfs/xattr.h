@@ -70,6 +70,11 @@ extern "C" {
 
 #define LTFS_PRIVATE_PREFIX "ltfs."
 
+/* Explicitly export functions as utility */
+int xattr_get_string(const char *val, char **outval, const char *msg);
+int xattr_get_u64(uint64_t val, char **outval, const char *msg);
+
+/* Official functions to export */
 int xattr_set(struct dentry *d, const char *name, const char *value, size_t size, int flags,
 	struct ltfs_volume *vol);
 int xattr_get(struct dentry *d, const char *name, char *value, size_t size,
