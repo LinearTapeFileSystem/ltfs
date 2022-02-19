@@ -148,29 +148,6 @@ static int _xattr_get_dentry_time(struct dentry *d, struct ltfs_timespec *val, c
 	return ret;
 }
 
-static int _xattr_get_string(const char *val, char **outval, const char *msg)
-{
-	if (! val)
-		return 0;
-	*outval = strdup(val);
-	if (! (*outval)) {
-		ltfsmsg(LTFS_ERR, 10001E, msg);
-		return -LTFS_NO_MEMORY;
-	}
-	return 0;
-}
-
-static int _xattr_get_u64(uint64_t val, char **outval, const char *msg)
-{
-	int ret = asprintf(outval, "%"PRIu64, val);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 10001E, msg);
-		*outval = NULL;
-		ret = -LTFS_NO_MEMORY;
-	}
-	return ret;
-}
-
 static int _xattr_get_tapepos(struct tape_offset *val, char **outval, const char *msg)
 {
 	int ret = asprintf(outval, "%c:%"PRIu64, val->partition, val->block);
@@ -593,24 +570,24 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 	} else if (! strcmp(name, "ltfs.driveCaptureDump")) {
 		ret = tape_takedump_drive(vol->device, true);
 	} else if (! strcmp(name, "ltfs.fileUID")) {
-		ret = _xattr_get_u64(d->uid, &val, name);
+		ret = xattr_get_u64(d->uid, &val, name);
 	} else if (! strcmp(name, "ltfs.volumeUUID")) {
-		ret = _xattr_get_string(vol->label->vol_uuid, &val, name);
+		ret = xattr_get_string(vol->label->vol_uuid, &val, name);
 	} else if (! strcmp(name, "ltfs.volumeName")) {
 		ltfs_mutex_lock(&vol->index->dirty_lock);
-		ret = _xattr_get_string(vol->index->volume_name.name, &val, name);
+		ret = xattr_get_string(vol->index->volume_name.name, &val, name);
 		ltfs_mutex_unlock(&vol->index->dirty_lock);
 	} else if (! strcmp(name, "ltfs.softwareVersion")) {
-		ret = _xattr_get_string(PACKAGE_VERSION, &val, name);
+		ret = xattr_get_string(PACKAGE_VERSION, &val, name);
 	} else if (! strcmp(name, "ltfs.softwareFormatSpec")) {
-		ret = _xattr_get_string(LTFS_INDEX_VERSION_STR, &val, name);
+		ret = xattr_get_string(LTFS_INDEX_VERSION_STR, &val, name);
 	} else if (! strcmp(name, "ltfs.softwareVendor")) {
-		ret = _xattr_get_string(LTFS_VENDOR_NAME, &val, name);
+		ret = xattr_get_string(LTFS_VENDOR_NAME, &val, name);
 	} else if (! strcmp(name, "ltfs.softwareProduct")) {
 		if ( strncmp( PACKAGE_VERSION, "1", 1 )==0 )
-			ret = _xattr_get_string("LTFS SDE", &val, name);
+			ret = xattr_get_string("LTFS SDE", &val, name);
 		else if ( strncmp( PACKAGE_VERSION, "2", 1 )==0 )
-			ret = _xattr_get_string("LTFS LE", &val, name);
+			ret = xattr_get_string("LTFS LE", &val, name);
 		else
 			ret = -LTFS_NO_XATTR;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.logLevel")) {
@@ -707,7 +684,7 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 				val[1] = '\0';
 			}
 		} else if (! strcmp(name, "ltfs.startblock")) {
-			ret = _xattr_get_u64(TAILQ_FIRST(&d->extentlist)->start.block, &val, name);
+			ret = xattr_get_u64(TAILQ_FIRST(&d->extentlist)->start.block, &val, name);
 		}
 	}
 
@@ -715,10 +692,10 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 	if (ret == -LTFS_NO_XATTR && d == vol->index->root) {
 		if (! strcmp(name, "ltfs.commitMessage")) {
 			ltfs_mutex_lock(&vol->index->dirty_lock);
-			ret = _xattr_get_string(vol->index->commit_message, &val, name);
+			ret = xattr_get_string(vol->index->commit_message, &val, name);
 			ltfs_mutex_unlock(&vol->index->dirty_lock);
 		} else if (! strcmp(name, "ltfs.volumeSerial")) {
-			ret = _xattr_get_string(vol->label->barcode, &val, name);
+			ret = xattr_get_string(vol->label->barcode, &val, name);
 		} else if (! strcmp(name, "ltfs.volumeFormatTime")) {
 			ret = _xattr_get_time(&vol->label->format_time, &val, name);
 			if (ret == LTFS_TIME_OUT_OF_RANGE) {
@@ -726,9 +703,9 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 				ret = 0;
 			}
 		} else if (! strcmp(name, "ltfs.volumeBlocksize")) {
-			ret = _xattr_get_u64(vol->label->blocksize, &val, name);
+			ret = xattr_get_u64(vol->label->blocksize, &val, name);
 		} else if (! strcmp(name, "ltfs.indexGeneration")) {
-			ret = _xattr_get_u64(vol->index->generation, &val, name);
+			ret = xattr_get_u64(vol->index->generation, &val, name);
 		} else if (! strcmp(name, "ltfs.indexTime")) {
 			ret = _xattr_get_time(&vol->index->mod_time, &val, name);
 			if (ret == LTFS_TIME_OUT_OF_RANGE) {
@@ -736,22 +713,22 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 				ret = 0;
 			}
 		} else if (! strcmp(name, "ltfs.policyExists")) {
-			ret = _xattr_get_string(ic->have_criteria ? "true" : "false", &val, name);
+			ret = xattr_get_string(ic->have_criteria ? "true" : "false", &val, name);
 		} else if (! strcmp(name, "ltfs.policyAllowUpdate")) {
-			ret = _xattr_get_string(vol->index->criteria_allow_update ? "true" : "false",
+			ret = xattr_get_string(vol->index->criteria_allow_update ? "true" : "false",
 				&val, name);
 		} else if (! strcmp(name, "ltfs.policyMaxFileSize") && ic->have_criteria) {
-			ret = _xattr_get_u64(ic->max_filesize_criteria, &val, name);
+			ret = xattr_get_u64(ic->max_filesize_criteria, &val, name);
 		} else if (! strcmp(name, "ltfs.volumeCompression")) {
-			ret = _xattr_get_string(vol->label->enable_compression ? "true" : "false", &val, name);
+			ret = xattr_get_string(vol->label->enable_compression ? "true" : "false", &val, name);
 		} else if (! strcmp(name, "ltfs.indexLocation")) {
 			ret = _xattr_get_tapepos(&vol->index->selfptr, &val, name);
 		} else if (! strcmp(name, "ltfs.indexPrevious")) {
 			ret = _xattr_get_tapepos(&vol->index->backptr, &val, name);
 		} else if (! strcmp(name, "ltfs.indexCreator")) {
-			ret = _xattr_get_string(vol->index->creator, &val, name);
+			ret = xattr_get_string(vol->index->creator, &val, name);
 		} else if (! strcmp(name, "ltfs.labelCreator")) {
-			ret = _xattr_get_string(vol->label->creator, &val, name);
+			ret = xattr_get_string(vol->label->creator, &val, name);
 		} else if (! strcmp(name, "ltfs.indexVersion")) {
 			ltfs_mutex_lock(&vol->index->dirty_lock);
 			ret = _xattr_get_version(vol->index->version, &val, name);
@@ -809,18 +786,18 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 		} else if (! strcmp(name, "ltfs.mediaIndexPartitionAvailableSpace")) {
 			ret = _xattr_get_cartridge_capacity(&cap, &cap.remaining_ip, &val, name, vol);
 		} else if (! strcmp(name, "ltfs.mediaEncrypted")) {
-			ret = _xattr_get_string(tape_get_media_encrypted(vol->device), &val, name);
+			ret = xattr_get_string(tape_get_media_encrypted(vol->device), &val, name);
 		} else if (! strcmp(name, "ltfs.mediaPool.additionalInfo")) {
 			char *tmp=NULL;
 			ret = tape_get_media_pool_info(vol, &tmp, &val);
 			if (ret < 0 || !val)
 				ret = -LTFS_NO_XATTR;
 		} else if (! strcmp(name, "ltfs.driveEncryptionState")) {
-			ret = _xattr_get_string(tape_get_drive_encryption_state(vol->device), &val, name);
+			ret = xattr_get_string(tape_get_drive_encryption_state(vol->device), &val, name);
 		} else if (! strcmp(name, "ltfs.driveEncryptionMethod")) {
-			ret = _xattr_get_string(tape_get_drive_encryption_method(vol->device), &val, name);
+			ret = xattr_get_string(tape_get_drive_encryption_method(vol->device), &val, name);
 		} else if (! strcmp(name, "ltfs.vendor.IBM.referencedBlocks")) {
-			ret = _xattr_get_u64(ltfs_get_valid_block_count_unlocked(vol), &val, name);
+			ret = xattr_get_u64(ltfs_get_valid_block_count_unlocked(vol), &val, name);
 		} else if (! strcmp(name, "ltfs.vendor.IBM.trace")) {
 			ret = ltfs_get_trace_status(&val);
 		} else if (! strcmp(name, "ltfs.vendor.IBM.totalBlocks")) {
@@ -828,7 +805,7 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 			if (ret < 0)
 				val = NULL;
 			else
-				ret = _xattr_get_u64(append_pos, &val, name);
+				ret = xattr_get_u64(append_pos, &val, name);
 		} else if (! strcmp(name, "ltfs.vendor.IBM.cartridgeMountNode")) {
 			ret = asprintf(&val, "localhost");
 			if (ret < 0) {
@@ -1294,6 +1271,29 @@ static int _xattr_remove_virtual(struct dentry *d, const char *name, struct ltfs
 }
 
 /* Global functions */
+
+int xattr_get_string(const char *val, char **outval, const char *msg)
+{
+	if (! val)
+		return 0;
+	*outval = strdup(val);
+	if (! (*outval)) {
+		ltfsmsg(LTFS_ERR, 10001E, msg);
+		return -LTFS_NO_MEMORY;
+	}
+	return 0;
+}
+
+int xattr_get_u64(uint64_t val, char **outval, const char *msg)
+{
+	int ret = asprintf(outval, "%"PRIu64, val);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 10001E, msg);
+		*outval = NULL;
+		ret = -LTFS_NO_MEMORY;
+	}
+	return ret;
+}
 
 int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t size,
 	struct xattr_info *xattr)
