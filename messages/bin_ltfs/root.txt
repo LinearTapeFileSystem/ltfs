@@ -233,7 +233,7 @@ root:table {
 		// Reserved 14451I
 		// Reserved 14454I
 		14455I:string { "    -o kmi_backend=<name>     Key manager interface implementation to use (default: %s, use \"none\" to disable)" }
-		14456I:string { "    --capture-index=<dir>    Capture index to the specified directory by dir when index is updated" }
+		14456I:string { "    -o capture_index=<dir>    Capture index to the specified directory by dir when index is updated" }
 		// Reserved 14457I
 		// Reserved 14458I
 		// Reserved 14459I
