@@ -359,7 +359,7 @@
           </listitem>
         </varlistentry>
         <varlistentry>
-          <term><option>--capture-index=<replaceable>dir</replaceable></option></term>
+          <term><option>-o capture_index=<replaceable>dir</replaceable></option></term>
           <listitem>
             <para>
               Capture index to the specified directory by dir when index is updated.
