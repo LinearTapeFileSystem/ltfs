@@ -31,12 +31,12 @@ At this time, the target of this project to meet is the [LTFS format specificati
   | HP      | LTO6                    | T.B.D.            |
   | HP      | LTO7                    | T.B.D.            |
   | HP      | LTO8                    | T.B.D.            |
-  | HP      | LTO9                    | T.B.D.            |  
+  | HP      | LTO9                    | T.B.D.            |
   | Quantum | LTO5 (Only Half Height) | T.B.D.            |
   | Quantum | LTO6 (Only Half Height) | T.B.D.            |
   | Quantum | LTO7 (Only Half Height) | T.B.D.            |
   | Quantum | LTO8 (Only Half Height) | T.B.D.            |
-  | Quantum | LTO9 (Only Half Height) | T.B.D.            |  
+  | Quantum | LTO9 (Only Half Height) | T.B.D.            |
 
 ## LTFS Format Specifications
 
@@ -137,26 +137,26 @@ In some systems, you might need `sudo ldconfig -v` after `make install` to load 
 
 ### Buildable Linux distributions
 
-  | Dist                               | Arch    | Status                                                                                                                                |
-  |:----------------------------------:|:-------:|:-------------------------------------------------------------------------------------------------------------------------------------:|
-  | RHEL 8                             | x86\_64 | OK - Not checked automatically                                                                                                        |
-  | RHEL 8                             | ppc64le | OK - Not checked automatically                                                                                                        |
-  | RHEL 7                             | x86\_64 | OK - Not checked automatically                                                                                                        |
-  | RHEL 7                             | ppc64le | OK - Not checked automatically                                                                                                        |
-  | CentOS 8                           | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS8%20Build%20Job/badge.svg?branch=master)             |
-  | CentOS 8                           | ppc64le | OK - Not checked automatically                                                                                                        |
-  | CentOS 7                           | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)             |
-  | CentOS 7                           | ppc64le | OK - Not checked automatically                                                                                                        |
-  | Fedora 28                          | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)            |
-  | Ubuntu 16.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master)      |
-  | Ubuntu 16.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                        |
-  | Ubuntu 18.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master)      |
-  | Ubuntu 18.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                        |
-  | Ubuntu 20.04 LTS (Need icu-config) | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2020.04%20Build%20Job/badge.svg?branch=master)      |
-  | Debian 9                           | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)             |
-  | Debian 10 (Need icu-config)        | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian10%20Build%20Job/badge.svg?branch=master)            |
-  | ArchLinux 2018.08.01               | x86\_64 | OK - Not checked automatically                                                                                                        |
-  | ArchLinux 2018.12.31 (rolling)     | x86\_64 | OK - Not checked automatically                                                                                                        |
+  | Dist                               | Arch    | Status                                                                                                                           |
+  |:----------------------------------:|:-------:|:--------------------------------------------------------------------------------------------------------------------------------:|
+  | RHEL 8                             | x86\_64 | OK - Not checked automatically                                                                                                   |
+  | RHEL 8                             | ppc64le | OK - Not checked automatically                                                                                                   |
+  | RHEL 7                             | x86\_64 | OK - Not checked automatically                                                                                                   |
+  | RHEL 7                             | ppc64le | OK - Not checked automatically                                                                                                   |
+  | CentOS 8 (Rocky Linux)             | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS8%20Build%20Job/badge.svg?branch=master)        |
+  | CentOS 8 (Rocky Linux)             | ppc64le | OK - Not checked automatically                                                                                                   |
+  | CentOS 7                           | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)        |
+  | CentOS 7                           | ppc64le | OK - Not checked automatically                                                                                                   |
+  | Fedora 28                          | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)       |
+  | Ubuntu 16.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master) |
+  | Ubuntu 16.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                   |
+  | Ubuntu 18.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master) |
+  | Ubuntu 18.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                   |
+  | Ubuntu 20.04 LTS (Need icu-config) | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2020.04%20Build%20Job/badge.svg?branch=master) |
+  | Debian 9                           | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)        |
+  | Debian 10 (Need icu-config)        | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian10%20Build%20Job/badge.svg?branch=master)       |
+  | ArchLinux 2018.08.01               | x86\_64 | OK - Not checked automatically                                                                                                   |
+  | ArchLinux 2018.12.31 (rolling)     | x86\_64 | OK - Not checked automatically                                                                                                   |
 
 Currently, automatic build checking is working on GitHub Actions and Travis CI.
 
