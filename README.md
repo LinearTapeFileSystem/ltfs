@@ -96,12 +96,12 @@ These instructions will get you a copy of the project up and running on your loc
   | HP      | LTO6                    | T.B.D.            |
   | HP      | LTO7                    | T.B.D.            |
   | HP      | LTO8                    | T.B.D.            |
-  | HP      | LTO9                    | T.B.D.            |  
+  | HP      | LTO9                    | T.B.D.            |
   | Quantum | LTO5 (Only Half Height) | T.B.D.            |
   | Quantum | LTO6 (Only Half Height) | T.B.D.            |
   | Quantum | LTO7 (Only Half Height) | T.B.D.            |
   | Quantum | LTO8 (Only Half Height) | T.B.D.            |
-  | Quantum | LTO9 (Only Half Height) | T.B.D.            |  
+  | Quantum | LTO9 (Only Half Height) | T.B.D.            |
 
 ## Installing
 
@@ -196,26 +196,26 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
 
 #### Buildable distributions
 
-  | Dist                              | Arch    | Status      |
-  |:-:                                |:-:      |:-:          |
-  | RHEL 8                            | x86_64  | OK          |
-  | RHEL 8                            | ppc64le | OK          |
-  | RHEL 7                            | x86_64  | OK          |
-  | RHEL 7                            | ppc64le | OK          |
-  | CentOS 8                          | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS8%20Build%20Job/badge.svg?branch=master)|
-  | CentOS 8                          | ppc64le | Probably OK |
-  | CentOS 7                          | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)|
-  | CentOS 7                          | ppc64le | Probably OK |
-  | Fedora 28                         | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)|
-  | Ubuntu 16.04 LTS                  | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master)|
-  | Ubuntu 16.04 LTS                  | ppc64le | Probably OK |
-  | Ubuntu 18.04 LTS                  | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master)|
-  | Ubuntu 18.04 LTS                  | ppc64le | Probably OK |
-  | Ubuntu 20.04 LTS (Need icu-config)| x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2020.04%20Build%20Job/badge.svg?branch=master)|
-  | Debian 9                          | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)|
-  | Debian 10 (Need icu-config)       | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian10%20Build%20Job/badge.svg?branch=master)|
-  | ArchLinux 2018.08.01              | x86_64  | Not checked automatically |
-  | ArchLinux 2018.12.31 (rolling)    | x86_64  | Not checked automatically|
+  | Dist                               | Arch    | Status                                                                                                                           |
+  |:----------------------------------:|:-------:|:--------------------------------------------------------------------------------------------------------------------------------:|
+  | RHEL 8                             | x86_64  | OK                                                                                                                               |
+  | RHEL 8                             | ppc64le | OK                                                                                                                               |
+  | RHEL 7                             | x86_64  | OK                                                                                                                               |
+  | RHEL 7                             | ppc64le | OK                                                                                                                               |
+  | CentOS 8 (Rocky Linux)             | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS8%20Build%20Job/badge.svg?branch=master)        |
+  | CentOS 8 (Rocky Linux)             | ppc64le | Probably OK                                                                                                                      |
+  | CentOS 7                           | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)        |
+  | CentOS 7                           | ppc64le | Probably OK                                                                                                                      |
+  | Fedora 28                          | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)       |
+  | Ubuntu 16.04 LTS                   | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master) |
+  | Ubuntu 16.04 LTS                   | ppc64le | Probably OK                                                                                                                      |
+  | Ubuntu 18.04 LTS                   | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master) |
+  | Ubuntu 18.04 LTS                   | ppc64le | Probably OK                                                                                                                      |
+  | Ubuntu 20.04 LTS (Need icu-config) | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2020.04%20Build%20Job/badge.svg?branch=master) |
+  | Debian 9                           | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)        |
+  | Debian 10 (Need icu-config)        | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian10%20Build%20Job/badge.svg?branch=master)       |
+  | ArchLinux 2018.08.01               | x86_64  | Not checked automatically                                                                                                        |
+  | ArchLinux 2018.12.31 (rolling)     | x86_64  | Not checked automatically                                                                                                        |
 
 Currently, automatic build checking is working on GitHub Actions and Travis CI.
 
@@ -259,7 +259,7 @@ make install
   | OS            | Xcode  | Package system | Status      |
   |:-:            |:-:     |:-:             |:-:          |
   | macOS 10.14.6 | 11.3   | Homebrew       | Probably OK |
-  
+
 ### Build and install on FreeBSD
 
 Note that on FreeBSD, the usual 3rd party man directory is /usr/local/man. Configure defaults to using /usr/local/share/man.  So, override it on the command line to avoid having man pages put in the wrong place.
