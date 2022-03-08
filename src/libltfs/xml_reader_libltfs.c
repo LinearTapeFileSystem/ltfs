@@ -772,7 +772,7 @@ static int _xml_parse_extents(xmlTextReaderPtr reader, int idx_version, struct d
 static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 {
 	char *xattr_type;
-	struct xattr_info *xattr;
+	struct xattr_info *xattr = NULL;
 	declare_parser_vars("xattr");
 	declare_tracking_arrays(2, 0);
 
@@ -793,6 +793,7 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 			if (ret < 0) {
 				ltfsmsg(LTFS_WARN, 17269W, d->name.name);
 				free(xattr);
+				xattr = NULL;
 			}
 
 			check_tag_end("key");
@@ -808,53 +809,57 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 			}
 
 			check_empty();
-			if (empty == 0) {
-				ret = xml_scan_text(reader, &value);
-				if (ret < 0) {
-					free(xattr->key.name);
-					free(xattr);
-					return ret;
-				}
+			if (xattr) {
+				if (empty == 0) {
+					ret = xml_scan_text(reader, &value);
+					if (ret < 0) {
+						free(xattr->key.name);
+						free(xattr);
+						return ret;
+					}
 
-				if (! xattr_type || ! strcmp(xattr_type, "text")) {
-					xattr->value = strdup(value);
-					if (! xattr->value) {
-						ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
-						free(xattr->key.name);
-						free(xattr);
-						return -LTFS_NO_MEMORY;
+					if (! xattr_type || ! strcmp(xattr_type, "text")) {
+						xattr->value = strdup(value);
+						if (! xattr->value) {
+							ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+							free(xattr->key.name);
+							free(xattr);
+							return -LTFS_NO_MEMORY;
+						}
+						xattr->size = strlen(value);
+					} else { /* base64 */
+						xattr->size = base64_decode((const unsigned char *)value, strlen(value),
+													(unsigned char **)(&xattr->value));
+						if (xattr->size == 0) {
+							ltfsmsg(LTFS_ERR, 17028E);
+							free(xattr->key.name);
+							free(xattr);
+							return -LTFS_XML_XATTR_SIZE;
+						}
 					}
-					xattr->size = strlen(value);
-				} else { /* base64 */
-					xattr->size = base64_decode((const unsigned char *)value, strlen(value),
-												(unsigned char **)(&xattr->value));
-					if (xattr->size == 0) {
-						ltfsmsg(LTFS_ERR, 17028E);
-						free(xattr->key.name);
-						free(xattr);
-						return -LTFS_XML_XATTR_SIZE;
-					}
+					if (strlen(value) > 0)
+						check_tag_end("value");
+				} else {
+					xattr->value = NULL;
+					xattr->size = 0;
 				}
-				if (strlen(value) > 0)
-					check_tag_end("value");
-			} else {
-				xattr->value = NULL;
-				xattr->size = 0;
 			}
 			free(xattr_type);
-
 		} else
 			ignore_unrecognized_tag();
 	}
 
 	check_required_tags();
-	TAILQ_INSERT_TAIL(&d->xattrlist, xattr, list);
 
-	if (!strcmp(xattr->key.name, "ltfs.vendor.IBM.immutable") && !strcmp(xattr->value, "1") ) {
-		d->is_immutable = true;
-	}
-	if (!strcmp(xattr->key.name, "ltfs.vendor.IBM.appendonly") && !strcmp(xattr->value, "1") ) {
-		d->is_appendonly = true;
+	if (xattr) {
+		TAILQ_INSERT_TAIL(&d->xattrlist, xattr, list);
+
+		if (!strcmp(xattr->key.name, "ltfs.vendor.IBM.immutable") && !strcmp(xattr->value, "1") ) {
+			d->is_immutable = true;
+		}
+		if (!strcmp(xattr->key.name, "ltfs.vendor.IBM.appendonly") && !strcmp(xattr->value, "1") ) {
+			d->is_appendonly = true;
+		}
 	}
 
 	return 0;
