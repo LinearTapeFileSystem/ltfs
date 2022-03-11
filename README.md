@@ -164,7 +164,7 @@ For Ubuntu20.04 and Debian10, dummy `icu-config` is needed in the build machine.
 
 ## Build and install on OSX (macOS)
 
-### Recent Homedrew system setup
+### Recent Homebrew system setup
 
 Before build on macOS, you need to configure the environment like below.
 
@@ -175,7 +175,7 @@ export PKG_CONFIG_PATH="/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libxml
 export PATH="$PATH:$ICU_PATH:$LIBXML2_PATH"
 ```
 
-### Old Homedrew system setup
+### Old Homebrew system setup
 Before build on OSX (macOS), some include path adjustment is required.
 
 ```
