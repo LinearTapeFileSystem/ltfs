@@ -54,6 +54,9 @@
 **
 *************************************************************************************
 */
+
+#include <limits.h> /* for ULONG_MAX */
+
 #include "ltfs_fuse.h"
 #include "libltfs/ltfs_fsops.h"
 #include "libltfs/iosched.h"
@@ -68,7 +71,7 @@
 #include "libltfs/arch/win/win_util.h"
 #endif
 
-#if (__WORDSIZE == 64)
+#if (__WORDSIZE == 64 || ULONG_MAX == 0xffffffffffffffffUL)
 #define FILEHANDLE_TO_STRUCT(fh) ((struct ltfs_file_handle *)(uint64_t)(fh))
 #define STRUCT_TO_FILEHANDLE(de) ((uint64_t)(de))
 #else
