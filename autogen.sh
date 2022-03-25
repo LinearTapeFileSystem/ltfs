@@ -46,6 +46,6 @@ else
 	libtoolize
 fi
 
-autoconf
-autoheader
-automake --add-missing --copy
+autoconf 			|| echo "Ignore warning"
+autoheader			|| echo "Ignore warning"
+automake --add-missing --copy	|| echo "Ignore warning"
