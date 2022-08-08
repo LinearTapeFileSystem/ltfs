@@ -62,7 +62,8 @@ root:table {
 		13022W:string { "Freeing a dentry priv with outstanding write requests. This is a bug." }
 		//unused 13023W:string { "Failed to copy a request: will stop writing file to the index partition." }
 		13024I:string { "Clean up extents and append index at index partition (%d)." }
-		13025I:string { "Get error position (%d, %d)." }
+		13025I:string { "Truncate extents larger than position (%d, %lld), block size = %ld." }
 		13026E:string { "Write perm handling error : %s (%d)." }
+		13027I:string { "Error position is larger than last index position: (%d, %lld), last index = %lld." }
 	}
 }

@@ -165,7 +165,7 @@ int tape_update_position(struct device_data *dev, struct tc_position *pos);
 int tape_seek(struct device_data *dev, struct tc_position *pos);
 int tape_seek_eod(struct device_data *dev, tape_partition_t partition);
 int tape_seek_append_position(struct device_data *dev, tape_partition_t prt, bool unlock_write);
-int tape_get_physical_block_position(struct device_data *dev, struct tc_position *pos);
+int tape_get_first_untransfered_position(struct device_data *dev, struct tc_position *pos);
 
 int tape_spacefm(struct device_data *dev, int count);
 ssize_t tape_read(struct device_data *dev, char *buf, size_t count, const bool unusual_size,

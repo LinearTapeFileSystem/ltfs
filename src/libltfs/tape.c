@@ -1122,30 +1122,32 @@ int tape_update_position(struct device_data *dev, struct tc_position *pos)
 	return 0;
 }
 
-int tape_get_physical_block_position(struct device_data *dev, struct tc_position *pos)
+int tape_get_first_untransfered_position(struct device_data *dev, struct tc_position *pos)
 {
 	int ret;
-	 unsigned int block;
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(pos, -LTFS_NULL_ARG);
 
+	/* Update current position, just in case. Because no penalty here */
 	ret = dev->backend->readpos(dev->backend_data, &dev->position);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17132E);
 		return ret;
 	}
 
-	ret = dev->backend->get_block_in_buffer(dev->backend_data, &block);
+	/* Capture first untransferred position */
+	ret = dev->backend->get_next_block_to_xfer(dev->backend_data, pos);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17132E);
 		return ret;
 	}
 
-	memcpy(pos, &dev->position, sizeof(struct tc_position));
-
-	ltfsmsg(LTFS_DEBUG, 11335D, (int)pos->block, block);
-	pos->block -= block;
+	ltfsmsg(LTFS_INFO, 17292I,
+			(unsigned long long)dev->position.partition,
+			(unsigned long long)dev->position.block,
+			(unsigned long long)pos->partition,
+			(unsigned long long)pos->block);
 
 	return 0;
 }
