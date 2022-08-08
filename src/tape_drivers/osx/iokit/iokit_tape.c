@@ -4271,6 +4271,7 @@ int iokit_get_next_block_to_xfer(void *device, struct tc_position *pos)
 		pos->block     = ltfs_betou64(buf + 16);
 
 		ltfsmsg(LTFS_DEBUG, 30998D, "next-block-to-xfer",
+				(unsigned long long)pos->partition, (unsigned long long)pos->block, (unsigned long long)0, priv->drive_serial);
 	} else {
 		_process_errors(device, ret, msg, cmd_desc, true);
 	}
