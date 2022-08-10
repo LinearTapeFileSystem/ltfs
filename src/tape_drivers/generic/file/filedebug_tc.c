@@ -1873,8 +1873,7 @@ int filedebug_set_xattr(void *device, const char *name, const char *buf, size_t 
 			state->force_writeperm = perm_count;
 			state->clear_by_pc     = false;
 		}
-		//if (state->force_writeperm && state->force_writeperm < THRESHOLD_FORCE_WRITE_NO_WRITE)
-		//	state->force_writeperm = THRESHOLD_FORCE_WRITE_NO_WRITE;
+
 		state->write_counter = 0;
 		ret = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
