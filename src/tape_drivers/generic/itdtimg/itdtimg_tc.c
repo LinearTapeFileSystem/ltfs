@@ -1457,10 +1457,10 @@ int itdtimage_set_profiler(void *device, char *work_dir, bool enable)
 	return 0;
 }
 
-int itdtimage_get_block_in_buffer(void *device, unsigned int *block)
+int itdtimage_get_next_block_to_xfer(void *device, struct tc_position *pos)
 {
-	*block = 0;
-	return 0;
+	/* This backend never accept write command */
+	return -EDEV_WRITE_PROTECTED;;
 }
 
 /* Local functions */
@@ -1664,7 +1664,7 @@ struct tape_ops itdtimage_handler = {
 	.get_serialnumber       = itdtimage_get_serialnumber,
 	.get_info               = itdtimage_get_info,
 	.set_profiler           = itdtimage_set_profiler,
-	.get_block_in_buffer    = itdtimage_get_block_in_buffer,
+	.get_next_block_to_xfer = itdtimage_get_next_block_to_xfer,
 	.is_readonly 			= itdtimage_is_readonly,
 };
 

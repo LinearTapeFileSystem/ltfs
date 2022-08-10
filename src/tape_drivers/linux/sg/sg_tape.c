@@ -2755,7 +2755,7 @@ int sg_readpos(void *device, struct tc_position *pos)
 	struct sg_data *priv = (struct sg_data*)device;
 
 	sg_io_hdr_t req;
-	unsigned char cdb[CDB6_LEN];
+	unsigned char cdb[CDB10_LEN];
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READPOS";
@@ -4965,14 +4965,14 @@ int sg_set_profiler(void *device, char *work_dir, bool enable)
 	return rc;
 }
 
-int sg_get_block_in_buffer(void *device, uint32_t *block)
+int sg_get_next_block_to_xfer(void *device, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
 	int ret_ep = DEVICE_GOOD;
 	struct sg_data *priv = (struct sg_data*)device;
 
 	sg_io_hdr_t req;
-	unsigned char cdb[CDB6_LEN];
+	unsigned char cdb[CDB10_LEN];
 	unsigned char sense[MAXSENSE];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READPOS";
@@ -4980,6 +4980,8 @@ int sg_get_block_in_buffer(void *device, uint32_t *block)
 	unsigned char buf[REDPOS_EXT_LEN];
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READPOS));
+
+	memset(pos, 0, sizeof(struct tc_position));
 
 	/* Zero out the CDB and the result buffer */
 	ret = init_sg_io_header(&req);
@@ -4992,6 +4994,7 @@ int sg_get_block_in_buffer(void *device, uint32_t *block)
 	/* Build CDB */
 	cdb[0] = READ_POSITION;
 	cdb[1] = 0x08; /* Extended Format */
+	ltfs_u16tobe(cdb + 7, sizeof(buf)); /* allocation length */
 
 	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
@@ -5010,10 +5013,11 @@ int sg_get_block_in_buffer(void *device, uint32_t *block)
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret == DEVICE_GOOD) {
-		*block = (buf[5] << 16) + (buf[6] << 8) + (int)buf[7];
+		pos->partition = (tape_partition_t)buf[1];
+		pos->block     = ltfs_betou64(buf + 16);
 
-		ltfsmsg(LTFS_DEBUG, 30398D, "blocks-in-buffer",
-				(unsigned long long)*block, (unsigned long long)0, (unsigned long long)0, priv->drive_serial);
+		ltfsmsg(LTFS_DEBUG, 30398D, "next-block-to-xfer",
+				(unsigned long long)pos->partition, (unsigned long long)pos->block, (unsigned long long)0, priv->drive_serial);
 	} else {
 		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
 		if (ret_ep < 0)
@@ -5210,7 +5214,7 @@ struct tape_ops sg_handler = {
 	.get_serialnumber       = sg_get_serialnumber,
 	.get_info               = sg_get_info,
 	.set_profiler           = sg_set_profiler,
-	.get_block_in_buffer    = sg_get_block_in_buffer,
+	.get_next_block_to_xfer = sg_get_next_block_to_xfer,
 	.is_readonly            = sg_is_readonly,
 };
 

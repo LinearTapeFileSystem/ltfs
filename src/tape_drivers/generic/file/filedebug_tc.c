@@ -814,7 +814,8 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 				return -EDEV_WRITE_PERM;
 		} else if ( state->write_counter > (state->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE) ) {
 			ltfsmsg(LTFS_INFO, 30019I);
-			pos->block++;
+			++state->current_position.block;
+			pos->block = state->current_position.block;
 			return DEVICE_GOOD;
 		}
 	}
@@ -1872,8 +1873,7 @@ int filedebug_set_xattr(void *device, const char *name, const char *buf, size_t 
 			state->force_writeperm = perm_count;
 			state->clear_by_pc     = false;
 		}
-		if (state->force_writeperm && state->force_writeperm < THRESHOLD_FORCE_WRITE_NO_WRITE)
-			state->force_writeperm = THRESHOLD_FORCE_WRITE_NO_WRITE;
+
 		state->write_counter = 0;
 		ret = DEVICE_GOOD;
 	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
@@ -2776,9 +2776,13 @@ int filedebug_set_profiler(void *device, char *work_dir, bool enable)
 	return 0;
 }
 
-int filedebug_get_block_in_buffer(void *device, unsigned int *block)
+int filedebug_get_next_block_to_xfer(void *device, struct tc_position *pos)
 {
-	*block = 0;
+	struct filedebug_data *state = (struct filedebug_data *)device;
+
+	pos->partition = state->current_position.partition;
+	pos->block     = state->current_position.block - THRESHOLD_FORCE_WRITE_NO_WRITE;
+
 	return 0;
 }
 
@@ -2837,7 +2841,7 @@ struct tape_ops filedebug_handler = {
 	.get_serialnumber       = filedebug_get_serialnumber,
 	.get_info               = filedebug_get_info,
 	.set_profiler           = filedebug_set_profiler,
-	.get_block_in_buffer    = filedebug_get_block_in_buffer,
+	.get_next_block_to_xfer = filedebug_get_next_block_to_xfer,
 	.is_readonly            = filedebug_is_readonly,
 };
 

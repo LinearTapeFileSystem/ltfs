@@ -1196,10 +1196,10 @@ int camtape_unload(void *device, struct tc_position *pos)
 }
 
 /*
- * Get the number of blocks in the buffer on the tape drive after a write.  Eventually it would
+ * Get the first block position that is not transferred to the medium. Eventually it would
  * be nice to include this in status information returned from the sa(4) driver.
  */
-static int camtape_get_block_in_buffer(void *device, uint32_t *block)
+static int camtape_get_next_block_to_xfer(void *device, struct tc_position *pos)
 {
 	int rc;
 	union ccb *ccb = NULL;
@@ -1243,9 +1243,10 @@ static int camtape_get_block_in_buffer(void *device, uint32_t *block)
 	if (rc != DEVICE_GOOD)
 		camtape_process_errors(softc, rc, msg, "READPOS", true);
 	else {
-		*block = scsi_3btoul(ext_data.num_objects);
-		ltfsmsg(LTFS_DEBUG, 30398D, "blocks-in-buffer",
-				(unsigned long long) *block, 0, 0, softc->drive_serial);
+		pos->partition = ext_data.partition;
+		pos->block = scsi_8btou64(ext_data.last_object)
+		ltfsmsg(LTFS_DEBUG, 30398D, "next-block-to-xfer",
+				(unsigned long long) pos->block, 0, 0, softc->drive_serial);
 	}
 
 bailout:
@@ -4176,7 +4177,7 @@ struct tape_ops camtape_drive_handler = {
 	.get_serialnumber		= camtape_get_serialnumber,
 	.get_info               = camtape_get_info,
 	.set_profiler			= camtape_set_profiler,
-	.get_block_in_buffer	= camtape_get_block_in_buffer,
+	.get_next_block_to_xfer = camtape_get_next_block_to_xfer,
 	.is_readonly			= camtape_is_readonly
 };
 

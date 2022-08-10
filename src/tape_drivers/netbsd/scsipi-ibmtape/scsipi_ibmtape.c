@@ -2377,7 +2377,7 @@ int scsipi_ibmtape_readpos(void *device, struct tc_position *pos)
 	struct scsipi_ibmtape_data *priv = (struct scsipi_ibmtape_data*)device;
 
 	scsireq_t req;
-	unsigned char cdb[CDB6_LEN];
+	unsigned char cdb[CDB10_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READPOS";
 	char *msg = NULL;
@@ -4505,20 +4505,22 @@ int scsipi_ibmtape_set_profiler(void *device, char *work_dir, bool enable)
 	return rc;
 }
 
-int scsipi_ibmtape_get_block_in_buffer(void *device, uint32_t *block)
+int scsipi_ibmtape_get_next_block_to_xfer(void *device, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
 	int ret_ep = DEVICE_GOOD;
 	struct scsipi_ibmtape_data *priv = (struct scsipi_ibmtape_data*)device;
 
 	scsireq_t req;
-	unsigned char cdb[CDB6_LEN];
+	unsigned char cdb[CDB10_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READPOS";
 	char *msg = NULL;
 	unsigned char buf[REDPOS_EXT_LEN];
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READPOS));
+
+	memset(pos, 0, sizeof(struct tc_position));
 
 	/* Zero out the CDB and the result buffer */
 	ret = init_scsireq(&req);
@@ -4530,6 +4532,7 @@ int scsipi_ibmtape_get_block_in_buffer(void *device, uint32_t *block)
 	/* Build CDB */
 	cdb[0] = READ_POSITION;
 	cdb[1] = 0x08; /* Extended Format */
+	ltfs_u16tobe(cdb + 7, sizeof(buf)); /* allocation length */
 
 	timeout = ibm_tape_get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
@@ -4545,10 +4548,11 @@ int scsipi_ibmtape_get_block_in_buffer(void *device, uint32_t *block)
 
 	ret = scsipi_issue_cdb_command(&priv->dev, &req, cmd_desc, &msg);
 	if (ret == DEVICE_GOOD) {
-		*block = (buf[5] << 16) + (buf[6] << 8) + (int)buf[7];
+		pos->partition = (tape_partition_t)buf[1];
+		pos->block     = ltfs_betou64(buf + 16);
 
-		ltfsmsg(LTFS_DEBUG, 30398D, "blocks-in-buffer",
-				(unsigned long long)*block, (unsigned long long)0, (unsigned long long)0, priv->drive_serial);
+		ltfsmsg(LTFS_DEBUG, 30398D, "next-block-to-xfer",
+				(unsigned long long)pos->partition, (unsigned long long)pos->block, (unsigned long long)0, priv->drive_serial);
 	} else {
 		ret_ep = _process_errors(device, ret, msg, cmd_desc, true, true);
 		if (ret_ep < 0)
@@ -4616,7 +4620,7 @@ struct tape_ops scsipi_ibmtape_handler = {
 	.get_serialnumber       = scsipi_ibmtape_get_serialnumber,
 	.get_info               = scsipi_ibmtape_get_info,
 	.set_profiler           = scsipi_ibmtape_set_profiler,
-	.get_block_in_buffer    = scsipi_ibmtape_get_block_in_buffer,
+	.get_next_block_to_xfer = scsipi_ibmtape_get_next_block_to_xfer,
 	.is_readonly            = scsipi_ibmtape_is_readonly,
 };
 

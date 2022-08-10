@@ -915,12 +915,12 @@ struct tape_ops {
 	int   (*set_profiler)(void *device, char *work_dir, bool enable);
 
 	/**
-	 * Get block number stored in the drive buffer
+	 * Get first block number which is not transferred to the medium yet in the buffer
 	 * @param device A pointer to the tape device
-	 * @param block Number of blocks stored in the drive buffer
+	 * @param pos Position of the record that is not transferred yet in the buffer
 	 * @return 0 on success or a negative value on error
 	 */
-	int   (*get_block_in_buffer)(void *device, unsigned int *block);
+	int   (*get_next_block_to_xfer)(void *device, struct tc_position *pos);
 
 	/**
 	 * Check if the generation of tape drive and the current loaded cartridge is read-only combination
