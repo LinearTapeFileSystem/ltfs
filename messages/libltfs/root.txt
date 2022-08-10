@@ -429,7 +429,7 @@ root:table {
 		11332I:string { "Load successful." }
 		11333I:string { "A cartridge with write-perm error is detected on %s. Seek the newest index (IP: Gen = %llu, VCR = %llu) (DP: Gen = %llu, VCR = %llu) (VCR = %llu)." }
 		11334I:string { "Remove extent : %s (%llu, %llu)." }
-		11335D:string { "Get physical block position (%d - %d)." }
+		//unused 11335D:string { "Get physical block position (%d - %d)." }
 		11336I:string { "The attribute does not exist. Ignore the expected error." }
 		11337I:string { "Update index-dirty flag (%d) - %s (0x%p)." }
 		11338I:string { "Syncing index of %s %s." }
@@ -833,6 +833,7 @@ v
 		17289I:string { "Skip parsing the final index on IP." }
 		17290I:string { "Partitioning the medium with the destructive method." }
 		17291I:string { "Unpartitioning the medium with the destructive method." }
+		17292I:string { "Current position is (%llu, %llu), Error position is (%llu, %llu)." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 

@@ -443,8 +443,9 @@ int ltfs_fsraw_add_extent(struct dentry *d, struct extent_info *ext, bool update
 int ltfs_fsraw_cleanup_extent(struct dentry *d, struct tc_position err_pos, unsigned long blocksize, struct ltfs_volume *vol)
 {
 	int ret = 0;
-	struct name_list *entry, *tmp;
+	struct name_list   *entry, *tmp;
 	struct extent_info *ext, *preventry;
+	struct tc_position extent_last = {0, 0, UINT32_MAX, false, false};
 
 	if (HASH_COUNT(d->child_list) != 0) {
 		HASH_ITER(hh, d->child_list, entry, tmp) {
@@ -453,7 +454,24 @@ int ltfs_fsraw_cleanup_extent(struct dentry *d, struct tc_position err_pos, unsi
 			}
 			else {
                 TAILQ_FOREACH_REVERSE_SAFE(ext, &entry->d->extentlist, extent_struct, list, preventry) {
-					if (err_pos.block <= (ext->start.block + ext->bytecount/blocksize)) {
+					if (ext->start.block && ext->bytecount) {
+						extent_last.partition = ltfs_part_id2num(ext->start.partition, vol);
+						/* Calculate the last block of this extent */
+						extent_last.block = ext->start.block + (ext->bytecount / blocksize);
+						if ( (ext->bytecount % blocksize) == 0 )
+							extent_last.block--;
+					} else {
+						extent_last.partition = UINT32_MAX;
+						extent_last.block     = 0;
+					}
+
+					/*
+					 * err_pos has the first block number that tape drive has it on buffer
+					 * but not transferred to the medium.
+					 * It means position (err_pos-1) is the last block on the medium.
+					 */
+					if ( extent_last.partition == err_pos.partition && err_pos.block <= extent_last.block ) {
+
 						ltfsmsg(LTFS_INFO, 11334I, entry->name, (unsigned long long)ext->start.block, (unsigned long long)ext->bytecount);
 
 						ret = ltfs_get_volume_lock(false, vol);

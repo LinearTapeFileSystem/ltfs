@@ -2116,7 +2116,7 @@ int iokit_readpos(void *device, struct tc_position *pos)
 	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
-	unsigned char cdb[CDB6_LEN];
+	unsigned char cdb[CDB10_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READPOS";
 	char *msg = NULL;
@@ -4225,13 +4225,13 @@ int iokit_set_profiler(void *device, char *work_dir, bool enable)
 	return rc;
 }
 
-int iokit_get_block_in_buffer(void *device, uint32_t *block)
+int iokit_get_next_block_to_xfer(void *device, struct tc_position *pos)
 {
 	int ret = -EDEV_UNKNOWN;
 	struct iokit_data *priv = (struct iokit_data*)device;
 
 	struct iokit_scsi_request req;
-	unsigned char cdb[CDB6_LEN];
+	unsigned char cdb[CDB10_LEN];
 	int timeout;
 	char cmd_desc[COMMAND_DESCRIPTION_LENGTH] = "READPOS";
 	char *msg = NULL;
@@ -4239,12 +4239,16 @@ int iokit_get_block_in_buffer(void *device, uint32_t *block)
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READPOS));
 
+	memset(pos, 0, sizeof(struct tc_position));
+
 	/* Zero out the CDB and the result buffer */
 	memset(cdb, 0, sizeof(cdb));
+	memset(&req, 0, sizeof(struct iokit_scsi_request));
 
 	/* Build CDB */
 	cdb[0] = READ_POSITION;
 	cdb[1] = 0x08; /* Extended Format */
+	ltfs_u16tobe(cdb + 7, sizeof(buf)); /* allocation length */
 
 	timeout = get_timeout(priv->timeouts, cdb[0]);
 	if (timeout < 0)
@@ -4263,10 +4267,11 @@ int iokit_get_block_in_buffer(void *device, uint32_t *block)
 
 	ret = iokit_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret == DEVICE_GOOD) {
-		*block = (buf[5] << 16) + (buf[6] << 8) + (int)buf[7];
+		pos->partition = (tape_partition_t)buf[1];
+		pos->block     = ltfs_betou64(buf + 16);
 
-		ltfsmsg(LTFS_DEBUG, 30998D, "blocks-in-buffer",
-				(unsigned long long) *block, (unsigned long long)0, (unsigned long long)0, priv->drive_serial);
+		ltfsmsg(LTFS_DEBUG, 30998D, "next-block-to-xfer",
+				(unsigned long long)pos->partition, (unsigned long long)pos->block, (unsigned long long)0, priv->drive_serial);
 	} else {
 		_process_errors(device, ret, msg, cmd_desc, true);
 	}
@@ -4332,7 +4337,7 @@ struct tape_ops iokit_handler = {
 	.get_serialnumber       = iokit_get_serialnumber,
 	.get_info               = iokit_get_info,
 	.set_profiler           = iokit_set_profiler,
-	.get_block_in_buffer    = iokit_get_block_in_buffer,
+	.get_next_block_to_xfer = iokit_get_next_block_to_xfer,
 	.is_readonly            = iokit_is_readonly,
 };
 

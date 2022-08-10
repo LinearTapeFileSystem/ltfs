@@ -2250,6 +2250,7 @@ int _unified_write_index_after_perm(int write_ret, struct unified_data *priv)
 {
 	int ret = 0;
 	struct tc_position err_pos;
+	uint64_t last_index_pos = UINT64_MAX;
 	unsigned long blocksize;
 
 	if (!IS_WRITE_PERM(-write_ret)) {
@@ -2263,14 +2264,27 @@ int _unified_write_index_after_perm(int write_ret, struct unified_data *priv)
 		ltfsmsg(LTFS_ERR, 13026E, "update MAM", ret);
 
 	blocksize = ltfs_get_blocksize(priv->vol);
-	ret = tape_get_physical_block_position(priv->vol->device, &err_pos);
+
+	ret = tape_get_first_untransfered_position(priv->vol->device, &err_pos);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 13026E, "get error pos", ret);
 		return ret;
 	}
 
-	ltfsmsg(LTFS_INFO, 13025I, (int)err_pos.block, (int)blocksize);
+	/* Check the err_pos is larger than the last index position of the partition */
+	if (err_pos.partition == ltfs_part_id2num(priv->vol->label->partid_ip, priv->vol)) {
+		last_index_pos = priv->vol->ip_coh.set_id;
+	} else {
+		last_index_pos = priv->vol->dp_coh.set_id;
+	}
 
+	if (last_index_pos > err_pos.block) {
+		ltfsmsg(LTFS_INFO, 13027I, (int)err_pos.partition,
+				(unsigned long long)err_pos.block, (unsigned long long)last_index_pos);
+		err_pos.block = last_index_pos + 1;
+	}
+
+	ltfsmsg(LTFS_INFO, 13025I, (int)err_pos.partition, (unsigned long long)err_pos.block, blocksize);
 	ret = ltfs_fsraw_cleanup_extent(priv->vol->index->root, err_pos, blocksize, priv->vol);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 13026E, "extent cleanup", ret);

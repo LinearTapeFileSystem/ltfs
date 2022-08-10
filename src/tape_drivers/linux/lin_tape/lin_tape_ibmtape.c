@@ -2067,7 +2067,7 @@ int lin_tape_ibmtape_unload(void *device, struct tc_position *pos)
 	}
 }
 
-int lin_tape_ibmtape_get_block_in_buffer(void *device, uint32_t *block)
+int lin_tape_ibmtape_get_next_block_to_xfer(void *device, struct tc_position *pos)
 {
 	int rc;
 	char *msg;
@@ -2077,12 +2077,13 @@ int lin_tape_ibmtape_get_block_in_buffer(void *device, uint32_t *block)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READPOS));
 	memset(&rp, 0, sizeof(struct read_tape_position));
 
-	rp.data_format = RP_SHORT_FORM;
+	rp.data_format = RP_EXTENDED_FORM;
 
-	rc = _sioc_stioc_command(device, STIOC_READ_POSITION_EX, "READPOS SHORT", &rp, &msg);
+	rc = _sioc_stioc_command(device, STIOC_READ_POSITION_EX, "READPOS EXT", &rp, &msg);
 
 	if (rc == DEVICE_GOOD) {
-		*block = (uint32_t)ltfs_betou32(rp.rp_data.rp_short.num_buffer_logical_obj);
+		pos->partition = rp.rp_data.rp_extended.active_partition;
+		pos->block = ltfs_betou64(rp.rp_data.rp_extended.last_logical_obj_position);
 	}
 	else {
 		lin_tape_ibmtape_process_errors(device, rc, msg, "get block in buf", true);
@@ -4419,7 +4420,7 @@ struct tape_ops lin_tape_ibmtape_drive_handler = {
 	.get_serialnumber       = lin_tape_ibmtape_get_serialnumber,
 	.get_info               = lin_tape_ibmtape_get_info,
 	.set_profiler           = lin_tape_ibmtape_set_profiler,
-	.get_block_in_buffer    = lin_tape_ibmtape_get_block_in_buffer,
+	.get_next_block_to_xfer = lin_tape_ibmtape_get_next_block_to_xfer,
 	.is_readonly            = lin_tape_ibmtape_is_readonly,
 };
 
