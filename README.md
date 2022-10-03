@@ -53,13 +53,13 @@ The table below show status of the LTFS format Specification
 
 # How to use the LTFS (Quick start)
 
-This section is for person who already have a machine the LTFS is installed. Instruction how to use the LTFS is also available on [Wiki](https://github.com/LinearTapeFileSystem/ltfs/wiki).
+This section is for a person who already has a machine with the LTFS installed. Instructions on how to use the LTFS is also available on [Wiki](https://github.com/LinearTapeFileSystem/ltfs/wiki).
 
 ## Step1: List tape drives
 
 `# ltfs -o device_list`
 
-The output is like follows. You can have 3 drives in this example and you can use "Device Name" field, like `/dev/sg43` in this case, as the argument of ltfs command to mount the tape drive.
+The output is as follows. You have 3 drives in this example and you can use "Device Name" field, like `/dev/sg43` in this case, as the argument of ltfs command to mount the tape drive.
 
 ```
 50c4 LTFS14000I LTFS starting, LTFS version 2.4.0.0 (10022), log level 2.
@@ -80,13 +80,13 @@ Device Name = /dev/sg37, Vender ID = IBM    , Product ID = ULT3580-TD7    , Seri
 
 ## Step2: Format a tape
 
-As described into the LTFS format specifications, LTFS uses the partition feature of the tape drive. It means you can't use a tape just after you purchase a tape. You need format the tape before using int on LTFS.
+As described in the LTFS format specifications, LTFS uses the partition feature of the tape drive. This means you can't use a tape just after you purchase a tape. You need format the tape before using it on LTFS.
 
 To format a tape, you can use `mkltfs` command like
 
 `# mkltfs -d 9A700L0077`
 
-In this case, `mkltfs` tries to format a tape in the tape drive `9A700L0077`. You can use a device name `/dev/sg43` instead.
+In this case, `mkltfs` tries to format a tape in the tape drive `9A700L0077`. You can use the device name `/dev/sg43` instead.
 
 ## Step3: Mount a tape through a tape drive
 
@@ -94,29 +94,29 @@ After you prepared a formatted tape, you can mount it through a tape drive like
 
 `# ltfs -o devname=9A700L0077 /ltfs`
 
-In this command, the ltfs command try to mount the tape in the tape drive `9A700L0077` to `/ltfs` directory. Of cause, you can use a device name `/dev/sg43` instead.
+In this command, the ltfs command will try to mount the tape in the tape drive `9A700L0077` to `/ltfs` directory. Of course, you can use a device name `/dev/sg43` instead.
 
-If mount process is successfully done, you can access to the LTFS tape through `/ltfs` directory.
+If the mount process is successfully done, you can access to the LTFS tape through `/ltfs` directory.
 
 You must not touch any `st` devices while ltfs is mounting a tape.
 
 ## Step4: Unmount the tape drive
 
-You can use following command when you want to unmount the tape. The ltfs command try to write down the current meta-data to the tape and close the tape cleanly.
+You can use following command when you want to unmount the tape. The ltfs command try to write the current meta-data to the tape and close the tape cleanly.
 
 `# umount /ltfs`
 
-One thing you need to pay attention here is it is not a unmount completion when umount command is returned. It just a finish of trigger to notify the unmount request to the ltfs command. Actual unmount is completed when the ltfs command is finished.
+One thing you need to pay attention to here is, that the unmount command continues to work in the background after it returns. It just initiates a trigger to notify the the ltfs command of the unmount request. Actual unmount is completed when the ltfs command is finished.
 
 ## The `ltfsee_ordered_copy` utility
 
 The [`ltfsee_ordered_copy`](https://github.com/LinearTapeFileSystem/ltfs/wiki/ltfs_ordered_copy) is a program to copy files from source to destination with LTFS  order  optimization.
 
-It is written by python and it can work on both python2 and python3 (Python 2.7 or later is strongly recommended). You need to install the `pyxattr` module for both python2 and python3.
+It is written in python and it can work with both python2 and python3 (Python 2.7 or later is strongly recommended). You need to install the `pyxattr` module for both python2 and python3.
 
 # Building the LTFS from this GitHub project
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+These instructions will get a copy of the project up and running on your local machine for development and testing purposes.
 
 ## Prerequisites for build
 
