@@ -41,7 +41,7 @@ AM_LIBTOOLFLAGS = --tag=disable-static
 libtape_file_la_SOURCES = filedebug_tc.c filedebug_conf_tc.c ibm_tape.c
 libtape_file_la_DEPENDENCIES = ../../../../messages/libtape_generic_file_dat.a ../../../libltfs/libltfs.la
 libtape_file_la_LIBADD  =../../../libltfs/libltfs.la
-libtape_file_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ -L../../../../messages/ -ltape_generic_file_dat
+libtape_file_la_LDFLAGS = -avoid-version -module @AM_LDFLAGS@ ../../../../messages/libtape_generic_file_dat.a
 libtape_file_la_CPPFLAGS = @AM_CPPFLAGS@ -I ../../..
 
 ibm_tape.c:
