@@ -71,7 +71,7 @@ libltfs_la_SOURCES = \
 libltfs_la_DEPENDENCIES = ../../messages/liblibltfs_dat.a ../../messages/libinternal_error_dat.a ../../messages/libtape_common_dat.a
 libltfs_la_LIBADD =
 libltfs_la_CPPFLAGS = @AM_CPPFLAGS@ @AM_EXTRA_CPPFLAGS@ @AM_EXTRA_CPPFLAGS@ -I ..
-libltfs_la_LDFLAGS = @AM_LDFLAGS@ -L../../messages -llibltfs_dat -linternal_error_dat -ltape_common_dat
+libltfs_la_LDFLAGS = @AM_LDFLAGS@ ../../messages/liblibltfs_dat.a ../../messages/libinternal_error_dat.a ../../messages/libtape_common_dat.a
 
 install-data-local:
 	if [ ! -d "$(DESTDIR)$(prefix)/share/snmp" ]; then \

@@ -40,7 +40,7 @@ ltfs_SOURCES = main.c ltfs_fuse.c
 ltfs_DEPENDENCIES = libltfs/libltfs.la ../messages/libbin_ltfs_dat.a
 ltfs_CPPFLAGS = @AM_CPPFLAGS@ -I ../ltfs-sde/src -fPIC
 ltfs_LDADD = libltfs/libltfs.la
-ltfs_LDFLAGS = @AM_LDFLAGS@ -L../messages -lbin_ltfs_dat
+ltfs_LDFLAGS = @AM_LDFLAGS@ ../messages/libbin_ltfs_dat.a
 endif
 
 PLAT_DRV =
