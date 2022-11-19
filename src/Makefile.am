@@ -77,7 +77,6 @@ SUBDIRS = libltfs $(GEN_DRV) $(PLAT_DRV) $(SUB) iosched utils
 
 noinst_HEADERS = \
 	libltfs/base64.h \
-	libltfs/config_file.h \
 	libltfs/dcache.h \
 	libltfs/fs.h \
 	libltfs/index_criteria.h \
@@ -100,6 +99,7 @@ noinst_HEADERS = \
 	libltfs/arch/version.h
 
 nobase_pkginclude_HEADERS = \
+	libltfs/config_file.h \
 	libltfs/dcache_ops.h \
 	libltfs/iosched_ops.h \
 	libltfs/kmi_ops.h \
