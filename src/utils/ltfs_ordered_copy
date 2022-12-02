@@ -334,6 +334,9 @@ if args.DEST == None:
     logger.error('No destination is specified')
     exit(2)
 
+if args.keep_tree is None:
+    args.keep_tree = ''
+
 # Special case:
 #  Copy source is only one file
 if args.recursive == False and len(args.SOURCE) == 1:
@@ -361,7 +364,7 @@ direct_write_threads = 8
 try:
     sig = xattr.get(args.DEST, VEA_PREFIX + LTFS_SIG_VEA)
 
-    if sig.startswith("LTFS"):
+    if sig.startswith(b"LTFS"):
         logger.info("Destination {0} is LTFS".format(args.DEST))
         direct_write_threads = 1
     else:
@@ -384,9 +387,6 @@ if len(args.SOURCE) == 0:
     for line in sys.stdin:
         args.SOURCE.append(line.rstrip('\r\n'))
     logger.log(NOTSET + 1, 'Source: {}'.format(args.SOURCE))
-
-if args.keep_tree is None:
-    args.keep_tree = ''
 
 # Create the list of copy item
 copyq = CopyQueue(logger)
