@@ -372,7 +372,7 @@ if test "x${snmp}" != "xno"
 then
     SNMP_ENABLE="-D ENABLE_SNMP"
     SNMP_MODULE_CFLAGS="`net-snmp-config --cflags 2> /dev/null`";
-    SNMP_MODULE_LIBS_A="`net-snmp-config --agent-libs` 2> /dev/null";
+    SNMP_MODULE_LIBS_A="`net-snmp-config --agent-libs 2> /dev/null`";
     SNMP_MODULE_LIBS="`net-snmp-config --libs 2> /dev/null`";
     if test -z "$SNMP_MODULE_LIBS_A"
     then
