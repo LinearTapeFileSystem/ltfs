@@ -329,9 +329,9 @@ dnl
 dnl Check for ICU
 dnl
 AC_MSG_CHECKING(ICU version)
-ICU_MODULE_VERSION="`icu-config --version 2> /dev/null`";
-ICU_MODULE_CFLAGS=" `icu-config --cppflags 2> /dev/null`";
-ICU_MODULE_LIBS="`icu-config --ldflags 2> /dev/null`";
+ICU_MODULE_VERSION="`pkg-config --modversion icu-i18n 2> /dev/null`";
+ICU_MODULE_CFLAGS="`pkg-config --cflags icu-i18n 2> /dev/null`";
+ICU_MODULE_LIBS="`pkg-config --libs icu-i18n 2> /dev/null`";
 AC_MSG_RESULT([$ICU_MODULE_VERSION])
 
 if test -z "$ICU_MODULE_VERSION"
