@@ -1990,7 +1990,7 @@ int camtape_modeselect(void *device, unsigned char *buf, const size_t size)
 						 /*retries*/ 1,
 						 /*cbfcnp*/ NULL,
 						 /*tag_action*/ MSG_SIMPLE_Q_TAG,
-						 /*scsi_page_fmt*/ 0,
+						 /*scsi_page_fmt*/ 1,
 						 /*save_pages*/ 0,
 						 /*param_buf*/ buf,
 						 /*param_len*/ size,
