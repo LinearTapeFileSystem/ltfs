@@ -66,14 +66,14 @@ class CopyItem:
 
     def eval(self): #access to the extended attributes present in some operating systems/filesystems by xattr
         try:
-            self.vuuid = xattr.get(self.src, self.vea_pre + 'ltfs.volumeUUID')
+            self.vuuid = xattr.getxattr(self.src, self.vea_pre + 'ltfs.volumeUUID')
         except Exception as e:
             self.vuuid = ''
             return (self.vuuid, self.part, self.start)
 
         try:
-            self.part  = xattr.get(self.src, self.vea_pre + 'ltfs.partition')
-            start_str  = xattr.get(self.src, self.vea_pre + 'ltfs.startblock')
+            self.part  = xattr.getxattr(self.src, self.vea_pre + 'ltfs.partition')
+            start_str  = xattr.getxattr(self.src, self.vea_pre + 'ltfs.startblock')
             self.start = int(start_str)
             self.size  = os.path.getsize(self.src)
         except Exception as e:
@@ -95,12 +95,12 @@ class CopyItem:
                 if self.cp_xattr:
                     # Capture EAs of the source file
                     src_attributes = {}
-                    for key in xattr.list(self.src):
-                        src_attributes[key] = xattr.get(self.src, key)
+                    for key in xattr.listxattr(self.src):
+                        src_attributes[key] = xattr.getxattr(self.src, key)
                     # Set EAs of the destination file
                     (_, filename) = os.path.split(self.src)
                     for key in src_attributes:
-                        xattr.set(self.dst, key, src_attributes[key])
+                        xattr.setxattr(self.dst, key, src_attributes[key])
             else: #Only copy data
                 shutil.copy(self.src, self.dst)
         except Exception as e:
@@ -257,7 +257,7 @@ LTFS_SIG_VEA='ltfs.softwareProduct'
 plat = platform.system()
 if plat == 'Linux':
     VEA_PREFIX='user.'
-elif plat == 'Darwin':
+elif plat == 'Darwin' or plat == 'FreeBSD':
     VEA_PREFIX=''
 else:
     sys.stderr.write("unsupported platform '{0}'\n".format(plat))
@@ -368,7 +368,7 @@ if args.recursive == False and len(args.SOURCE) == 1:
 logger.log(NOTSET + 1, 'Checking destination is LTFS or not')
 direct_write_threads = 8
 try:
-    sig = xattr.get(args.DEST, VEA_PREFIX + LTFS_SIG_VEA)
+    sig = xattr.getxattr(args.DEST, VEA_PREFIX + LTFS_SIG_VEA)
 
     if sig.startswith(b"LTFS"):
         logger.info("Destination {0} is LTFS".format(args.DEST))
