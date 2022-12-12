@@ -34,6 +34,7 @@
 #  OO_Copyright_END
 
 import sys
+import errno
 import platform
 import os.path
 import argparse
@@ -43,6 +44,11 @@ import threading
 
 from logging import getLogger, basicConfig, NOTSET, CRITICAL, ERROR, WARNING, INFO, DEBUG
 from collections import deque
+
+def is_errno(num, names):
+    if not num in errno.errorcode:
+        return False
+    return errno.errorcode[num] in names
 
 class CopyItem:
     """"""
@@ -178,7 +184,7 @@ class CopyQueue:
                 self.logger.log(NOTSET + 1, 'Making a directory {}'.format(d))
                 os.mkdir(d)
             except OSError as e:
-                if e.errno != 17: # Not EEXIST
+                if e.errno != errno.EEXIST:
                     self.logger.error(str(e) + "\n")
                     exit(1)
 
@@ -370,10 +376,10 @@ try:
     else:
         logger.info("Destination {0} is not LTFS\n".format(args.DEST))
 except IOError as e:
-    if e.errno != 61 and e.errno != 93 and e.errno != 95: # Not ENODATA, ENOATTR, EOPNOTSUPP
+    if not is_errno(e.errno, ['ENODATA', 'ENOATTR', 'ENOTSUP', 'EOPNOTSUPP']):
         logger.error('Check destination (I/O):' + str(e))
         exit(2)
-    if e.errno == 95 and args.p:
+    if is_errno(e.errno, ['ENOTSUP', 'EOPNOTSUPP']) and args.p:
         logger.warning("{0} does not support xattr. Cannot use -p. Attributes will not be preserved during copy.".format(args.DEST))
         args.p = False
     logger.warning("Destination {0} is not LTFS".format(args.DEST))
