@@ -91,9 +91,7 @@ noinst_HEADERS = \
 	libltfs/pathname.h \
 	libltfs/periodic_sync.h \
 	libltfs/xattr.h \
-	libltfs/xml.h \
 	libltfs/xml_libltfs.h \
-	libltfs/arch/errormap.h \
 	libltfs/arch/filename_handling.h \
 	libltfs/arch/uuid_internal.h \
 	libltfs/arch/version.h
@@ -119,9 +117,11 @@ nobase_pkginclude_HEADERS = \
 	libltfs/uthash_ext.h \
 	libltfs/plugin.h \
 	libltfs/tape.h \
+	libltfs/xml.h \
 	libltfs/arch/signal_internal.h \
 	libltfs/arch/arch_info.h \
 	libltfs/arch/time_internal.h \
+	libltfs/arch/errormap.h \
 	tape_drivers/ibm_tape.h \
 	tape_drivers/spc_op_codes.h \
 	tape_drivers/ssc_op_codes.h \
