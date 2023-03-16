@@ -392,6 +392,13 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 	time_t    now;
 	struct tm *tm_now;
 
+	static unsigned char recursive_counter = 0;
+	if (recursive_counter > 10) {
+		ltfsmsg(LTFS_WARN, 30261W, recursive_counter);
+		return 0;
+	}
+	recursive_counter++;
+
 	if (priv->vendor != VENDOR_IBM)
 		return 0;
 
@@ -426,6 +433,8 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_TAKEDUMPDRV));
 
+	recursive_counter = 0;
+	
 	return 0;
 }
 
