@@ -148,4 +148,5 @@ root:table {
 						"    -o noautodump              disable autodump\n"
 						"    -o scsi_lbprotect=<on|off> enable drive logical block protection (default=off)\n." }
         }
+	        30400W:string { "Cannot retrieve drive dump: failed to communicate with drive. Tried (%d) times." }
 }
