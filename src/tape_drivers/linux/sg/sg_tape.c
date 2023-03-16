@@ -394,7 +394,7 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 
 	static unsigned char recursive_counter = 0;
 	if (recursive_counter > 10) {
-		ltfsmsg(LTFS_WARN, 30261W, recursive_counter);
+		ltfsmsg(LTFS_WARN, 30400W, recursive_counter);
 		return 0;
 	}
 	recursive_counter++;
