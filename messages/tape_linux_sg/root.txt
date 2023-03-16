@@ -37,7 +37,7 @@
 root:table {
 	messages:table {
 		start_id:int { 30200 }
-		end_id:int { 30399 }
+		end_id:int { 30400 }
 
 		30200I:string { "Failed to execute SG_IO ioctl, opcode = %02x (%d)." }
 		30201D:string { "CDB check condition: sense = %06x, %s." }
