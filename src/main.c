@@ -382,7 +382,7 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 	struct ltfs_fuse_data *priv = (struct ltfs_fuse_data *) priv_data;
 	const char *fuse_options[] = { "-f", "-d", "-s", NULL };
 	bool valid_fuse_option = false;
-	int i;
+	int i, ret;
 
 	switch(key) {
 		case KEY_VERSION:
@@ -413,8 +413,12 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 		default:
 			if (! priv->first_parsing_pass) {
 				fuse_opt_add_arg(outargs, "-h");
-				if (priv->advanced_help)
-					fuse_main(outargs->argc, outargs->argv, &ltfs_ops, NULL);
+				if (priv->advanced_help){
+					ret = fuse_main(outargs->argc, outargs->argv, &ltfs_ops, NULL);
+					if (ret != 0) {
+						ltfsmsg(LTFS_WARN, 14123W, ret)
+					}
+				}	
 				usage(outargs->argv[0], priv);
 				exit(key == KEY_HELP ? 0 : 1);
 			}
@@ -1335,6 +1339,9 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	ltfsmsg(LTFS_INFO, 14112I);
 	ltfsmsg(LTFS_INFO, 14113I);
 	ret = fuse_main(args->argc, args->argv, &ltfs_ops, priv);
+	if (ret != 0) {
+		ltfsmsg(LTFS_WARN, 14123W, ret);
+	}
 
 	/*  Setup signal handler again to terminate cleanly */
 	ret = ltfs_set_signal_handlers();
