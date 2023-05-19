@@ -416,7 +416,7 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 				if (priv->advanced_help){
 					ret = fuse_main(outargs->argc, outargs->argv, &ltfs_ops, NULL);
 					if (ret != 0) {
-						ltfsmsg(LTFS_WARN, 14123W, ret)
+						ltfsmsg(LTFS_WARN, 14123W, ret);
 					}
 				}	
 				usage(outargs->argv[0], priv);
