@@ -53,6 +53,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/ioctl.h>
+#include <pthread.h>
 
 #include "ltfs_copyright.h"
 #include "libltfs/ltfslogging.h"
@@ -387,17 +388,32 @@ static int _get_dump(struct sg_data *priv, char *fname)
 
 static int _take_dump(struct sg_data *priv, bool capture_unforced)
 {
-	char      fname_base[1024];
+char      fname_base[1024];
 	char      fname[1024];
 	time_t    now;
 	struct tm *tm_now;
 
+	/* Toprovide thread safe to recursive_counter */
+	pthread_mutex_t m;
+	pthread_mutexattr_t attr;
+
+	pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&m, &attr);
+
+	pthread_mutex_lock(&m);
+	/* To check if the function became recursive */
 	static unsigned char recursive_counter = 0;
 	if (recursive_counter > 10) {
-		ltfsmsg(LTFS_WARN, 30261W, recursive_counter);
+		ltfsmsg(LTFS_WARN, 30295W, recursive_counter);
+		pthread_mutex_unlock(&m);
+
+		pthread_mutex_destroy(&m);
+		pthread_mutexattr_destroy(&attr);
 		return 0;
 	}
 	recursive_counter++;
+	pthread_mutex_lock(&m);
 
 	if (priv->vendor != VENDOR_IBM)
 		return 0;
@@ -433,8 +449,13 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_TAKEDUMPDRV));
 
+	pthread_mutex_lock(&m);
 	recursive_counter = 0;
-	
+	pthread_mutex_unlock(&m);
+
+	pthread_mutex_destroy(&m);
+    pthread_mutexattr_destroy(&attr);
+
 	return 0;
 }
 
