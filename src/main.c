@@ -414,7 +414,7 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 			if (! priv->first_parsing_pass) {
 				fuse_opt_add_arg(outargs, "-h");
 				if (priv->advanced_help)
-					ret = fuse_main(outargs->argc, outargs->argv, &ltfs_ops, NULL);
+					fuse_main(outargs->argc, outargs->argv, &ltfs_ops, NULL);
 				usage(outargs->argv[0], priv);
 				exit(key == KEY_HELP ? 0 : 1);
 			}
