@@ -382,7 +382,7 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 	struct ltfs_fuse_data *priv = (struct ltfs_fuse_data *) priv_data;
 	const char *fuse_options[] = { "-f", "-d", "-s", NULL };
 	bool valid_fuse_option = false;
-	int i, ret;
+	int i;
 
 	switch(key) {
 		case KEY_VERSION:
@@ -413,12 +413,8 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 		default:
 			if (! priv->first_parsing_pass) {
 				fuse_opt_add_arg(outargs, "-h");
-				if (priv->advanced_help){
+				if (priv->advanced_help)
 					ret = fuse_main(outargs->argc, outargs->argv, &ltfs_ops, NULL);
-					if (ret != 0) {
-						ltfsmsg(LTFS_WARN, 14123W, ret);
-					}
-				}	
 				usage(outargs->argv[0], priv);
 				exit(key == KEY_HELP ? 0 : 1);
 			}
