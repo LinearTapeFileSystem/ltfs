@@ -408,12 +408,13 @@ char      fname_base[1024];
 		ltfsmsg(LTFS_WARN, 30295W, recursive_counter);
 		pthread_mutex_unlock(&m);
 
+		pthread_join(m, NULL);
 		pthread_mutex_destroy(&m);
 		pthread_mutexattr_destroy(&attr);
 		return 0;
 	}
 	recursive_counter++;
-	pthread_mutex_lock(&m);
+	pthread_mutex_unlock(&m);
 
 	if (priv->vendor != VENDOR_IBM)
 		return 0;
@@ -453,6 +454,7 @@ char      fname_base[1024];
 	recursive_counter = 0;
 	pthread_mutex_unlock(&m);
 
+	pthread_join(m, NULL);
 	pthread_mutex_destroy(&m);
     pthread_mutexattr_destroy(&attr);
 
