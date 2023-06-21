@@ -137,6 +137,7 @@ root:table {
 		30294I:string { "Setting up timeout values from %s." }
 		30295I:string { "Have unstable TUR response, start over (Cur = %d, Prev = %d)." }
 		30296I:string { "Capturing a stable TUR at line %d." }
+		30297W:string { "Cannot retrieve drive dump: failed to communicate with drive. Tried (%d) times." }
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }

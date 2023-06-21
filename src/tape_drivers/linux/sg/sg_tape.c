@@ -407,7 +407,7 @@ char      fname_base[1024];
 	/* To check if the function became recursive */
 	static unsigned char recursive_counter = 0;
 	if (recursive_counter > 10) {
-		ltfsmsg(LTFS_WARN, 30295W, recursive_counter);
+		ltfsmsg(LTFS_WARN, 30297W, recursive_counter);
 		pthread_mutex_unlock(&m);
 		return 0;
 	}
