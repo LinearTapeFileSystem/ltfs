@@ -93,6 +93,15 @@ const char *default_device = "0";
 /* Global values */
 struct sg_global_data global_data;
 
+/* Toprovide thread safe to recursive_counter on _take_dump() */
+pthread_mutex_t m;
+pthread_mutexattr_t attr;
+
+pthread_mutexattr_init(&attr);
+pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+pthread_mutex_init(&m, &attr);
+
+
 /* Definitions */
 #define LOG_PAGE_HEADER_SIZE      (4)
 #define LOG_PAGE_PARAMSIZE_OFFSET (3)
@@ -393,13 +402,6 @@ char      fname_base[1024];
 	time_t    now;
 	struct tm *tm_now;
 
-	/* Toprovide thread safe to recursive_counter */
-	pthread_mutex_t m;
-	pthread_mutexattr_t attr;
-
-	pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&m, &attr);
 
 	pthread_mutex_lock(&m);
 	/* To check if the function became recursive */
@@ -407,10 +409,6 @@ char      fname_base[1024];
 	if (recursive_counter > 10) {
 		ltfsmsg(LTFS_WARN, 30295W, recursive_counter);
 		pthread_mutex_unlock(&m);
-
-		pthread_join(m, NULL);
-		pthread_mutex_destroy(&m);
-		pthread_mutexattr_destroy(&attr);
 		return 0;
 	}
 	recursive_counter++;
@@ -453,10 +451,6 @@ char      fname_base[1024];
 	pthread_mutex_lock(&m);
 	recursive_counter = 0;
 	pthread_mutex_unlock(&m);
-
-	pthread_join(m, NULL);
-	pthread_mutex_destroy(&m);
-    pthread_mutexattr_destroy(&attr);
 
 	return 0;
 }
