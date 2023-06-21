@@ -135,7 +135,12 @@ root:table {
 		30292I:string { "Changer %s was reserved from this node but failed to reserve from the current path." }
 		30293I:string { "Changer %s was reserved from another node (%s)." }
 		30294I:string { "Setting up timeout values from %s." }
+<<<<<<< HEAD
 		30295W:string { "Cannot retrieve drive dump: failed to communicate with drive. Tried (%d) times." }
+=======
+		30295I:string { "Have unstable TUR response, start over (Cur = %d, Prev = %d)." }
+		30296I:string { "Capturing a stable TUR at line %d." }
+>>>>>>> 178a782ffed151ff890b41cfdf56f7b8343d3c45
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }

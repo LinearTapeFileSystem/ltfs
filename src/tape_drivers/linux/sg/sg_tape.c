@@ -642,6 +642,39 @@ void _clear_por_raw(const int fd)
 	}
 }
 
+#define _get_stable_tur_response(p) _get_stable_tur_response_raw((p)->dev.fd)
+
+int _get_stable_tur_response_raw(const int fd)
+{
+	int i = 0, ret = -1, ret_tur = -1;
+
+	do {
+		ret_tur = _raw_tur(fd);
+		if (i == 0) {
+			/* Keep first return code if it is not an unit attention */
+			if (!IS_UNIT_ATTENTION(-ret_tur)) {
+				ret = ret_tur;
+				i++;
+			}
+		} else if (ret_tur == ret) {
+			/* Increment counter because it is same as previous response */
+			i++;
+		} else {
+			/* TUR response is not stable, start over */
+			ltfsmsg(LTFS_INFO, 30295I, ret_tur, ret);
+			if (IS_UNIT_ATTENTION(-ret_tur)) {
+				ret = -1;
+				i = 0;
+			} else {
+				ret = ret_tur;
+				i = 1;
+			}
+		}
+	} while (i < 3);
+
+	return ret;
+}
+
 /* Forward reference */
 int sg_get_device_list(struct tc_drive_info *buf, int count);
 int sg_reserve(void *device);
@@ -796,7 +829,13 @@ static int _reconnect_device(void *device)
 
 	/* Issue TUR and check reservation conflict happens or not */
 	_clear_por(priv);
-	ret = _raw_tur(priv->dev.fd);
+
+	/*
+	 * !!!!! This is a kind of work around to avoid to fetch false one-shot `good` here.
+	 * Fetch result of TUR until 3 straight same result
+	 */
+	ltfsmsg(LTFS_INFO, 30296I, __LINE__);
+	ret = _get_stable_tur_response(priv);
 	if (ret == -EDEV_RESERVATION_CONFLICT) {
 		/* Select another path, recover reservation */
 		ltfsmsg(LTFS_INFO, 30269I, priv->drive_serial);
@@ -811,23 +850,43 @@ static int _reconnect_device(void *device)
 	} else {
 		/* Read reservation information and print */
 		_clear_por(priv);
-		memset(&r_info, 0x00, sizeof(r_info));
-		f_ret = _fetch_reservation_key(device, &r_info);
-		if (f_ret == -EDEV_NO_RESERVATION_HOLDER) {
-			/* Real POR may happens */
-			ltfsmsg(LTFS_INFO, 30270I, priv->drive_serial);
+
+		/*
+		 * !!!!! This is the code just in case, check TUR response again and restore reservation
+		 * if drive reports `reservation conflict`.
+		 */
+		ltfsmsg(LTFS_INFO, 30296I, __LINE__);
+		ret = _get_stable_tur_response(priv);
+		if (ret == -EDEV_RESERVATION_CONFLICT) {
+			/* Select another path, recover reservation */
+			ltfsmsg(LTFS_INFO, 30269I, priv->drive_serial);
 			_register_key(priv, priv->key);
-			ret = sg_reserve(device);
+			ret = _cdb_pro(device, PRO_ACT_PREEMPT_ABORT, PRO_TYPE_EXCLUSIVE,
+						   priv->key, priv->key);
 			if (!ret) {
 				ltfsmsg(LTFS_INFO, 30272I, priv->drive_serial);
 				_clear_por(priv);
-				ret = -EDEV_REAL_POWER_ON_RESET;
+				ret = -EDEV_NEED_FAILOVER;
 			}
 		} else {
-			/* Select same path */
-			ltfsmsg(LTFS_INFO, 30271I, priv->drive_serial);
-			_clear_por(priv);
-			ret = -EDEV_NEED_FAILOVER;
+			memset(&r_info, 0x00, sizeof(r_info));
+			f_ret = _fetch_reservation_key(device, &r_info);
+			if (f_ret == -EDEV_NO_RESERVATION_HOLDER) {
+				/* Real POR may happens */
+				ltfsmsg(LTFS_INFO, 30270I, priv->drive_serial);
+				_register_key(priv, priv->key);
+				ret = sg_reserve(device);
+				if (!ret) {
+					ltfsmsg(LTFS_INFO, 30272I, priv->drive_serial);
+					_clear_por(priv);
+				ret = -EDEV_REAL_POWER_ON_RESET;
+				}
+			} else {
+				/* Select same path */
+				ltfsmsg(LTFS_INFO, 30271I, priv->drive_serial);
+				_clear_por(priv);
+				ret = -EDEV_NEED_FAILOVER;
+			}
 		}
 	}
 
