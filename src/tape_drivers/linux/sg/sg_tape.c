@@ -397,7 +397,7 @@ static int _get_dump(struct sg_data *priv, char *fname)
 
 static int _take_dump(struct sg_data *priv, bool capture_unforced)
 {
-char      fname_base[1024];
+	char      fname_base[1024];
 	char      fname[1024];
 	time_t    now;
 	struct tm *tm_now;
