@@ -93,6 +93,14 @@ const char *default_device = "0";
 /* Global values */
 struct sg_global_data global_data;
 
+/* Toprovide thread safe to recursive_counter */
+pthread_mutex_t m;
+pthread_mutexattr_t attr;
+
+pthread_mutexattr_init(&attr);
+pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+pthread_mutex_init(&m, &attr);
+
 /* Definitions */
 #define LOG_PAGE_HEADER_SIZE      (4)
 #define LOG_PAGE_PARAMSIZE_OFFSET (3)
@@ -396,12 +404,14 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 	struct tm *tm_now;
 
 	/* To check if the function became recursive */
+	pthread_mutex_lock(&m);
 	static unsigned char recursive_counter = 0;
 	if (recursive_counter > MAX_TAKE_DUMP_ATTEMPTS) {
 		ltfsmsg(LTFS_WARN, 30297W, recursive_counter);
 		return 0;
 	}
 	recursive_counter++;
+	pthread_mutex_unlock(&m);
 
 	if (priv->vendor != VENDOR_IBM)
 		return 0;
@@ -437,7 +447,9 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_TAKEDUMPDRV));
 
+	pthread_mutex_lock(&m);
 	recursive_counter = 0;
+	pthread_mutex_unlock(&m);
 
 	return 0;
 }
