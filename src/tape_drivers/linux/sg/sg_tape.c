@@ -94,7 +94,6 @@ const char *default_device = "0";
 struct sg_global_data global_data;
 
 /* Toprovide thread safe to recursive_counter */
-#define CALL_ONCE((void)func) func()
 pthread_mutex_t m;
 pthread_mutexattr_t attr;
 
@@ -105,7 +104,7 @@ void init_mutex(void)
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 	pthread_mutex_init(&m, &attr);
 }
-CALL_ONCE(init_mutex);
+init_mutex();
 
 
 /* Definitions */
