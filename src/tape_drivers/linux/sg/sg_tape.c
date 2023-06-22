@@ -98,13 +98,13 @@ pthread_mutex_t m;
 pthread_mutexattr_t attr;
 
 //init mutex
-void init_mutex(void)
+void begin_mutex_for_moises(void)
 {
 	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 	pthread_mutex_init(&m, &attr);
 }
-init_mutex();
+begin_mutex_for_moises();
 
 
 /* Definitions */
