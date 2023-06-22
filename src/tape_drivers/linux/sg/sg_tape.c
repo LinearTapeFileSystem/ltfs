@@ -96,18 +96,17 @@ struct sg_global_data global_data;
 /* Toprovide thread safe to recursive_counter */
 pthread_mutex_t m;
 pthread_mutexattr_t attr;
+bool is_mutex_initialized = false;
 
-//create a function to initialize the mutex and call it immediately after its defined
-void init_mutex(void);
-
+//create a function to initialize the pthread mutex
 void init_mutex(void)
 {
+	if (is_mutex_initialized)
+		return;
 	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 	pthread_mutex_init(&m, &attr);
 }
-
-init_mutex();
 
 /* Definitions */
 #define LOG_PAGE_HEADER_SIZE      (4)
@@ -927,6 +926,7 @@ static int _process_errors(struct sg_data *priv, int ret, char *msg, char *cmd, 
 	if (priv && !ret_fo) {
 		if (print && take_dump && !global_data.disable_auto_dump
 			&& is_dump_required(priv, ret, &unforced_dump)) {
+			init_mutex();
 			(void)_take_dump(priv, unforced_dump);
 		}
 	}
@@ -2025,6 +2025,7 @@ start_read:
 				ret = priv->f_crc_check(buf, ret - 4);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 30221E);
+				init_mutex();
 				_take_dump(priv, false);
 				ret = -EDEV_LBP_READ_ERROR;
 			}
@@ -4922,6 +4923,7 @@ int sg_takedump_drive(void *device, bool capture_unforced)
 	struct sg_data *priv = (struct sg_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_TAKEDUMPDRV));
+	init_mutex();
 	_take_dump(priv, capture_unforced);
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_TAKEDUMPDRV));
 
