@@ -97,15 +97,17 @@ struct sg_global_data global_data;
 pthread_mutex_t m;
 pthread_mutexattr_t attr;
 
-//init mutex
-void begin_mutex_for_moises()
+//create a function to initialize the mutex and call it immediately after its defined
+void init_mutex(void);
+
+void init_mutex(void)
 {
 	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 	pthread_mutex_init(&m, &attr);
 }
-(void)begin_mutex_for_moises();
 
+init_mutex();
 
 /* Definitions */
 #define LOG_PAGE_HEADER_SIZE      (4)
