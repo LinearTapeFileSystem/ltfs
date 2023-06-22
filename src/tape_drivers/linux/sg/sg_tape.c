@@ -106,6 +106,7 @@ void init_mutex(void)
 	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 	pthread_mutex_init(&m, &attr);
+	is_mutex_initialized = true;
 }
 
 /* Definitions */
