@@ -96,10 +96,13 @@ struct sg_global_data global_data;
 /* Toprovide thread safe to recursive_counter */
 pthread_mutex_t m;
 pthread_mutexattr_t attr;
+{
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutex_init(&m, &attr);
+}
 
-pthread_mutexattr_init(&attr);
-pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-pthread_mutex_init(&m, &attr);
+
 
 /* Definitions */
 #define LOG_PAGE_HEADER_SIZE      (4)
