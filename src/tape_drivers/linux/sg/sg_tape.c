@@ -129,12 +129,12 @@ static inline int _parse_logPage(const unsigned char *logdata,
 	uint32_t i;
 	uint32_t ret = -EDEV_INTERNAL_ERROR;
 
-	page_len = ((uint16_t)logdata[2] << 8) | (uint16_t)logdata[3];
+	page_len = ((uint16_t)logdata[2] << 8) | (uint8_t)logdata[3];
 	i = LOG_PAGE_HEADER_SIZE;
 
 	while(i < page_len)
 	{
-		param_code = ((uint16_t)logdata[i] << 8) | (uint16_t)logdata[i+1];
+		param_code = ((uint16_t)logdata[i] << 8) | (uint8_t)logdata[i+1];
 		param_len  = (uint16_t)logdata[i + LOG_PAGE_PARAMSIZE_OFFSET];
 
 		if(param_code == param)
