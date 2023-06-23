@@ -90,24 +90,12 @@ struct open_order {
 /* Default device name */
 const char *default_device = "0";
 
+/* Default recursive_counter value */
+struct sg_data *structure = (struct sg_data*);
+structure->recursive_counter = 0;
+
 /* Global values */
 struct sg_global_data global_data;
-
-/* Toprovide thread safe to recursive_counter */
-pthread_mutex_t m;
-pthread_mutexattr_t attr;
-bool is_mutex_initialized = false;
-
-//create a function to initialize the pthread mutex
-void init_mutex(void)
-{
-	if (is_mutex_initialized)
-		return;
-	pthread_mutexattr_init(&attr);
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-	pthread_mutex_init(&m, &attr);
-	is_mutex_initialized = true;
-}
 
 /* Definitions */
 #define LOG_PAGE_HEADER_SIZE      (4)
@@ -412,14 +400,11 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 	struct tm *tm_now;
 
 	/* To check if the function became recursive */
-	pthread_mutex_lock(&m);
-	static unsigned char recursive_counter = 0;
-	if (recursive_counter > MAX_TAKE_DUMP_ATTEMPTS) {
+	if (priv->recursive_counter > MAX_TAKE_DUMP_ATTEMPTS) {
 		ltfsmsg(LTFS_WARN, 30297W, recursive_counter);
 		return 0;
 	}
-	recursive_counter++;
-	pthread_mutex_unlock(&m);
+	priv->recursive_counter++;
 
 	if (priv->vendor != VENDOR_IBM)
 		return 0;
@@ -455,9 +440,7 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_TAKEDUMPDRV));
 
-	pthread_mutex_lock(&m);
-	recursive_counter = 0;
-	pthread_mutex_unlock(&m);
+	priv->recursive_counter = 0;
 
 	return 0;
 }
@@ -927,7 +910,6 @@ static int _process_errors(struct sg_data *priv, int ret, char *msg, char *cmd, 
 	if (priv && !ret_fo) {
 		if (print && take_dump && !global_data.disable_auto_dump
 			&& is_dump_required(priv, ret, &unforced_dump)) {
-			init_mutex();
 			(void)_take_dump(priv, unforced_dump);
 		}
 	}
@@ -2026,7 +2008,6 @@ start_read:
 				ret = priv->f_crc_check(buf, ret - 4);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 30221E);
-				init_mutex();
 				_take_dump(priv, false);
 				ret = -EDEV_LBP_READ_ERROR;
 			}
@@ -4924,7 +4905,6 @@ int sg_takedump_drive(void *device, bool capture_unforced)
 	struct sg_data *priv = (struct sg_data*)device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_TAKEDUMPDRV));
-	init_mutex();
 	_take_dump(priv, capture_unforced);
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_TAKEDUMPDRV));
 

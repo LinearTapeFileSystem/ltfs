@@ -82,6 +82,7 @@ struct sg_data {
 	struct timeout_tape  *timeouts;            /**< Timeout table */
 	struct tc_drive_info info;                 /**< Drive information */
 	FILE*                profiler;             /**< The file pointer for profiler */
+	uint8_t              recursive_counter;    /**< Recursive counter for take dump */
 };
 
 struct sg_global_data {
