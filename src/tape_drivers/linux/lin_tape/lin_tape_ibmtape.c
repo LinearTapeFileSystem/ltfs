@@ -2231,7 +2231,7 @@ int lin_tape_ibmtape_logsense(void *device, const uint8_t page, const uint8_t su
 
 	if (rc != DEVICE_GOOD) {
 		lin_tape_ibmtape_process_errors(device, rc, msg, "logsense page", true);
-		return -1;
+		return rc;
 	} else {
 		memcpy(buf, log_page.data, size);
 	}
