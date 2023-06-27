@@ -401,7 +401,7 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 
 	/* To check if the function became recursive */
 	if (priv->recursive_counter > MAX_TAKE_DUMP_ATTEMPTS) {
-		ltfsmsg(LTFS_WARN, 30297W, recursive_counter);
+		ltfsmsg(LTFS_WARN, 30297W, priv->recursive_counter);
 		return 0;
 	}
 	priv->recursive_counter++;
