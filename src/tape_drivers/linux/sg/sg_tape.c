@@ -132,13 +132,13 @@ static inline int _parse_logPage(const unsigned char *logdata,
 		param_len  = (uint16_t)logdata[i + LOG_PAGE_PARAMSIZE_OFFSET];
 
 		if (param_code == param)
-        {
-            *param_size = param_len;
-            const size_t copy_len = (bufsize < param_len) ? bufsize : param_len;
-            memcpy(buf, &logdata[i + LOG_PAGE_PARAM_OFFSET], copy_len);
-            ret = (bufsize < param_len) ? -EDEV_INTERNAL_ERROR : DEVICE_GOOD;
-            break;
-        }
+		{
+			*param_size = param_len;
+			const size_t copy_len = (bufsize < param_len) ? bufsize : param_len;
+			memcpy(buf, &logdata[i + LOG_PAGE_PARAM_OFFSET], copy_len);
+			ret = (bufsize < param_len) ? -EDEV_INTERNAL_ERROR : DEVICE_GOOD;
+			break;
+		}
 
 		i += param_len + LOG_PAGE_PARAM_OFFSET;
 	}
