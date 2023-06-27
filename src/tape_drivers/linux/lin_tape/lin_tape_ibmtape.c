@@ -2205,7 +2205,7 @@ int lin_tape_ibmtape_format(void *device, TC_FORMAT_TYPE format, const char *vol
  * @param page page code of log sense
  * @param buf pointer to buffer to store log data
  * @param size length of the buffer
- * @return 0 on success or a negative value on error
+ * @return Page length on success or a negative value on error.
  */
 #define MAX_UINT16 (0x0000FFFF)
 
@@ -2231,6 +2231,7 @@ int lin_tape_ibmtape_logsense(void *device, const uint8_t page, const uint8_t su
 
 	if (rc != DEVICE_GOOD) {
 		lin_tape_ibmtape_process_errors(device, rc, msg, "logsense page", true);
+		return rc;
 	} else {
 		memcpy(buf, log_page.data, size);
 	}
@@ -2263,7 +2264,7 @@ int lin_tape_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *c
 	if (IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) {
 		/* Issue LogPage 0x31 */
 		rc = lin_tape_ibmtape_logsense(device, LOG_TAPECAPACITY, (uint8_t)0, logdata, LOGSENSEPAGE);
-		if (rc) {
+		if (rc < 0) {
 			ltfsmsg(LTFS_INFO, 30457I, LOG_TAPECAPACITY, rc);
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
 			return rc;
@@ -2303,7 +2304,7 @@ int lin_tape_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *c
 	else {
 		/* Issue LogPage 0x17 */
 		rc = lin_tape_ibmtape_logsense(device, LOG_VOLUMESTATS, (uint8_t)0, logdata, LOGSENSEPAGE);
-		if (rc) {
+		if (rc < 0) {
 			ltfsmsg(LTFS_INFO, 30457I, LOG_VOLUMESTATS, rc);
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
 			return rc;
@@ -2926,7 +2927,7 @@ int lin_tape_ibmtape_get_cartridge_health(void *device, struct tc_cartridge_heal
 	/* Issue LogPage 0x37 */
 	cart_health->tape_efficiency  = UNSUPPORTED_CARTRIDGE_HEALTH;
 	rc = lin_tape_ibmtape_logsense(device, LOG_PERFORMANCE, (uint8_t)0, logdata, LOGSENSEPAGE);
-	if (rc)
+	if (rc < 0)
 		ltfsmsg(LTFS_INFO, 30461I, LOG_PERFORMANCE, rc, "get cart health");
 	else {
 		for(i = 0; i < (int)((sizeof(perfstats)/sizeof(perfstats[0]))); i++) { /* BEAM: loop doesn't iterate - Use loop for future enhancement. */
@@ -2978,7 +2979,7 @@ int lin_tape_ibmtape_get_cartridge_health(void *device, struct tc_cartridge_heal
 	cart_health->passes_middle    = UNSUPPORTED_CARTRIDGE_HEALTH;
 
 	rc = lin_tape_ibmtape_logsense(device, LOG_VOLUMESTATS, (uint8_t)0, logdata, LOGSENSEPAGE);
-	if (rc)
+	if (rc < 0)
 		ltfsmsg(LTFS_INFO, 30461I, LOG_VOLUMESTATS, rc, "get cart health");
 	else {
 		for(i = 0; i < (int)((sizeof(volstats)/sizeof(volstats[0]))); i++) {
@@ -3075,7 +3076,7 @@ int lin_tape_ibmtape_get_tape_alert(void *device, uint64_t *tape_alert)
 	/* Issue LogPage 0x2E */
 	ta = 0;
 	rc = lin_tape_ibmtape_logsense(device, LOG_TAPE_ALERT, (uint8_t)0, logdata, LOGSENSEPAGE);
-	if (rc)
+	if (rc < 0)
 		ltfsmsg(LTFS_INFO, 30461I, LOG_TAPE_ALERT, rc, "get tape alert");
 	else {
 		for(i = 1; i <= 64; i++) {
@@ -3416,7 +3417,7 @@ int lin_tape_ibmtape_get_eod_status(void *device, int part)
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETEODSTAT));
 	/* Issue LogPage 0x17 */
 	rc = lin_tape_ibmtape_logsense(device, LOG_VOL_STATISTICS, (uint8_t)0, logdata, LOGSENSEPAGE);
-	if (rc) {
+	if (rc < 0) {
 		ltfsmsg(LTFS_WARN, 30464W, LOG_VOL_STATISTICS, rc);
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETEODSTAT));
 		return EOD_UNKNOWN;
@@ -3486,7 +3487,7 @@ int lin_tape_ibmtape_get_xattr(void *device, const char *name, char **buf)
 			 ((priv->fetch_sec_acq_loss_w + 60 < now.tv_sec) && priv->dirty_acq_loss_w)) {
 			rc = lin_tape_ibmtape_logsense(device, LOG_PERFORMANCE, LOG_PERFORMANCE_CAPACITY_SUB,
 										   logdata, LOGSENSEPAGE);
-			if (rc)
+			if (rc < 0)
 				ltfsmsg(LTFS_INFO, 30461I, LOG_PERFORMANCE, rc, "get xattr");
 			else {
 				if (parse_logPage(logdata, PERF_ACTIVE_CQ_LOSS_W, &param_size, logbuf, 16)) {
