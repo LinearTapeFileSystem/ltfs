@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "inttypes.h": "c",
+        "errno.h": "c"
+    }
+}
