@@ -90,10 +90,6 @@ struct open_order {
 /* Default device name */
 const char *default_device = "0";
 
-/* Default recursive_counter value */
-struct sg_data *structure = (struct sg_data*);
-structure->recursive_counter = 0;
-
 /* Global values */
 struct sg_global_data global_data;
 
@@ -400,6 +396,9 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 	struct tm *tm_now;
 
 	/* To check if the function became recursive */
+	if (priv->recursive_counter == NULL)
+		priv->recursive_counter = 0;
+
 	if (priv->recursive_counter > MAX_TAKE_DUMP_ATTEMPTS) {
 		ltfsmsg(LTFS_WARN, 30297W, priv->recursive_counter);
 		return 0;
