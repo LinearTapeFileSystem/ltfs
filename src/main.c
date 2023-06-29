@@ -1242,6 +1242,9 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	ltfsmsg(LTFS_INFO, 14112I);
 	ltfsmsg(LTFS_INFO, 14113I);
 	ret = fuse_main(args->argc, args->argv, &ltfs_ops, priv);
+	if (ret != 0) {
+		ltfsmsg(LTFS_WARN, 14123W, ret);
+	}
 
 	/*  Setup signal handler again to terminate cleanly */
 	ret = ltfs_set_signal_handlers();
