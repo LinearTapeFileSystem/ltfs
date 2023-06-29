@@ -266,7 +266,6 @@ static inline bool _xattr_is_worm_ea(const char *name)
 static inline bool _xattr_is_stored_vea(const char *name)
 {
 	if (strcmp(name, "ltfs.spannedFileOffset") &&
-		strcmp(name, "ltfs.mediaPool.name") &&
 		strcasestr(name, "ltfs.permissions.") != name &&
 		strcasestr(name, "ltfs.hash.") != name)
 	{
@@ -480,6 +479,7 @@ static bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_vo
 			|| ! strcmp(name, "ltfs.mediaIndexPartitionAvailableSpace")
 			|| ! strcmp(name, "ltfs.mediaEncrypted")
 			|| ! strcmp(name, "ltfs.mediaPool.additionalInfo")
+			|| ! strcmp(name, "ltfs.mediaPool.name")
 			|| ! strcmp(name, "ltfs.driveEncryptionState")
 			|| ! strcmp(name, "ltfs.driveEncryptionMethod")
 			/* Vendor specific EAs */
@@ -787,9 +787,18 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 			ret = _xattr_get_cartridge_capacity(&cap, &cap.remaining_ip, &val, name, vol);
 		} else if (! strcmp(name, "ltfs.mediaEncrypted")) {
 			ret = xattr_get_string(tape_get_media_encrypted(vol->device), &val, name);
+        } else if (! strcmp(name, "ltfs.mediaPool.name")) {
+			char *tmp=NULL;
+			ret = tape_get_media_pool_info(vol, &val, &tmp);
+            if (tmp)
+                free(tmp);
+			if (ret < 0 || !val)
+				ret = -LTFS_NO_XATTR;
 		} else if (! strcmp(name, "ltfs.mediaPool.additionalInfo")) {
 			char *tmp=NULL;
 			ret = tape_get_media_pool_info(vol, &tmp, &val);
+            if (tmp)
+                free(tmp);
 			if (ret < 0 || !val)
 				ret = -LTFS_NO_XATTR;
 		} else if (! strcmp(name, "ltfs.driveEncryptionState")) {
@@ -1225,6 +1234,8 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 		free(v);
 	} else if (! strcmp(name, "ltfs.mediaPool.additionalInfo")) {
 		ret = tape_set_media_pool_info(vol, value, size, false);
+    } else if (! strcmp(name, "ltfs.mediaPool.name")) {
+		ret = tape_set_media_pool_info(vol, value, size, true);
 	} else
 		ret = -LTFS_NO_XATTR;
 
@@ -1441,15 +1452,6 @@ int xattr_set(struct dentry *d, const char *name, const char *value, size_t size
 			value = new_value;
 			size = strlen(new_value);
 		}
-	}
-
-	if (!strcmp(name, "ltfs.mediaPool.name")) {
-		ret = tape_set_media_pool_info(vol, value, size, true);
-		if (ret < 0) {
-			releasewrite_mrsw(&d->meta_lock);
-			goto out_unlock;
-		}
-		write_idx = true;
 	}
 
 	/* Set extended attribute */
