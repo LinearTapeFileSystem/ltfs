@@ -153,7 +153,8 @@ root:table {
 		14114E:string { "Cannot initialize the open file table." }
 		14115E:string { "Invalid scsi_append_only_mode option: %s." }
                 14116E:string { "This medium is not supported (%d)." }
-
+		14123W:string { "The main function of FUSE returned error (%d)." }
+		
 		// 14150 - 14199 are reserved for LE+
 
 		// Help messages
