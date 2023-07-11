@@ -53,7 +53,6 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/ioctl.h>
-#include <pthread.h>
 
 #include "ltfs_copyright.h"
 #include "libltfs/ltfslogging.h"
@@ -121,23 +120,28 @@ static inline int _parse_logPage(const unsigned char *logdata,
 								 const uint16_t param, uint32_t *param_size,
 								 unsigned char *buf, const size_t bufsize)
 {
-	const uint16_t page_len = ((uint16_t)logdata[2] << 8) | (uint8_t)logdata[3];
+	const uint16_t page_len = ((uint16_t)logdata[2] << 8) | (uint16_t)logdata[3];
 	uint16_t param_code, param_len;
 	uint32_t i = LOG_PAGE_HEADER_SIZE;
 	uint32_t ret = -EDEV_INTERNAL_ERROR;
 
 	while(i < page_len)
 	{
-		param_code = ((uint16_t)logdata[i] << 8) | (uint8_t)logdata[i+1];
+		param_code = ((uint16_t)logdata[i] << 8) | (uint16_t)logdata[i+1];
 		param_len  = (uint16_t)logdata[i + LOG_PAGE_PARAMSIZE_OFFSET];
 
 		if (param_code == param)
 		{
 			*param_size = param_len;
-			const size_t copy_len = (bufsize < param_len) ? bufsize : param_len;
-			memcpy(buf, &logdata[i + LOG_PAGE_PARAM_OFFSET], copy_len);
-			ret = (bufsize < param_len) ? -EDEV_INTERNAL_ERROR : DEVICE_GOOD;
-			break;
+			if(bufsize < param_len){
+				memcpy(buf, &logdata[i + LOG_PAGE_PARAM_OFFSET], bufsize);
+				ret = -EDEV_INTERNAL_ERROR;
+				break;
+			} else {
+				memcpy(buf, &logdata[i + LOG_PAGE_PARAM_OFFSET], param_len);
+				ret = DEVICE_GOOD;
+				break;
+			}
 		}
 
 		i += param_len + LOG_PAGE_PARAM_OFFSET;
