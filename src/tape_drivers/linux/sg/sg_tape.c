@@ -103,6 +103,8 @@ struct sg_global_data global_data;
 #define TU_DEFAULT_TIMEOUT (60)
 #define MAX_RETRY          (100)
 
+#define MAX_TAKE_DUMP_ATTEMPTS (10)
+
 /* Forward references (For keep function order to struct tape_ops) */
 int sg_readpos(void *device, struct tc_position *pos);
 int sg_locate(void *device, struct tc_position dest, struct tc_position *pos);
@@ -118,19 +120,17 @@ static inline int _parse_logPage(const unsigned char *logdata,
 								 const uint16_t param, uint32_t *param_size,
 								 unsigned char *buf, const size_t bufsize)
 {
-	uint16_t page_len, param_code, param_len;
-	uint32_t i;
+	const uint16_t page_len = ((uint16_t)logdata[2] << 8) | (uint16_t)logdata[3];
+	uint16_t param_code, param_len;
+	uint32_t i = LOG_PAGE_HEADER_SIZE;
 	uint32_t ret = -EDEV_INTERNAL_ERROR;
-
-	page_len = ((uint16_t)logdata[2] << 8) + (uint16_t)logdata[3];
-	i = LOG_PAGE_HEADER_SIZE;
 
 	while(i < page_len)
 	{
-		param_code = ((uint16_t)logdata[i] << 8) + (uint16_t)logdata[i+1];
+		param_code = ((uint16_t)logdata[i] << 8) | (uint16_t)logdata[i+1];
 		param_len  = (uint16_t)logdata[i + LOG_PAGE_PARAMSIZE_OFFSET];
 
-		if(param_code == param)
+		if (param_code == param)
 		{
 			*param_size = param_len;
 			if(bufsize < param_len){
@@ -143,6 +143,7 @@ static inline int _parse_logPage(const unsigned char *logdata,
 				break;
 			}
 		}
+
 		i += param_len + LOG_PAGE_PARAM_OFFSET;
 	}
 
@@ -392,6 +393,13 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 	time_t    now;
 	struct tm *tm_now;
 
+	/* To check if the function became recursive */
+	if (priv->recursive_counter > MAX_TAKE_DUMP_ATTEMPTS) {
+		ltfsmsg(LTFS_WARN, 30297W, priv->recursive_counter);
+		return 0;
+	}
+	priv->recursive_counter++;
+
 	if (priv->vendor != VENDOR_IBM)
 		return 0;
 
@@ -425,6 +433,8 @@ static int _take_dump(struct sg_data *priv, bool capture_unforced)
 	_get_dump(priv, fname);
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_TAKEDUMPDRV));
+
+	priv->recursive_counter = 0;
 
 	return 0;
 }

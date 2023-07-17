@@ -100,6 +100,7 @@ root:table {
 		30258W:string { "Cannot retrieve drive dump: failed to read buffer (%d)." }
 		30259W:string { "Cannot retrieve drive dump: failed to write to dump file (%d)." }
 		30260W:string { "Cannot retrieve drive dump: wrote %d bytes out, expected %d." }
+		30261W:string { "Cannot retrieve drive dump: failed to write to communicate with drive. Tried (%d) times." }
 		30261I:string { "Taking drive dump in buffer." }
 		30262I:string { "Forcing drive dump." }
 		30263I:string { "%s returns %s (%d) %s." }
@@ -136,6 +137,7 @@ root:table {
 		30294I:string { "Setting up timeout values from %s." }
 		30295I:string { "Have unstable TUR response, start over (Cur = %d, Prev = %d)." }
 		30296I:string { "Capturing a stable TUR at line %d." }
+		30297W:string { "Cannot retrieve drive dump: failed to communicate with drive. Tried (%d) times." }
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }
