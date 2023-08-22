@@ -8,9 +8,9 @@ ibmLTFS MODULE-IDENTITY
         LAST-UPDATED "201503200000Z"
         ORGANIZATION "International Business Machines Corp."
         CONTACT-INFO "IBM Support"
-        DESCRIPTION  "This file defines IBM Spectrum Archive LE/SDE MIB.
+        DESCRIPTION  "This file defines IBM Storage Archive LE/SDE MIB.
                       Licensed Materials - Property of IBM
-                      (C) Copyright IBM Corp. 2014, 2015"
+                      (C) Copyright IBM Corp. 2014, 2015, 2023"
         ::= { ibmProd 248 }
 
 ibm                  OBJECT IDENTIFIER ::= { enterprises 2 }

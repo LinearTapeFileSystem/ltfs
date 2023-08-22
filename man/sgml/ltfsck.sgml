@@ -4,7 +4,7 @@ M<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
           ]>
 
 <reference>
-  <title>IBM Spectrum Archive Command Reference</title>
+  <title>IBM Storage Archive Command Reference</title>
 
   <refentry>
     <refmeta>
@@ -12,7 +12,7 @@ M<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
         <command>&dhcommand;</command>
       </refentrytitle>
       <manvolnum>8</manvolnum>
-      <refmiscinfo>IBM Spectrum Archive</refmiscinfo>
+      <refmiscinfo>IBM Storage Archive</refmiscinfo>
     </refmeta>
 
     <refnamediv>
@@ -51,7 +51,7 @@ M<!doctype reference PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
       <title>DESCRIPTION</title>
       <para>
         <command>&dhcommand;</command> is a program to recover an inconsistent
-        LTFS formatted medium and roll back utility of the IBM Spectrum Archive.
+        LTFS formatted medium and roll back utility of the IBM Storage Archive.
       </para>
     </refsect1>
 

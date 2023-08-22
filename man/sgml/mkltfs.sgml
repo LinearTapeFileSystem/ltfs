@@ -4,7 +4,7 @@
           ]>
 
 <reference>
-  <title>IBM Spectrum Archive Command Reference</title>
+  <title>IBM Storage Archive Command Reference</title>
 
   <refentry>
     <refmeta>
@@ -12,7 +12,7 @@
         <command>&dhcommand;</command>
       </refentrytitle>
       <manvolnum>8</manvolnum>
-      <refmiscinfo>IBM Spectrum Archive</refmiscinfo>
+      <refmiscinfo>IBM Storage Archive</refmiscinfo>
     </refmeta>
 
     <refnamediv>
@@ -41,7 +41,7 @@
       <title>DESCRIPTION</title>
       <para>
         <command>&dhcommand;</command> is a program to format a media for use with
-        the IBM Spectrum Archive.
+        the IBM Storage Archive.
       </para>
     </refsect1>
 
