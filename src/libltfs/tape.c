@@ -3553,6 +3553,8 @@ int tape_read_attr(struct device_data *dev, const tape_partition_t part,
 		ret = len;
 	}
 
+	free(inner_buf);
+
 	return ret;
 }
 
