@@ -64,6 +64,16 @@
 #include "libltfs/ltfs_endian.h"
 
 DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density[] = {
+	/* TS1170 */
+	{ DRIVE_GEN_JAG7,  TC_MP_JF, TC_DC_JAG7,    MEDIUM_PERFECT_MATCH },
+	{ DRIVE_GEN_JAG7,  TC_MP_JF, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
+	{ DRIVE_GEN_JAG7,  TC_MP_JE, TC_DC_JAG6,    MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG7,  TC_MP_JE, TC_DC_UNKNOWN, MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG7,  TC_MP_JV, TC_DC_JAG6,    MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG7,  TC_MP_JV, TC_DC_UNKNOWN, MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG7,  TC_MP_JM, TC_DC_JAG6,    MEDIUM_WRITABLE },
+	{ DRIVE_GEN_JAG7,  TC_MP_JM, TC_DC_UNKNOWN, MEDIUM_WRITABLE },
+
 	/* TS1160 */
 	{ DRIVE_GEN_JAG6,  TC_MP_JE, TC_DC_JAG6,    MEDIUM_PERFECT_MATCH },
 	{ DRIVE_GEN_JAG6,  TC_MP_JE, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
@@ -141,6 +151,10 @@ DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density[] = {
 };
 
 DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density_strict[] = {
+	/* TS1170 */
+	{ DRIVE_GEN_JAG7,  TC_MP_JF, TC_DC_JAG7,    MEDIUM_PERFECT_MATCH },
+	{ DRIVE_GEN_JAG7,  TC_MP_JF, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
+
 	/* TS1160 */
 	{ DRIVE_GEN_JAG6,  TC_MP_JE, TC_DC_JAG6,    MEDIUM_PERFECT_MATCH },
 	{ DRIVE_GEN_JAG6,  TC_MP_JE, TC_DC_UNKNOWN, MEDIUM_PROBABLY_WRITABLE },
@@ -256,13 +270,16 @@ const unsigned char supported_cart[] = {
 	TC_MP_JE,
 	TC_MP_JV,
 	TC_MP_JM,
+	TC_MP_JF,
 };
 
 const unsigned char supported_density[] = {
+	TC_DC_JAG7E,
 	TC_DC_JAG6E,
 	TC_DC_JAG5AE,
 	TC_DC_JAG5E,
 	TC_DC_JAG4E,
+	TC_DC_JAG7,
 	TC_DC_JAG6,
 	TC_DC_JAG5A,
 	TC_DC_JAG5,
@@ -315,6 +332,8 @@ struct supported_device *ibm_supported_drives[] = {
 		TAPEDRIVE( IBM_VENDOR_ID, "0359260F",     DRIVE_TS1160,  "[0359260F]" ),     /* IBM TS1160 */
 		TAPEDRIVE( IBM_VENDOR_ID, "0359260E",     DRIVE_TS1160,  "[0359260E]" ),     /* IBM TS1160 */
 		TAPEDRIVE( IBM_VENDOR_ID, "0359260S",     DRIVE_TS1160,  "[0359260S]" ),     /* IBM TS1160 */
+		TAPEDRIVE( IBM_VENDOR_ID, "0359270F",     DRIVE_TS1170,  "[0359270F]" ),     /* IBM TS1170 */
+		TAPEDRIVE( IBM_VENDOR_ID, "0359270S",     DRIVE_TS1170,  "[0359270S]" ),     /* IBM TS1170 */
 		/* End of supported_devices */
 		NULL
 };
@@ -794,6 +813,26 @@ static struct _timeout_tape timeout_1160[] = {
 	{-1, -1}
 };
 
+static struct _timeout_tape timeout_1170[] = {
+	{ XCOPY,                           176820 },
+	{ ERASE,                           175900 },
+	{ FORMAT_MEDIUM,                   3120   },
+	{ LOAD_UNLOAD,                     900    },
+	{ LOCATE10,                        2280   },
+	{ LOCATE16,                        2240   },
+	{ READ,                            2340   },
+	{ READ_BUFFER,                     480    },
+	{ REWIND,                          600    },
+	{ SEND_DIAGNOSTIC,                 2280   },
+	{ SPACE6,                          2280   },
+	{ SPACE16,                         2240   },
+	{ VERIFY,                          176820 },
+	{ WRITE,                           1440   },
+	{ WRITE_BUFFER,                    540    },
+	{ WRITE_FILEMARKS6,                1380   },
+	{-1, -1}
+};
+
 static int _create_table_tape(struct timeout_tape **result,
 							  struct _timeout_tape* base,
 							  struct _timeout_tape* override)
@@ -882,6 +921,9 @@ int ibm_tape_init_timeout(struct timeout_tape** table, int type)
 		case DRIVE_TS1160:
 			ret = _create_table_tape(table, timeout_11x0, timeout_1160);
 			break;
+		case DRIVE_TS1170:
+			ret = _create_table_tape(table, timeout_11x0, timeout_1170);
+			break;
 		default:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto7_hh);
 			break;
@@ -929,6 +971,9 @@ static inline unsigned char _assume_cartridge_type(char product, char btype)
 				break;
 			case 'M':
 				ctype = TC_MP_JM;
+				break;
+			case 'F':
+				ctype = TC_MP_JF;
 				break;
 			default:
 				break;
@@ -1032,6 +1077,9 @@ char* ibm_tape_assume_cart_name(unsigned char type)
 			break;
 		case TC_MP_JM:
 			name = "JM";
+			break;
+		case TC_MP_JF:
+			name = "JF";
 			break;
 		default:
 			name = "L5";
@@ -1295,6 +1343,7 @@ bool ibm_tape_is_supported_firmware(int drive_type, const unsigned char * const 
 	case DRIVE_LTO7_HH:
 	case DRIVE_TS1150:
 	case DRIVE_TS1160:
+	case DRIVE_TS1170:
 	default:
 		break;
 	}
