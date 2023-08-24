@@ -1427,6 +1427,7 @@ static inline int _sanitize_tape(struct filedebug_data *state)
 				break;
 			case TC_MP_JV:
 				state->is_worm = true;
+				break;
 			default:
 				ltfsmsg(LTFS_INFO, 30086I, "TS1170", state->conf.cart_type);
 				state->is_worm = false;
