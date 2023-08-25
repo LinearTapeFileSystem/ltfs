@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2023 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -166,6 +166,7 @@ enum {
 	TC_DC_JAG5    = 0x55,
 	TC_DC_JAG5A   = 0x56,
 	TC_DC_JAG6    = 0x57,
+	TC_DC_JAG7    = 0x59,
 	TC_DC_JAG1E   = 0x71,
 	TC_DC_JAG2E   = 0x72,
 	TC_DC_JAG3E   = 0x73,
@@ -173,6 +174,7 @@ enum {
 	TC_DC_JAG5E   = 0x75,
 	TC_DC_JAG5AE  = 0x76,
 	TC_DC_JAG6E   = 0x77,
+	TC_DC_JAG7E   = 0x79,
 };
 
 #define ALL_MEDIA_DENSITY      0

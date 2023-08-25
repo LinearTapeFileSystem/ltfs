@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2023 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -199,6 +199,7 @@ enum {
 	DRIVE_TS1150      = 0x1105, /* TS1150 */
 	DRIVE_TS1155      = 0x5105, /* TS1155 */
 	DRIVE_TS1160      = 0x1106, /* TS1160 */
+	DRIVE_TS1170      = 0x1107, /* TS1170 */
 };
 
 enum {
@@ -212,6 +213,7 @@ enum {
 	DRIVE_GEN_JAG5    = 0x1005,
 	DRIVE_GEN_JAG5A   = 0x5005,
 	DRIVE_GEN_JAG6    = 0x1006,
+	DRIVE_GEN_JAG7    = 0x1007,
 };
 
 /* LTO cartridge type in mode page header */
@@ -256,6 +258,8 @@ enum {
 	TC_MP_JE          = 0x95,   /* IBM TS11x0 JE cartridge */
 	TC_MP_JV          = 0xA5,   /* IBM TS11x0 JV cartridge */
 	TC_MP_JM          = 0xB4,   /* IBM TS11x0 JM cartridge */
+	/* 6th gen */
+	TC_MP_JF          = 0x96,   /* IBM TS11x0 JF cartridge */
 };
 
 #define IS_REFORMATTABLE_TAPE(t) \
@@ -270,6 +274,7 @@ enum {
 	  t == TC_MP_JE ||			 \
 	  t == TC_MP_JV ||			 \
 	  t == TC_MP_JM ||			 \
+	  t == TC_MP_JF ||			 \
 	  t == TC_MP_LTO7D_CART )
 
 #endif // __tape_drivers_h
