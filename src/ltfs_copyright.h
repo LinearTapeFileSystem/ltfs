@@ -55,8 +55,8 @@ extern "C" {
 #endif
 
 #define LTFS_COPYRIGHT_0              "Licensed Materials - Property of IBM"
-#define LTFS_COPYRIGHT_1              "IBM Spectrum Archive Single Drive Edition"
-#define LTFS_COPYRIGHT_2              "(C) Copyright IBM Corp. 2011, 2017 All Rights Reserved"
+#define LTFS_COPYRIGHT_1              "IBM Storage Archive Single Drive Edition"
+#define LTFS_COPYRIGHT_2              "(C) Copyright IBM Corp. 2011, 2023 All Rights Reserved"
 #define LTFS_COPYRIGHT_3              "US Government Users Restricted Rights - Use, duplication or "
 #define LTFS_COPYRIGHT_4              "disclosure restricted by GSA ADP Schedule Contract with"
 #define LTFS_COPYRIGHT_5              "IBM Corp."
