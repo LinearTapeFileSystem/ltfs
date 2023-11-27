@@ -708,7 +708,7 @@ int main(int argc, char **argv)
 	if (priv->device_list) {
 		ret = show_device_list(priv);
 		ltfs_finish();
-		return (ret != 0) ? 0 : 1;
+		return ret ? 1 : 0;
 	}
 
 	/* Validate sync option */

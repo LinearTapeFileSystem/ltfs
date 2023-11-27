@@ -4371,7 +4371,7 @@ int ltfs_print_device_list(struct tape_ops *ops)
 		}
 	}
 
-	ret = 0;
+	//ret = 0;
 
 	return ret;
 }
