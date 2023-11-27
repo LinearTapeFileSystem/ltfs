@@ -1420,13 +1420,8 @@ static inline int _sanitize_tape(struct filedebug_data *state)
 		}
 	} else if (gen == DRIVE_GEN_JAG7) {
 		switch (state->conf.cart_type) {
-			case TC_MP_JE:
-			case TC_MP_JM:
 			case TC_MP_JF:
 				state->is_worm = false;
-				break;
-			case TC_MP_JV:
-				state->is_worm = true;
 				break;
 			default:
 				ltfsmsg(LTFS_INFO, 30086I, "TS1170", state->conf.cart_type);
