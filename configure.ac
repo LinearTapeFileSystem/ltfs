@@ -36,7 +36,7 @@
 dnl
 dnl LTFS configure.ac.
 dnl
-AC_INIT([LTFS], [2.5.0.0 (Prelim)], IBM corporation.)
+AC_INIT([LTFS],[2.5.0.0 (Prelim)],[IBM corporation.])
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4])
@@ -46,7 +46,6 @@ AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_CC
 AC_USE_SYSTEM_EXTENSIONS
-AC_PROG_CC_C99
 AM_PROG_CC_C_O
 AM_PROG_AR
 LT_INIT
