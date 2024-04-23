@@ -62,6 +62,7 @@ libltfs_la_SOURCES = \
 	config_file.c \
 	plugin.c \
 	periodic_sync.c \
+	inc_journal.c \
 	arch/uuid_internal.c \
 	arch/filename_handling.c \
 	arch/time_internal.c \

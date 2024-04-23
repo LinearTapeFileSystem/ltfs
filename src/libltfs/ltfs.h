@@ -339,7 +339,7 @@ struct dentry {
 	/* Take the iosched_lock before accessing iosched_priv. */
 	void *iosched_priv;            /**< I/O scheduler private data. */
 
-	struct name_list *child_list;  /* for hash search */
+	struct name_list *child_list;  /**< Child list for hash search */
 };
 
 struct tape_attr {
@@ -458,10 +458,15 @@ struct ltfs_volume {
 	struct tape_attr *t_attr;      /**< Tape Attribute data */
 	mam_lockval lock_status;       /**< Total volume lock status from t_attr->vollock and index->vollock */
 	struct ltfs_timespec first_locate; /**< Time to first locate */
-	int file_open_count;            /**< Number of opened files */
+	int file_open_count;           /**< Number of opened files */
 
-	const char *work_directory;
+	/* Journal structure for incremental index */
+	struct jentry       *journal;      /**< Journal for incremental index */
+	TAILQ_HEAD(jcreated_struct, jcreated_entry) created_dirs;
+	bool                journal_err;   /**< Journal error flag, write a full index next time forcibly */
 
+	/* Misc */
+	const char *work_directory;    /**< work directory for profiler data, dump etc.*/
 };
 
 struct ltfs_label {
@@ -723,6 +728,7 @@ void ltfs_enable_livelink_mode(struct ltfs_volume *vol);
 int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol);
 
 int ltfs_get_rao_list(char *path, struct ltfs_volume *vol);
+int ltfs_build_fullpath(char **dest, struct dentry *d);
 
 #ifdef __cplusplus
 }

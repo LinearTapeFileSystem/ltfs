@@ -85,6 +85,7 @@ int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_e
 			bool *fm_after, bool *blocks_after, bool recover_symlink, struct ltfs_volume *vol);
 void _ltfs_last_ref(struct dentry *d, tape_block_t *dp_last, tape_block_t *ip_last,
 					struct ltfs_volume *vol);
-int ltfs_split_symlink( struct ltfs_volume *vol );
+int ltfs_split_symlink(struct ltfs_volume *vol);
+int ltfs_set_dentry_dirty(struct dentry *d, struct ltfs_volume *vol);
 
 #endif /* __ltfs_internal_h__ */

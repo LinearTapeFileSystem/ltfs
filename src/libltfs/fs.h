@@ -146,4 +146,26 @@ int fs_path_lookup(const char *path, int flags, struct dentry **dentry, struct l
  */
 void fs_split_path(char *path, char **filename, size_t len);
 
+/**
+ * Cleanup d->dirty flag in the provided path
+ *
+ * @param path Path to search for, in UTF-8 NFC. The path should be checked
+ *             for invalid characters by the caller. This function validates the length of each
+ *             path component. If path points to an empty string, this function returns the
+ *             root dentry.
+ * @param idx LTFS index to search.
+ * @return 0 on success (dentry found), -LTFS_NO_DENTRY if no dentry was found, -LTFS_NAMETOOLONG
+ *         if any component of the path is too long, or another negative value if an internal
+ *         (unexpected) error occurs.
+ */
+int fs_path_clean(const char *path, struct ltfs_index *idx);
+
+/**
+ * Cleanup d->dirty flag under the provided directory (dentry) recursively
+ *
+ * @param d dentry structure to clean. Expect a directory.
+ * @return 0 on success, otherwise on error
+ */
+int fs_dir_clean(struct dentry *d);
+
 #endif /* __fs_helper_h */
