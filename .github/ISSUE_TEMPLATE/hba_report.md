@@ -1,6 +1,6 @@
 ---
 name: HBA report
-description: Report a HBA that is working on the specific enviroment
+about: Report a HBA that is working on the specific enviroment
 assignees: piste-jp-ibm
 lebels: HBA Report
 title: HBA list request
