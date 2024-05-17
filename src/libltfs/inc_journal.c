@@ -379,7 +379,7 @@ static int _by_path(const struct jentry *a, const struct jentry *b)
 static inline int dig_path(char *p, struct ltfs_index *idx)
 {
 	int ret = 0;
-	char *path, *filename;
+	char *path;
 
 	path = strdup(p);
 	if (! path) {
@@ -414,7 +414,7 @@ void incj_dump(struct ltfs_volume *vol)
 	printf("--------------------------------------------------------------------------------\n");
 	HASH_SORT(vol->journal, _by_path);
 	HASH_ITER(hh, vol->journal, ent, tmp) {
-		printf("JOURNAL: %s, %llu, %s, ", ent->id.full_path, ent->id.uid, reason[ent->reason]);
+		printf("JOURNAL: %s, %llu, %s, ", ent->id.full_path, (unsigned long long)ent->id.uid, reason[ent->reason]);
 		if (!ent->dentry)
 			printf("no-dentry\n");
 		else {
