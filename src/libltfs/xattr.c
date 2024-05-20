@@ -881,6 +881,7 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 				ret = _xattr_get_vendorunique_xattr(&val, name, vol);
 			}
 		} else if (! strcmp(name, "ltfs.sync")) {
+			ltfs_set_commit_message_reason(SYNC_EA, vol);
 			ret = ltfs_sync_index(SYNC_EA, false, vol);
 		}
 	}
@@ -915,9 +916,8 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 {
 	int ret = 0;
 
-	if (! strcmp(name, "ltfs.sync") && d == vol->index->root)
-		ret = ltfs_sync_index(SYNC_EA, false, vol);
-	else if (! strcmp(name, "ltfs.commitMessage") && d == vol->index->root) {
+	if ((! strcmp(name, "ltfs.commitMessage") || ! strcmp(name, "ltfs.sync"))
+		&& d == vol->index->root) {
 		char *value_null_terminated, *new_value;
 
 		if (size > INDEX_MAX_COMMENT_LEN) {
@@ -945,12 +945,16 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 			ret = pathname_format(value_null_terminated, &new_value, false, true);
 			free(value_null_terminated);
 			if (ret < 0) {
+				/* Try to sync index even if the value is not valid */
+				ltfs_set_commit_message_reason_unlocked(SYNC_EA, vol);
 				ltfs_mutex_unlock(&vol->index->dirty_lock);
+
+				ret = ltfs_sync_index(SYNC_EA, false, vol);
 				return ret;
 			}
 			ret = 0;
 
-			/* Update the commit message in the index */
+			/* Update THE commit message in the index */
 			if (vol->index->commit_message)
 				free(vol->index->commit_message);
 			vol->index->commit_message = new_value;
@@ -958,6 +962,8 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 
 		ltfs_set_index_dirty(false, false, vol->index);
 		ltfs_mutex_unlock(&vol->index->dirty_lock);
+
+		ret = ltfs_sync_index(SYNC_EA, false, vol);
 
 	} else if (! strcmp(name, "ltfs.volumeName") && d == vol->index->root) {
 		char *value_null_terminated, *new_value;
@@ -1228,6 +1234,8 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 			vol->lock_status = new;
 
 			ltfs_set_index_dirty(false, false, vol->index);
+			ltfs_set_commit_message_reason_unlocked(SYNC_ADV_LOCK, vol);
+
 			ret = ltfs_sync_index(SYNC_ADV_LOCK, false, vol);
 			ret = tape_device_lock(vol->device);
 			if (ret < 0) {
@@ -1486,9 +1494,10 @@ int xattr_set(struct dentry *d, const char *name, const char *value, size_t size
 
 	releasewrite_mrsw(&d->meta_lock);
 
-	if (write_idx)
+	if (write_idx) {
+		ltfs_set_commit_message_reason(SYNC_EA, vol);
 		ret = ltfs_sync_index(SYNC_EA, false, vol);
-	else
+	} else
 		ret = 0;
 
 out_unlock:

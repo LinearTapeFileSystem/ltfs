@@ -4634,3 +4634,61 @@ int ltfs_build_fullpath(char **dest, struct dentry *d)
 
 	return ret;
 }
+
+/**
+ * Update commit message of index to the prefixed message based on sync reason.
+ * @param reason sync reason defined in ltfs.h
+ * @param vol LTFS colume
+ */
+void ltfs_set_commit_message_reason(char *reason, struct ltfs_volume *vol)
+{
+	ltfs_mutex_lock(&vol->index->dirty_lock);
+	ltfs_set_commit_message_reason_unlocked(reason, vol);
+	ltfs_mutex_unlock(&vol->index->dirty_lock);
+
+	return;
+}
+
+/**
+ * Update commit message of index to the prefixed message based on sync reason. Caller need to
+ * take index->dirty_lock before calling this function.
+ * @param reason sync reason defined in ltfs.h
+ * @param vol LTFS volume
+ */
+void ltfs_set_commit_message_reason_unlocked(char *reason, struct ltfs_volume *vol)
+{
+	bool dirty = false;
+	int ret = 0;
+	char *str_now = NULL, *msg = NULL;
+	struct ltfs_timespec now;
+
+	if (!vol->index->dirty) {
+		/* Do nothing because no update was made */
+		goto out;
+	}
+
+	if (vol->index->commit_message) {
+		free(vol->index->commit_message);
+		dirty = true;
+	}
+
+	ret = get_current_timespec(&now);
+	if (ret)
+		goto out;
+
+	ret = xml_format_time(now, &str_now);
+	if (ret)
+		goto out;
+
+	ret = asprintf(&msg, "%s - %s", reason, str_now);
+	if (ret) {
+		vol->index->commit_message = msg;
+		dirty = true;
+	}
+
+out:
+	if (dirty)
+		ltfs_set_index_dirty(false, false, vol->index);
+
+	return;
+}
