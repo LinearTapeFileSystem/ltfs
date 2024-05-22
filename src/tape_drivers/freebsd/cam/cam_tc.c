@@ -1244,7 +1244,7 @@ static int camtape_get_next_block_to_xfer(void *device, struct tc_position *pos)
 		camtape_process_errors(softc, rc, msg, "READPOS", true);
 	else {
 		pos->partition = ext_data.partition;
-		pos->block = scsi_8btou64(ext_data.last_object); // here on line no. 1247 there was semicolon missing --> so i fixed it
+		pos->block = scsi_8btou64(ext_data.last_object);
 		ltfsmsg(LTFS_DEBUG, 30398D, "next-block-to-xfer",
 				(unsigned long long) pos->block, 0, 0, softc->drive_serial);
 	}
