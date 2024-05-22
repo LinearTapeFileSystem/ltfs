@@ -70,6 +70,7 @@
 #include "xattr.h"
 #include "xml_libltfs.h"
 #include "label.h"
+#include "inc_journal.h"
 #include "arch/version.h"
 #include "arch/filename_handling.h"
 #include "libltfs/arch/errormap.h"
@@ -372,6 +373,9 @@ int ltfs_volume_alloc(const char *execname, struct ltfs_volume **volume)
 			goto out_condfree;
 		}
 	}
+
+	newvol->journal = NULL;
+	TAILQ_INIT(&newvol->created_dirs);
 
 	*volume = newvol;
 	return 0;
@@ -2460,6 +2464,8 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		ltfsmsg(LTFS_ERR, 11342E, ret);
 		return ret;
 	}
+
+	incj_clear(vol); /* Clear incremental journal data */
 
 	bc_print = _get_barcode(vol);
 
@@ -4570,5 +4576,61 @@ int ltfs_get_rao_list(char *path, struct ltfs_volume *vol)
 
 out:
 	tape_device_unlock(vol->device);
+	return ret;
+}
+
+static inline char* _lay_dirs(char *p, struct dentry *d)
+{
+	int ret = 0;
+	char *path = NULL;
+
+	if (p) {
+		if (d->parent)
+			ret = asprintf(&path, "%s/%s", d->name.name, p);
+		else {
+			/*
+			 * root dir doesn't have the parent and d->name.name is "/".
+			 * So directory separator, '/', is not needed.
+			 */
+			ret = asprintf(&path, "%s%s", d->name.name, p);
+		}
+		free(p);
+	} else {
+		ret = asprintf(&path, "%s", d->name.name);
+	}
+
+	if (ret < 0)
+		return NULL;
+
+	if (d->parent) {
+		path = _lay_dirs(path, d->parent);
+		if (!path) {
+			/* Memory allocation error */
+			return NULL;
+		}
+	}
+
+	return path;
+}
+
+/**
+ *  Build full path from a dentry
+ */
+int ltfs_build_fullpath(char **dest, struct dentry *d)
+{
+	int ret = 0;
+	char *path = NULL;
+
+	CHECK_ARG_NULL(dest, -LTFS_NULL_ARG);
+
+	path = _lay_dirs(path, d);
+	if (path) {
+		*dest = path;
+	} else {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		*dest = NULL;
+		ret = -LTFS_NO_MEMORY;
+	}
+
 	return ret;
 }

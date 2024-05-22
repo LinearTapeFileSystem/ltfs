@@ -66,6 +66,7 @@
 #include "dcache.h"
 #include "pathname.h"
 #include "index_criteria.h"
+#include "inc_journal.h"
 #include "arch/time_internal.h"
 
 int ltfs_fsops_open(const char *path, bool open_write, bool use_iosched, struct dentry **d,
@@ -367,9 +368,10 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 	if (! isdir)
 		++vol->index->file_count;
 	ltfs_set_index_dirty(false, false, vol->index);
+	incj_create(path_norm, d, vol);
 	d->dirty = true;
 	ltfs_mutex_unlock(&vol->index->dirty_lock);
-	vol->file_open_count ++;
+	vol->file_open_count++;
 
 	*dentry = d;
 	ret = 0;
@@ -522,8 +524,12 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
 	releasewrite_mrsw(&d->meta_lock);
 
 	ltfs_mutex_lock(&vol->index->dirty_lock);
-	if (! d->isdir)
+	if (d->isdir) {
+		incj_rmdir(path_norm, d, vol);
+	} else {
+		incj_rmfile(path_norm, d, vol);
 		--vol->index->file_count;
+	}
 	ltfs_set_index_dirty(false, false, vol->index);
 	ltfs_mutex_unlock(&vol->index->dirty_lock);
 
@@ -548,7 +554,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	int ret;
 	char *from_norm = NULL, *to_norm = NULL;
 	char *from_norm_copy = NULL, *to_norm_copy = NULL;
-	char *from_filename, *to_filename;
+	char *from_filename = NULL, *to_filename = NULL, *to_filename_incj = NULL;
 	char *to_filename_copy = NULL, *to_filename_copy2 = NULL;
 	struct dentry *fromdir = NULL, *todir = NULL;
 	struct dentry *fromdentry = NULL, *todentry = NULL;
@@ -587,14 +593,12 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		goto out_free;
 	}
 
-	if (dcache_initialized(vol)) {
-		from_norm_copy = strdup(from_norm);
-		to_norm_copy = strdup(to_norm);
-		if (! from_norm_copy || ! to_norm_copy) {
-			ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_rename: file name copy");
-			ret = -LTFS_NO_MEMORY;
-			goto out_free;
-		}
+	from_norm_copy = strdup(from_norm);
+	to_norm_copy = strdup(to_norm);
+	if (! from_norm_copy || ! to_norm_copy) {
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_rename: file name copy");
+		ret = -LTFS_NO_MEMORY;
+		goto out_free;
 	}
 
 	/* Split paths into directory and file name */
@@ -868,6 +872,16 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 
 	fromdentry->dirty = true;
 
+	/* Process the incremental journal */
+	if (fromdentry->isdir)
+		incj_rmdir(from_norm_copy, fromdentry, vol);
+	else
+		incj_rmfile(from_norm_copy, fromdentry, vol);
+
+	fs_split_path(to_norm_copy, &to_filename_incj, strlen(to_norm_copy) + 1);
+	incj_create(to_norm_copy, fromdentry, vol);
+
+	/* Release dentry of source */
 	if (! iosched_initialized(vol))
 		fs_release_dentry_unlocked(fromdentry);
 	else
@@ -1565,7 +1579,7 @@ int ltfs_fsops_utimens(struct dentry *d, const struct ltfs_timespec ts[2], struc
 					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[0].tv_sec);
 		get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, true, vol->index);
-		d->dirty = true;
+		ltfs_set_dentry_dirty(d, vol);
 	}
 	if (d->modify_time.tv_sec != ts[1].tv_sec || d->modify_time.tv_nsec != ts[1].tv_nsec) {
 		d->modify_time = ts[1];
@@ -1575,7 +1589,7 @@ int ltfs_fsops_utimens(struct dentry *d, const struct ltfs_timespec ts[2], struc
 					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[1].tv_sec);
 		get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, false, vol->index);
-		d->dirty = true;
+		ltfs_set_dentry_dirty(d, vol);
 	}
 	if (dcache_initialized(vol))
 		dcache_flush(d, FLUSH_METADATA, vol);
@@ -1642,7 +1656,7 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[3].tv_sec);
 		isctime=true;
 		ltfs_set_index_dirty(true, false, vol->index);
-		d->dirty = true;
+		ltfs_set_dentry_dirty(d, vol);
 	}
 	if (ts[0].tv_sec != 0 || ts[0].tv_nsec != 0) {
 		d->access_time = ts[0];
@@ -1652,7 +1666,7 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[0].tv_sec);
 		if(!isctime) get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, true, vol->index);
-		d->dirty = true;
+		ltfs_set_dentry_dirty(d, vol);
 	}
 	if (ts[1].tv_sec != 0 || ts[1].tv_nsec != 0) {
 		d->modify_time = ts[1];
@@ -1662,7 +1676,7 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[1].tv_sec);
 		if(!isctime) get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, false, vol->index);
-		d->dirty = true;
+		ltfs_set_dentry_dirty(d, vol);
 	}
 	if (ts[2].tv_sec != 0 || ts[2].tv_nsec != 0) {
 		d->creation_time = ts[2];
@@ -1672,7 +1686,7 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[2].tv_sec);
 		if(!isctime) get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, false, vol->index);
-		d->dirty = true;
+		ltfs_set_dentry_dirty(d, vol);
 	}
 
 	if (dcache_initialized(vol))
@@ -1683,7 +1697,6 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 
 	return 0;
 }
-
 
 int ltfs_fsops_set_readonly(struct dentry *d, bool readonly, struct ltfs_volume *vol)
 {
@@ -1710,6 +1723,7 @@ int ltfs_fsops_set_readonly(struct dentry *d, bool readonly, struct ltfs_volume 
 		d->readonly = readonly;
 		get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, false, vol->index);
+		ltfs_set_dentry_dirty(d, vol);
 		if (dcache_initialized(vol))
 			dcache_flush(d, FLUSH_METADATA, vol);
 	}
@@ -2000,86 +2014,87 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 
 int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* buf, size_t size )
 {
-	char *work_buf, *target_buf, *temp_buf, *token, *next_token; // work buffer for string
-	int len=0,len2=0;	// work variables for string length
+	char *work_buf, *target_buf, *temp_buf, *token, *next_token; /* work buffers for string */
+	int  len=0, len2=0;                                          /* work variables for string length */
 
 	CHECK_ARG_NULL(link, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(target, -LTFS_NULL_ARG);
 
-	// need to set message and return code
+	/* need to set message and return code */
 	if (link[0]!='/') {
 		return -LTFS_BAD_ARG;
 	}
 
+	/* Check input target string is already absolute path or not */
 	len2 = strlen(target);
-	// input target string is already absolute path
 	if ( (target[0]=='/') && !strstr(target,"./" ) ) {
 		if ( size < (size_t)len2+1) {
 			return -LTFS_SMALL_BUFFER;
 		}
-		strcpy( buf, target );
+		strcpy(buf, target);
 		return 0;
 	}
 
 	len=strlen(link);
-	work_buf = malloc(len+len2+1);
+	work_buf = malloc(len + len2 + 1);
 	if (!work_buf)  {
 		return -LTFS_NO_MEMORY;
 	}
 
-	target_buf = malloc(len2+1);
+	target_buf = malloc(len2 + 1);
 	if (!target_buf) {
-		free( work_buf );
+		free(work_buf);
 		return -LTFS_NO_MEMORY;
 	}
 
-	if ( target[0]=='/' ) {
-		temp_buf=strstr( target, "/." );		// get "/../ccc/target.txt" of "/aaa/../ccc/target.txt"
-		strcpy(target_buf,temp_buf+1);			// copy "../ccc/target.txt"
-		len=strlen(target_buf)+1;
-		len=len2-len;
-		strncpy( work_buf, target, len );		// copy "/aaa"
+	if (target[0]=='/') {
+		temp_buf = strstr(target, "/.");  /* get "/../ccc/target.txt" of "/aaa/../ccc/target.txt" */
+		strcpy(target_buf, temp_buf + 1); /* copy "../ccc/target.txt" */
+		len = strlen(target_buf) + 1;
+		len = len2 - len;
+		strncpy(work_buf, target, len);   /* copy "/aaa" */
 	} else {
-		strcpy( work_buf, link );
-		strcpy( target_buf, target );
+		strcpy(work_buf, link);
+		strcpy(target_buf, target);
 
-		// split link file name then get current directory
-		temp_buf=strrchr( work_buf, '/' );		// get "/link.txt" from "/aaa/bbb/link.txt"
-		len = len-strlen(temp_buf);				// length of "/aaa/bbb"
+		/* Split link file name then get current directory */
+		temp_buf = strrchr(work_buf, '/'); /* get "/link.txt" from "/aaa/bbb/link.txt" */
+		len -= strlen(temp_buf);           /* length of "/aaa/bbb" */
 	}
 
-	// split target path directory then modify current directory with target path information
-	token = strtok( target_buf,"/" );			//  get ".." from "../ccc/target.txt"
-	while ( token ) {
-		next_token = strtok( NULL,"/" );		// if next_token is NULL then token is filename
-		if ( !next_token ) break;
-		if ( strcmp( token,".." )==0 ) {
-			work_buf[len]='\0';					// "/aaa/bbb\0link.txt"
-			temp_buf=strrchr( work_buf, '/' );	// get "/bbb"
+	/* Split target path directory then modify current directory with target path information */
+	token = strtok(target_buf, "/");     /*  get ".." from "../ccc/target.txt" */
+	while (token) {
+		next_token = strtok(NULL, "/");  /* if next_token is NULL then token is filename */
+		if (!next_token)
+			break;
+		if (strcmp(token, "..") == 0) {
+			work_buf[len] = '\0';               /* "/aaa/bbb\0link.txt" */
+			temp_buf = strrchr(work_buf, '/' ); /* get "/bbb" */
 			if (!temp_buf) {
-				*buf = '\0';					// out of ltfs range
+				*buf = '\0';         /* out of ltfs range */
 				return 0;
 			}
-			len = len-strlen(temp_buf);			// length of "/aaa"
-		} else if ( strcmp( token, "." ) ) {	// have directory name
-			work_buf[len]='/';					// put '/ 'as "/aaa/"
-			strncpy( work_buf+len+1, token, strlen(token)+1 );	// "/aaa/ccc\0"
-			len=strlen(work_buf);
+			len -= strlen(temp_buf); /* length of "/aaa" */
+		} else if (strcmp(token, "." )) {                    /* have directory name */
+			work_buf[len] = '/';                             /* put '/ 'as "/aaa/" */
+			strncpy(work_buf+len+1, token, strlen(token)+1); /* "/aaa/ccc\0" */
+			len = strlen(work_buf);
 		}
 		token = next_token;
 	}
-	work_buf[len]='/';									// put '/ 'as "/aaa/ccc/"
-	strncpy( work_buf+len+1, token, strlen(token)+1 );	// "/aaa/ccc/target.txt\0"
+	work_buf[len] = '/';                             /* put '/ 'as "/aaa/ccc/" */
+	strncpy(work_buf+len+1, token, strlen(token)+1); /* "/aaa/ccc/target.txt\0" */
 
-	if ( size < strlen(work_buf)+1 ) {
-		free( work_buf );
-		free( target_buf );
+	if (size < strlen(work_buf) + 1) {
+		free(work_buf);
+		free(target_buf);
 		return -LTFS_SMALL_BUFFER;
 	}
 
-	strcpy( buf, work_buf );
-	free( work_buf );
-	free( target_buf );
+	strcpy(buf, work_buf);
+	free(work_buf);
+	free(target_buf);
 	return 0;
 }
 

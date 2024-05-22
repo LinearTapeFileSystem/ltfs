@@ -650,6 +650,99 @@ void fs_split_path(char *path, char **filename, size_t len)
 	}
 }
 
+int fs_path_clean(const char *path, struct ltfs_index *idx)
+{
+	int ret = 0;
+	struct dentry *d = NULL, *parent = NULL;
+	char *tmp_path, *start, *end;
+
+	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(idx, -LTFS_NULL_ARG);
+
+	tmp_path = strdup(path);
+	if (! tmp_path) {
+		ltfsmsg(LTFS_ERR, 10001E, "fs_path_clean: tmp_path");
+		return -LTFS_NO_MEMORY;
+	}
+
+	/* Get a reference count on the root dentry. Either it will be returned immediately, or it
+	 * will be disposed later after the first path lookup. */
+	acquirewrite_mrsw(&idx->root->meta_lock);
+	++idx->root->numhandles;
+	releasewrite_mrsw(&idx->root->meta_lock);
+
+	if (idx->root->dirty)
+		idx->root->dirty = false;
+
+	/* Did the caller ask for the root dentry? */
+	if (*path == '\0' || ! strcmp(path, "/")) {
+		goto out;
+	}
+
+	start = tmp_path + 1;
+	end = tmp_path;
+	d = idx->root;
+
+	while (end) {
+		end = strstr(start, "/");
+		if (end)
+			*end = '\0';
+
+		acquireread_mrsw(&d->contents_lock);
+
+		if (parent)
+			releaseread_mrsw(&parent->contents_lock);
+		parent = d;
+		d = NULL;
+
+		ret = fs_directory_lookup(parent, start, &d);
+		if (ret < 0 || ! d) {
+			releaseread_mrsw(&parent->contents_lock);
+			fs_release_dentry(parent);
+
+			if (ret == 0)
+				ret = -LTFS_NO_DENTRY;
+			goto out;
+		}
+
+		/* Release the parent if we aren't keeping any locks on it.
+		 * Since we know 'parent' has a child (d), it's guaranteed that parent is still linked
+		 * into the file system tree. Therefore, fs_release_dentry is just a fancy way of
+		 * decrementing the handle count... so do that. */
+		acquirewrite_mrsw(&parent->meta_lock);
+		--parent->numhandles;
+		releasewrite_mrsw(&parent->meta_lock);
+
+		if (d->dirty)
+			d->dirty = false;
+
+		if (end)
+			start = end + 1;
+	}
+
+	releaseread_mrsw(&parent->contents_lock);
+
+out:
+	free(tmp_path);
+
+	return ret;
+}
+
+int fs_dir_clean(struct dentry *d)
+{
+	struct name_list *list_ptr = NULL, *list_tmp = NULL;
+	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
+
+	if (d->isdir) {
+		HASH_ITER(hh, d->child_list, list_ptr, list_tmp) {
+			fs_dir_clean(list_ptr->d);
+		}
+	} else
+		d->dirty = false;
+
+	return 0;
+}
+
 /**
  * Dispose a dentry and all resources used by it, including the struct dentry itself.
  * @param dentry dentry to dispose.

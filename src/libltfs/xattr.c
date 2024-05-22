@@ -66,6 +66,7 @@
 #include "pathname.h"
 #include "tape.h"
 #include "ltfs_internal.h"
+#include "inc_journal.h"
 #include "arch/time_internal.h"
 
 /* Helper functions for formatting virtual EA output */
@@ -209,7 +210,9 @@ static int _xattr_set_time(struct dentry *d, struct ltfs_timespec *out, const ch
 
 	acquirewrite_mrsw(&d->meta_lock);
 	*out = t;
-	d->dirty = true;
+
+	ltfs_set_dentry_dirty(d, vol);
+
 	releasewrite_mrsw(&d->meta_lock);
 
 	ltfs_set_index_dirty(true, false, vol->index);
@@ -492,6 +495,7 @@ static bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_vo
 			|| ! strcmp(name, "ltfs.vendor.IBM.rao")
 			|| ! strcmp(name, "ltfs.vendor.IBM.logPage")
 			|| ! strcmp(name, "ltfs.vendor.IBM.mediaMAM")
+			|| ! strcmp(name, "ltfs.vendor.IBM.dumpincj")
 			|| ! strncmp(name, "ltfs.vendor", strlen("ltfs.vendor")))
 			return true;
 	}
@@ -867,6 +871,10 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 			if (part > 1) return -LTFS_NO_XATTR;
 
 			ret = ltfs_mam(part, (unsigned char *)buf, buf_size, vol);
+
+		} else if (! strcmp(name, "ltfs.vendor.IBM.dumpincj")) {
+			incj_dump(vol);
+			ret = 0;
 
 		} else if (! strncmp(name, "ltfs.vendor", strlen("ltfs.vendor"))) {
 			if (! strncmp(name + strlen("ltfs.vendor."), LTFS_VENDOR_NAME, strlen(LTFS_VENDOR_NAME))) {
@@ -1472,9 +1480,11 @@ int xattr_set(struct dentry *d, const char *name, const char *value, size_t size
 	}
 
 	get_current_timespec(&d->change_time);
-	releasewrite_mrsw(&d->meta_lock);
-	d->dirty = true;
+
 	ltfs_set_index_dirty(true, false, vol->index);
+	ltfs_set_dentry_dirty(d, vol);
+
+	releasewrite_mrsw(&d->meta_lock);
 
 	if (write_idx)
 		ret = ltfs_sync_index(SYNC_EA, false, vol);
@@ -1734,8 +1744,8 @@ int xattr_remove(struct dentry *d, const char *name, struct ltfs_volume *vol)
 		ltfsmsg(LTFS_INFO, 17238I, "appendonly", d->is_appendonly, d->name.name);
 	}
 
-	d->dirty = true;
 	ltfs_set_index_dirty(true, false, vol->index);
+	ltfs_set_dentry_dirty(d, vol);
 
 out_dunlk:
 	_xattr_unlock_dentry(name, true, d, vol);
