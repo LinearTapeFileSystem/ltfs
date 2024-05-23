@@ -363,8 +363,8 @@ void ltfs_admin_function_trace_completed(uint32_t tid)
 static void ltfs_function_trace_destroy(void)
 {
 	if (fs_tr_list) {
-		struct filesystem_trace_list *fsitem;
-		for (fsitem=fs_tr_list; fsitem != NULL; fsitem=fsitem->hh.next) {
+		struct filesystem_trace_list *fsitem, *tmp;
+		HASH_ITER(hh, fs_tr_list, fsitem, tmp) {
 			destroy_mrsw(&fsitem->fn_entry->trace_lock);
 			free(fsitem->fn_entry);
 			free(fsitem);
@@ -372,8 +372,8 @@ static void ltfs_function_trace_destroy(void)
 		fs_tr_list = NULL;
 	}
 	if (admin_tr_list) {
-		struct admin_trace_list *aditem;
-		for (aditem=admin_tr_list; aditem != NULL; aditem=aditem->hh.next) {
+		struct admin_trace_list *aditem, *tmp;
+		HASH_ITER(hh, admin_tr_list, aditem, tmp) {
 			destroy_mrsw(&aditem->fn_entry->trace_lock);
 			free(aditem->fn_entry);
 			free(aditem);
@@ -381,8 +381,8 @@ static void ltfs_function_trace_destroy(void)
 		admin_tr_list = NULL;
 	}
 	if (acomp) {
-		struct admin_completed_function_trace *tailq_item;
-		TAILQ_FOREACH (tailq_item, acomp, list) {
+		struct admin_completed_function_trace *tailq_item, *tmp;
+		TAILQ_FOREACH_SAFE(tailq_item, acomp, list, tmp) {
 			destroy_mrsw(&tailq_item->trace_lock);
 			free(tailq_item->fn_entry);
 			free(tailq_item);
