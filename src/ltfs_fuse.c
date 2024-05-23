@@ -1169,6 +1169,7 @@ void ltfs_fuse_umount(void *userdata)
 	if (kmi_initialized(priv->data))
 		kmi_destroy(priv->data);
 
+	ltfs_set_commit_message_reason(SYNC_UNMOUNT, priv->data);
 	ltfs_unmount(SYNC_UNMOUNT, priv->data);
 
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_UNMOUNT), 0, 0);

@@ -926,43 +926,48 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 		}
 
 		ltfs_mutex_lock(&vol->index->dirty_lock);
-		if (! value || ! size) {
-			/* Clear the current comment field */
-			if (vol->index->commit_message) {
-				free(vol->index->commit_message);
-				vol->index->commit_message = NULL;
-			}
-		} else {
-			value_null_terminated = malloc(size + 1);
-			if (! value_null_terminated) {
-				ltfsmsg(LTFS_ERR, 10001E, "_xattr_set_virtual: commit_message");
-				ltfs_mutex_unlock(&vol->index->dirty_lock);
-				return -LTFS_NO_MEMORY;
-			}
-			memcpy(value_null_terminated, value, size);
-			value_null_terminated[size] = '\0';
-
-			ret = pathname_format(value_null_terminated, &new_value, false, true);
-			free(value_null_terminated);
-			if (ret < 0) {
-				/* Try to sync index even if the value is not valid */
-				ltfs_set_commit_message_reason_unlocked(SYNC_EA, vol);
-				ltfs_mutex_unlock(&vol->index->dirty_lock);
-
-				ret = ltfs_sync_index(SYNC_EA, false, vol);
-				return ret;
-			}
+		if (! vol->index->dirty) {
+			/* Do nothing because index is clean */
 			ret = 0;
+		} else {
+			if (! value || ! size) {
+				/* Clear the current comment field */
+				if (vol->index->commit_message) {
+					free(vol->index->commit_message);
+					vol->index->commit_message = NULL;
+				}
+			} else {
+				value_null_terminated = malloc(size + 1);
+				if (! value_null_terminated) {
+					ltfsmsg(LTFS_ERR, 10001E, "_xattr_set_virtual: commit_message");
+					ltfs_mutex_unlock(&vol->index->dirty_lock);
+					return -LTFS_NO_MEMORY;
+				}
+				memcpy(value_null_terminated, value, size);
+				value_null_terminated[size] = '\0';
 
-			/* Update THE commit message in the index */
-			if (vol->index->commit_message)
-				free(vol->index->commit_message);
-			vol->index->commit_message = new_value;
+				ret = pathname_format(value_null_terminated, &new_value, false, true);
+				free(value_null_terminated);
+				if (ret < 0) {
+					/* Try to sync index even if the value is not valid */
+					ltfs_set_commit_message_reason_unlocked(SYNC_EA, vol);
+					ltfs_mutex_unlock(&vol->index->dirty_lock);
+
+					ret = ltfs_sync_index(SYNC_EA, false, vol);
+					return ret;
+				}
+				ret = 0;
+
+				/* Update THE commit message in the index */
+				if (vol->index->commit_message)
+					free(vol->index->commit_message);
+				vol->index->commit_message = new_value;
+			}
+
+			ltfs_set_index_dirty(false, false, vol->index);
 		}
 
-		ltfs_set_index_dirty(false, false, vol->index);
 		ltfs_mutex_unlock(&vol->index->dirty_lock);
-
 		ret = ltfs_sync_index(SYNC_EA, false, vol);
 
 	} else if (! strcmp(name, "ltfs.volumeName") && d == vol->index->root) {

@@ -1779,6 +1779,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 				}
 				INTERRUPTED_GOTO(ret, out_unlock);
 				ltfsmsg(LTFS_INFO, 11022I);
+				ltfs_set_commit_message_reason(SYNC_RECOVERY, vol);
 				ret = ltfs_write_index(vol->label->partid_ip, SYNC_RECOVERY, vol);
 				if (ret < 0)
 					goto out_unlock;
@@ -1863,13 +1864,6 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 	/* Issue a warning if the UID space is exhausted: new create/mkdir requests will be rejected */
 	if (vol->index->uid_number == 0)
 		ltfsmsg(LTFS_WARN, 11307W, vol->label->vol_uuid);
-
-	/* Clear the commit message so it doesn't carry over from the previous session */
-	/* TODO: is this the right place to clear the commit message? */
-	if (vol->index->commit_message) {
-		free(vol->index->commit_message);
-		vol->index->commit_message = NULL;
-	}
 
 	/* If we reach this point, both partitions end in an index file. */
 	vol->ip_index_file_end = true;
@@ -2535,6 +2529,7 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 
 			write_perm = true;
 			reason = SYNC_WRITE_PERM;
+			ltfs_set_commit_message_reason(SYNC_WRITE_PERM, vol);
 		}
 		/* ignore return value: we want to keep trying even if, e.g., the DP fills up */
 	}
@@ -3137,6 +3132,7 @@ int ltfs_format_tape(struct ltfs_volume *vol, int density_code, bool destructive
 	if (ret < 0)
 		return ret;
 	ltfsmsg(LTFS_INFO, 11278I, vol->label->partid_dp); /* "Writing Index to ..." */
+	ltfs_set_commit_message_reason(SYNC_FORMAT, vol);
 	ret = ltfs_write_index(vol->label->partid_dp, SYNC_FORMAT, vol);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 11279E, vol->label->partid_dp, ret);
@@ -3633,6 +3629,7 @@ start:
 			 *       For now, write the same index on IP and return an error against a sync
 			 *       request.
 			 */
+			ltfs_set_commit_message_reason(SYNC_WRITE_PERM, vol);
 			ret_r = ltfs_write_index(ltfs_ip_id(vol), SYNC_WRITE_PERM, vol);
 			if (!ret_r) {
 				ltfsmsg(LTFS_INFO, 11344I, bc_print);
