@@ -711,6 +711,7 @@ int check_ltfs_volume(struct ltfs_volume *vol, struct other_check_opts *opt)
 		return LTFSCK_UNCORRECTED;
 	} else {
 		print_criteria_info(vol);
+		ltfs_set_commit_message_reason(SYNC_CHECK, vol);
 		ltfs_unmount(SYNC_CHECK, vol);
 		ltfsmsg(LTFS_INFO, 16022I);
 		return LTFSCK_CORRECTED;
@@ -1174,6 +1175,7 @@ int _rollback_dp(struct ltfs_volume *vol, struct other_check_opts *opt, struct t
 		if (ret != LTFSCK_NO_ERRORS)
 			ltfsmsg(LTFS_ERR, 16055E, ret);
 	} else {
+		ltfs_set_commit_message_reason(SYNC_ROLLBACK, vol);
 		ret = ltfs_write_index(ltfs_dp_id(vol), SYNC_ROLLBACK, vol);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 16056E, ret);
@@ -1288,6 +1290,7 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 		r.current_pos = ltfs_get_index_selfpointer(vol);
 		ltfsmsg(LTFS_DEBUG, 16081D, ltfs_get_index_generation(vol),
 				(int)r.current_pos.partition, (unsigned long long)r.current_pos.block);
+		ltfs_set_commit_message_reason(SYNC_ROLLBACK, vol);
 		ltfs_unmount(SYNC_ROLLBACK, vol);
 		vol->index = NULL;
 	}

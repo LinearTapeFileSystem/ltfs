@@ -450,8 +450,10 @@ int ltfs_fuse_release(const char *path, struct fuse_file_info *fi)
 
 	open_write = (((fi->flags & O_WRONLY) == O_WRONLY) || ((fi->flags & O_RDWR) == O_RDWR));
 	ret = ltfs_fsops_close(file->file_info->dentry_handle, dirty, open_write, true, priv->data);
-	if (write_index)
+	if (write_index) {
+		ltfs_set_commit_message_reason(SYNC_CLOSE, priv->data);
 		ltfs_sync_index(SYNC_CLOSE, true, priv->data);
+	}
 
 	_file_close(file->file_info, priv);
 	_free_ltfs_file_handle(file);
@@ -1167,6 +1169,7 @@ void ltfs_fuse_umount(void *userdata)
 	if (kmi_initialized(priv->data))
 		kmi_destroy(priv->data);
 
+	ltfs_set_commit_message_reason(SYNC_UNMOUNT, priv->data);
 	ltfs_unmount(SYNC_UNMOUNT, priv->data);
 
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_UNMOUNT), 0, 0);

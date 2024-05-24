@@ -101,6 +101,7 @@ ltfs_thread_return periodic_sync_thread(void* data)
 			ltfsmsg(LTFS_WARN, 17063W, __FUNCTION__);
 		}
 
+		ltfs_set_commit_message_reason(SYNC_PERIODIC, priv->vol);
 		ret = ltfs_sync_index(SYNC_PERIODIC, true, priv->vol);
 		if (ret < 0) {
 			ltfsmsg(LTFS_INFO, 11030I, ret);

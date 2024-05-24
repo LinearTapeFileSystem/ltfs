@@ -1323,6 +1323,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 				}
 			}
 			/* write to data partition if it doesn't end in an index file */
+			ltfs_set_commit_message_reason(SYNC_RECOVERY, vol);
 			if (! dp_have_index || dp_blocks_after) {
 				ltfsmsg(LTFS_INFO, 17259I, "DP", vol->index->selfptr.partition, (unsigned long long)vol->index->selfptr.block);
 				ret = ltfs_write_index(vol->label->partid_dp, SYNC_RECOVERY, vol);
@@ -1407,12 +1408,15 @@ int ltfs_write_index_conditional(char partition, struct ltfs_volume *vol)
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
-	if (partition == ltfs_ip_id(vol) && ! vol->ip_index_file_end)
+	if (partition == ltfs_ip_id(vol) && ! vol->ip_index_file_end) {
+		ltfs_set_commit_message_reason(SYNC_CASCHE_PRESSURE, vol);
 		ret = ltfs_write_index(partition, SYNC_CASCHE_PRESSURE, vol);
-	else if (partition == ltfs_dp_id(vol) &&
+	} else if (partition == ltfs_dp_id(vol) &&
 	         (! vol->dp_index_file_end ||
-	          (vol->ip_index_file_end && vol->index->selfptr.partition == ltfs_ip_id(vol))))
+	          (vol->ip_index_file_end && vol->index->selfptr.partition == ltfs_ip_id(vol)))) {
+		ltfs_set_commit_message_reason(SYNC_CASCHE_PRESSURE, vol);
 		ret = ltfs_write_index(partition, SYNC_CASCHE_PRESSURE, vol);
+	}
 
 	return ret;
 }

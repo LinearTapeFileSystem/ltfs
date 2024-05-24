@@ -2106,6 +2106,10 @@ int ltfs_fsops_volume_sync(char *reason, struct ltfs_volume *vol)
 	if (ret < 0)
 		return ret;
 
+	ltfs_mutex_lock(&vol->index->dirty_lock);
+	ltfs_set_commit_message_reason_unlocked(reason, vol);
+	ltfs_mutex_unlock(&vol->index->dirty_lock);
+
 	ret = ltfs_sync_index(reason, true, vol);
 
 	return ret;

@@ -730,6 +730,9 @@ int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol);
 int ltfs_get_rao_list(char *path, struct ltfs_volume *vol);
 int ltfs_build_fullpath(char **dest, struct dentry *d);
 
+void ltfs_set_commit_message_reason(char *reason, struct ltfs_volume *vol);
+void ltfs_set_commit_message_reason_unlocked(char *reason, struct ltfs_volume *vol);
+
 #ifdef __cplusplus
 }
 #endif
