@@ -586,6 +586,115 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 	return 0;
 }
 
+#ifdef FORMAT_SPEC25
+/**
+ * Generate an XML schema, sending it to a user-provided output (memory or file).
+ * Note: this function does very little input validation; any user-provided information
+ * must be verified by the caller.
+ * @param writer the XML writer to send output to
+ * @param priv LTFS data
+ * @param pos position on tape where the schema will be written
+ * @return 0 on success, negative on failure
+ */
+static int _xml_write_incremental_schema(xmlTextWriterPtr writer, const char *creator, struct ltfs_volume *vol)
+{
+	int ret;
+	size_t i;
+	char *update_time;
+	struct ltfs_name *name_criteria;
+	struct ltfsee_cache offset = {NULL, 0};  /* Cache structure for file offset cache */
+	struct ltfsee_cache list = {NULL, 0};    /* Cache structure for sync list */
+	struct ltfs_index *idx = vol->index;
+
+	ret = xml_format_time(idx->mod_time, &update_time);
+	if (!update_time)
+		return -1;
+	else if (ret == LTFS_TIME_OUT_OF_RANGE)
+		ltfsmsg(LTFS_WARN, 17224W, "modifytime", (unsigned long long)idx->mod_time.tv_sec);
+
+	ret = xmlTextWriterStartDocument(writer, NULL, "UTF-8", NULL);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 17057E, ret);
+		return -1;
+	}
+
+	xmlTextWriterSetIndent(writer, 1);
+	/* Define INDENT_INDEXES to write Indexes to tape with full indentation.
+	 * This is normally a waste of space, but it may be useful for debugging. */
+#ifdef INDENT_INDEXES
+	xmlTextWriterSetIndentString(writer, BAD_CAST "    ");
+#else
+	xmlTextWriterSetIndentString(writer, BAD_CAST "");
+#endif
+
+	/* write index properties */
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "ltfsincrementalindex"), -1);
+	xml_mktag(xmlTextWriterWriteAttribute(writer, BAD_CAST "version",
+		BAD_CAST LTFS_INDEX_VERSION_STR), -1);
+	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "creator", BAD_CAST creator), -1);
+	if (idx->commit_message && strlen(idx->commit_message)) {
+		xml_mktag(xmlTextWriterWriteFormatElement(writer, BAD_CAST "comment",
+			"%s", BAD_CAST (idx->commit_message)), -1);
+	}
+	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "volumeuuid", BAD_CAST idx->vol_uuid), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST "generationnumber", "%u", idx->generation), -1);
+	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "updatetime", BAD_CAST update_time), -1);
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "location"), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST "partition", "%c", idx->selfptr.partition), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST "startblock", "%"PRIu64, idx->selfptr.block), -1);
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+	if (idx->backptr.block) {
+		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "previousgenerationlocation"), -1);
+		xml_mktag(xmlTextWriterWriteFormatElement(
+			writer, BAD_CAST "partition", "%c", idx->backptr.partition), -1);
+		xml_mktag(xmlTextWriterWriteFormatElement(
+			writer, BAD_CAST "startblock", "%"PRIu64, idx->backptr.block), -1);
+		xml_mktag(xmlTextWriterEndElement(writer), -1);
+	}
+
+	if (idx->backptr_inc.block) {
+		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "previousincrementallocation"), -1);
+		xml_mktag(xmlTextWriterWriteFormatElement(
+			writer, BAD_CAST "partition", "%c", idx->backptr.partition), -1);
+		xml_mktag(xmlTextWriterWriteFormatElement(
+			writer, BAD_CAST "startblock", "%"PRIu64, idx->backptr.block), -1);
+		xml_mktag(xmlTextWriterEndElement(writer), -1);
+	}
+
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST NEXTUID_TAGNAME, "%"PRIu64, idx->uid_number), -1);
+
+	{
+		char *value = NULL;
+
+		switch (idx->vollock) {
+			case LOCKED_MAM:
+				asprintf(&value, "locked");
+				break;
+			case PERMLOCKED_MAM:
+				asprintf(&value, "permlocked");
+				break;
+			default:
+				asprintf(&value, "unlocked");
+				break;
+		}
+
+		if (value)
+			xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "volumelockstate", BAD_CAST value), -1);
+
+		free(value);
+	}
+
+	/* Create XML of update */
+
+	free(update_time);
+	return 0;
+}
+#endif
+
 /**************************************************************************************
  * Global Functions
  **************************************************************************************/
@@ -809,10 +918,12 @@ int xml_schema_to_file(const char *filename, const char *creator,
 /**
  * Generate an XML Index based on the vol->index->root directory tree.
  * The generated data are written directly to the tape with the appropriate blocksize.
+ * @param reason the reason of writing an index on tape
+ * @param type index type to write (shall be LTFS_FULL_INDEX or LTFS_INCREMENTAL_INDEX)
  * @param vol LTFS volume.
  * @return 0 on success or a negative value on error.
  */
-int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
+int xml_schema_to_tape(char *reason, int type, struct ltfs_volume *vol)
 {
 	int ret, bk = -1;
 	xmlOutputBufferPtr write_buf;
@@ -875,7 +986,19 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 	/* Generate the Index. */
 	asprintf(&creator, "%s - %s", vol->creator, reason);
 	if (creator) {
-		ret = _xml_write_schema(writer, creator, vol->index);
+		switch (type) {
+			case LTFS_FULL_INDEX:
+				ret = _xml_write_schema(writer, creator, vol->index);
+				break;
+#ifdef FORMAT_SPEC25
+			case LTFS_INCREMENTAL_INDEX:
+				ret = _xml_write_incremental_schema(writer, creator, vol);
+				break;
+#endif
+			default:
+				ret = -LTFS_BAD_INDEX_TYPE;
+				break;
+		}
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 17055E, ret);
 		}

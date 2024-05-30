@@ -452,7 +452,7 @@ int ltfs_fuse_release(const char *path, struct fuse_file_info *fi)
 	ret = ltfs_fsops_close(file->file_info->dentry_handle, dirty, open_write, true, priv->data);
 	if (write_index) {
 		ltfs_set_commit_message_reason(SYNC_CLOSE, priv->data);
-		ltfs_sync_index(SYNC_CLOSE, true, priv->data);
+		ltfs_sync_index(SYNC_CLOSE, true, LTFS_INDEX_AUTO, priv->data);
 	}
 
 	_file_close(file->file_info, priv);

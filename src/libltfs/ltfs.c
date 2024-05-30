@@ -1780,7 +1780,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 				INTERRUPTED_GOTO(ret, out_unlock);
 				ltfsmsg(LTFS_INFO, 11022I);
 				ltfs_set_commit_message_reason(SYNC_RECOVERY, vol);
-				ret = ltfs_write_index(vol->label->partid_ip, SYNC_RECOVERY, vol);
+				ret = ltfs_write_index(vol->label->partid_ip, SYNC_RECOVERY, LTFS_FULL_INDEX, vol);
 				if (ret < 0)
 					goto out_unlock;
 			}
@@ -2073,7 +2073,7 @@ start:
 		if (vol->mount_type == MOUNT_NORMAL &&
 			(ltfs_is_dirty(vol) || vol->index->selfptr.partition != ltfs_ip_id(vol)) &&
 			(vollock != PWE_MAM_IP && vollock != PWE_MAM_BOTH)) {
-			ret = ltfs_write_index(ltfs_ip_id(vol), reason, vol);
+			ret = ltfs_write_index(ltfs_ip_id(vol), reason, LTFS_FULL_INDEX, vol);
 			if (NEED_REVAL(ret)) {
 				ret = ltfs_revalidate(true, vol);
 				if (ret == 0) {
@@ -2435,13 +2435,15 @@ size_t ltfs_max_cache_size(struct ltfs_volume *vol)
  * when the cartridge is known to be in a sane state.
  * The caller must hold vol->lock for write if thread safety is required.
  * @param partition partition in which the schema should be written to
+ * @param reason the reason to write down an index
+ * @param type type of index to write (shall be LTFS_FULL_INDEX or LTFS_INCREMENTAL_INDEX)
  * @param vol LTFS volume
  * @return 0 on success or a negative value on error
  */
-int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
+int ltfs_write_index(char partition, char *reason, enum ltfs_index_type type, struct ltfs_volume *vol)
 {
 	int ret, ret_mam;
-	struct tape_offset old_selfptr, old_backptr;
+	struct tape_offset old_selfptr, old_backptr, old_selfptr_inc, old_backptr_inc;
 	struct ltfs_timespec modtime_old = { .tv_sec = 0, .tv_nsec = 0 };
 	bool generation_inc = false;
 	struct tc_position physical_selfptr;
@@ -2459,7 +2461,30 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		return ret;
 	}
 
-	incj_clear(vol); /* Clear incremental journal data */
+	if (type == LTFS_INDEX_AUTO) {
+		if (vol->index->full_index_interval) {
+			if (vol->index->full_index_to_go)
+				type = LTFS_INCREMENTAL_INDEX;
+			else
+				type = LTFS_FULL_INDEX;
+		} else {
+			type = LTFS_FULL_INDEX;
+		}
+	}
+
+	switch (type) {
+		case LTFS_FULL_INDEX:
+			if (vol->index->full_index_interval)
+				vol->index->full_index_to_go = vol->index->full_index_interval;
+			break;
+		case LTFS_INCREMENTAL_INDEX:
+			if (vol->index->full_index_interval && vol->index->full_index_to_go)
+				vol->index->full_index_to_go--;
+			break;
+		default:
+			/* TODO: Unexpected index type error */
+			break;
+	}
 
 	bc_print = _get_barcode(vol);
 
@@ -2497,7 +2522,10 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		/* Surpress on-disk index cache write on the recursive call */
 		cache_path_save = vol->index_cache_path_w;
 		vol->index_cache_path_w = NULL;
-		ret = ltfs_write_index(ltfs_dp_id(vol), reason, vol);
+
+		type = LTFS_FULL_INDEX;
+		incj_clear(vol); /* Clear incremental journal data */
+		ret = ltfs_write_index(ltfs_dp_id(vol), reason, type, vol);
 
 		/* Restore cache path to handle on-disk index cache */
 		vol->index_cache_path_w = cache_path_save;
@@ -2536,10 +2564,12 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 
 	/* update index generation */
 	if (ltfs_is_dirty(vol)) {
+		if (type == LTFS_FULL_INDEX) {
+			generation_inc = true;
+			++vol->index->generation;
+		}
 		modtime_old = vol->index->mod_time;
-		generation_inc = true;
 		get_current_timespec(&vol->index->mod_time);
-		++vol->index->generation;
 	}
 
 	/* locate to append position */
@@ -2554,38 +2584,61 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	}
 
 	/* update back pointer */
-	old_backptr = vol->index->backptr;
-	if (vol->index->selfptr.partition == ltfs_dp_id(vol))
-		memcpy(&vol->index->backptr, &vol->index->selfptr, sizeof(struct tape_offset));
+	if (type == LTFS_FULL_INDEX) {
+		old_backptr = vol->index->backptr;
+		if (vol->index->selfptr.partition == ltfs_dp_id(vol))
+			memcpy(&vol->index->backptr, &vol->index->selfptr, sizeof(struct tape_offset));
+	} else {
+		old_backptr_inc = vol->index->backptr_inc;
+		memcpy(&vol->index->backptr_inc, &vol->index->selfptr_inc, sizeof(struct tape_offset));
+	}
 
 	/* update self pointer */
 	ret = tape_get_position(vol->device, &physical_selfptr);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 11081E, ret);
-		if (generation_inc) {
-			vol->index->mod_time = modtime_old;
-			--vol->index->generation;
+		if (type == LTFS_FULL_INDEX) {
+			if (generation_inc) {
+				vol->index->mod_time = modtime_old;
+				--vol->index->generation;
+			}
+			vol->index->backptr = old_backptr;
+		} else {
+			vol->index->backptr_inc = old_backptr_inc;
 		}
-		vol->index->backptr = old_backptr;
 		goto out_write_perm;
 	}
-	old_selfptr = vol->index->selfptr;
-	vol->index->selfptr.partition = partition;
-	vol->index->selfptr.partition = vol->label->part_num2id[physical_selfptr.partition];
-	vol->index->selfptr.block = physical_selfptr.block;
-	++vol->index->selfptr.block; /* point to first data block, not preceding filemark */
+
+	if (type == LTFS_FULL_INDEX) {
+		old_selfptr = vol->index->selfptr;
+		vol->index->selfptr.partition = partition;
+		vol->index->selfptr.partition = vol->label->part_num2id[physical_selfptr.partition];
+		vol->index->selfptr.block = physical_selfptr.block;
+		++vol->index->selfptr.block; /* point to first data block, not preceding filemark */
+	} else {
+		old_selfptr_inc = vol->index->selfptr_inc;
+		vol->index->selfptr_inc.partition = partition;
+		vol->index->selfptr_inc.partition = vol->label->part_num2id[physical_selfptr.partition];
+		vol->index->selfptr_inc.block = physical_selfptr.block;
+		++vol->index->selfptr_inc.block; /* point to first data block, not preceding filemark */
+	}
 
 	/* Write the Index. */
 	if ((partition == ltfs_ip_id(vol)) && !vol->ip_index_file_end) {
 		ret = tape_write_filemark(vol->device, 0, true, true, false);	// Flush data before writing FM
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 11326E, ret);
-			if (generation_inc) {
-				vol->index->mod_time = modtime_old;
-				--vol->index->generation;
+			if (type == LTFS_FULL_INDEX) {
+				if (generation_inc) {
+					vol->index->mod_time = modtime_old;
+					--vol->index->generation;
+				}
+				vol->index->backptr = old_backptr;
+				vol->index->selfptr = old_selfptr;
+			} else {
+				vol->index->backptr_inc = old_backptr_inc;
+				vol->index->selfptr_inc = old_selfptr_inc;
 			}
-			vol->index->backptr = old_backptr;
-			vol->index->selfptr = old_selfptr;
 
 			if (IS_WRITE_PERM(-ret))
 				update_vollock = true;
@@ -2600,12 +2653,18 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	ret = tape_write_filemark(vol->device, 1, true, true, true);	// immediate WFM
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 11082E, ret);
-		if (generation_inc) {
-			vol->index->mod_time = modtime_old;
-			--vol->index->generation;
+
+		if (type == LTFS_FULL_INDEX) {
+			if (generation_inc) {
+				vol->index->mod_time = modtime_old;
+				--vol->index->generation;
+			}
+			vol->index->backptr = old_backptr;
+			vol->index->selfptr = old_selfptr;
+		} else {
+			vol->index->backptr_inc = old_backptr_inc;
+			vol->index->selfptr_inc = old_selfptr_inc;
 		}
-		vol->index->backptr = old_backptr;
-		vol->index->selfptr = old_selfptr;
 
 		if (IS_WRITE_PERM(-ret))
 			update_vollock = true;
@@ -2614,15 +2673,21 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	}
 
 	/* Actually write index to tape and disk if vol->index_cache_path is existed */
-	ret = xml_schema_to_tape(reason, vol);
+	ret = xml_schema_to_tape(reason, type, vol);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 11083E, ret);
-		if (generation_inc) {
-			vol->index->mod_time = modtime_old;
-			--vol->index->generation;
+
+		if (type == LTFS_FULL_INDEX) {
+			if (generation_inc) {
+				vol->index->mod_time = modtime_old;
+				--vol->index->generation;
+			}
+			vol->index->backptr = old_backptr;
+			vol->index->selfptr = old_selfptr;
+		} else {
+			vol->index->backptr_inc = old_backptr_inc;
+			vol->index->selfptr_inc = old_selfptr_inc;
 		}
-		vol->index->backptr = old_backptr;
-		vol->index->selfptr = old_selfptr;
 
 		if (IS_WRITE_PERM(-ret))
 			update_vollock = true;
@@ -2630,37 +2695,48 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		goto out_write_perm;
 	}
 
-	/* Update MAM parameters. */
-	if (partition == ltfs_ip_id(vol))
-		vol->ip_index_file_end = true;
-	else /* partition == ltfs_dp_id(vol) */
-		vol->dp_index_file_end = true;
+	if (type == LTFS_FULL_INDEX) {
+		/* Update MAM parameters. */
+		if (partition == ltfs_ip_id(vol))
+			vol->ip_index_file_end = true;
+		else /* partition == ltfs_dp_id(vol) */
+			vol->dp_index_file_end = true;
 
-	/* The MAM may be inaccessible, or it may not be available on this medium. Either way,
-	 * ignore failures when updating MAM parameters. */
-	ltfs_update_cart_coherency(vol);
+		/* The MAM may be inaccessible, or it may not be available on this medium. Either way,
+		 * ignore failures when updating MAM parameters. */
+		ltfs_update_cart_coherency(vol);
 
-	ltfsmsg(LTFS_INFO, 17236I,
-			bc_print,
-			(unsigned long long)vol->index->generation,
-			vol->index->selfptr.partition,
-			(unsigned long long)vol->index->selfptr.block,
-			tape_get_serialnumber(vol->device));
+		ltfsmsg(LTFS_INFO, 17236I,
+				bc_print,
+				(unsigned long long)vol->index->generation,
+				vol->index->selfptr.partition,
+				(unsigned long long)vol->index->selfptr.block,
+				tape_get_serialnumber(vol->device));
 
-	/* update append position */
-	if (partition == ltfs_ip_id(vol)) {
-		tape_set_ip_append_position(vol->device, ltfs_part_id2num(partition, vol),
-			vol->index->selfptr.block - 1);
-	}
-
-	if (dcache_initialized(vol)) {
-		dcache_set_dirty(false, vol);
-		if (generation_inc) {
-			dcache_set_generation(vol->index->generation, vol);
+		/* update append position */
+		if (partition == ltfs_ip_id(vol)) {
+			tape_set_ip_append_position(vol->device, ltfs_part_id2num(partition, vol),
+										vol->index->selfptr.block - 1);
 		}
-	}
 
-	ltfs_unset_index_dirty(true, vol->index);
+		if (dcache_initialized(vol)) {
+			dcache_set_dirty(false, vol);
+			if (generation_inc) {
+				dcache_set_generation(vol->index->generation, vol);
+			}
+		}
+
+		/* Clear incremental index metrix */
+		vol->index->backptr_inc.partition = 0;
+		vol->index->backptr_inc.block     = 0;
+		vol->index->selfptr_inc.partition = 0;
+		vol->index->selfptr_inc.block     = 0;
+
+		incj_clear(vol); /* Clear incremental journal data */
+		ltfs_unset_index_dirty(true, vol->index);
+	} else {
+		/* TODO: May be need to do something... */
+	}
 
 out_write_perm:
 	if (write_perm) {
@@ -3133,7 +3209,7 @@ int ltfs_format_tape(struct ltfs_volume *vol, int density_code, bool destructive
 		return ret;
 	ltfsmsg(LTFS_INFO, 11278I, vol->label->partid_dp); /* "Writing Index to ..." */
 	ltfs_set_commit_message_reason(SYNC_FORMAT, vol);
-	ret = ltfs_write_index(vol->label->partid_dp, SYNC_FORMAT, vol);
+	ret = ltfs_write_index(vol->label->partid_dp, SYNC_FORMAT, LTFS_FULL_INDEX, vol);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 11279E, vol->label->partid_dp, ret);
 		return ret;
@@ -3146,7 +3222,7 @@ int ltfs_format_tape(struct ltfs_volume *vol, int density_code, bool destructive
 	if (ret < 0)
 		return ret;
 	ltfsmsg(LTFS_INFO, 11278I, vol->label->partid_ip); /* "Writing Index to ..." */
-	ret = ltfs_write_index(vol->label->partid_ip, SYNC_FORMAT, vol);
+	ret = ltfs_write_index(vol->label->partid_ip, SYNC_FORMAT, LTFS_FULL_INDEX, vol);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 11279E, vol->label->partid_ip, ret);
 		return ret;
@@ -3547,11 +3623,13 @@ out:
 /**
  * Write index to tape if the index is dirty, and if there is space available
  * on the data partition.
- * @param vol LTFS volume
+ * @param reason the reason to write an index
  * @param index_locking Take index lock while writing an index
+ * @param type index type to write
+ * @param vol LTFS volume
  * @return 0 on success or a negative value on error
  */
-int ltfs_sync_index(char *reason, bool index_locking, struct ltfs_volume *vol)
+int ltfs_sync_index(char *reason, bool index_locking, enum ltfs_index_type type, struct ltfs_volume *vol)
 {
 	int ret = 0, ret_r = 0;
 	bool dirty;
@@ -3613,7 +3691,7 @@ start:
 				releasewrite_mrsw(&vol->lock);
 			return ret;
 		}
-		ret = ltfs_write_index(partition, reason, vol);
+		ret = ltfs_write_index(partition, reason, type, vol);
 		if (IS_WRITE_PERM(-ret) && partition == ltfs_dp_id(vol)) {
 			/*
 			 * TODO: Need to determine the last record on DP of the tape and cleanup
@@ -3630,7 +3708,7 @@ start:
 			 *       request.
 			 */
 			ltfs_set_commit_message_reason(SYNC_WRITE_PERM, vol);
-			ret_r = ltfs_write_index(ltfs_ip_id(vol), SYNC_WRITE_PERM, vol);
+			ret_r = ltfs_write_index(ltfs_ip_id(vol), SYNC_WRITE_PERM, LTFS_FULL_INDEX, vol);
 			if (!ret_r) {
 				ltfsmsg(LTFS_INFO, 11344I, bc_print);
 				ret = -LTFS_SYNC_FAIL_ON_DP;

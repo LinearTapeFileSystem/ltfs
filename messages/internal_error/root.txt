@@ -309,6 +309,7 @@ root:table {
 		I5048E:string{ "Unexpected partition map in a label." }
 		I5049E:string{ "Unexpected blocksize in a label." }
 		I5050E:string{ "Unexpected compression in a label." }
+		I5051E:string{ "Unsupported index type is specified." }
 
 		// Special error codes
 		I9997E:string{ "Child process error (ltfsck/mkltfs): %s (%d)." }

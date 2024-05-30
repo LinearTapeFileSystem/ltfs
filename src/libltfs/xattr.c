@@ -882,7 +882,7 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 			}
 		} else if (! strcmp(name, "ltfs.sync")) {
 			ltfs_set_commit_message_reason(SYNC_EA, vol);
-			ret = ltfs_sync_index(SYNC_EA, false, vol);
+			ret = ltfs_sync_index(SYNC_EA, false, LTFS_FULL_INDEX, vol);
 		}
 	}
 
@@ -915,8 +915,12 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 							  size_t size, struct ltfs_volume *vol)
 {
 	int ret = 0;
+	enum ltfs_index_type idx_type = LTFS_INDEX_AUTO;
 
-	if ((! strcmp(name, "ltfs.commitMessage") || ! strcmp(name, "ltfs.sync"))
+	if ((! strcmp(name, "ltfs.commitMessage") ||
+		 ! strcmp(name, "ltfs.sync") ||
+		 ! strcmp(name, "ltfs.vendor.IBM.SyncFullIndex") ||
+		 ! strcmp(name, "ltfs.vendor.IBM.SyncIncremental"))
 		&& d == vol->index->root) {
 		char *value_null_terminated, *new_value;
 
@@ -924,6 +928,11 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 			ltfsmsg(LTFS_ERR, 11308E);
 			ret = -LTFS_LARGE_XATTR;
 		}
+
+		if (! strcmp(name, "ltfs.vendor.IBM.SyncFullIndex"))
+			idx_type = LTFS_FULL_INDEX;
+		else if (! strcmp(name, "ltfs.vendor.IBM.SyncIncremental"))
+			idx_type = LTFS_INCREMENTAL_INDEX;
 
 		ltfs_mutex_lock(&vol->index->dirty_lock);
 		if (! vol->index->dirty) {
@@ -953,12 +962,12 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 					ltfs_set_commit_message_reason_unlocked(SYNC_EA, vol);
 					ltfs_mutex_unlock(&vol->index->dirty_lock);
 
-					ret = ltfs_sync_index(SYNC_EA, false, vol);
+					ret = ltfs_sync_index(SYNC_EA, false, LTFS_FULL_INDEX, vol);
 					return ret;
 				}
 				ret = 0;
 
-				/* Update THE commit message in the index */
+				/* Update the commit message in the index */
 				if (vol->index->commit_message)
 					free(vol->index->commit_message);
 				vol->index->commit_message = new_value;
@@ -968,7 +977,7 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 		}
 
 		ltfs_mutex_unlock(&vol->index->dirty_lock);
-		ret = ltfs_sync_index(SYNC_EA, false, vol);
+		ret = ltfs_sync_index(SYNC_EA, false, idx_type, vol);
 
 	} else if (! strcmp(name, "ltfs.volumeName") && d == vol->index->root) {
 		char *value_null_terminated, *new_value;
@@ -1187,7 +1196,7 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 
 		lock = strtoull(v, &invalid_start, 0);
 		if( (*invalid_start == '\0') && v ) {
-			mam_lockval new = UNLOCKED_MAM;
+			mam_lockval_t new = UNLOCKED_MAM;
 			char status_mam[TC_MAM_LOCKED_MAM_SIZE];
 
 			switch (vol->t_attr->vollock) {
@@ -1241,13 +1250,13 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 			ltfs_set_index_dirty(false, false, vol->index);
 			ltfs_set_commit_message_reason_unlocked(SYNC_ADV_LOCK, vol);
 
-			ret = ltfs_sync_index(SYNC_ADV_LOCK, false, vol);
+			ret = ltfs_sync_index(SYNC_ADV_LOCK, false, LTFS_FULL_INDEX, vol);
 			ret = tape_device_lock(vol->device);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 12010E, __FUNCTION__);
 				return ret;
 			}
-			ret = ltfs_write_index(ltfs_ip_id(vol), SYNC_EA, vol);
+			ret = ltfs_write_index(ltfs_ip_id(vol), SYNC_EA, LTFS_FULL_INDEX, vol);
 			tape_device_unlock(vol->device);
 		} else
 			ret = -LTFS_STRING_CONVERSION;
@@ -1501,7 +1510,7 @@ int xattr_set(struct dentry *d, const char *name, const char *value, size_t size
 
 	if (write_idx) {
 		ltfs_set_commit_message_reason(SYNC_EA, vol);
-		ret = ltfs_sync_index(SYNC_EA, false, vol);
+		ret = ltfs_sync_index(SYNC_EA, false, LTFS_INDEX_AUTO, vol);
 	} else
 		ret = 0;
 

@@ -1154,7 +1154,7 @@ int _rollback_ip(struct ltfs_volume *vol, struct other_check_opts *opt, struct t
 		if (ret != LTFSCK_NO_ERRORS)
 			ltfsmsg(LTFS_ERR, 16059E, ret);
 	} else {
-		ret = ltfs_write_index(ltfs_ip_id(vol), SYNC_ROLLBACK, vol);
+		ret = ltfs_write_index(ltfs_ip_id(vol), SYNC_ROLLBACK, LTFS_FULL_INDEX, vol);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 16060E, ret);
 			ret = LTFSCK_OPERATIONAL_ERROR;
@@ -1176,7 +1176,7 @@ int _rollback_dp(struct ltfs_volume *vol, struct other_check_opts *opt, struct t
 			ltfsmsg(LTFS_ERR, 16055E, ret);
 	} else {
 		ltfs_set_commit_message_reason(SYNC_ROLLBACK, vol);
-		ret = ltfs_write_index(ltfs_dp_id(vol), SYNC_ROLLBACK, vol);
+		ret = ltfs_write_index(ltfs_dp_id(vol), SYNC_ROLLBACK, LTFS_FULL_INDEX, vol);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 16056E, ret);
 			ret = LTFSCK_OPERATIONAL_ERROR;

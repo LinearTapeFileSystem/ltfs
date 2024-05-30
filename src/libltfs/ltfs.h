@@ -154,15 +154,33 @@ struct device_data;
 
 #define LTFS_LABEL_VERSION_MIN        MAKE_LTFS_VERSION(1,0,0)   /* Min supported label version */
 #define LTFS_LABEL_VERSION_MAX        MAKE_LTFS_VERSION(2,99,99) /* Max supported label version */
+
+#ifdef FORMAT_SPEC25
+#define LTFS_LABEL_VERSION            MAKE_LTFS_VERSION(2,5,0)   /* Written label version */
+#define LTFS_LABEL_VERSION_STR        "2.5.0"    /* Label version string */
+#else
 #define LTFS_LABEL_VERSION            MAKE_LTFS_VERSION(2,4,0)   /* Written label version */
 #define LTFS_LABEL_VERSION_STR        "2.4.0"    /* Label version string */
+#endif
 
 #define LTFS_INDEX_VERSION_MIN        MAKE_LTFS_VERSION(1,0,0)    /* Min supported index version */
 #define LTFS_INDEX_VERSION_MAX        MAKE_LTFS_VERSION(2,99,99)  /* Max supported index version */
+
+#ifdef FORMAT_SPEC25
+#define LTFS_INDEX_VERSION            MAKE_LTFS_VERSION(2,5,0)    /* Written index version */
+#define LTFS_INDEX_VERSION_STR        "2.5.0"  /* Index version string */
+#else
 #define LTFS_INDEX_VERSION            MAKE_LTFS_VERSION(2,4,0)    /* Written index version */
 #define LTFS_INDEX_VERSION_STR        "2.4.0"  /* Index version string */
+#endif
 
 #define INDEX_MAX_COMMENT_LEN         65536 /* Maximum comment field length (per LTFS Format) */
+
+enum ltfs_index_type {
+	LTFS_INDEX_AUTO = 0,   /*< Select index type to write based on specified options */
+	LTFS_FULL_INDEX,       /*< Forcibly write full index */
+	LTFS_INCREMENTAL_INDEX /*< Forcibly write incremental index */
+};
 
 #define LTFS_NO_BARCODE               "NO_BARCODE"
 
@@ -363,7 +381,7 @@ typedef enum mam_advisory_lock_status {
 	PWE_MAM_IP     = 5,   /* Single write perm on IP (Set VOL_IP_PERM__ERR) */
 	PWE_MAM_BOTH   = 6,   /* Double write perm (Set both VOL_DP_PERM_ERR and VOL_IP_PERM_ERR) */
 	NOLOCK_MAM    = 128,  /* From HPE */
-} mam_lockval;
+} mam_lockval_t;
 
 #define IS_SINGLE_WRITE_PERM(stat)  (stat == PWE_MAM || (stat == PWE_MAM_DP || stat == PWE_MAM_IP) )
 #define IS_DOUBLE_WRITE_PERM(stat)  (stat == PWE_MAM_BOTH)
@@ -456,7 +474,7 @@ struct ltfs_volume {
 	char *mountpoint;              /**< Store mount point for Live Link (SDE) */
 	size_t mountpoint_len;         /**< Store mount point path length (SDE) */
 	struct tape_attr *t_attr;      /**< Tape Attribute data */
-	mam_lockval lock_status;       /**< Total volume lock status from t_attr->vollock and index->vollock */
+	mam_lockval_t lock_status;     /**< Total volume lock status from t_attr->vollock and index->vollock */
 	struct ltfs_timespec first_locate; /**< Time to first locate */
 	int file_open_count;           /**< Number of opened files */
 
@@ -520,10 +538,10 @@ struct ltfs_index {
 	struct index_criteria index_criteria;    /**< Active index criteria */
 
 	struct dentry *root;                /**< The directory tree */
-	ltfs_mutex_t rename_lock;        /**< Controls name tree access during renames */
+	ltfs_mutex_t rename_lock;           /**< Controls name tree access during renames */
 
 	/* Update tracking */
-	ltfs_mutex_t dirty_lock;         /**< Controls access to the update tracking bits */
+	ltfs_mutex_t dirty_lock;            /**< Controls access to the update tracking bits */
 	bool dirty;                         /**< Set on metadata update, cleared on write to tape */
 	bool atime_dirty;                   /**< Set on atime update, cleared on write to tape */
 	bool use_atime;                     /**< Set if atime updates should make the index dirty */
@@ -542,7 +560,13 @@ struct ltfs_index {
 	size_t symerr_count;                /**< Number of conflicted symlink dentries */
 	struct dentry **symlink_conflict;   /**< symlink/extent conflicted dentries */
 
-	mam_lockval vollock;                /**< volume lock status on index */
+	mam_lockval_t vollock;              /**< volume lock status on index */
+
+	/* Incremental index */
+	uint64_t full_index_interval;       /**< Number of indexes between full indexes */
+	uint64_t full_index_to_go;          /**< How many incremental index shall be written to the next full index */
+	struct tape_offset selfptr_inc;     /**< self-pointer of previous incremental index (to prior generation on data partition) */
+	struct tape_offset backptr_inc;     /**< back pointer of previous incremental index (to prior generation on data partition) */
 };
 
 struct ltfs_direntry {
@@ -697,14 +721,14 @@ int ltfs_parse_library_backend_opts(void *opt_args, void *opts);
 
 void ltfs_set_index_dirty(bool locking, bool atime, struct ltfs_index *idx);
 void ltfs_unset_index_dirty(bool update_version, struct ltfs_index *idx);
-int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol);
+int ltfs_write_index(char partition, char *reason, enum ltfs_index_type type, struct ltfs_volume *vol);
 int ltfs_save_index_to_disk(const char *work_dir, char *reason, char id, struct ltfs_volume *vol);
 
 char ltfs_dp_id(struct ltfs_volume *vol);
 char ltfs_ip_id(struct ltfs_volume *vol);
 const char *ltfs_get_volume_uuid(struct ltfs_volume *vol);
 
-int ltfs_sync_index(char *reason, bool index_locking, struct ltfs_volume *vol);
+int ltfs_sync_index(char *reason, bool index_locking, enum ltfs_index_type type, struct ltfs_volume *vol);
 
 int ltfs_traverse_index_forward(struct ltfs_volume *vol, char partition, unsigned int gen,
 								bool skip_dir, f_index_found func, void **list, void *priv);
