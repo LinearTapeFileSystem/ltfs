@@ -642,9 +642,9 @@ static int _xml_write_incremental_schema(xmlTextWriterPtr writer, const char *cr
 	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "updatetime", BAD_CAST update_time), -1);
 	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "location"), -1);
 	xml_mktag(xmlTextWriterWriteFormatElement(
-		writer, BAD_CAST "partition", "%c", idx->selfptr.partition), -1);
+		writer, BAD_CAST "partition", "%c", idx->selfptr_inc.partition), -1);
 	xml_mktag(xmlTextWriterWriteFormatElement(
-		writer, BAD_CAST "startblock", "%"PRIu64, idx->selfptr.block), -1);
+		writer, BAD_CAST "startblock", "%"PRIu64, idx->selfptr_inc.block), -1);
 	xml_mktag(xmlTextWriterEndElement(writer), -1);
 	if (idx->backptr.block) {
 		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "previousgenerationlocation"), -1);
@@ -658,9 +658,9 @@ static int _xml_write_incremental_schema(xmlTextWriterPtr writer, const char *cr
 	if (idx->backptr_inc.block) {
 		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "previousincrementallocation"), -1);
 		xml_mktag(xmlTextWriterWriteFormatElement(
-			writer, BAD_CAST "partition", "%c", idx->backptr.partition), -1);
+			writer, BAD_CAST "partition", "%c", idx->backptr_inc.partition), -1);
 		xml_mktag(xmlTextWriterWriteFormatElement(
-			writer, BAD_CAST "startblock", "%"PRIu64, idx->backptr.block), -1);
+			writer, BAD_CAST "startblock", "%"PRIu64, idx->backptr_inc.block), -1);
 		xml_mktag(xmlTextWriterEndElement(writer), -1);
 	}
 
