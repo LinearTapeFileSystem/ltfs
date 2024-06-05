@@ -451,6 +451,25 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 	return 0;
 }
 
+#ifdef FORMAT_SPEC25
+/**
+ * Write directory tags for incremental index based on current incremental journal information
+ * @param writer output pointer
+ * @param vol ltfs volume
+ * @param offset_c file pointer to write offest cache
+ * @param sync_list file pointer to write sync file list
+ * @return 0 on success or negative on failure
+ */
+static int _xml_write_inc_journal(xmlTextWriterPtr writer, struct ltfs_volume *vol,
+								  struct ltfsee_cache* offset_c, struct ltfsee_cache* sync_list)
+{
+	char *current_dir = NULL;
+
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "directory"), -1);
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+}
+#endif
+
 /**
  * Generate an XML schema, sending it to a user-provided output (memory or file).
  * Note: this function does very little input validation; any user-provided information
@@ -689,6 +708,24 @@ static int _xml_write_incremental_schema(xmlTextWriterPtr writer, const char *cr
 	}
 
 	/* Create XML of update */
+	xml_mktag(_xml_write_inc_journal(writer, vol, &offset, &list), -1);
+
+	/* Save unrecognized tags */
+	if (idx->tag_count > 0) {
+		for (i=0; i<idx->tag_count; ++i) {
+			if (xmlTextWriterWriteRaw(writer, idx->preserved_tags[i]) < 0) {
+				ltfsmsg(LTFS_ERR, 17092E, __FUNCTION__);
+				return -1;
+			}
+		}
+	}
+
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+	ret = xmlTextWriterEndDocument(writer);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 17058E, ret);
+		return -1;
+	}
 
 	free(update_time);
 	return 0;

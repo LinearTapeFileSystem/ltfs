@@ -394,6 +394,11 @@ static inline int dig_path(char *p, struct ltfs_index *idx)
 	return ret;
 }
 
+void incj_sort(struct ltfs_volume *vol)
+{
+	HASH_SORT(vol->journal, _by_path);
+}
+
 /**
  *  This is a function for debug. Print contents of the journal and the created
  *  directory list to stdout.
@@ -412,7 +417,7 @@ void incj_dump(struct ltfs_volume *vol)
 	}
 
 	printf("--------------------------------------------------------------------------------\n");
-	HASH_SORT(vol->journal, _by_path);
+	incj_sort(vol);
 	HASH_ITER(hh, vol->journal, ent, tmp) {
 		printf("JOURNAL: %s, %llu, %s, ", ent->id.full_path, (unsigned long long)ent->id.uid, reason[ent->reason]);
 		if (!ent->dentry)
@@ -447,4 +452,228 @@ void incj_dump(struct ltfs_volume *vol)
 	if (prev_parent) free(prev_parent);
 
 	return;
+}
+
+int incj_create_path_manager(const char *dpath, struct incj_path_manager **pm, struct ltfs_volume *vol)
+{
+	struct incj_path_manager *ipm;
+	char *wp = NULL, *tmp = NULL, *dname = NULL;
+	int ret = 0;
+
+	*pm = NULL;
+
+	ipm = calloc(1, sizeof(struct incj_path_manager));
+	if (!ipm) {
+		ltfsmsg(LTFS_ERR, 11168E);
+		return -LTFS_NO_MEMORY;
+	}
+
+	if (dpath[0] != '/') {
+		/* Provided path must be a absolute path */
+		free(ipm);
+		return -LTFS_INVALID_PATH;
+	}
+
+	ipm->vol = vol;
+
+	if (strcmp(dpath, "/") == 0) {
+		/* Provided path is the root, return good */
+		*pm = ipm;
+		return 0;
+	}
+
+	wp = strdup(dpath);
+	if (!wp) {
+		ltfsmsg(LTFS_ERR, 11168E);
+		free(ipm);
+		return -LTFS_NO_MEMORY;
+	}
+
+	for (dname = strtok_r(wp, "/", &tmp); dname != NULL; dname = strtok_r(NULL, "/", &tmp)) {
+		ret = incj_push_directory(dname, ipm);
+		if (ret < 0) {
+			free(wp);
+			incj_destroy_path_manager(ipm);
+			return ret;
+		}
+	}
+
+	free(wp);
+	*pm = ipm;
+
+	return 0;
+}
+
+int incj_destroy_path_manager(struct incj_path_manager *pm)
+{
+	struct incj_path_element *cur, *next;
+
+	cur = pm->head;
+
+	while (cur) {
+		next = cur->next;
+		if (cur->name)
+			free(cur->name);
+		free(cur);
+		cur = next;
+	}
+
+	free(pm);
+	return 0;
+}
+
+int incj_push_directory(char *name, struct incj_path_manager *pm)
+{
+	int ret = 0;
+	struct incj_path_element *ipelm = NULL, *cur_tail = NULL;
+	struct dentry *d, *parent;
+
+	ipelm = calloc(1, sizeof(struct incj_path_element));
+	if (!ipelm) {
+		ltfsmsg(LTFS_ERR, 11168E);
+		return -LTFS_NO_MEMORY;
+	}
+
+	/* Set name field of new path element */
+	ipelm->name = strdup(name);
+	if (!ipelm->name) {
+		ltfsmsg(LTFS_ERR, 11168E);
+		incj_destroy_path_manager(pm);
+		return -LTFS_NO_MEMORY;
+	}
+
+	/* Set dentry field of new path element */
+	if (pm->elems)
+		parent = pm->tail->d;
+	else
+		parent - pm->vol->index->root;
+
+	ret = fs_directory_lookup(parent, name, &ipelm->d);
+	if (ret) {
+		free(ipelm->name);
+		free(ipelm);
+		incj_destroy_path_manager(pm);
+		return -LTFS_INVALID_PATH;
+	}
+
+	/* Modify path chain and # of elements */
+	if (!pm->elems) {
+		pm->head = ipelm;
+		pm->tail = ipelm;
+	} else {
+		cur_tail       = pm->tail;
+		cur_tail->next = ipelm;
+		ipelm->prev    = cur_tail;
+		pm->tail       = ipelm;
+	}
+
+	pm->elems++;
+
+	return 0;
+}
+
+int incj_pop_directory(struct incj_path_manager *pm)
+{
+	struct incj_path_element *cur_tail = NULL, *new_tail = NULL;
+
+	if (!pm->elems) {
+		/* Must have one or more elements */
+		return -LTFS_UNEXPECTED_VALUE;
+	}
+
+	cur_tail = pm->tail;
+	new_tail = cur_tail->prev;
+
+	new_tail->next = NULL;
+	pm->tail = new_tail;
+
+	pm->elems--;
+	if (!pm->elems) {
+		pm->head = NULL;
+	}
+
+	if (cur_tail->name)
+		free(cur_tail->name);
+	free(cur_tail);
+
+	return 0;
+}
+
+int incj_compare_path(struct incj_path_manager *p1, struct incj_path_manager *p2)
+{
+	int ret = 0, matches = 0;
+	struct incj_path_element *cur1 = NULL, *cur2 = NULL;
+
+	cur1 = p1->head;
+	cur2 = p2->head;
+
+	if (!cur1 && !cur2) {
+		/* Both are root */
+		return 0;
+	}
+
+	while (cur1) {
+		if (cur1->d != cur2->d)
+			break;
+		matches++;
+		cur1++;
+		cur2++;
+	}
+
+	if (cur2) {
+		/* cur1 is shorter than cur2, need to push. -> positive value */
+		ret = 1;
+		while (cur2) {
+			ret++;
+			cur2++;
+		}
+	} else {
+		/* cur1 is equal or longer than cur2. -> zero for perfect match, other wise pop for negative value */
+		ret = matches - p1->elems;
+	}
+
+	return ret;
+}
+
+char* incj_get_path(struct incj_path_manager *pm)
+{
+	char *path = NULL, *path_old = NULL;
+	struct incj_path_element *cur = NULL;
+	int ret = 0;
+
+	cur = pm->head;
+
+	if (!cur) {
+		/* Root directory */
+		ret = asprintf(&path, "/");
+		if (ret < 0) {
+			/* memory allocation error */
+			return NULL;
+		}
+		return path;
+	}
+
+	while (cur) {
+		if (path) path_old = path;
+		ret = asprintf(&path, "%s/%s", path_old, cur->name);
+		if (ret < 0) {
+			/* memory allocation error */
+			free(path_old);
+			return NULL;
+		}
+		free(path_old);
+
+		cur++;
+	}
+
+	if (path) path_old = path;
+	ret = asprintf(&path, "/%s", path_old);
+	if (ret < 0) {
+		/* memory allocation error */
+		free(path_old);
+		return NULL;
+	}
+	free(path_old);
+
+	return path;
 }

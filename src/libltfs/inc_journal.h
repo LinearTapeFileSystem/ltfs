@@ -95,12 +95,37 @@ struct jcreated_entry {
 	char *path;
 };
 
+/**
+ *
+ */
+struct incj_path_element {
+	struct incj_path_element *prev;
+	struct incj_path_element *next;
+	char* name;
+	struct dentry *d;
+};
+
+struct incj_path_manager {
+	struct incj_path_element *head;
+	struct incj_path_element *tail;
+	struct ltfs_volume *vol;
+	unsigned int elems;
+};
+
 int incj_create(char *ppath, struct dentry *d, struct ltfs_volume *vol);
 int incj_modify(char *path, struct dentry *d, struct ltfs_volume *vol);
 int incj_rmfile(char *path, struct dentry *d, struct ltfs_volume *vol);
 int incj_rmdir(char *path, struct dentry *d, struct ltfs_volume *vol);
 int incj_clear(struct ltfs_volume *vol);
+void incj_sort(struct ltfs_volume *vol);
 void incj_dump(struct ltfs_volume *vol);
+
+int incj_create_path_manager(const char *path, struct incj_path_manager **pm, struct ltfs_volume *vol);
+int incj_destroy_path_manager(struct incj_path_manager *pm);
+int incj_push_directory(char *name, struct incj_path_manager *pm);
+int incj_pop_directory(struct incj_path_manager *pm);
+int incj_compare_path(struct incj_path_manager *p1, struct incj_path_manager *p2);
+char* incj_get_path(struct incj_path_manager *pm);
 
 #ifdef __cplusplus
 }

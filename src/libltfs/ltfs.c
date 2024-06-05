@@ -2564,10 +2564,8 @@ int ltfs_write_index(char partition, char *reason, enum ltfs_index_type type, st
 
 	/* update index generation */
 	if (ltfs_is_dirty(vol)) {
-		if (type == LTFS_FULL_INDEX) {
-			generation_inc = true;
-			++vol->index->generation;
-		}
+		generation_inc = true;
+		++vol->index->generation;
 		modtime_old = vol->index->mod_time;
 		get_current_timespec(&vol->index->mod_time);
 	}
