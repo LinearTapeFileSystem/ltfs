@@ -588,12 +588,35 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 }
 
 #ifdef FORMAT_SPEC25
+static int _xml_open_incremental_dir_ent(xmlTextWriterPtr writer, struct dentry *dir)
+{
+	/* Handle R/O and timestamp if it is dirty */
+	if (dir->dirty) {
+		xml_mktag(xmlTextWriterWriteElement(
+					  writer, BAD_CAST "readonly", BAD_CAST (dir->readonly ? "true" : "false")), -1);
+		xml_mktag(_xml_write_dentry_times(writer, dir), -1);
+	}
+
+	/* Handle UID in any case */
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST UID_TAGNAME, "%"PRIu64, dir->uid), -1);
+
+	/* Handle extended attribute if it is dirty */
+	if (dir->dirty) {
+		xml_mktag(_xml_write_xattr(writer, dir), -1);
+		dir->dirty = false;
+	}
+
+	return 0;
+}
+
 static int _xml_open_incrental_root(xmlTextWriterPtr writer, struct ltfs_volume *vol)
 {
+	int ret = 0;
 	struct ltfs_index *idx = vol->index;
 	struct dentry *dir = idx->root;
 
-	/* write standard attributes */
+	/* Handle name tag */
 	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "directory"), -1);
 	if (idx->volume_name.name) {
 		xml_mktag(_xml_write_nametype(writer, "name", (struct ltfs_name*)(&idx->volume_name)), -1);
@@ -602,16 +625,9 @@ static int _xml_open_incrental_root(xmlTextWriterPtr writer, struct ltfs_volume 
 		xml_mktag(xmlTextWriterEndElement(writer), -1);
 	}
 
-	xml_mktag(xmlTextWriterWriteElement(
-		writer, BAD_CAST "readonly", BAD_CAST (dir->readonly ? "true" : "false")), -1);
-	xml_mktag(_xml_write_dentry_times(writer, dir), -1);
-	xml_mktag(xmlTextWriterWriteFormatElement(
-		writer, BAD_CAST UID_TAGNAME, "%"PRIu64, dir->uid), -1);
+	ret = _xml_open_incremental_dir_ent(writer, dir);
 
-	/* write extended attributes */
-	xml_mktag(_xml_write_xattr(writer, dir), -1);
-
-	return 0;
+	return ret;
 }
 
 static inline int _xml_close_incrental_root(xmlTextWriterPtr writer)
@@ -620,12 +636,91 @@ static inline int _xml_close_incrental_root(xmlTextWriterPtr writer)
 	return 0;
 }
 
-static int _xml_open_incremental_dirs(xmlTextWriterPtr writer, int offset)
+static int _xml_open_incremental_dir(xmlTextWriterPtr writer, struct dentry *dir)
 {
+	int ret = 0;
+
+	/* Handle name tag */
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "directory"), -1);
+	xml_mktag(_xml_write_nametype(writer, "name", &dir->name), -1);
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+
+	ret = _xml_open_incremental_dir_ent(writer, dir);
+
+	return ret;
+}
+
+static inline int _xml_close_incremental_dir(xmlTextWriterPtr writer)
+{
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+	return 0;
+}
+
+static int _xml_open_incremental_dirs(xmlTextWriterPtr writer, struct incj_path_manager *pm, int offset)
+{
+	int ret = 0, i = 0;
+	struct incj_path_element *cur = NULL;
+
+	cur = pm->head;
+	for (i = 0; i < offset; i++) {
+		cur = cur->next;
+	}
+
+	while (cur) {
+		ret = _xml_open_incremental_dir(writer, cur->d);
+		if (ret < 0)
+			break;
+		cur = cur->next;
+	}
+
+	return ret;
 }
 
 static int _xml_close_incremental_dirs(xmlTextWriterPtr writer, int pops)
 {
+	int ret = 0, i = 0;
+
+	for (i = 0; i < pops; i++) {
+		ret = _xml_close_incremental_dir(writer);
+		if (ret < 0)
+			break;
+	}
+
+	return ret;
+}
+
+static int _xml_goto_increment_dir(xmlTextWriterPtr writer,
+							   struct jentry *ent, struct incj_path_manager **cur,
+							   struct ltfs_volume *vol)
+{
+	int ret = 0, matches = 0, pops = 0;
+	char *dpath = NULL;
+	struct incj_path_manager *new = NULL;
+
+	/* create dpath from */
+	//split_path(ent->id.full_path);
+
+	ret = incj_create_path_manager(ent->id.full_path, &new, vol);
+	if (ret < 0) {
+		return ret;
+	}
+
+	incj_compare_path(*cur, new, &matches, &pops);
+	if (ret < 0) {
+		return ret;
+	}
+
+	if (pops) {
+		ret = _xml_close_incremental_dirs(writer, pops);
+		if (ret < 0) {
+			return ret;
+		}
+	}
+
+	if (matches)
+		ret = _xml_open_incremental_dirs(writer, new, matches);
+
+	return ret;
 }
 
 /**
@@ -658,6 +753,21 @@ static int _xml_write_inc_journal(xmlTextWriterPtr writer, struct ltfs_volume *v
 	/* Crawl incremental journal and generate XML tags */
 	incj_sort(vol);
 	HASH_ITER(hh, vol->journal, ent, tmp) {
+
+		ret = _xml_goto_increment_dir(writer, ent, &cur_path, vol);
+
+		switch (ent->reason) {
+			case CREATE:
+				break;
+			case MODIFY:
+				break;
+			case DELETE_FILE:
+				break;
+			case DELETE_DIRECTORY:
+				break;
+			default:
+				break;
+		}
 	}
 
 	/* Close the directory tag for root */

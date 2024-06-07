@@ -124,7 +124,8 @@ int incj_create_path_manager(const char *path, struct incj_path_manager **pm, st
 int incj_destroy_path_manager(struct incj_path_manager *pm);
 int incj_push_directory(char *name, struct incj_path_manager *pm);
 int incj_pop_directory(struct incj_path_manager *pm);
-int incj_compare_path(struct incj_path_manager *p1, struct incj_path_manager *p2);
+int incj_compare_path(struct incj_path_manager *p1, struct incj_path_manager *p2,
+					  int *matches, int *pops);
 char* incj_get_path(struct incj_path_manager *pm);
 
 #ifdef __cplusplus

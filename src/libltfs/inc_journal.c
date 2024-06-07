@@ -599,10 +599,13 @@ int incj_pop_directory(struct incj_path_manager *pm)
 	return 0;
 }
 
-int incj_compare_path(struct incj_path_manager *p1, struct incj_path_manager *p2)
+int incj_compare_path(struct incj_path_manager *p1, struct incj_path_manager *p2,
+					  int *matches, int *pops)
 {
-	int ret = 0, matches = 0;
+	int ret = 0;
 	struct incj_path_element *cur1 = NULL, *cur2 = NULL;
+
+	*matches = 0;
 
 	cur1 = p1->head;
 	cur2 = p2->head;
@@ -620,16 +623,9 @@ int incj_compare_path(struct incj_path_manager *p1, struct incj_path_manager *p2
 		cur2++;
 	}
 
-	if (cur2) {
-		/* cur1 is shorter than cur2, need to push. -> positive value */
-		ret = 1;
-		while (cur2) {
-			ret++;
-			cur2++;
-		}
-	} else {
+	if (!cur2) {
 		/* cur1 is equal or longer than cur2. -> zero for perfect match, other wise pop for negative value */
-		ret = matches - p1->elems;
+		*pops = p1->elems - *matches;
 	}
 
 	return ret;
