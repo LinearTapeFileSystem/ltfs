@@ -60,6 +60,7 @@
 #include "fs.h"
 #include "tape.h"
 #include "pathname.h"
+#include "inc_journal.h"
 #include "arch/time_internal.h"
 
 /* Structure to control EE's file offset cache and sync file list */
@@ -451,25 +452,6 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 	return 0;
 }
 
-#ifdef FORMAT_SPEC25
-/**
- * Write directory tags for incremental index based on current incremental journal information
- * @param writer output pointer
- * @param vol ltfs volume
- * @param offset_c file pointer to write offest cache
- * @param sync_list file pointer to write sync file list
- * @return 0 on success or negative on failure
- */
-static int _xml_write_inc_journal(xmlTextWriterPtr writer, struct ltfs_volume *vol,
-								  struct ltfsee_cache* offset_c, struct ltfsee_cache* sync_list)
-{
-	char *current_dir = NULL;
-
-	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "directory"), -1);
-	xml_mktag(xmlTextWriterEndElement(writer), -1);
-}
-#endif
-
 /**
  * Generate an XML schema, sending it to a user-provided output (memory or file).
  * Note: this function does very little input validation; any user-provided information
@@ -606,6 +588,84 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 }
 
 #ifdef FORMAT_SPEC25
+static int _xml_open_incrental_root(xmlTextWriterPtr writer, struct ltfs_volume *vol)
+{
+	struct ltfs_index *idx = vol->index;
+	struct dentry *dir = idx->root;
+
+	/* write standard attributes */
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "directory"), -1);
+	if (idx->volume_name.name) {
+		xml_mktag(_xml_write_nametype(writer, "name", (struct ltfs_name*)(&idx->volume_name)), -1);
+	} else {
+		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "name"), -1);
+		xml_mktag(xmlTextWriterEndElement(writer), -1);
+	}
+
+	xml_mktag(xmlTextWriterWriteElement(
+		writer, BAD_CAST "readonly", BAD_CAST (dir->readonly ? "true" : "false")), -1);
+	xml_mktag(_xml_write_dentry_times(writer, dir), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST UID_TAGNAME, "%"PRIu64, dir->uid), -1);
+
+	/* write extended attributes */
+	xml_mktag(_xml_write_xattr(writer, dir), -1);
+
+	return 0;
+}
+
+static inline int _xml_close_incrental_root(xmlTextWriterPtr writer)
+{
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+	return 0;
+}
+
+static int _xml_open_incremental_dirs(xmlTextWriterPtr writer, int offset)
+{
+}
+
+static int _xml_close_incremental_dirs(xmlTextWriterPtr writer, int pops)
+{
+}
+
+/**
+ * Write directory tags for incremental index based on current incremental journal information
+ * @param writer output pointer
+ * @param vol ltfs volume
+ * @param offset_c file pointer to write offest cache
+ * @param sync_list file pointer to write sync file list
+ * @return 0 on success or negative on failure
+ */
+static int _xml_write_inc_journal(xmlTextWriterPtr writer, struct ltfs_volume *vol,
+								  struct ltfsee_cache* offset_c, struct ltfsee_cache* sync_list)
+{
+	int ret = 0;
+	char *current_dir = NULL;
+	struct jentry *ent = NULL, *tmp = NULL;
+	struct incj_path_manager *cur_path = NULL, *next_path = NULL;
+
+	/* Create a directory tag for root */
+	ret = _xml_open_incrental_root(writer, vol);
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = incj_create_path_manager("/", &cur_path, vol);
+	if (ret < 0) {
+		return ret;
+	}
+
+	/* Crawl incremental journal and generate XML tags */
+	incj_sort(vol);
+	HASH_ITER(hh, vol->journal, ent, tmp) {
+	}
+
+	/* Close the directory tag for root */
+	ret = _xml_close_incrental_root(writer);
+
+	return ret;
+}
+
 /**
  * Generate an XML schema, sending it to a user-provided output (memory or file).
  * Note: this function does very little input validation; any user-provided information
