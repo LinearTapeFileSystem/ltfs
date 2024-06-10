@@ -588,6 +588,28 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 }
 
 #ifdef FORMAT_SPEC25
+static int _xml_write_incremental_dir(xmlTextWriterPtr writer, struct dentry *dir)
+{
+	/* Handle R/O and timestamp if it is dirty */
+	if (dir->dirty) {
+		xml_mktag(xmlTextWriterWriteElement(
+					  writer, BAD_CAST "readonly", BAD_CAST (dir->readonly ? "true" : "false")), -1);
+		xml_mktag(_xml_write_dentry_times(writer, dir), -1);
+	}
+
+	/* Handle UID in any case */
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST UID_TAGNAME, "%"PRIu64, dir->uid), -1);
+
+	/* Handle extended attribute if it is dirty */
+	if (dir->dirty) {
+		xml_mktag(_xml_write_xattr(writer, dir), -1);
+		dir->dirty = false;
+	}
+
+	return 0;
+}
+
 static int _xml_open_incremental_dir_ent(xmlTextWriterPtr writer, struct dentry *dir)
 {
 	/* Handle R/O and timestamp if it is dirty */
@@ -606,6 +628,8 @@ static int _xml_open_incremental_dir_ent(xmlTextWriterPtr writer, struct dentry 
 		xml_mktag(_xml_write_xattr(writer, dir), -1);
 		dir->dirty = false;
 	}
+
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "contents"), -1);
 
 	return 0;
 }
@@ -632,7 +656,8 @@ static int _xml_open_incrental_root(xmlTextWriterPtr writer, struct ltfs_volume 
 
 static inline int _xml_close_incrental_root(xmlTextWriterPtr writer)
 {
-	xml_mktag(xmlTextWriterEndElement(writer), -1);
+	xml_mktag(xmlTextWriterEndElement(writer), -1); /* close contents tag */
+	xml_mktag(xmlTextWriterEndElement(writer), -1); /* close directory tag */
 	return 0;
 }
 
@@ -656,7 +681,7 @@ static inline int _xml_close_incremental_dir(xmlTextWriterPtr writer)
 	return 0;
 }
 
-static int _xml_open_incremental_dirs(xmlTextWriterPtr writer, struct incj_path_manager *pm, int offset)
+static int _xml_open_incremental_dirs(xmlTextWriterPtr writer, struct incj_path_helper *pm, int offset)
 {
 	int ret = 0, i = 0;
 	struct incj_path_element *cur = NULL;
@@ -689,36 +714,65 @@ static int _xml_close_incremental_dirs(xmlTextWriterPtr writer, int pops)
 	return ret;
 }
 
-static int _xml_goto_increment_dir(xmlTextWriterPtr writer,
-							   struct jentry *ent, struct incj_path_manager **cur,
-							   struct ltfs_volume *vol)
+static int _xml_write_incremental_delete(xmlTextWriterPtr writer, char *name)
+{
+	return 0;
+}
+
+static int _xml_goto_increment_parent(xmlTextWriterPtr writer,
+									  struct jentry *ent, struct incj_path_helper **cur,
+									  struct ltfs_volume *vol)
 {
 	int ret = 0, matches = 0, pops = 0;
-	char *dpath = NULL;
-	struct incj_path_manager *new = NULL;
+	bool perfect_match = false;
+	char *parent_path = NULL, *filename = NULL;
+	struct incj_path_helper *new = NULL;
 
-	/* create dpath from */
-	//split_path(ent->id.full_path);
+	parent_path = strdup(ent->id.full_path);
+	if (!parent_path) {
+		ltfsmsg(LTFS_ERR, 10001E, "parent path for traveling incremental index dirs");
+		return -LTFS_NO_MEMORY;
+	}
 
-	ret = incj_create_path_manager(ent->id.full_path, &new, vol);
+	fs_split_path(parent_path, &filename, strlen(parent_path) + 1);
+	if (strlen(parent_path) == 0) {
+		parent_path = "/";
+	}
+
+	ret = incj_create_path_helper(parent_path, &new, vol);
 	if (ret < 0) {
+		free(parent_path);
 		return ret;
 	}
 
-	incj_compare_path(*cur, new, &matches, &pops);
+	ret = incj_compare_path(*cur, new, &matches, &pops, &perfect_match);
 	if (ret < 0) {
+		incj_destroy_path_helper(new);
+		free(parent_path);
 		return ret;
 	}
 
 	if (pops) {
 		ret = _xml_close_incremental_dirs(writer, pops);
 		if (ret < 0) {
+			incj_destroy_path_helper(new);
+			free(parent_path);
 			return ret;
 		}
 	}
 
-	if (matches)
+	if (!perfect_match)
 		ret = _xml_open_incremental_dirs(writer, new, matches);
+
+	if (!ret) {
+		incj_destroy_path_helper(*cur);
+		*cur = new;
+	} else {
+		incj_destroy_path_helper(new);
+	}
+
+	if (strcmp(parent_path, "/"))
+		free(parent_path);
 
 	return ret;
 }
@@ -735,9 +789,12 @@ static int _xml_write_inc_journal(xmlTextWriterPtr writer, struct ltfs_volume *v
 								  struct ltfsee_cache* offset_c, struct ltfsee_cache* sync_list)
 {
 	int ret = 0;
-	char *current_dir = NULL;
+	bool failed = false;
+	char *target_path = NULL, *target_name = NULL;
+	struct ltfsee_cache offset = {NULL, 0};  /* Cache structure for file offset cache */
+	struct ltfsee_cache list = {NULL, 0};    /* Cache structure for sync list */
 	struct jentry *ent = NULL, *tmp = NULL;
-	struct incj_path_manager *cur_path = NULL, *next_path = NULL;
+	struct incj_path_helper *cur_parent = NULL;
 
 	/* Create a directory tag for root */
 	ret = _xml_open_incrental_root(writer, vol);
@@ -745,7 +802,7 @@ static int _xml_write_inc_journal(xmlTextWriterPtr writer, struct ltfs_volume *v
 		return ret;
 	}
 
-	ret = incj_create_path_manager("/", &cur_path, vol);
+	ret = incj_create_path_helper("/", &cur_parent, vol);
 	if (ret < 0) {
 		return ret;
 	}
@@ -753,22 +810,54 @@ static int _xml_write_inc_journal(xmlTextWriterPtr writer, struct ltfs_volume *v
 	/* Crawl incremental journal and generate XML tags */
 	incj_sort(vol);
 	HASH_ITER(hh, vol->journal, ent, tmp) {
+		if (!failed) {
+			ltfsmsg(LTFS_INFO, 17304D, ent->id.full_path);
+			ret = _xml_goto_increment_parent(writer, ent, &cur_parent, vol);
+			if (!ret) {
+				switch (ent->reason) {
+					case CREATE:
+						/* TODO: Need to support sync cache and offset cache */
+						if (ent->dentry->isdir) {
+							/* Create XML recursively */
+							ret = _xml_write_dirtree(writer, ent->dentry, vol->index, &offset, &list);
+						} else {
+							/* Create XML for a file */
+							ret = _xml_write_file(writer, ent->dentry, &offset, &list);
+						}
+						break;
+					case MODIFY:
+						if (ent->dentry->isdir) {
+							/* Create XML for dir (no recursive) */
+							ret = _xml_write_incremental_dir(writer, ent->dentry);
+						} else {
+							/* Create XML for a file */
+							ret = _xml_write_file(writer, ent->dentry, &offset, &list);
+						}
+						break;
+					case DELETE_FILE:
+					case DELETE_DIRECTORY:
+						/* Create a delete tag */
+						target_path = ent->id.full_path;
+						fs_split_path(target_path, &target_name, strlen(target_path) + 1);
+						ret = _xml_write_incremental_delete(writer, target_name);
+						break;
+					default:
+						/* TODO: Need to have a message here */
+						ret = -LTFS_UNEXPECTED_VALUE;
+						break;
+				}
 
-		ret = _xml_goto_increment_dir(writer, ent, &cur_path, vol);
-
-		switch (ent->reason) {
-			case CREATE:
-				break;
-			case MODIFY:
-				break;
-			case DELETE_FILE:
-				break;
-			case DELETE_DIRECTORY:
-				break;
-			default:
-				break;
+				if (ret < 0)
+					failed = true;
+			} else
+				failed = true;
 		}
+		HASH_DEL(vol->journal, ent);
+		incj_dispose_jentry(ent);
 	}
+
+	/* Clear created directory just in case */
+	incj_clear(vol);
 
 	/* Close the directory tag for root */
 	ret = _xml_close_incrental_root(writer);
@@ -790,7 +879,6 @@ static int _xml_write_incremental_schema(xmlTextWriterPtr writer, const char *cr
 	int ret;
 	size_t i;
 	char *update_time;
-	struct ltfs_name *name_criteria;
 	struct ltfsee_cache offset = {NULL, 0};  /* Cache structure for file offset cache */
 	struct ltfsee_cache list = {NULL, 0};    /* Cache structure for sync list */
 	struct ltfs_index *idx = vol->index;

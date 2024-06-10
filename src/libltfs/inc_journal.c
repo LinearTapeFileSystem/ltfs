@@ -57,22 +57,24 @@
 static int _allocate_jentry(struct jentry **e, char *path, struct dentry* d)
 {
 	struct jentry *ent = NULL;
+
 	*e = NULL;
 
 	ent = calloc(1, sizeof(struct jentry));
 	if (!ent) {
-		ltfsmsg(LTFS_ERR, 11168E);
+		ltfsmsg(LTFS_ERR, 10001E, "allocating a jentry");
 		return -LTFS_NO_MEMORY;
 	}
 
 	ent->id.full_path = path;
 	ent->id.uid       = d->uid;
+
 	*e = ent;
 
 	return 0;
 }
 
-static int _dispose_jentry(struct jentry *ent)
+static inline int _dispose_jentry(struct jentry *ent)
 {
 	if (ent) {
 		if (ent->id.full_path)
@@ -115,7 +117,7 @@ int incj_create(char *ppath, struct dentry *d, struct ltfs_volume *vol)
 	/* Create full path of created object and jentry */
 	len = asprintf(&full_path, "%s/%s", ppath, d->name.name);
 	if (len < 0) {
-		ltfsmsg(LTFS_ERR, 11168E);
+		ltfsmsg(LTFS_ERR, 10001E, "full path of a jentry");
 		vol->journal_err = true;
 		return -LTFS_NO_MEMORY;
 	}
@@ -135,7 +137,7 @@ int incj_create(char *ppath, struct dentry *d, struct ltfs_volume *vol)
 	if (d->isdir) {
 		jdir = calloc(1, sizeof(struct jcreated_entry));
 		if (!jdir) {
-			ltfsmsg(LTFS_ERR, 11168E);
+			ltfsmsg(LTFS_ERR, 10001E, "allocating a jcreated_entry");
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -247,10 +249,10 @@ int incj_rmfile(char *path, struct dentry *d, struct ltfs_volume *vol)
 		}
 	}
 
-	/* Create full path of created object and jentry */
+	/* Create full path of deleted object and jentry */
 	full_path = strdup(path);
 	if (!full_path) {
-		ltfsmsg(LTFS_ERR, 11168E);
+		ltfsmsg(LTFS_ERR, 10001E, "duplicating a path for deleted file");
 		vol->journal_err = true;
 		return -LTFS_NO_MEMORY;
 	}
@@ -320,7 +322,7 @@ int incj_rmdir(char *path, struct dentry *d, struct ltfs_volume *vol)
 	/* Create full path of created object and jentry */
 	full_path = strdup(path);
 	if (!full_path) {
-		ltfsmsg(LTFS_ERR, 11168E);
+		ltfsmsg(LTFS_ERR, 10001E, "duplicating a path of deleted directory");
 		vol->journal_err = true;
 		return -LTFS_NO_MEMORY;
 	}
@@ -336,6 +338,11 @@ int incj_rmdir(char *path, struct dentry *d, struct ltfs_volume *vol)
 	HASH_ADD(hh, vol->journal, id, sizeof(struct jentry), ent);
 
 	return 0;
+}
+
+int incj_dispose_jentry(struct jentry *ent)
+{
+	return (_dispose_jentry(ent));
 }
 
 /**
@@ -430,7 +437,7 @@ void incj_dump(struct ltfs_volume *vol)
 			} else
 				printf("file\n");
 
-			parent= strdup(ent->id.full_path);
+			parent = strdup(ent->id.full_path);
 			fs_split_path(parent, &filename, strlen(parent) + 1);
 
 			if (prev_parent) {
@@ -454,22 +461,22 @@ void incj_dump(struct ltfs_volume *vol)
 	return;
 }
 
-int incj_create_path_manager(const char *dpath, struct incj_path_manager **pm, struct ltfs_volume *vol)
+int incj_create_path_helper(const char *dpath, struct incj_path_helper **pm, struct ltfs_volume *vol)
 {
-	struct incj_path_manager *ipm;
+	struct incj_path_helper *ipm;
 	char *wp = NULL, *tmp = NULL, *dname = NULL;
 	int ret = 0;
 
 	*pm = NULL;
 
-	ipm = calloc(1, sizeof(struct incj_path_manager));
+	ipm = calloc(1, sizeof(struct incj_path_helper));
 	if (!ipm) {
-		ltfsmsg(LTFS_ERR, 11168E);
+		ltfsmsg(LTFS_ERR, 10001E, "allocating a path helper");
 		return -LTFS_NO_MEMORY;
 	}
 
 	if (dpath[0] != '/') {
-		/* Provided path must be a absolute path */
+		/* TODO: Provided path must be a absolute path */
 		free(ipm);
 		return -LTFS_INVALID_PATH;
 	}
@@ -477,14 +484,14 @@ int incj_create_path_manager(const char *dpath, struct incj_path_manager **pm, s
 	ipm->vol = vol;
 
 	if (strcmp(dpath, "/") == 0) {
-		/* Provided path is the root, return good */
+		/* TODO: Provided path is the root, return good */
 		*pm = ipm;
 		return 0;
 	}
 
 	wp = strdup(dpath);
 	if (!wp) {
-		ltfsmsg(LTFS_ERR, 11168E);
+		ltfsmsg(LTFS_ERR, 10001E, "duplicating a directory path for path helper");
 		free(ipm);
 		return -LTFS_NO_MEMORY;
 	}
@@ -493,7 +500,7 @@ int incj_create_path_manager(const char *dpath, struct incj_path_manager **pm, s
 		ret = incj_push_directory(dname, ipm);
 		if (ret < 0) {
 			free(wp);
-			incj_destroy_path_manager(ipm);
+			incj_destroy_path_helper(ipm);
 			return ret;
 		}
 	}
@@ -504,7 +511,7 @@ int incj_create_path_manager(const char *dpath, struct incj_path_manager **pm, s
 	return 0;
 }
 
-int incj_destroy_path_manager(struct incj_path_manager *pm)
+int incj_destroy_path_helper(struct incj_path_helper *pm)
 {
 	struct incj_path_element *cur, *next;
 
@@ -522,23 +529,23 @@ int incj_destroy_path_manager(struct incj_path_manager *pm)
 	return 0;
 }
 
-int incj_push_directory(char *name, struct incj_path_manager *pm)
+int incj_push_directory(char *name, struct incj_path_helper *pm)
 {
 	int ret = 0;
 	struct incj_path_element *ipelm = NULL, *cur_tail = NULL;
-	struct dentry *d, *parent;
+	struct dentry *parent = NULL;
 
 	ipelm = calloc(1, sizeof(struct incj_path_element));
 	if (!ipelm) {
-		ltfsmsg(LTFS_ERR, 11168E);
+		ltfsmsg(LTFS_ERR, 10001E, "allocating a path element on push");
 		return -LTFS_NO_MEMORY;
 	}
 
 	/* Set name field of new path element */
 	ipelm->name = strdup(name);
 	if (!ipelm->name) {
-		ltfsmsg(LTFS_ERR, 11168E);
-		incj_destroy_path_manager(pm);
+		ltfsmsg(LTFS_ERR, 10001E, "duplicating a path of pushing directory");
+		incj_destroy_path_helper(pm);
 		return -LTFS_NO_MEMORY;
 	}
 
@@ -546,13 +553,13 @@ int incj_push_directory(char *name, struct incj_path_manager *pm)
 	if (pm->elems)
 		parent = pm->tail->d;
 	else
-		parent - pm->vol->index->root;
+		parent = pm->vol->index->root;
 
 	ret = fs_directory_lookup(parent, name, &ipelm->d);
 	if (ret) {
 		free(ipelm->name);
 		free(ipelm);
-		incj_destroy_path_manager(pm);
+		incj_destroy_path_helper(pm);
 		return -LTFS_INVALID_PATH;
 	}
 
@@ -569,10 +576,12 @@ int incj_push_directory(char *name, struct incj_path_manager *pm)
 
 	pm->elems++;
 
+	ltfsmsg(LTFS_INFO, 17300D, name, pm, pm->head, pm->tail);
+
 	return 0;
 }
 
-int incj_pop_directory(struct incj_path_manager *pm)
+int incj_pop_directory(struct incj_path_helper *pm)
 {
 	struct incj_path_element *cur_tail = NULL, *new_tail = NULL;
 
@@ -596,42 +605,54 @@ int incj_pop_directory(struct incj_path_manager *pm)
 		free(cur_tail->name);
 	free(cur_tail);
 
+	ltfsmsg(LTFS_INFO, 17301D, pm, pm->head, pm->tail);
+
 	return 0;
 }
 
-int incj_compare_path(struct incj_path_manager *p1, struct incj_path_manager *p2,
-					  int *matches, int *pops)
+int incj_compare_path(struct incj_path_helper *now, struct incj_path_helper *next,
+					  int *matches, int *pops, bool *perfect_match)
 {
-	int ret = 0;
+	int ret = 0, matched = 0;
 	struct incj_path_element *cur1 = NULL, *cur2 = NULL;
 
-	*matches = 0;
+	*matches       = 0;
+	*pops          = 0;
+	*perfect_match = false;
 
-	cur1 = p1->head;
-	cur2 = p2->head;
+	cur1 = now->head;
+	cur2 = next->head;
 
 	if (!cur1 && !cur2) {
 		/* Both are root */
+		ltfsmsg(LTFS_INFO, 17302D, now, next);
+		*perfect_match = true;
 		return 0;
 	}
 
-	while (cur1) {
+	while (cur1 && cur2) {
 		if (cur1->d != cur2->d)
 			break;
-		matches++;
-		cur1++;
-		cur2++;
+		matched++;
+		cur1 = cur1->next;
+		cur2 = cur2->next;
 	}
 
+	*matches = matched;
+
 	if (!cur2) {
-		/* cur1 is equal or longer than cur2. -> zero for perfect match, other wise pop for negative value */
-		*pops = p1->elems - *matches;
+		/* now is equal or longer than next. -> zero for perfect match, other wise how many pops */
+		*pops = now->elems - *matches;
+		if (!cur1)
+			*perfect_match = true;
 	}
+
+	ltfsmsg(LTFS_INFO, 17303D, now, next, *matches, *pops, *perfect_match);
 
 	return ret;
 }
 
-char* incj_get_path(struct incj_path_manager *pm)
+char* incj_get_path(struct incj_path_helper *pm)
 {
 	char *path = NULL, *path_old = NULL;
 	struct incj_path_element *cur = NULL;

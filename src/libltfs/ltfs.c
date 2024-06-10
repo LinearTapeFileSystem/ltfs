@@ -3635,6 +3635,10 @@ int ltfs_sync_index(char *reason, bool index_locking, enum ltfs_index_type type,
 	bool dp_index_file_end, ip_index_file_end;
 	char *bc_print = NULL;
 
+#ifndef FORMAT_SPEC25
+	type = LTFS_FULL_INDEX;
+#endif
+
 start:
 	ret = ltfs_get_partition_readonly(ltfs_dp_id(vol), vol);
 	if (ret < 0 && ret != -LTFS_LESS_SPACE)

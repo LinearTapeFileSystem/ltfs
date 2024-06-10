@@ -177,9 +177,9 @@ struct device_data;
 #define INDEX_MAX_COMMENT_LEN         65536 /* Maximum comment field length (per LTFS Format) */
 
 enum ltfs_index_type {
-	LTFS_INDEX_AUTO = 0,   /*< Select index type to write based on specified options */
-	LTFS_FULL_INDEX,       /*< Forcibly write full index */
-	LTFS_INCREMENTAL_INDEX /*< Forcibly write incremental index */
+	LTFS_INDEX_AUTO = 0,   /**< Select index type to write based on specified options */
+	LTFS_FULL_INDEX,       /**< Forcibly write full index */
+	LTFS_INCREMENTAL_INDEX /**< Forcibly write incremental index */
 };
 
 #define LTFS_NO_BARCODE               "NO_BARCODE"

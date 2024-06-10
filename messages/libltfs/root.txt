@@ -836,6 +836,12 @@ v
 		17292I:string { "Current position is (%llu, %llu), Error position is (%llu, %llu)." }
 		17293E:string { "UUID in the index does not match the label." }
 
+		17300D:string { "Path Helper: Pushed %s to 0x%llx (head = 0x%llx, last = 0x%llx)." }
+		17301D:string { "Path Helper: Poped from 0x%llx (head = 0x%llx, last = 0x%llx)." }
+		17302D:string { "Path Helper: Compare 0x%llx and 0x%llx (Matched)." }
+		17303D:string { "Path Helper: Compare 0x%llx and 0x%llx (matched = %d, pop = %d, perfect_match = %d)." }
+		17304D:string { "Processing %s." }
+
 		// For Debug 19999I:string { "%s %s %d." }
 
 		// DO NOT place messages with IDs 20000 or higher here!

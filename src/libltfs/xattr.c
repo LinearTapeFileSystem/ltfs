@@ -919,8 +919,8 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 
 	if ((! strcmp(name, "ltfs.commitMessage") ||
 		 ! strcmp(name, "ltfs.sync") ||
-		 ! strcmp(name, "ltfs.vendor.IBM.SyncFullIndex") ||
-		 ! strcmp(name, "ltfs.vendor.IBM.SyncIncremental"))
+		 ! strcmp(name, "ltfs.vendor.IBM.FullSync") ||
+		 ! strcmp(name, "ltfs.vendor.IBM.IncrementalSync"))
 		&& d == vol->index->root) {
 		char *value_null_terminated, *new_value;
 
@@ -929,10 +929,16 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 			ret = -LTFS_LARGE_XATTR;
 		}
 
-		if (! strcmp(name, "ltfs.vendor.IBM.SyncFullIndex"))
+#ifdef FORMAT_SPEC25
+		if (! strcmp(name, "ltfs.vendor.IBM.FullSync"))
 			idx_type = LTFS_FULL_INDEX;
-		else if (! strcmp(name, "ltfs.vendor.IBM.SyncIncremental"))
+		else if (! strcmp(name, "ltfs.vendor.IBM.IncrementalSync"))
 			idx_type = LTFS_INCREMENTAL_INDEX;
+#else
+		if (! strcmp(name, "ltfs.vendor.IBM.FullSync") ||
+			! strcmp(name, "ltfs.vendor.IBM.IncrementalSync")) {
+		}
+#endif
 
 		ltfs_mutex_lock(&vol->index->dirty_lock);
 		if (! vol->index->dirty) {
