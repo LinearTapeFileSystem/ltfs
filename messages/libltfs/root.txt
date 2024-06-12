@@ -836,11 +836,13 @@ v
 		17292I:string { "Current position is (%llu, %llu), Error position is (%llu, %llu)." }
 		17293E:string { "UUID in the index does not match the label." }
 
-		17300D:string { "Path Helper: Pushed %s to 0x%llx (head = 0x%llx, last = 0x%llx)." }
-		17301D:string { "Path Helper: Poped from 0x%llx (head = 0x%llx, last = 0x%llx)." }
-		17302D:string { "Path Helper: Compare 0x%llx and 0x%llx (Matched)." }
-		17303D:string { "Path Helper: Compare 0x%llx and 0x%llx (matched = %d, pop = %d, perfect_match = %d)." }
-		17304D:string { "Processing %s." }
+		17300I:string { "Wrote inc-index of %s (Gen = %lld, Part = %c, Pos = %lld, %s)." }
+		17301I:string { "Info inc-index, Gen = %lld, Full Part = %c, Full Pos = %lld, Back Part = %c, Back Pos = %lld)." }
+		17302E:string { "Path helper: Provided path must be an absolute path (%s)." }
+		17303E:string { "Unexpected value was found in the reason of inc-journal entry (%d)." }
+		17304E:string { "Unexpected value was provided to _xml_write_incremental_delete (%d)." }
+		17305E:string { "Failed to construct a path helper (push: %d)." }
+		17306E:string { "Failed to find a corresponded directory in path helper (push: %d)." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 

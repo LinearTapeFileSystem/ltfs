@@ -2733,7 +2733,18 @@ int ltfs_write_index(char partition, char *reason, enum ltfs_index_type type, st
 		incj_clear(vol); /* Clear incremental journal data */
 		ltfs_unset_index_dirty(true, vol->index);
 	} else {
-		/* TODO: May be need to do something... */
+		ltfsmsg(LTFS_INFO, 17300I,
+				bc_print,
+				(unsigned long long)vol->index->generation,
+				vol->index->selfptr_inc.partition,
+				(unsigned long long)vol->index->selfptr_inc.block,
+				tape_get_serialnumber(vol->device));
+		ltfsmsg(LTFS_INFO, 17301I,
+				(unsigned long long)vol->index->generation,
+				vol->index->backptr.partition,
+				(unsigned long long)vol->index->backptr.block,
+				vol->index->backptr_inc.partition,
+				(unsigned long long)vol->index->backptr_inc.block);
 	}
 
 out_write_perm:

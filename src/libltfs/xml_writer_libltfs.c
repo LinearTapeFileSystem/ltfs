@@ -714,8 +714,32 @@ static int _xml_close_incremental_dirs(xmlTextWriterPtr writer, int pops)
 	return ret;
 }
 
-static int _xml_write_incremental_delete(xmlTextWriterPtr writer, char *name)
+static int _xml_write_incremental_delete(xmlTextWriterPtr writer, enum journal_reason reason, struct ltfs_name *name)
 {
+	/* Open directory tag or file tag based on the provided reason */
+	switch (reason) {
+		case DELETE_DIRECTORY:
+			xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "directory"), -1);
+			break;
+		case DELETE_FILE:
+			xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "file"), -1);
+			break;
+		default:
+			ltfsmsg(LTFS_ERR, 17304E, reason);
+			return -1;
+			break;
+	}
+
+	/* Create a name tag */
+	xml_mktag(_xml_write_nametype(writer, "name", name), -1);
+
+	/* Create a empty deleted tag */
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "deleted"), -1);
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+
+	/* Close directory or file tag */
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+
 	return 0;
 }
 
@@ -790,7 +814,6 @@ static int _xml_write_inc_journal(xmlTextWriterPtr writer, struct ltfs_volume *v
 {
 	int ret = 0;
 	bool failed = false;
-	char *target_path = NULL, *target_name = NULL;
 	struct ltfsee_cache offset = {NULL, 0};  /* Cache structure for file offset cache */
 	struct ltfsee_cache list = {NULL, 0};    /* Cache structure for sync list */
 	struct jentry *ent = NULL, *tmp = NULL;
@@ -811,7 +834,6 @@ static int _xml_write_inc_journal(xmlTextWriterPtr writer, struct ltfs_volume *v
 	incj_sort(vol);
 	HASH_ITER(hh, vol->journal, ent, tmp) {
 		if (!failed) {
-			ltfsmsg(LTFS_INFO, 17304D, ent->id.full_path);
 			ret = _xml_goto_increment_parent(writer, ent, &cur_parent, vol);
 			if (!ret) {
 				switch (ent->reason) {
@@ -837,12 +859,10 @@ static int _xml_write_inc_journal(xmlTextWriterPtr writer, struct ltfs_volume *v
 					case DELETE_FILE:
 					case DELETE_DIRECTORY:
 						/* Create a delete tag */
-						target_path = ent->id.full_path;
-						fs_split_path(target_path, &target_name, strlen(target_path) + 1);
-						ret = _xml_write_incremental_delete(writer, target_name);
+						ret = _xml_write_incremental_delete(writer, ent->reason, &ent->name);
 						break;
 					default:
-						/* TODO: Need to have a message here */
+						ltfsmsg(LTFS_ERR, 17303E, ent->reason);
 						ret = -LTFS_UNEXPECTED_VALUE;
 						break;
 				}
@@ -854,6 +874,10 @@ static int _xml_write_inc_journal(xmlTextWriterPtr writer, struct ltfs_volume *v
 		}
 		HASH_DEL(vol->journal, ent);
 		incj_dispose_jentry(ent);
+	}
+
+	if (cur_parent) {
+		incj_destroy_path_helper(cur_parent);
 	}
 
 	/* Clear created directory just in case */

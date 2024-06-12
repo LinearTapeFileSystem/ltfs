@@ -264,6 +264,13 @@ int incj_rmfile(char *path, struct dentry *d, struct ltfs_volume *vol)
 	}
 
 	ent->reason = DELETE_FILE;
+	ent->name.percent_encode = d->name.percent_encode;
+	ent->name.name = strdup(d->name.name);
+	if (!ent->name.name) {
+		ltfsmsg(LTFS_ERR, 10001E, "duplicating a name of deleted file");
+		vol->journal_err = true;
+		return -LTFS_NO_MEMORY;
+	}
 
 	HASH_ADD(hh, vol->journal, id, sizeof(struct jentry), ent);
 
@@ -334,6 +341,13 @@ int incj_rmdir(char *path, struct dentry *d, struct ltfs_volume *vol)
 	}
 
 	ent->reason = DELETE_DIRECTORY;
+	ent->name.percent_encode = d->name.percent_encode;
+	ent->name.name = strdup(d->name.name);
+	if (!ent->name.name) {
+		ltfsmsg(LTFS_ERR, 10001E, "duplicating a name of deleted directory");
+		vol->journal_err = true;
+		return -LTFS_NO_MEMORY;
+	}
 
 	HASH_ADD(hh, vol->journal, id, sizeof(struct jentry), ent);
 
@@ -476,7 +490,8 @@ int incj_create_path_helper(const char *dpath, struct incj_path_helper **pm, str
 	}
 
 	if (dpath[0] != '/') {
-		/* TODO: Provided path must be a absolute path */
+		/* Provided path must be a absolute path */
+		ltfsmsg(LTFS_ERR, 17302E, dpath);
 		free(ipm);
 		return -LTFS_INVALID_PATH;
 	}
@@ -484,7 +499,7 @@ int incj_create_path_helper(const char *dpath, struct incj_path_helper **pm, str
 	ipm->vol = vol;
 
 	if (strcmp(dpath, "/") == 0) {
-		/* TODO: Provided path is the root, return good */
+		/* Provided path is the root, return good */
 		*pm = ipm;
 		return 0;
 	}
@@ -499,6 +514,7 @@ int incj_create_path_helper(const char *dpath, struct incj_path_helper **pm, str
 	for (dname = strtok_r(wp, "/", &tmp); dname != NULL; dname = strtok_r(NULL, "/", &tmp)) {
 		ret = incj_push_directory(dname, ipm);
 		if (ret < 0) {
+			ltfsmsg(LTFS_ERR, 17305E);
 			free(wp);
 			incj_destroy_path_helper(ipm);
 			return ret;
@@ -519,6 +535,8 @@ int incj_destroy_path_helper(struct incj_path_helper *pm)
 
 	while (cur) {
 		next = cur->next;
+		if (cur->d)
+			fs_release_dentry(cur->d);
 		if (cur->name)
 			free(cur->name);
 		free(cur);
@@ -557,6 +575,7 @@ int incj_push_directory(char *name, struct incj_path_helper *pm)
 
 	ret = fs_directory_lookup(parent, name, &ipelm->d);
 	if (ret) {
+		ltfsmsg(LTFS_ERR, 17306E, ret);
 		free(ipelm->name);
 		free(ipelm);
 		incj_destroy_path_helper(pm);
@@ -575,8 +594,6 @@ int incj_push_directory(char *name, struct incj_path_helper *pm)
 	}
 
 	pm->elems++;
-
-	ltfsmsg(LTFS_INFO, 17300D, name, pm, pm->head, pm->tail);
 
 	return 0;
 }
@@ -601,11 +618,11 @@ int incj_pop_directory(struct incj_path_helper *pm)
 		pm->head = NULL;
 	}
 
+	if (cur_tail->d)
+		fs_release_dentry(cur_tail->d);
 	if (cur_tail->name)
 		free(cur_tail->name);
 	free(cur_tail);
-
-	ltfsmsg(LTFS_INFO, 17301D, pm, pm->head, pm->tail);
 
 	return 0;
 }
@@ -625,7 +642,6 @@ int incj_compare_path(struct incj_path_helper *now, struct incj_path_helper *nex
 
 	if (!cur1 && !cur2) {
 		/* Both are root */
-		ltfsmsg(LTFS_INFO, 17302D, now, next);
 		*perfect_match = true;
 		return 0;
 	}
@@ -646,8 +662,6 @@ int incj_compare_path(struct incj_path_helper *now, struct incj_path_helper *nex
 		if (!cur1)
 			*perfect_match = true;
 	}
-
-	ltfsmsg(LTFS_INFO, 17303D, now, next, *matches, *pops, *perfect_match);
 
 	return ret;
 }
