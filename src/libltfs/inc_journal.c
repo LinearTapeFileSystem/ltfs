@@ -514,7 +514,7 @@ int incj_create_path_helper(const char *dpath, struct incj_path_helper **pm, str
 	for (dname = strtok_r(wp, "/", &tmp); dname != NULL; dname = strtok_r(NULL, "/", &tmp)) {
 		ret = incj_push_directory(dname, ipm);
 		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, 17305E);
+			ltfsmsg(LTFS_ERR, 17305E, ret);
 			free(wp);
 			incj_destroy_path_helper(ipm);
 			return ret;
