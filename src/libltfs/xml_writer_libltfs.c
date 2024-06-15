@@ -339,9 +339,10 @@ static int _xml_write_file(xmlTextWriterPtr writer, struct dentry *file, struct 
 	/* Write dirty file list */
 	if (sync_list->fp && file->dirty) {
 		fprintf(sync_list->fp, "%s,%"PRIu64"\n", file->name.name, file->size);
-		file->dirty = false;
 		sync_list->count++;
 	}
+
+	file->dirty = false;
 
 	return 0;
 }

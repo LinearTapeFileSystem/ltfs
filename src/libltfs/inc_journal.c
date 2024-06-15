@@ -171,7 +171,7 @@ int incj_modify(char *path, struct dentry *d, struct ltfs_volume *vol)
 	}
 
 	/* Skip journal modification because it is already existed */
-	HASH_FIND(hh, vol->journal, &ent->id, sizeof(struct jentry), ent);
+	HASH_FIND(hh, vol->journal, &d->uid, sizeof(struct jentry), ent);
 	if (ent) {
 		return 0;
 	}
@@ -655,13 +655,10 @@ int incj_compare_path(struct incj_path_helper *now, struct incj_path_helper *nex
 	}
 
 	*matches = matched;
+	*pops = now->elems - *matches;
 
-	if (!cur2) {
-		/* now is equal or longer than next. -> zero for perfect match, other wise how many pops */
-		*pops = now->elems - *matches;
-		if (!cur1)
-			*perfect_match = true;
-	}
+	if (!cur1 && !cur2)
+		*perfect_match = true;
 
 	return ret;
 }
