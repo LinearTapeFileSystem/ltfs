@@ -60,6 +60,7 @@
 #include "fs.h"
 #include "tape.h"
 #include "pathname.h"
+#include "inc_journal.h"
 #include "arch/time_internal.h"
 
 /* Structure to control EE's file offset cache and sync file list */
@@ -338,9 +339,10 @@ static int _xml_write_file(xmlTextWriterPtr writer, struct dentry *file, struct 
 	/* Write dirty file list */
 	if (sync_list->fp && file->dirty) {
 		fprintf(sync_list->fp, "%s,%"PRIu64"\n", file->name.name, file->size);
-		file->dirty = false;
 		sync_list->count++;
 	}
+
+	file->dirty = false;
 
 	return 0;
 }
@@ -586,6 +588,433 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 	return 0;
 }
 
+#ifdef FORMAT_SPEC25
+static int _xml_write_incremental_dir(xmlTextWriterPtr writer, struct dentry *dir)
+{
+	/* Handle R/O and timestamp if it is dirty */
+	if (dir->dirty) {
+		xml_mktag(xmlTextWriterWriteElement(
+					  writer, BAD_CAST "readonly", BAD_CAST (dir->readonly ? "true" : "false")), -1);
+		xml_mktag(_xml_write_dentry_times(writer, dir), -1);
+	}
+
+	/* Handle UID in any case */
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST UID_TAGNAME, "%"PRIu64, dir->uid), -1);
+
+	/* Handle extended attribute if it is dirty */
+	if (dir->dirty) {
+		xml_mktag(_xml_write_xattr(writer, dir), -1);
+		dir->dirty = false;
+	}
+
+	return 0;
+}
+
+static int _xml_open_incremental_dir_ent(xmlTextWriterPtr writer, struct dentry *dir)
+{
+	/* Handle R/O and timestamp if it is dirty */
+	if (dir->dirty) {
+		xml_mktag(xmlTextWriterWriteElement(
+					  writer, BAD_CAST "readonly", BAD_CAST (dir->readonly ? "true" : "false")), -1);
+		xml_mktag(_xml_write_dentry_times(writer, dir), -1);
+	}
+
+	/* Handle UID in any case */
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST UID_TAGNAME, "%"PRIu64, dir->uid), -1);
+
+	/* Handle extended attribute if it is dirty */
+	if (dir->dirty) {
+		xml_mktag(_xml_write_xattr(writer, dir), -1);
+		dir->dirty = false;
+	}
+
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "contents"), -1);
+
+	return 0;
+}
+
+static int _xml_open_incrental_root(xmlTextWriterPtr writer, struct ltfs_volume *vol)
+{
+	int ret = 0;
+	struct ltfs_index *idx = vol->index;
+	struct dentry *dir = idx->root;
+
+	/* Handle name tag */
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "directory"), -1);
+	if (idx->volume_name.name) {
+		xml_mktag(_xml_write_nametype(writer, "name", (struct ltfs_name*)(&idx->volume_name)), -1);
+	} else {
+		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "name"), -1);
+		xml_mktag(xmlTextWriterEndElement(writer), -1);
+	}
+
+	ret = _xml_open_incremental_dir_ent(writer, dir);
+
+	return ret;
+}
+
+static inline int _xml_close_incrental_root(xmlTextWriterPtr writer)
+{
+	xml_mktag(xmlTextWriterEndElement(writer), -1); /* close contents tag */
+	xml_mktag(xmlTextWriterEndElement(writer), -1); /* close directory tag */
+	return 0;
+}
+
+static int _xml_open_incremental_dir(xmlTextWriterPtr writer, struct dentry *dir)
+{
+	int ret = 0;
+
+	/* Handle name tag */
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "directory"), -1);
+	xml_mktag(_xml_write_nametype(writer, "name", &dir->name), -1);
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+
+	ret = _xml_open_incremental_dir_ent(writer, dir);
+
+	return ret;
+}
+
+static inline int _xml_close_incremental_dir(xmlTextWriterPtr writer)
+{
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+	return 0;
+}
+
+static int _xml_open_incremental_dirs(xmlTextWriterPtr writer, struct incj_path_helper *pm, int offset)
+{
+	int ret = 0, i = 0;
+	struct incj_path_element *cur = NULL;
+
+	cur = pm->head;
+	for (i = 0; i < offset; i++) {
+		cur = cur->next;
+	}
+
+	while (cur) {
+		ret = _xml_open_incremental_dir(writer, cur->d);
+		if (ret < 0)
+			break;
+		cur = cur->next;
+	}
+
+	return ret;
+}
+
+static int _xml_close_incremental_dirs(xmlTextWriterPtr writer, int pops)
+{
+	int ret = 0, i = 0;
+
+	for (i = 0; i < pops; i++) {
+		ret = _xml_close_incremental_dir(writer);
+		if (ret < 0)
+			break;
+	}
+
+	return ret;
+}
+
+static int _xml_write_incremental_delete(xmlTextWriterPtr writer, enum journal_reason reason, struct ltfs_name *name)
+{
+	/* Open directory tag or file tag based on the provided reason */
+	switch (reason) {
+		case DELETE_DIRECTORY:
+			xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "directory"), -1);
+			break;
+		case DELETE_FILE:
+			xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "file"), -1);
+			break;
+		default:
+			ltfsmsg(LTFS_ERR, 17304E, reason);
+			return -1;
+			break;
+	}
+
+	/* Create a name tag */
+	xml_mktag(_xml_write_nametype(writer, "name", name), -1);
+
+	/* Create a empty deleted tag */
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "deleted"), -1);
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+
+	/* Close directory or file tag */
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+
+	return 0;
+}
+
+static int _xml_goto_increment_parent(xmlTextWriterPtr writer,
+									  struct jentry *ent, struct incj_path_helper **cur,
+									  struct ltfs_volume *vol)
+{
+	int ret = 0, matches = 0, pops = 0;
+	bool perfect_match = false;
+	char *parent_path = NULL, *filename = NULL;
+	struct incj_path_helper *new = NULL;
+
+	parent_path = strdup(ent->id.full_path);
+	if (!parent_path) {
+		ltfsmsg(LTFS_ERR, 10001E, "parent path for traveling incremental index dirs");
+		return -LTFS_NO_MEMORY;
+	}
+
+	fs_split_path(parent_path, &filename, strlen(parent_path) + 1);
+	if (strlen(parent_path) == 0) {
+		parent_path = "/";
+	}
+
+	ret = incj_create_path_helper(parent_path, &new, vol);
+	if (ret < 0) {
+		free(parent_path);
+		return ret;
+	}
+
+	ret = incj_compare_path(*cur, new, &matches, &pops, &perfect_match);
+	if (ret < 0) {
+		incj_destroy_path_helper(new);
+		free(parent_path);
+		return ret;
+	}
+
+	if (pops) {
+		ret = _xml_close_incremental_dirs(writer, pops);
+		if (ret < 0) {
+			incj_destroy_path_helper(new);
+			free(parent_path);
+			return ret;
+		}
+	}
+
+	if (!perfect_match)
+		ret = _xml_open_incremental_dirs(writer, new, matches);
+
+	if (!ret) {
+		incj_destroy_path_helper(*cur);
+		*cur = new;
+	} else {
+		incj_destroy_path_helper(new);
+	}
+
+	if (strcmp(parent_path, "/"))
+		free(parent_path);
+
+	return ret;
+}
+
+/**
+ * Write directory tags for incremental index based on current incremental journal information
+ * @param writer output pointer
+ * @param vol ltfs volume
+ * @param offset_c file pointer to write offest cache
+ * @param sync_list file pointer to write sync file list
+ * @return 0 on success or negative on failure
+ */
+static int _xml_write_inc_journal(xmlTextWriterPtr writer, struct ltfs_volume *vol,
+								  struct ltfsee_cache* offset_c, struct ltfsee_cache* sync_list)
+{
+	int ret = 0;
+	bool failed = false;
+	struct ltfsee_cache offset = {NULL, 0};  /* Cache structure for file offset cache */
+	struct ltfsee_cache list = {NULL, 0};    /* Cache structure for sync list */
+	struct jentry *ent = NULL, *tmp = NULL;
+	struct incj_path_helper *cur_parent = NULL;
+
+	/* Create a directory tag for root */
+	ret = _xml_open_incrental_root(writer, vol);
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = incj_create_path_helper("/", &cur_parent, vol);
+	if (ret < 0) {
+		return ret;
+	}
+
+	/* Crawl incremental journal and generate XML tags */
+	incj_sort(vol);
+	HASH_ITER(hh, vol->journal, ent, tmp) {
+		if (!failed) {
+			ret = _xml_goto_increment_parent(writer, ent, &cur_parent, vol);
+			if (!ret) {
+				switch (ent->reason) {
+					case CREATE:
+						/* TODO: Need to support sync cache and offset cache */
+						if (ent->dentry->isdir) {
+							/* Create XML recursively */
+							ret = _xml_write_dirtree(writer, ent->dentry, vol->index, &offset, &list);
+						} else {
+							/* Create XML for a file */
+							ret = _xml_write_file(writer, ent->dentry, &offset, &list);
+						}
+						break;
+					case MODIFY:
+						if (ent->dentry->isdir) {
+							/* Create XML for dir (no recursive) */
+							ret = _xml_write_incremental_dir(writer, ent->dentry);
+						} else {
+							/* Create XML for a file */
+							ret = _xml_write_file(writer, ent->dentry, &offset, &list);
+						}
+						break;
+					case DELETE_FILE:
+					case DELETE_DIRECTORY:
+						/* Create a delete tag */
+						ret = _xml_write_incremental_delete(writer, ent->reason, &ent->name);
+						break;
+					default:
+						ltfsmsg(LTFS_ERR, 17303E, ent->reason);
+						ret = -LTFS_UNEXPECTED_VALUE;
+						break;
+				}
+
+				if (ret < 0)
+					failed = true;
+			} else
+				failed = true;
+		}
+		HASH_DEL(vol->journal, ent);
+		incj_dispose_jentry(ent);
+	}
+
+	if (cur_parent) {
+		incj_destroy_path_helper(cur_parent);
+	}
+
+	/* Clear created directory just in case */
+	incj_clear(vol);
+
+	/* Close the directory tag for root */
+	ret = _xml_close_incrental_root(writer);
+
+	return ret;
+}
+
+/**
+ * Generate an XML schema, sending it to a user-provided output (memory or file).
+ * Note: this function does very little input validation; any user-provided information
+ * must be verified by the caller.
+ * @param writer the XML writer to send output to
+ * @param priv LTFS data
+ * @param pos position on tape where the schema will be written
+ * @return 0 on success, negative on failure
+ */
+static int _xml_write_incremental_schema(xmlTextWriterPtr writer, const char *creator, struct ltfs_volume *vol)
+{
+	int ret;
+	size_t i;
+	char *update_time;
+	struct ltfsee_cache offset = {NULL, 0};  /* Cache structure for file offset cache */
+	struct ltfsee_cache list = {NULL, 0};    /* Cache structure for sync list */
+	struct ltfs_index *idx = vol->index;
+
+	ret = xml_format_time(idx->mod_time, &update_time);
+	if (!update_time)
+		return -1;
+	else if (ret == LTFS_TIME_OUT_OF_RANGE)
+		ltfsmsg(LTFS_WARN, 17224W, "modifytime", (unsigned long long)idx->mod_time.tv_sec);
+
+	ret = xmlTextWriterStartDocument(writer, NULL, "UTF-8", NULL);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 17057E, ret);
+		return -1;
+	}
+
+	xmlTextWriterSetIndent(writer, 1);
+	/* Define INDENT_INDEXES to write Indexes to tape with full indentation.
+	 * This is normally a waste of space, but it may be useful for debugging. */
+#ifdef INDENT_INDEXES
+	xmlTextWriterSetIndentString(writer, BAD_CAST "    ");
+#else
+	xmlTextWriterSetIndentString(writer, BAD_CAST "");
+#endif
+
+	/* write index properties */
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "ltfsincrementalindex"), -1);
+	xml_mktag(xmlTextWriterWriteAttribute(writer, BAD_CAST "version",
+		BAD_CAST LTFS_INDEX_VERSION_STR), -1);
+	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "creator", BAD_CAST creator), -1);
+	if (idx->commit_message && strlen(idx->commit_message)) {
+		xml_mktag(xmlTextWriterWriteFormatElement(writer, BAD_CAST "comment",
+			"%s", BAD_CAST (idx->commit_message)), -1);
+	}
+	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "volumeuuid", BAD_CAST idx->vol_uuid), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST "generationnumber", "%u", idx->generation), -1);
+	xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "updatetime", BAD_CAST update_time), -1);
+	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "location"), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST "partition", "%c", idx->selfptr_inc.partition), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST "startblock", "%"PRIu64, idx->selfptr_inc.block), -1);
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+	if (idx->backptr.block) {
+		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "previousgenerationlocation"), -1);
+		xml_mktag(xmlTextWriterWriteFormatElement(
+			writer, BAD_CAST "partition", "%c", idx->backptr.partition), -1);
+		xml_mktag(xmlTextWriterWriteFormatElement(
+			writer, BAD_CAST "startblock", "%"PRIu64, idx->backptr.block), -1);
+		xml_mktag(xmlTextWriterEndElement(writer), -1);
+	}
+
+	if (idx->backptr_inc.block) {
+		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "previousincrementallocation"), -1);
+		xml_mktag(xmlTextWriterWriteFormatElement(
+			writer, BAD_CAST "partition", "%c", idx->backptr_inc.partition), -1);
+		xml_mktag(xmlTextWriterWriteFormatElement(
+			writer, BAD_CAST "startblock", "%"PRIu64, idx->backptr_inc.block), -1);
+		xml_mktag(xmlTextWriterEndElement(writer), -1);
+	}
+
+	xml_mktag(xmlTextWriterWriteFormatElement(
+		writer, BAD_CAST NEXTUID_TAGNAME, "%"PRIu64, idx->uid_number), -1);
+
+	{
+		char *value = NULL;
+
+		switch (idx->vollock) {
+			case LOCKED_MAM:
+				asprintf(&value, "locked");
+				break;
+			case PERMLOCKED_MAM:
+				asprintf(&value, "permlocked");
+				break;
+			default:
+				asprintf(&value, "unlocked");
+				break;
+		}
+
+		if (value)
+			xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "volumelockstate", BAD_CAST value), -1);
+
+		free(value);
+	}
+
+	/* Create XML of update */
+	xml_mktag(_xml_write_inc_journal(writer, vol, &offset, &list), -1);
+
+	/* Save unrecognized tags */
+	if (idx->tag_count > 0) {
+		for (i=0; i<idx->tag_count; ++i) {
+			if (xmlTextWriterWriteRaw(writer, idx->preserved_tags[i]) < 0) {
+				ltfsmsg(LTFS_ERR, 17092E, __FUNCTION__);
+				return -1;
+			}
+		}
+	}
+
+	xml_mktag(xmlTextWriterEndElement(writer), -1);
+	ret = xmlTextWriterEndDocument(writer);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 17058E, ret);
+		return -1;
+	}
+
+	free(update_time);
+	return 0;
+}
+#endif
+
 /**************************************************************************************
  * Global Functions
  **************************************************************************************/
@@ -809,10 +1238,12 @@ int xml_schema_to_file(const char *filename, const char *creator,
 /**
  * Generate an XML Index based on the vol->index->root directory tree.
  * The generated data are written directly to the tape with the appropriate blocksize.
+ * @param reason the reason of writing an index on tape
+ * @param type index type to write (shall be LTFS_FULL_INDEX or LTFS_INCREMENTAL_INDEX)
  * @param vol LTFS volume.
  * @return 0 on success or a negative value on error.
  */
-int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
+int xml_schema_to_tape(char *reason, int type, struct ltfs_volume *vol)
 {
 	int ret, bk = -1;
 	xmlOutputBufferPtr write_buf;
@@ -875,7 +1306,19 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 	/* Generate the Index. */
 	asprintf(&creator, "%s - %s", vol->creator, reason);
 	if (creator) {
-		ret = _xml_write_schema(writer, creator, vol->index);
+		switch (type) {
+			case LTFS_FULL_INDEX:
+				ret = _xml_write_schema(writer, creator, vol->index);
+				break;
+#ifdef FORMAT_SPEC25
+			case LTFS_INCREMENTAL_INDEX:
+				ret = _xml_write_incremental_schema(writer, creator, vol);
+				break;
+#endif
+			default:
+				ret = -LTFS_BAD_INDEX_TYPE;
+				break;
+		}
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 17055E, ret);
 		}

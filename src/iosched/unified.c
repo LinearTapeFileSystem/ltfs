@@ -2292,7 +2292,7 @@ int _unified_write_index_after_perm(int write_ret, struct unified_data *priv)
 	}
 
 	ltfs_set_commit_message_reason(SYNC_WRITE_PERM, priv->vol);
-	ret = ltfs_write_index(ltfs_ip_id(priv->vol), SYNC_WRITE_PERM, priv->vol);
+	ret = ltfs_write_index(ltfs_ip_id(priv->vol), SYNC_WRITE_PERM, LTFS_FULL_INDEX, priv->vol);
 
 	return ret;
 }

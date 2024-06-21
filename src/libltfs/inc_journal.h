@@ -81,9 +81,10 @@ struct journal_id {
  * Journal entry
  */
 struct jentry {
-	struct journal_id     id;      /**< ID of the journal entry (key of the hash table) */
-	enum   journal_reason reason;  /**< Reason of the entry */
-	struct dentry         *dentry; /**< Target dentry if required */
+	struct journal_id     id;           /**< ID of the journal entry (key of the hash table) */
+	enum   journal_reason reason;       /**< Reason of the entry */
+	struct dentry         *dentry;      /**< Target dentry if required */
+	struct ltfs_name      name;         /**< Name of entry for delete */
 	UT_hash_handle        hh;
 };
 
@@ -95,12 +96,39 @@ struct jcreated_entry {
 	char *path;
 };
 
+/**
+ *
+ */
+struct incj_path_element {
+	struct incj_path_element *prev;
+	struct incj_path_element *next;
+	char* name;
+	struct dentry *d;
+};
+
+struct incj_path_helper {
+	struct incj_path_element *head;
+	struct incj_path_element *tail;
+	struct ltfs_volume *vol;
+	unsigned int elems;
+};
+
 int incj_create(char *ppath, struct dentry *d, struct ltfs_volume *vol);
 int incj_modify(char *path, struct dentry *d, struct ltfs_volume *vol);
 int incj_rmfile(char *path, struct dentry *d, struct ltfs_volume *vol);
 int incj_rmdir(char *path, struct dentry *d, struct ltfs_volume *vol);
+int incj_dispose_jentry(struct jentry *ent);
 int incj_clear(struct ltfs_volume *vol);
+void incj_sort(struct ltfs_volume *vol);
 void incj_dump(struct ltfs_volume *vol);
+
+int incj_create_path_helper(const char *path, struct incj_path_helper **pm, struct ltfs_volume *vol);
+int incj_destroy_path_helper(struct incj_path_helper *pm);
+int incj_push_directory(char *name, struct incj_path_helper *pm);
+int incj_pop_directory(struct incj_path_helper *pm);
+int incj_compare_path(struct incj_path_helper *p1, struct incj_path_helper *p2,
+					  int *matches, int *pops, bool *perfect_match);
+char* incj_get_path(struct incj_path_helper *pm);
 
 #ifdef __cplusplus
 }

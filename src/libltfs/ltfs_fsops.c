@@ -2110,7 +2110,7 @@ int ltfs_fsops_volume_sync(char *reason, struct ltfs_volume *vol)
 	ltfs_set_commit_message_reason_unlocked(reason, vol);
 	ltfs_mutex_unlock(&vol->index->dirty_lock);
 
-	ret = ltfs_sync_index(reason, true, vol);
+	ret = ltfs_sync_index(reason, true, LTFS_INDEX_AUTO, vol);
 
 	return ret;
 }

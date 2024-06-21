@@ -185,6 +185,28 @@ AC_ARG_ENABLE([buggy_ifs],
 AC_MSG_RESULT([$buggy_ifs])
 
 dnl
+dnl Handle --enable-xml-indent (default:no)
+dnl
+AC_MSG_CHECKING([whether to enable xml indentation for index])
+AC_ARG_ENABLE([xml_indent],
+    [AS_HELP_STRING([--enable-xml-indent],[Enable XML indentation for index])],
+    [xml_indent=$enableval],
+    [xml_indent=no]
+)
+AC_MSG_RESULT([$xml_indent])
+
+dnl
+dnl Handle --enable-format-spec25 (default:no)
+dnl
+AC_MSG_CHECKING([whether to enable format spec 2.5 support or not])
+AC_ARG_ENABLE([format_spec25],
+    [AS_HELP_STRING([--enable-format-spec25],[Support format spec 2.5])],
+    [format_spec25=$enableval],
+    [format_spec25=no]
+)
+AC_MSG_RESULT([$format_spec25])
+
+dnl
 dnl Handle extra compile flags for tape driver
 dnl
 if test "x${buggy_ifs}" = "xyes"
@@ -497,6 +519,16 @@ fi
 if test "x$livelink" = "xno"
 then
     AM_CPPFLAGS="${AM_CPPFLAGS} -DPOSIXLINK_ONLY"
+fi
+
+if test "x$xml_indent" = "xyes"
+then
+    AM_CPPFLAGS="${AM_CPPFLAGS} -DINDENT_INDEXES"
+fi
+
+if test "x$format_spec25" = "xyes"
+then
+    AM_CPPFLAGS="${AM_CPPFLAGS} -DFORMAT_SPEC25"
 fi
 
 dnl
