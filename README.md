@@ -141,12 +141,8 @@ In some systems, you might need `sudo ldconfig -v` after `make install` to load 
   |:----------------------------------:|:-------:|:--------------------------------------------------------------------------------------------------------------------------------:|
   | RHEL 8                             | x86\_64 | OK - Not checked automatically                                                                                                   |
   | RHEL 8                             | ppc64le | OK - Not checked automatically                                                                                                   |
-  | RHEL 7                             | x86\_64 | OK - Not checked automatically                                                                                                   |
-  | RHEL 7                             | ppc64le | OK - Not checked automatically                                                                                                   |
   | CentOS 8 (Rocky Linux)             | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS8%20Build%20Job/badge.svg?branch=master)        |
   | CentOS 8 (Rocky Linux)             | ppc64le | OK - Not checked automatically                                                                                                   |
-  | CentOS 7                           | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)        |
-  | CentOS 7                           | ppc64le | OK - Not checked automatically                                                                                                   |
   | Fedora 28                          | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)       |
   | Ubuntu 16.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master) |
   | Ubuntu 16.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                   |
