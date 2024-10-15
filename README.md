@@ -135,6 +135,26 @@ make install
 
 In some systems, you might need `sudo ldconfig -v` after `make install` to load the shared libraries correctly.
 
+## Build and install on RHEL9
+
+```
+sudo yum -y groupinstall 'Development Tools'
+sudo yum -y install autoconf libtool libuuid libuuid-devel net-snmp net-snmp-devel libxml2 libxml2-devel icu libicu libicu-devel
+wget https://github.com/libfuse/libfuse/releases/download/fuse-2.9.9/fuse-2.9.9.tar.gz
+tar xzvf fuse-2.9.9.tar.gz
+rm fuse-2.9.9.tar.gz
+cd fuse-2.9.9
+wget https://github.com/libfuse/libfuse/commit/ae2352bca9b4e607538412da0cc2a9625cd8b692.patch
+git apply ae2352bca9b4e607538412da0cc2a9625cd8b692.patch
+autoreconf -f -i
+./configure
+make && sudo make install
+cd ..
+./autogen.sh
+./configure
+make
+```
+
 ### Buildable Linux distributions
 
   | Dist                               | Arch    | Status                                                                                                                           |
