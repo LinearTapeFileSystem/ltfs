@@ -675,7 +675,7 @@ static int _create_open_order(struct tc_drive_info *buf, struct open_order *orde
 
 	for (i = 0; i < n; i++) {
 		if (! strncmp(buf[i].serial_number, serial, TAPE_SERIAL_LEN_MAX) ) {
-			order[count].devname = strdup(buf[i].name);
+			order[count].devname = SAFE_STRDUP(buf[i].name);
 			if (!order[count].devname) {
 				ltfsmsg(LTFS_ERR, 10001E, "sg_open: order");
 				return -EDEV_NO_MEMORY;
@@ -779,7 +779,7 @@ static int _reconnect_device(void *device)
 	qsort(order, count, sizeof(struct open_order), _order_cmp);
 
 	for (i = 0; i < count; i++) {
-		priv->devname = strdup(order[i].devname);
+		priv->devname = SAFE_STRDUP(order[i].devname);
 		if (!priv->devname) {
 			ltfsmsg(LTFS_ERR, 10001E, "sg_open: reconnect");
 			_order_free(&order, count);
@@ -1318,7 +1318,7 @@ int sg_open(const char *devname, void **handle)
 
 	ret = stat(devname, &stat_buf);
 	if (!ret) {
-		priv->devname = strdup(devname);
+		priv->devname = SAFE_STRDUP(devname);
 		if (!priv->devname) {
 			ltfsmsg(LTFS_ERR, 10001E, "sg_open: devname");
 			free(priv);
@@ -1365,7 +1365,7 @@ int sg_open(const char *devname, void **handle)
 	if (count) {
 		qsort(order, count, sizeof(struct open_order), _order_cmp);
 		for (i = 0; i < count; i++) {
-			priv->devname = strdup(order[i].devname);
+			priv->devname = SAFE_STRDUP(order[i].devname);
 			if (!priv->devname) {
 				ltfsmsg(LTFS_ERR, 10001E, "sg_open: search");
 				free(priv);
@@ -4968,7 +4968,7 @@ int sg_get_serialnumber(void *device, char **result)
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_ENTER(REQ_TC_GETSER));
 
-	*result = strdup((const char *) priv->drive_serial);
+	*result = SAFE_STRDUP((const char *) priv->drive_serial);
 	if (! *result) {
 		ltfsmsg(LTFS_ERR, 10001E, "sg_get_serialnumber: result");
 		ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_EXIT(REQ_TC_GETSER));

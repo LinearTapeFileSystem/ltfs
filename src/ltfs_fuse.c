@@ -68,7 +68,7 @@
 #include "libltfs/kmi.h"
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
+#include "arch/win/win_util.h"
 #endif
 
 #if (__WORDSIZE == 64 || ULONG_MAX == 0xffffffffffffffffUL)
@@ -129,7 +129,7 @@ static struct file_info *_new_file_info(const char *path)
 		return NULL;
 	}
 	if (path) {
-		fi->path = strdup(path);
+		fi->path = SAFE_STRDUP(path);
 		if (! fi->path) {
 			ltfsmsg(LTFS_ERR, 10001E, "_new_file_info: path");
 			ltfs_mutex_destroy(&fi->lock);

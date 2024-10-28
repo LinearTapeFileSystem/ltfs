@@ -93,7 +93,7 @@ static int encode_entry_name(char **new_name, const char *name)
 
 	len = strlen(name);
 
-	tmp_name = malloc(len * 3 * sizeof(UChar));
+	tmp_name = malloc(len * 3 * sizeof(COMPAT_UCHAR));
 	buf_encode[2] = '\0';
 
 	while (i < len) {
@@ -126,7 +126,7 @@ static int encode_entry_name(char **new_name, const char *name)
 
 	tmp_name[j] = '\0';
 
-	*new_name = strdup(tmp_name);
+	*new_name = SAFE_STRDUP(tmp_name);
 	free(tmp_name);
 
 	return 0;
@@ -753,7 +753,7 @@ static int _xml_goto_increment_parent(xmlTextWriterPtr writer,
 	char *parent_path = NULL, *filename = NULL;
 	struct incj_path_helper *new = NULL;
 
-	parent_path = strdup(ent->id.full_path);
+	parent_path = SAFE_STRDUP(ent->id.full_path);
 	if (!parent_path) {
 		ltfsmsg(LTFS_ERR, 10001E, "parent path for traveling incremental index dirs");
 		return -LTFS_NO_MEMORY;
@@ -1215,7 +1215,7 @@ int xml_schema_to_file(const char *filename, const char *creator,
 	if (reason)
 		asprintf(&alt_creator, "%s - %s", creator , reason);
 	else
-		alt_creator = strdup(creator);
+		alt_creator = SAFE_STRDUP(creator);
 
 	if (alt_creator) {
 		ret = _xml_write_schema(writer, alt_creator, idx);
@@ -1355,7 +1355,7 @@ int xml_schema_to_tape(char *reason, int type, struct ltfs_volume *vol)
 		if (! vol->index->creator || strcmp(vol->creator, vol->index->creator)) {
 			if (vol->index->creator)
 				free(vol->index->creator);
-			vol->index->creator = strdup(vol->creator);
+			vol->index->creator = SAFE_STRDUP(vol->creator);
 			if (! vol->index->creator) {
 				ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_tape: new creator string");
 				ret = -LTFS_NO_MEMORY;

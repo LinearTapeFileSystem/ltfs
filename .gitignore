@@ -32,3 +32,5 @@ GTAGS
 TAGS
 tags
 *~
+# Others
+.vs/

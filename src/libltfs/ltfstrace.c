@@ -743,7 +743,7 @@ int ltfs_get_trace_status(char **val)
 		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
-	*val = strdup(trstat);
+	*val = SAFE_STRDUP(trstat);
 	if (! (*val)) {
 		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;

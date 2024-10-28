@@ -130,7 +130,7 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
 		}
 	}
 #else
-	dentry->platform_safe_name = strdup(dentry->name.name);
+	dentry->platform_safe_name = SAFE_STRDUP(dentry->name.name);
 #endif
 }
 
@@ -241,7 +241,7 @@ char * _generate_target_file_name(const char *prefix, const char *extension, int
 		if (extension)
 			ret = asprintf(&target, "%s.%s", prefix, extension);
 		else {
-			target = strdup(prefix);
+			target = SAFE_STRDUP(prefix);
 			ret = target ? strlen(target) : -1;
 		}
 	}

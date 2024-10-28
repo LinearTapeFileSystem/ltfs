@@ -63,15 +63,18 @@ extern "C" {
 #endif
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
+#include "arch/win/win_util.h"
+	typedef DWORD pid_t;   // Process ID
+	typedef DWORD uid_t;   // User ID
+	typedef DWORD gid_t;   // Group ID
 #endif
 
 #include "libltfs/ltfs_fuse_version.h"
-#include <fuse.h>
+//#include <fuse.h>
 #include "libltfs/ltfs.h"
 #include "libltfs/plugin.h"
 #include "libltfs/uthash.h"
-
+#include <sys/types.h> 
 struct ltfs_fuse_data {
 	bool first_parsing_pass;       /**< Just looking for a config file? If so, don't print help */
 

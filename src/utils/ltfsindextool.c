@@ -493,12 +493,12 @@ static void show_usage(char *appname, struct config_file *config, bool full)
 
 	default_backend = config_file_get_default_plugin("tape", config);
 	if (default_backend && plugin_load(&backend, "tape", default_backend, config) == 0) {
-		devname = strdup(ltfs_default_device_name(backend.ops));
+		devname = SAFE_STRDUP(ltfs_default_device_name(backend.ops));
 		plugin_unload(&backend);
 	}
 
 	if (! devname)
-		devname = strdup("<devname>");
+		devname = SAFE_STRDUP("<devname>");
 
 	fprintf(stderr, "\n");
 	ltfsresult(19900I, appname);  /* Usage: %s <options> */
@@ -542,7 +542,7 @@ int main(int argc, char **argv)
 		return INDEXTOOL_OPERATIONAL_ERROR;
 	}
 	for (i = 0; i < fuse_argc; ++i) {
-		fuse_argv[i] = strdup(argv[i]);
+		fuse_argv[i] = SAFE_STRDUP(argv[i]);
 		if (! fuse_argv[i]) {
 			return INDEXTOOL_OPERATIONAL_ERROR;
 		}
@@ -598,7 +598,7 @@ int main(int argc, char **argv)
 		if (c == -1)
 			break;
 		if (c == 'i') {
-			config_file = strdup(optarg);
+			config_file = SAFE_STRDUP(optarg);
 			break;
 		}
 	}
@@ -625,10 +625,10 @@ int main(int argc, char **argv)
 				break;
 			case 'e':
 				free(opt.backend_path);
-				opt.backend_path = strdup(optarg);
+				opt.backend_path = SAFE_STRDUP(optarg);
 				break;
 			case 'd':
-				opt.devname = strdup(optarg);
+				opt.devname = SAFE_STRDUP(optarg);
 				break;
 			case 'p':
 				opt.partition = atoi(optarg);
@@ -637,13 +637,13 @@ int main(int argc, char **argv)
 				opt.start_pos = strtoull(optarg, NULL, 0);
 				break;
 			case '^':
-				opt.out_dir = strdup(optarg);
+				opt.out_dir = SAFE_STRDUP(optarg);
 				break;
 			case 'b':
 				opt.blocksize = atoi(optarg);
 				break;
 			case '-':
-				opt.kmi_backend_name = strdup(optarg);
+				opt.kmi_backend_name = SAFE_STRDUP(optarg);
 				break;
 			case 'q':
 				opt.quiet = true;
@@ -669,7 +669,7 @@ int main(int argc, char **argv)
 	}
 
 	if(argv[optind + num_of_o])
-		opt.filename = strdup(argv[optind + num_of_o]);
+		opt.filename = SAFE_STRDUP(argv[optind + num_of_o]);
 
 	if(_indextool_validate_options(argv[0], &opt)) {
 		return PROG_USAGE_SYNTAX_ERROR;
@@ -682,14 +682,14 @@ int main(int argc, char **argv)
 			ltfsmsg(LTFS_ERR, 10009E);
 			return INDEXTOOL_OPERATIONAL_ERROR;
 		}
-		opt.backend_path = strdup(default_backend);
+		opt.backend_path = SAFE_STRDUP(default_backend);
 	}
 	if (! opt.kmi_backend_name) {
 		const char *default_backend = config_file_get_default_plugin("kmi", opt.config);
 		if (default_backend)
-			opt.kmi_backend_name = strdup(default_backend);
+			opt.kmi_backend_name = SAFE_STRDUP(default_backend);
 		else
-			opt.kmi_backend_name = strdup("none");
+			opt.kmi_backend_name = SAFE_STRDUP("none");
 	}
 	if (opt.kmi_backend_name && strcmp(opt.kmi_backend_name, "none") == 0)
 		opt.kmi_backend_name = NULL;

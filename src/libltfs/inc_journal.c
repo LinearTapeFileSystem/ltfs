@@ -250,7 +250,7 @@ int incj_rmfile(char *path, struct dentry *d, struct ltfs_volume *vol)
 	}
 
 	/* Create full path of deleted object and jentry */
-	full_path = strdup(path);
+	full_path = SAFE_STRDUP(path);
 	if (!full_path) {
 		ltfsmsg(LTFS_ERR, 10001E, "duplicating a path for deleted file");
 		vol->journal_err = true;
@@ -265,7 +265,7 @@ int incj_rmfile(char *path, struct dentry *d, struct ltfs_volume *vol)
 
 	ent->reason = DELETE_FILE;
 	ent->name.percent_encode = d->name.percent_encode;
-	ent->name.name = strdup(d->name.name);
+	ent->name.name = SAFE_STRDUP(d->name.name);
 	if (!ent->name.name) {
 		ltfsmsg(LTFS_ERR, 10001E, "duplicating a name of deleted file");
 		vol->journal_err = true;
@@ -327,7 +327,7 @@ int incj_rmdir(char *path, struct dentry *d, struct ltfs_volume *vol)
 	}
 
 	/* Create full path of created object and jentry */
-	full_path = strdup(path);
+	full_path = SAFE_STRDUP(path);
 	if (!full_path) {
 		ltfsmsg(LTFS_ERR, 10001E, "duplicating a path of deleted directory");
 		vol->journal_err = true;
@@ -342,7 +342,7 @@ int incj_rmdir(char *path, struct dentry *d, struct ltfs_volume *vol)
 
 	ent->reason = DELETE_DIRECTORY;
 	ent->name.percent_encode = d->name.percent_encode;
-	ent->name.name = strdup(d->name.name);
+	ent->name.name = SAFE_STRDUP(d->name.name);
 	if (!ent->name.name) {
 		ltfsmsg(LTFS_ERR, 10001E, "duplicating a name of deleted directory");
 		vol->journal_err = true;
@@ -402,7 +402,7 @@ static inline int dig_path(char *p, struct ltfs_index *idx)
 	int ret = 0;
 	char *path;
 
-	path = strdup(p);
+	path = SAFE_STRDUP(p);
 	if (! path) {
 		ltfsmsg(LTFS_ERR, 10001E, "dig_path: path");
 		return -LTFS_NO_MEMORY;
@@ -451,7 +451,7 @@ void incj_dump(struct ltfs_volume *vol)
 			} else
 				printf("file\n");
 
-			parent = strdup(ent->id.full_path);
+			parent = SAFE_STRDUP(ent->id.full_path);
 			fs_split_path(parent, &filename, strlen(parent) + 1);
 
 			if (prev_parent) {
@@ -504,7 +504,7 @@ int incj_create_path_helper(const char *dpath, struct incj_path_helper **pm, str
 		return 0;
 	}
 
-	wp = strdup(dpath);
+	wp = SAFE_STRDUP(dpath);
 	if (!wp) {
 		ltfsmsg(LTFS_ERR, 10001E, "duplicating a directory path for path helper");
 		free(ipm);
@@ -560,7 +560,7 @@ int incj_push_directory(char *name, struct incj_path_helper *pm)
 	}
 
 	/* Set name field of new path element */
-	ipelm->name = strdup(name);
+	ipelm->name = SAFE_STRDUP(name);
 	if (!ipelm->name) {
 		ltfsmsg(LTFS_ERR, 10001E, "duplicating a path of pushing directory");
 		incj_destroy_path_helper(pm);

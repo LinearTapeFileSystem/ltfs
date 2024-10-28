@@ -57,12 +57,15 @@
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
+#include "ltfs_unistd.h"
+#else
+#include <unistd.h>
 #endif
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
+
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -211,7 +214,7 @@ char **config_file_get_plugins(const char *type, struct config_file *config)
 
 	TAILQ_FOREACH(entry, &config->plugins, list) {
 		if (! strcmp(entry->type, type)) {
-			list[pos] = strdup(entry->name);
+			list[pos] = SAFE_STRDUP(entry->name);
 			if (! list[pos]) {
 				ltfsmsg(LTFS_ERR, 10001E, "config_file_get_plugins: list entry");
 				for (count=0; count<pos; ++count)
@@ -244,7 +247,7 @@ char **config_file_get_options(const char *type, struct config_file *config)
 
 	TAILQ_FOREACH(entry, &config->mount_options, list) {
 		if (! strcmp(entry->type, type)) {
-			list[pos] = strdup(entry->option);
+			list[pos] = SAFE_STRDUP(entry->option);
 			if (! list[pos]) {
 				ltfsmsg(LTFS_ERR, 10001E, "config_file_get_options: list entry");
 				goto out_free;
@@ -276,8 +279,8 @@ int _config_file_parse(const char *path, bool ignore_error, struct config_file *
 	char *include_file = NULL;
 	struct option_entry *ol;
 	int ret, offset;
-
-	conf_file = fopen(path, "rb");
+	
+	SAFE_FOPEN(path, "rb", conf_file);
 	if (! conf_file) {
 		if (!ignore_error) {
 			ret = -errno;
@@ -305,7 +308,7 @@ int _config_file_parse(const char *path, bool ignore_error, struct config_file *
 				--strip_pos;
 		*strip_pos = '\0';
 
-		saveline = strdup(line);
+		saveline = SAFE_STRDUP(line);
 		if (! saveline) {
 			ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse: saveline");
 			ret = -LTFS_NO_MEMORY;
@@ -439,7 +442,7 @@ int _config_file_parse_name(const char *directive, const char *name_desc, char *
 		ltfsmsg(LTFS_ERR, 11273E, directive, name_desc);
 		return -LTFS_CONFIG_INVALID;
 	}
-	*out = strdup(tok);
+	*out = SAFE_STRDUP(tok);
 	if (! (*out)) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -476,7 +479,7 @@ int _config_file_parse_default(char *saveptr, struct config_file *config)
 		return -LTFS_CONFIG_INVALID;
 	}
 
-	type = strdup(tok);
+	type = SAFE_STRDUP(tok);
 	if (! type) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_default: plugin type");
 		return -LTFS_NO_MEMORY;
@@ -490,7 +493,7 @@ int _config_file_parse_default(char *saveptr, struct config_file *config)
 		return -LTFS_CONFIG_INVALID;
 	}
 
-	name = strdup(tok);
+	name = SAFE_STRDUP(tok);
 	if (! name) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_default: plugin name");
 		free(type);
@@ -552,7 +555,7 @@ int _config_file_remove_default(char *saveptr, struct config_file *config)
 		return -LTFS_CONFIG_INVALID;
 	}
 
-	type = strdup(tok);
+	type = SAFE_STRDUP(tok);
 	if (! type) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_remove_default: plugin type");
 		return -LTFS_NO_MEMORY;
@@ -608,7 +611,7 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config)
 		goto out_free;
 	}
 
-	type = strdup(tok);
+	type = SAFE_STRDUP(tok);
 	if (! type) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin type");
 		ret = -LTFS_NO_MEMORY;
@@ -623,7 +626,7 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config)
 		goto out_free;
 	}
 
-	name = strdup(tok);
+	name = SAFE_STRDUP(tok);
 	if (! name) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin name");
 		ret = -LTFS_NO_MEMORY;
@@ -638,7 +641,7 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config)
 		goto out_free;
 	}
 
-	library = strdup(tok);
+	library = SAFE_STRDUP(tok);
 	if (! library) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin path");
 		ret = -LTFS_NO_MEMORY;
@@ -699,7 +702,7 @@ int _config_file_remove_plugin(char *saveptr, struct config_file *config)
 		return -LTFS_CONFIG_INVALID;
 	}
 
-	type = strdup(tok);
+	type = SAFE_STRDUP(tok);
 	if (! type) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_remove_plugin: plugin type");
 		return -LTFS_NO_MEMORY;
@@ -713,7 +716,7 @@ int _config_file_remove_plugin(char *saveptr, struct config_file *config)
 		return -LTFS_CONFIG_INVALID;
 	}
 
-	name = strdup(tok);
+	name = SAFE_STRDUP(tok);
 	if (! name) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_remove_plugin: plugin name");
 		free(type);
@@ -774,7 +777,7 @@ int _config_file_parse_option(const char *line, char *saveptr, struct option_ent
 	}
 	start = tok;
 
-	type = strdup(tok);
+	type = SAFE_STRDUP(tok);
 	if (! type) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_mount_option: option");
 		return -LTFS_NO_MEMORY;

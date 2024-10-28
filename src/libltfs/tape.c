@@ -1894,12 +1894,12 @@ int tape_get_media_pool_info(struct ltfs_volume *vol, char **media_name, char **
 		if (add_start !=0) {
 			name = strndup(vol->t_attr->media_pool, add_start);
 		}
-		info = strdup(&(vol->t_attr->media_pool[add_start+1]));
+		info = SAFE_STRDUP(&(vol->t_attr->media_pool[add_start+1]));
 		len = strlen(info);
 		info[len-1] = '\0';
 	}
 	else {
-		name = strdup(vol->t_attr->media_pool);
+		name = SAFE_STRDUP(vol->t_attr->media_pool);
 	}
 
 	if (name)
@@ -3398,7 +3398,7 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 			if (size == -LTFS_ICU_ERROR)
 				size = TC_MAM_USER_MEDIUM_LABEL_SIZE - 1;
 		}
-		pre_attr = strdup(vol->t_attr->medium_label);
+		pre_attr = SAFE_STRDUP(vol->t_attr->medium_label);
 		if (! pre_attr) {
 			ltfsmsg(LTFS_ERR, 10001E, "update_tape_attribute: pre_attr");
 		    ret = -ENOMEM;
@@ -3413,7 +3413,7 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 			ltfsmsg(LTFS_WARN, 17226W, "BARCODE", TC_MAM_BARCODE_SIZE);
 			return -LTFS_LARGE_XATTR;
 		}
-		pre_attr = strdup(vol->t_attr->barcode);
+		pre_attr = SAFE_STRDUP(vol->t_attr->barcode);
 		if (! pre_attr) {
 		    ltfsmsg(LTFS_ERR, 10001E, "update_tape_attribute: pre_attr");
 		    ret = -ENOMEM;
@@ -3489,23 +3489,23 @@ int read_tape_attribute(struct ltfs_volume *vol, char **val, const char *name)
 	if (! strcmp(name, "ltfs.mamBarcode")) {
 		if (vol->t_attr->barcode[0] == '\0')
 			return 0;
-		*val = strdup(vol->t_attr->barcode);
+		*val = SAFE_STRDUP(vol->t_attr->barcode);
 	} else if (! strcmp(name, "ltfs.mamApplicationVendor")) {
 		if (vol->t_attr->barcode[0] == '\0')
 			return 0;
-		*val = strdup(vol->t_attr->vender);
+		*val = SAFE_STRDUP(vol->t_attr->vender);
 	} else if (! strcmp(name, "ltfs.mamApplicationVersion")) {
 		if (vol->t_attr->barcode[0] == '\0')
 			return 0;
-		*val = strdup(vol->t_attr->app_ver);
+		*val = SAFE_STRDUP(vol->t_attr->app_ver);
 	} else if (! strcmp(name, "ltfs.mamApplicationFormatVersion")) {
 		if (vol->t_attr->barcode[0] == '\0')
 			return 0;
-		*val = strdup(vol->t_attr->app_format_ver);
+		*val = SAFE_STRDUP(vol->t_attr->app_format_ver);
 	} else if (!strncmp(name, "ltfs.mediaPool", sizeof("ltfs.mediaPool"))) {
 		if (vol->t_attr->media_pool[0] == '\0')
 			return 0;
-		*val = strdup(vol->t_attr->media_pool);
+		*val = SAFE_STRDUP(vol->t_attr->media_pool);
 	}
 
 	if (!*val) {

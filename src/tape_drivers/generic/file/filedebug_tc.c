@@ -51,26 +51,50 @@
 *************************************************************************************
 */
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
+	#include "arch/win/win_util.h"
+	#include "ltfs_unistd.h"
+	#include "fusefw_opt.h"
+#else
+	#include <unistd.h>
+	#include <fuse_opt.h>
 #endif
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <inttypes.h>
-#include <unistd.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
 #include <stddef.h>
-#include <libgen.h>
+#include "commons.h"
+
+#ifdef _WIN32
+char* my_basename(char* path) {
+	char* base = strrchr(path, '\\');
+	return base ? base + 1 : path;
+}
+
+char* my_dirname(char* path) {
+	static char buffer[256];
+	SAFE_STRCPY(buffer, path);
+	char* last_slash = strrchr(buffer, '\\');
+	if (last_slash) {
+		*last_slash = '\0';
+	}
+	else {
+		SAFE_STRCPY(buffer, ".");
+	}
+	return buffer;
+}
+#endif
 #include <dirent.h>
 #include <limits.h>
 
 #include "libltfs/ltfs_fuse_version.h"
-#include <fuse.h>
 
 #include "ltfs_copyright.h"
 #include "libltfs/ltfslogging.h"
@@ -402,7 +426,7 @@ int filedebug_open(const char *name, void **handle)
 	ret = stat(name, &d);
 	if (ret == 0 && S_ISDIR(d.st_mode)) {
 		ltfsmsg(LTFS_INFO, 30003I, name);
-		state->dirname = strdup(name);
+		state->dirname = _SAFE_STRDUP(name);
 		if (!state->dirname) {
 			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirname");
 			free(state);
@@ -422,7 +446,7 @@ int filedebug_open(const char *name, void **handle)
 
 		for (i = 0; i < info_devs; i++) {
 			if (! strncmp(buf[i].serial_number, name, TAPE_SERIAL_LEN_MAX) ) {
-				devname = strdup(buf[i].name);
+				devname = _SAFE_STRDUP(buf[i].name);
 				if (!devname) {
 					ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: devname");
 					if (buf) free(buf);
@@ -440,9 +464,13 @@ int filedebug_open(const char *name, void **handle)
 
 		/* Run on file mode */
 		if (devname == NULL)
-			devname = strdup(name);
+			devname = _SAFE_STRDUP(name);
 		ltfsmsg(LTFS_INFO, 30001I, devname);
-		state->fd = open(devname, O_RDWR | O_BINARY);
+
+		errno_t err = _sopen_s(state->fd, devname, _O_RDWR | _O_BINARY, _SH_DENYNO, 0);
+		if (err != 0) {
+			return 1;  
+		}
 		if (state->fd < 0) {
 			ltfsmsg(LTFS_ERR, 30002E, devname);
 			return -EDEV_INTERNAL_ERROR;
@@ -479,7 +507,7 @@ int filedebug_open(const char *name, void **handle)
 		}
 
 		/* Store directory base */
-		tmp = strdup(devname);
+		tmp = _SAFE_STRDUP(devname);
 		if (!tmp) {
 			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirbase tmp");
 			free(state);
@@ -496,7 +524,7 @@ int filedebug_open(const char *name, void **handle)
 			free(tmp);
 			return -EDEV_NO_MEMORY;
 		}
-		strcpy(state->dirbase, p);
+		SAFE_STRCPY(state->dirbase, p);
 		free(tmp);
 		free(devname);
 		devname= NULL;
@@ -570,7 +598,7 @@ int filedebug_close(void *device)
 
 	if (state) {
 		if (state->fd > 0)
-			close(state->fd);
+			_close(state->fd);
 		if (state->dirbase)
 			free(state->dirbase);
 		if (state->dirname)
@@ -715,7 +743,10 @@ int filedebug_read(void *device, char *buf, size_t count, struct tc_position *po
 			return ret;
 		}
 		if (ret > 0) {
-			fd = open(fname, O_RDONLY | O_BINARY);
+			errno_t err = _sopen_s(&fd,fname, O_RDONLY | O_BINARY, _SH_DENYNO, 0);
+			if (err != 0) {
+				return 1;  
+			}
 			free(fname);
 			if (fd < 0) {
 				ltfsmsg(LTFS_ERR, 30011E, errno);
@@ -723,14 +754,14 @@ int filedebug_read(void *device, char *buf, size_t count, struct tc_position *po
 			}
 
 			/* TODO: return -EDEV_INVALID_ARG if buffer is too small to hold complete record? */
-			bytes_read = read(fd, buf, count);
+			bytes_read = _read(fd, buf, count);
 			if (bytes_read < 0) {
 				ltfsmsg(LTFS_ERR, 30012E, errno);
-				close(fd);
+				_close(fd);
 				return -EDEV_RW_PERM;
 			}
 
-			ret = close(fd);
+			ret = _close(fd);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 30013E, errno);
 				return -EDEV_RW_PERM;
@@ -864,9 +895,12 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 			ret = -EDEV_NO_MEMORY;
 			return ret;
 		}
-		fd = open(fname,
+		errno_t err = _sopen_s(&fd,fname,
 				  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-				  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+				  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO, 0);
+		if (err != 0) {
+			return 1;  
+		}
 		if (fd < 0) {
 			ltfsmsg(LTFS_ERR, 30024E, fname, errno);
 			free(fname);
@@ -875,13 +909,13 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 		free(fname);
 
 		/* write and close the file */
-		written = write(fd, buf, count);
+		written = _write(fd, buf, count);
 		if (written < 0) {
 			ltfsmsg(LTFS_ERR, 30025E, errno);
-			close(fd);
+			_close(fd);
 			return -EDEV_RW_PERM;
 		}
-		ret = close(fd);
+		ret = _close(fd);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 30026E, errno);
 			return -EDEV_RW_PERM;
@@ -981,9 +1015,12 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 				return ret;
 			}
 
-			fd = open(fname,
+			errno_t err = _sopen_s(&fd,fname,
 					  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-					  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+					  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO, 0);
+			if (err != 0) {
+				return 1;  // Handle the error as needed
+			}
 			if (fd < 0) {
 				ltfsmsg(LTFS_ERR, 30033E, fname, errno);
 				free(fname);
@@ -991,7 +1028,7 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 			}
 			free(fname);
 
-			ret = close(fd);
+			ret = _close(fd);
 			if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 30034E, errno);
 			return -EDEV_RW_PERM;
@@ -1470,7 +1507,7 @@ int filedebug_load(void *device, struct tc_position *pos)
 		if (ret < 0)
 			return -EDEV_HARDWARE_ERROR;
 
-		ret = read(state->fd, buf, sizeof(buf));
+		ret = _read(state->fd, buf, sizeof(buf));
 		if (ret != sizeof(buf)) {
 			ltfsmsg(LTFS_ERR, 30045E, "");
 			return -EDEV_HARDWARE_ERROR;
@@ -2048,7 +2085,10 @@ int filedebug_read_attribute(void *device, const tape_partition_t part, const ui
 	fname = _filedebug_make_attrname(state, part, id);
 	if (!fname)
 		return -EDEV_NO_MEMORY;
-	fd = open(fname, O_RDONLY | O_BINARY);
+	errno_t err = _sopen_s(&fd,fname, O_RDONLY | O_BINARY, _SH_DENYNO, 0);
+	if (err != 0) {
+		return 1; 
+	}
 	free(fname);
 	if (fd < 0) {
 		if (errno == ENOENT) {
@@ -2060,13 +2100,13 @@ int filedebug_read_attribute(void *device, const tape_partition_t part, const ui
 	}
 
 	/* TODO: return -EDEV_INVALID_ARG if buffer is too small to hold complete record? */
-	bytes_read = read(fd, buf, size);
+	bytes_read = _read(fd, buf, size);
 	if(bytes_read == -1) {
 		ltfsmsg(LTFS_WARN, 30063W, errno);
-		close(fd);
+		_close(fd);
 		return -EDEV_CM_PERM;
 	}
-	close(fd);
+	_close(fd);
 
 	return DEVICE_GOOD;
 }
@@ -2094,9 +2134,13 @@ int filedebug_write_attribute(void *device, const tape_partition_t part
 			ltfsmsg(LTFS_ERR, 30064E);
 			return -EDEV_NO_MEMORY;
 		}
-		fd = open(fname,
+		errno_t err = _sopen_s(&fd,fname,
 				  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-				  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+				  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO, 0);
+		if (err != 0) {
+			return 1;  
+		}
+
 		free(fname);
 		if (fd < 0) {
 			ltfsmsg(LTFS_ERR, 30065E, errno);
@@ -2104,13 +2148,13 @@ int filedebug_write_attribute(void *device, const tape_partition_t part
 		}
 
 		/* write and close the file */
-		written = write(fd, buf, size);
+		written = _write(fd, buf, size);
 		if (written < 0) {
 			ltfsmsg(LTFS_ERR, 30066E, errno);
-			close(fd);
+			_close(fd);
 			return -EDEV_CM_PERM;
 		}
-		close(fd);
+		_close(fd);
 
 		i += (attr_size + 5); /* Add header size of an attribute */
 	}
@@ -2309,11 +2353,14 @@ int _filedebug_write_eod(struct filedebug_data *state)
 		ltfsmsg(LTFS_ERR, 30072E);
 		return -EDEV_NO_MEMORY;
 	}
-	fd = open(fname,
+	errno_t err = _sopen_s(&fd,fname,
 			  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-			  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+			  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO, 0);
+	if (err != 0) {
+		return 1;  
+	}
 	free(fname);
-	if (fd < 0 || close(fd) < 0) {
+	if (fd < 0 || _close(fd) < 0) {
 		ltfsmsg(LTFS_ERR, 30073E, errno);
 		return -EDEV_RW_PERM;
 	}
@@ -2365,7 +2412,7 @@ int _filedebug_remove_record(const struct filedebug_data *state,
 
 	for (i=0; i<3; ++i) {
 		fname[fname_len-1] = rec_suffixes[i];
-		ret = unlink(fname);
+		ret = _unlink(fname);
 		if (ret < 0 && errno != ENOENT) {
 			ltfsmsg(LTFS_ERR, 30076E, errno);
 			free(fname);
@@ -2387,14 +2434,17 @@ int _filedebug_check_file(const char *fname)
 	int fd;
 	int ret;
 
-	fd = open(fname, O_RDWR | O_BINARY);
+	errno_t err = _sopen_s(&fd,fname, O_RDWR | O_BINARY, _SH_DENYNO, 0);
+	if (err != 0) {
+		return 1;  
+	}
 	if (fd < 0) {
 		if (errno == ENOENT)
 			return 0;
 		else
 			return -EDEV_RW_PERM;
 	} else {
-		ret = close(fd);
+		ret = _close(fd);
 		if (ret < 0)
 			return -EDEV_RW_PERM;
 		else
@@ -2622,7 +2672,7 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 	int i;
 
 	if (! original_pid) {
-		original_pid = (long)getpid();
+		original_pid = (long)_getpid();
 	}
 
 	/* Create a file to indicate current directory of drive link (for tape file backend) */
@@ -2632,7 +2682,10 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 		return -LTFS_NO_MEMORY;
 	}
 	ltfsmsg(LTFS_INFO, 30081I, filename);
-	infile = fopen(filename, "r");
+	errno_t err = fopen_s(&infile,filename, "r");
+	if (err != 0 || infile == NULL) {
+		return 1;
+	}
 	if (!infile) {
 		ltfsmsg(LTFS_INFO, 30082I, filename);
 		return 0;
@@ -2656,7 +2709,7 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 			continue;
 
 		if (buf && deventries < count) {
-			tmp = strdup(entry->d_name);
+			tmp = _SAFE_STRDUP(entry->d_name);
 			if (! *tmp) {
 				ltfsmsg(LTFS_ERR, 10001E, "filedebug_get_device_list");
 				return -ENOMEM;
@@ -2763,9 +2816,9 @@ int filedebug_get_serialnumber(void *device, char **result)
 	CHECK_ARG_NULL(result, -LTFS_NULL_ARG);
 
 	if (state->serial_number)
-		*result = strdup((const char *) state->serial_number);
+		*result = _SAFE_STRDUP((const char *) state->serial_number);
 	else
-		*result = strdup("DUMMY");
+		*result = _SAFE_STRDUP("DUMMY");
 
 	if (! *result)
 		return -EDEV_NO_MEMORY;

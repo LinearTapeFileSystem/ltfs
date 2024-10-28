@@ -1449,7 +1449,7 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 		return ret;
 	}
 	ret = ltfs_fsops_close( workd, true, true, use_iosche, vol);
-	path=strdup(lfdir);
+	path=SAFE_STRDUP(lfdir);
 
 	/* loop for conflicted files */
 	for( i=0; i<(vol->index->symerr_count); i++ ){

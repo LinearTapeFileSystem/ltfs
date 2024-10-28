@@ -1,4 +1,5 @@
 #!/bin/sh
+echo "================================= ENTERING SCRIPT $0 on  $(pwd) ================================="
 
 set -e
 
@@ -10,7 +11,7 @@ if [ "$KERNEL_NAME" = "Darwin" ]; then
 		export PATH=${PATH}:${ICU_FRAMEWORK}/Versions/Current/usr/bin
 		export DYLD_LIBRARY_PATH=${ICU_FRAMEWORK}/Versions/Current/usr/lib
 		GENRB=${ICU_FRAMEWORK}/Versions/Current/usr/bin/genrb
-		PKGDATA=${ICU_FRAMEWORK}/Versions/Current/usr/bin/pkgdata
+		PKGDATA=${ICU_FRAMEWORK}/Versions/Current/usr/bin/pkgwdata
 	else
 		GENRB=genrb
 		PKGDATA=pkgdata
@@ -32,8 +33,11 @@ else
 fi
 
 if [ "$#" -ne "1" ]; then
+	echo "Missing 1 parameter"
 	echo "Usage: $0 object_file"
 	exit 1
+else 
+	echo "$1"
 fi
 
 case $KERNEL_NAME in
@@ -49,6 +53,21 @@ esac
 cd ${BASENAME}
 
 make_obj() {
+	RETREAT="../../"
+
+	case $KERNEL_NAME in
+		MINGW32_NT*)
+			CURRENT_MSG_PATH="../../oss/messages/$BASENAME"
+			if [ -d "${CURRENT_MSG_PATH}" ]; then
+				cd ${CURRENT_MSG_PATH}
+				echo "Changing directory"
+				RETREAT="../../../../messages/"
+			fi
+			;;
+		*)
+			;;
+	esac
+
 	echo "Processing ${BASENAME}"
 
 	# Create a fresh work directory
@@ -60,12 +79,19 @@ make_obj() {
 	# Generate files
 	${GENRB} -d work -q *.txt
 	cd work
+	echo "dir: $(pwd)"
 	ls *.res >packagelist.txt
-	${PKGDATA} -p ${BASENAME} -m static -q packagelist.txt >/dev/null
+	${PKGDATA} --verbose -p ${BASENAME} -m common -q packagelist.txt > /dev/null
+
 
 	case $KERNEL_NAME in
 		MINGW32_NT*)
-			mv ${BASENAME}.dat ../../
+			mv ${BASENAME}.dat ${RETREAT}${BASENAME}.dat
+			if [ -e "${RETREAT}${BASENAME}.dat" ]; then
+				echo "File copied! -- ${RETREAT}"
+			else
+				echo "File does not exist"
+			fi
 			;;
 		FreeBSD)
 			# pkgdata with -m static generates an ar(1) archive
@@ -100,6 +126,7 @@ make_obj() {
 
 	# Clean up
 	cd ..
+	echo "Finishing"
 	rm -rf work
 }
 

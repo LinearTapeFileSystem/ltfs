@@ -1,9 +1,8 @@
-/*
-**
+/*************************************************************************************
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2024 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -31,60 +30,81 @@
 **
 **
 **  OO_Copyright_END
-**
 *************************************************************************************
 **
-** COMPONENT NAME:  IBM Linear Tape File System
+** Module Name:
 **
-** FILE NAME:       pathname.h
+**  compatibility.h
 **
-** DESCRIPTION:     Header file for Unicode text analysis and processing routines.
+** Abstract:
 **
-** AUTHORS:         Brian Biskeborn
-**                  IBM Almaden Research Center
-**                  bbiskebo@us.ibm.com
+**  This include file has macros to ensure compatibility on cross-platform (Unix-Windows) builds.
 **
+** Author(s):
+**
+**  Gustavo Padilla Valdez
+**  IBM Mexico Software Laboratory
+**
+** Revision History:
+**
+**  10/25/2024      --- GPV ---  File created 
 *************************************************************************************
 */
 
-/** \file
- * Functions for converting and manipulating file, directory, and extended attribute names.
- */
-
-#ifndef __PATHNAME_H__
-#define __PATHNAME_H__
+#ifndef COMPATIBILITY_H
+#define COMPATIBILITY_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdlib.h>
-#include <stdbool.h>
-#include "compatibility.h"
-#ifdef mingw_PLATFORM
-	#include <uchar.h>
-#else
-	#ifdef __APPLE_MAKEFILE__
-		#include <ICU/unicode/utypes.h>
-	#else
-		#include <unicode/types.h>
+
+// For Windows
+#ifdef mingw_PLATFORM	
+	#ifndef COMPAT_UCHAR
+		#define COMPAT_UCHAR UCHAR
 	#endif
+	#ifndef SHARE_FLAG_DENYNO
+		#define SHARE_FLAG_DENYNO  _SH_DENYNO
+	#endif
+
+	#ifndef SHARE_FLAG_DENYWR
+		#define SHARE_FLAG_DENYWR   _SH_DENYWR
+	#endif
+
+	#ifndef SHARE_FLAG_DENYRD
+		#define SHARE_FLAG_DENYRD   _SH_DENYRD
+	#endif
+
+	#ifndef SHARE_FLAG_DENYRW
+		#define SHARE_FLAG_DENYRW   _SH_DENYRW
+	#endif
+#endif	
+
+// For Unix-Like
+#ifndef COMPAT_UCHAR
+	#define COMPAT_UCHAR Uchar
 #endif
 
-int pathname_format(const char *name, char **new_name, bool validate, bool path);
-int pathname_unformat(const char *name, char **new_name);
-int pathname_caseless_match(const char *name1, const char *name2, int *result);
-int pathname_prepare_caseless(const char *name, COMPAT_UCHAR **new_name, bool use_nfc);
-int pathname_normalize(const char *name, char **new_name);
-int pathname_validate_file(const char *name);
-int pathname_validate_target(const char *name);
-int pathname_validate_xattr_name(const char *name);
-int pathname_validate_xattr_value(const char *name, size_t size);
-int pathname_strlen(const char *name);
-int pathname_truncate(char *name, size_t size);
-int pathname_nfd_normalize(const char *name, char **new_name);
+#ifndef SHARE_FLAG_DENYNO
+	#define SHARE_FLAG_DENYNO   0 // No deny (shared access)
+#endif
+
+#ifndef SHARE_FLAG_DENYWR
+	#define SHARE_FLAG_DENYWR   (S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH) // Deny write access
+#endif
+
+#ifndef SHARE_FLAG_DENYRD
+	#define SHARE_FLAG_DENYRD   (S_IRUSR | S_IRGRP | S_IROTH) // Deny read access
+#endif
+
+#ifndef SHARE_FLAG_DENYRW
+	#define SHARE_FLAG_DENYRW   (S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH) // Deny both read and write access
+#endif
+
+	
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __PATHNAME_H__ */
+#endif // COMPATIBILITY_H

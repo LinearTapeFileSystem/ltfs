@@ -188,7 +188,7 @@ int camtape_ioctlrc2err(void *device, int fd, struct scsi_sense_data *sense_data
 			ltfsmsg(LTFS_DEBUG, 31209D);
 
 			if (msg) {
-				*msg = strdup("No Sense Information");
+				*msg = SAFE_STRDUP("No Sense Information");
 			}
 			rc = -EDEV_NO_SENSE;
 		} else {
@@ -216,7 +216,7 @@ int camtape_ioctlrc2err(void *device, int fd, struct scsi_sense_data *sense_data
 	} else {
 		ltfsmsg(LTFS_INFO, 31212I, rc_sense);
 		if (msg)
-			*msg = strdup("Cannot get sense information");
+			*msg = SAFE_STRDUP("Cannot get sense information");
 
 		rc = -EDEV_CANNOT_GET_SENSE;
 	}
@@ -819,7 +819,7 @@ int camtape_get_serialnumber(void *device, char **result)
 	CHECK_ARG_NULL(result, -LTFS_NULL_ARG);
 	ltfs_profiler_add_entry(softc->profiler, NULL, CHANGER_REQ_ENTER(REQ_TC_GETSER));
 
-	*result = strdup((const char *) softc->drive_serial);
+	*result = SAFE_STRDUP((const char *) softc->drive_serial);
 	if (! *result) {
 		ltfsmsg(LTFS_ERR, 10001E, "camtape_get_serialnumber: result");
 		ltfs_profiler_add_entry(softc->profiler, NULL, CHANGER_REQ_EXIT(REQ_TC_GETSER));

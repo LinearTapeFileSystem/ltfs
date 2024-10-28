@@ -1275,7 +1275,7 @@ int ltfs_get_index_commit_message(char **msg, struct ltfs_volume *vol)
 	if (err < 0)
 		return err;
 	if (vol->index->commit_message) {
-		ret = strdup(vol->index->commit_message);
+		ret = SAFE_STRDUP(vol->index->commit_message);
 		if (! ret) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			releaseread_mrsw(&vol->lock);
@@ -1300,7 +1300,7 @@ int ltfs_get_index_creator(char **msg, struct ltfs_volume *vol)
 	if (err < 0)
 		return err;
 	if (vol->index->creator) {
-		ret = strdup(vol->index->creator);
+		ret = SAFE_STRDUP(vol->index->creator);
 		if (! ret) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			releaseread_mrsw(&vol->lock);
@@ -1325,7 +1325,7 @@ int ltfs_get_volume_name(char **msg, struct ltfs_volume *vol)
 	if (err < 0)
 		return err;
 	if (vol->index->volume_name.name) {
-		ret = strdup(vol->index->volume_name.name);
+		ret = SAFE_STRDUP(vol->index->volume_name.name);
 		if (! ret) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			releaseread_mrsw(&vol->lock);
@@ -2824,7 +2824,7 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, char id, struct
 	}
 
 	/* Change index file's mode */
-	if (chmod(path, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) {
+	if (SAFE_CHMOD(path, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) {
 		ret = -errno;
 		ltfsmsg(LTFS_ERR, 17184E, errno);
 	}
@@ -2928,9 +2928,9 @@ int ltfs_set_barcode(const char *barcode, struct ltfs_volume *vol)
 				return -LTFS_BARCODE_INVALID;
 			++tmp;
 		}
-		strcpy(vol->label->barcode, barcode);
+		SAFE_STRCPY(vol->label->barcode, barcode);
 	} else
-		strcpy(vol->label->barcode, NO_BARCODE);
+		SAFE_STRCPY(vol->label->barcode, NO_BARCODE);
 	return 0;
 }
 
@@ -2952,7 +2952,7 @@ int ltfs_set_volume_name(const char *volname, struct ltfs_volume *vol)
 		ret = pathname_validate_file(volname);
 		if (ret < 0)
 			return ret;
-		name_dup = strdup(volname);
+		name_dup = SAFE_STRDUP(volname);
 		if (! name_dup) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
@@ -3151,14 +3151,14 @@ int ltfs_format_tape(struct ltfs_volume *vol, int density_code, bool destructive
 	if (vol->label->creator)
 		free(vol->label->creator);
 
-	vol->label->creator = strdup(vol->creator);
+	vol->label->creator = SAFE_STRDUP(vol->creator);
 	if (!vol->label->creator) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	/* Set appropriate volume modification time, UUID, and root directory's uid */
-	strcpy(vol->index->vol_uuid, vol->label->vol_uuid);
+	SAFE_STRCPY(vol->index->vol_uuid, vol->label->vol_uuid);
 	vol->index->mod_time = vol->label->format_time;
 	vol->index->root->creation_time = vol->index->mod_time;
 	vol->index->root->change_time = vol->index->mod_time;
@@ -4529,10 +4529,10 @@ static int _ltfs_write_rao_file(char *file_path_org, unsigned char *buf, size_t 
 		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
-
-	fd = open(path,
-			  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-			  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+		
+	SAFE_OPEN(&fd, path,
+		O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
+		SHARE_FLAG_DENYRW, _S_IREAD | _S_IWRITE);
 	if (fd < 0) {
 		ltfsmsg(LTFS_INFO, 17276I, path, errno);
 		free(path);
@@ -4540,7 +4540,7 @@ static int _ltfs_write_rao_file(char *file_path_org, unsigned char *buf, size_t 
 		return ret;
 	}
 
-	size = write(fd, buf, len);
+	size = SAFE_WRITE(fd, buf, len);
 	if (size < 0) {
 		ltfsmsg(LTFS_INFO, 17277I, path, errno);
 		ret = -errno;
@@ -4557,7 +4557,7 @@ static int _ltfs_write_rao_file(char *file_path_org, unsigned char *buf, size_t 
 
 out:
 	free(path);
-	close(fd);
+	SAFE_CLOSE(fd);
 	return ret;
 }
 
@@ -4575,8 +4575,7 @@ static int _ltfs_read_rao_file(char *file_path, unsigned char *buf,
 		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
-
-	fd = open(path, O_RDONLY | O_BINARY);
+	SAFE_OPEN(&fd, path, SHARE_FLAG_DENYWR, O_RDONLY | O_BINARY, _S_IREAD);
 	if (fd < 0) {
 		ltfsmsg(LTFS_INFO, 17279I, path, errno);
 		free(path);
@@ -4591,7 +4590,7 @@ static int _ltfs_read_rao_file(char *file_path, unsigned char *buf,
 		goto out;
 	}
 
-	size = read(fd, buf, len);
+	size = SAFE_READ(fd, buf, len);
 	if (size < 0) {
 		ltfsmsg(LTFS_INFO, 17281I, path, errno);
 		ret = -errno;
@@ -4607,7 +4606,7 @@ static int _ltfs_read_rao_file(char *file_path, unsigned char *buf,
 
 out:
 	free(path);
-	close(fd);
+	SAFE_CLOSE(fd);
 	return ret;
 }
 

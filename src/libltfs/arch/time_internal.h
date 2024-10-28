@@ -55,7 +55,7 @@ extern "C" {
 #endif
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
+#include "arch/win/win_util.h"
 #elif defined(__APPLE__)
 #include <time.h>
 typedef time_t ltfs_time_t;

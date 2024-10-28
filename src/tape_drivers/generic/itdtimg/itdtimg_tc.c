@@ -243,7 +243,7 @@ int itdtimage_open(const char *name, void **handle)
 		_itdtimage_free(state);
 		return -EDEV_DEVICE_UNOPENABLE;
 	}
-	state->filename = strdup(name);
+	state->filename = SAFE_STRDUP(name);
 	if ( !state->filename ) {
 		ltfsmsg(LTFS_ERR, 10001E, "itdtimage_open: filename");
 		_itdtimage_free(state);
@@ -1427,9 +1427,9 @@ int itdtimage_get_serialnumber(void *vstate, char **result)
 	CHECK_ARG_NULL(result, -LTFS_NULL_ARG);
 
 	if (state->serial_number)
-		*result = strdup((const char *) state->serial_number);
+		*result = SAFE_STRDUP((const char *) state->serial_number);
 	else
-		*result = strdup("DUMMY");
+		*result = SAFE_STRDUP("DUMMY");
 
 	if (! *result)
 		return -EDEV_NO_MEMORY;

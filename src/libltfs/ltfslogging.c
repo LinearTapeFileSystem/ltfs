@@ -74,7 +74,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
+#include "ltfs_unistd.h"
 #include "arch/win/winlog.h"
 #else
 #include <dlfcn.h>
@@ -377,7 +377,7 @@ void ltfsprintf_unload_plugin(void *handle)
 /* Print a formatted message in the current system locale. */
 int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, ...)
 {
-	const UChar *format_uc = NULL;
+	const COMPAT_UCHAR *format_uc = NULL;
 	int32_t prefix_len, format_len;
 	int32_t id_val;
 	char id[16];
@@ -395,7 +395,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		goto internal_error;
 
 	if (idlen > 1 && _id[0] == '"' && _id[idlen - 1] == '"') {
-		strncpy(id, _id + 1, idlen - 2);
+		SAFE_STRNCPY(id, _id + 1, idlen - 2);
 		id[idlen - 2] = '\0';
 	} else {
 		strcpy(id, _id);
@@ -488,7 +488,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		va_start(argp, _id);
 		vsprintf(msg_buf, output_buf, argp);
 		va_end(argp);
-		*msg_out = strdup(msg_buf);
+		*msg_out = SAFE_STRDUP(msg_buf);
 	}
 
 #ifdef ENABLE_SNMP

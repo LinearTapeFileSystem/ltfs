@@ -801,7 +801,7 @@ int iokit_open(const char *devname, void **handle)
 		return -EDEV_NO_MEMORY;
 	}
 
-	priv->devname = strdup(devname);
+	priv->devname = SAFE_STRDUP(devname);
 	if (!priv->devname) {
 		ltfsmsg(LTFS_ERR, 10001E, "iokit_open: devname");
 		free(priv);
@@ -4172,7 +4172,7 @@ int iokit_get_serialnumber(void *device, char **result)
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_ENTER(REQ_TC_GETSER));
 
-	*result = strdup((const char *) priv->drive_serial);
+	*result = SAFE_STRDUP((const char *) priv->drive_serial);
 	if (! *result) {
 		ltfsmsg(LTFS_ERR, 10001E, "iokit_get_serialnumber: result");
 		ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_EXIT(REQ_TC_GETSER));

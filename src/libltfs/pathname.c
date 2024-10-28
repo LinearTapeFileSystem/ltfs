@@ -86,12 +86,12 @@ int _pathname_format_icu(const char *src, char **dest, bool validate, bool allow
 int _pathname_check_utf8_icu(const char *src, size_t size);
 int _pathname_foldcase_utf8_icu(const char *src, char **dest);
 int _pathname_normalize_utf8_icu(const char *src, char **dest);
-int _pathname_foldcase_icu(const UChar *src, UChar **dest);
-int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest);
-int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest);
-int _pathname_utf8_to_utf16_icu(const char *src, UChar **dest);
-int _pathname_utf16_to_utf8_icu(const UChar *src, char **dest);
-int _pathname_system_to_utf16_icu(const char *src, UChar **dest);
+int _pathname_foldcase_icu(const COMPAT_UCHAR *src, COMPAT_UCHAR **dest);
+int _pathname_normalize_nfc_icu(const COMPAT_UCHAR *src, COMPAT_UCHAR **dest);
+int _pathname_normalize_nfd_icu(const COMPAT_UCHAR *src, COMPAT_UCHAR **dest);
+int _pathname_utf8_to_utf16_icu(const char *src, COMPAT_UCHAR **dest);
+int _pathname_utf16_to_utf8_icu(const COMPAT_UCHAR *src, char **dest);
+int _pathname_system_to_utf16_icu(const char *src, COMPAT_UCHAR **dest);
 int _pathname_utf8_to_system_icu(const char *src, char **dest);
 int _pathname_normalize_utf8_nfd_icu(const char *src, char **dest);
 
@@ -144,7 +144,7 @@ int pathname_unformat(const char *name, char **new_name)
 int pathname_caseless_match(const char *name1, const char *name2, int *result)
 {
 	int ret;
-	UChar *dname1, *dname2;
+	COMPAT_UCHAR *dname1, *dname2;
 
 	CHECK_ARG_NULL(name1, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(name2, -LTFS_NULL_ARG);
@@ -167,11 +167,11 @@ int pathname_caseless_match(const char *name1, const char *name2, int *result)
  * @param use_nfc True to convert the output to NFC, false to leave it in NFD.
  * @return 0 on success or a negative value on error.
  */
-int pathname_prepare_caseless(const char *name, UChar **new_name, bool use_nfc)
+int pathname_prepare_caseless(const char *name, COMPAT_UCHAR **new_name, bool use_nfc)
 {
 	int ret;
 	bool need_initial_nfd;
-	UChar *icu_name, *icu_nfd, *icu_fold, *tmp;
+	COMPAT_UCHAR *icu_name, *icu_nfd, *icu_fold, *tmp;
 
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(new_name, -LTFS_NULL_ARG);
@@ -466,7 +466,7 @@ int _chars_valid_in_xml(UChar32 c)
 int _pathname_format_icu(const char *src, char **dest, bool validate, bool allow_slash)
 {
 	int ret;
-	UChar *utf16_name, *utf16_name_norm;
+	COMPAT_UCHAR *utf16_name, *utf16_name_norm;
 
 	/* convert to UTF-16 for normalization with ICU */
 	ret = _pathname_system_to_utf16_icu(src, &utf16_name);
@@ -526,7 +526,7 @@ int pathname_nfd_normalize(const char *name, char **new_name)
 
 int _pathname_normalize_utf8_nfd_icu(const char *src, char **dest)
 {
-	UChar *icu_str, *icu_str_norm;
+	COMPAT_UCHAR *icu_str, *icu_str_norm;
 	int ret;
 
 	ret = _pathname_utf8_to_utf16_icu(src, &icu_str);
@@ -569,7 +569,7 @@ int _pathname_check_utf8_icu(const char *src, size_t size)
  */
 int _pathname_foldcase_utf8_icu(const char *src, char **dest)
 {
-	UChar *icu_str, *icu_str_fold;
+	COMPAT_UCHAR *icu_str, *icu_str_fold;
 	int ret;
 
 	ret = _pathname_utf8_to_utf16_icu(src, &icu_str);
@@ -594,7 +594,7 @@ int _pathname_foldcase_utf8_icu(const char *src, char **dest)
  */
 int _pathname_normalize_utf8_icu(const char *src, char **dest)
 {
-	UChar *icu_str, *icu_str_norm;
+	COMPAT_UCHAR *icu_str, *icu_str_norm;
 	int ret;
 
 	ret = _pathname_utf8_to_utf16_icu(src, &icu_str);
@@ -619,7 +619,7 @@ int _pathname_normalize_utf8_icu(const char *src, char **dest)
  * @param dest on success, points to a newly allocated buffer containing the output string.
  * @return 0 on success or a negative value on error.
  */
-int _pathname_foldcase_icu(const UChar *src, UChar **dest)
+int _pathname_foldcase_icu(const COMPAT_UCHAR *src, COMPAT_UCHAR **dest)
 {
 	UErrorCode err = U_ZERO_ERROR;
 	int32_t destlen;
@@ -631,7 +631,7 @@ int _pathname_foldcase_icu(const UChar *src, UChar **dest)
 	}
 	err = U_ZERO_ERROR;
 
-	*dest = malloc((destlen + 1) * sizeof(UChar));
+	*dest = malloc((destlen + 1) * sizeof(COMPAT_UCHAR));
 	if (! *dest) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -663,7 +663,7 @@ static inline void *_unorm_handle(bool nfc, UErrorCode *err)
 #endif
 }
 
-static inline UNormalizationCheckResult _unorm_quickCheck(void *handle, const UChar *src, UChar **dest, UErrorCode *err)
+static inline UNormalizationCheckResult _unorm_quickCheck(void *handle, const COMPAT_UCHAR *src, COMPAT_UCHAR **dest, UErrorCode *err)
 {
 	*err = U_ZERO_ERROR;
 #ifdef USE_UNORM2
@@ -675,7 +675,7 @@ static inline UNormalizationCheckResult _unorm_quickCheck(void *handle, const UC
 #endif
 }
 
-static inline int32_t _unorm_normalize(void *handle, const UChar *src, UChar **dest, int32_t len, UErrorCode *err)
+static inline int32_t _unorm_normalize(void *handle, const COMPAT_UCHAR *src, COMPAT_UCHAR **dest, int32_t len, UErrorCode *err)
 {
 	*err = U_ZERO_ERROR;
 #ifdef USE_UNORM2
@@ -696,14 +696,14 @@ static inline int32_t _unorm_normalize(void *handle, const UChar *src, UChar **d
  *             by the caller.
  * @return 0 on success or a negative value on error.
  */
-int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
+int _pathname_normalize_nfc_icu(const COMPAT_UCHAR *src, COMPAT_UCHAR **dest)
 {
 	UErrorCode err = U_ZERO_ERROR;
 	void *handle = _unorm_handle(true, &err);
 	int32_t destlen;
 
 	if (_unorm_quickCheck(handle, src, dest, &err) == UNORM_YES) {
-		*dest = (UChar *) src;
+		*dest = (COMPAT_UCHAR *) src;
 		return 0;
 	}
 
@@ -713,7 +713,7 @@ int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 		return -LTFS_ICU_ERROR;
 	}
 
-	*dest = malloc((destlen + 1) * sizeof(UChar));
+	*dest = malloc((destlen + 1) * sizeof(COMPAT_UCHAR));
 	if (! *dest) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -736,7 +736,7 @@ int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
  * @param dest on success, points to a newly allocated buffer containing the output string.
  * @return 0 on success or a negative value on error.
  */
-int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
+int _pathname_normalize_nfd_icu(const COMPAT_UCHAR *src, COMPAT_UCHAR **dest)
 {
 	/**
 	 * unorm2_quickCheck
@@ -780,7 +780,7 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 	int32_t destlen;
 
 	if (_unorm_quickCheck(handle, src, dest, &err) == UNORM_YES) {
-		*dest = (UChar *) src;
+		*dest = (COMPAT_UCHAR *) src;
 		return 0;
 	}
 
@@ -790,7 +790,7 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 		return -LTFS_ICU_ERROR;
 	}
 
-	*dest = malloc((destlen + 1) * sizeof(UChar));
+	*dest = malloc((destlen + 1) * sizeof(COMPAT_UCHAR));
 	if (! *dest) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -813,7 +813,7 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
  * @param dest on success, holds a newly allocated buffer containing converted string
  * @return 0 on success or a negative value on error.
  */
-int _pathname_utf8_to_utf16_icu(const char *src, UChar **dest)
+int _pathname_utf8_to_utf16_icu(const char *src, COMPAT_UCHAR **dest)
 {
 	UErrorCode err = U_ZERO_ERROR;
 	int32_t destlen;
@@ -826,7 +826,7 @@ int _pathname_utf8_to_utf16_icu(const char *src, UChar **dest)
 	}
 	err = U_ZERO_ERROR;
 
-	*dest = malloc((destlen + 1) * sizeof(UChar));
+	*dest = malloc((destlen + 1) * sizeof(COMPAT_UCHAR));
 	if (! *dest) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -851,7 +851,7 @@ int _pathname_utf8_to_utf16_icu(const char *src, UChar **dest)
  * @param dest on success, points to a newly allocated buffer containing the output string.
  * @return 0 on success or a negative value on error.
  */
-int _pathname_utf16_to_utf8_icu(const UChar *src, char **dest)
+int _pathname_utf16_to_utf8_icu(const COMPAT_UCHAR *src, char **dest)
 {
 	UErrorCode err = U_ZERO_ERROR;
 	int32_t destlen;
@@ -887,7 +887,7 @@ int _pathname_utf16_to_utf8_icu(const UChar *src, char **dest)
  * @param dest on success, holds a newly allocated buffer containing the converted string
  * @return 0 on success or a negative value on error.
  */
-int _pathname_system_to_utf16_icu(const char *src, UChar **dest)
+int _pathname_system_to_utf16_icu(const char *src, COMPAT_UCHAR **dest)
 {
 	UErrorCode err = U_ZERO_ERROR;
 	UConverter *syslocale;
@@ -916,7 +916,7 @@ int _pathname_system_to_utf16_icu(const char *src, UChar **dest)
 	}
 	err = U_ZERO_ERROR;
 
-	*dest = malloc((destlen + 1) * sizeof(UChar));
+	*dest = malloc((destlen + 1) * sizeof(COMPAT_UCHAR));
 	if (! *dest) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		ucnv_close(syslocale);
@@ -952,7 +952,7 @@ int _pathname_utf8_to_system_icu(const char *src, char **dest)
 	/* If current locale is UTF-8, no conversion needed */
 	syslocale = ucnv_getDefaultName();
 	if (! strcmp(syslocale, "UTF-8")) {
-		*dest = strdup(src);
+		*dest = SAFE_STRDUP(src);
 		if (! *dest)
 			return -LTFS_NO_MEMORY;
 		return 0;

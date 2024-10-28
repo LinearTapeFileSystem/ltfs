@@ -54,11 +54,13 @@
 **
 *************************************************************************************
 */
+#ifndef mingw_PLATFORM
 #include <syslog.h>
-#include <dirent.h>
 #include <pwd.h>
 #include <grp.h>
+#endif
 
+#include <dirent.h>
 #include "ltfs_fuse.h"
 #include "libltfs/ltfs.h"
 #include "ltfs_copyright.h"

@@ -593,8 +593,8 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		goto out_free;
 	}
 
-	from_norm_copy = strdup(from_norm);
-	to_norm_copy = strdup(to_norm);
+	from_norm_copy = SAFE_STRDUP(from_norm);
+	to_norm_copy = SAFE_STRDUP(to_norm);
 	if (! from_norm_copy || ! to_norm_copy) {
 		ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_rename: file name copy");
 		ret = -LTFS_NO_MEMORY;
@@ -606,8 +606,8 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	fs_split_path(to_norm, &to_filename, strlen(to_norm) + 1);
 
 	/* Allocate memory for new file name */
-	to_filename_copy = strdup(to_filename);
-	to_filename_copy2 = strdup(to_filename);
+	to_filename_copy = SAFE_STRDUP(to_filename);
+	to_filename_copy2 = SAFE_STRDUP(to_filename);
 	if (! to_filename_copy || ! to_filename_copy2) {
 		ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_rename: file name copy");
 		ret = -LTFS_NO_MEMORY;
@@ -1930,7 +1930,7 @@ int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, 
 
 	id->uid = d->uid;
 	id->ino = d->ino;
-	d->target.name = strdup(to);
+	d->target.name = SAFE_STRDUP(to);
 	d->target.percent_encode = fs_is_percent_encode_required(to);
 	d->isslink = true;
 

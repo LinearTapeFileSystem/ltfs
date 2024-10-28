@@ -240,7 +240,7 @@ int main(int argc, char **argv)
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 	for (i = 0; i < fuse_argc; ++i) {
-		fuse_argv[i] = strdup(argv[i]);
+		fuse_argv[i] = SAFE_STRDUP(argv[i]);
 		if (! fuse_argv[i]) {
 			return LTFSCK_OPERATIONAL_ERROR;
 		}
@@ -297,7 +297,7 @@ int main(int argc, char **argv)
 		if (c == -1)
 			break;
 		if (c == 'i') {
-			config_file = strdup(optarg);
+			config_file = SAFE_STRDUP(optarg);
 			break;
 		}
 	}
@@ -329,13 +329,13 @@ int main(int argc, char **argv)
 			case 'i':
 				break;
 			case 'e':
-				opt.backend_path = strdup(optarg);
+				opt.backend_path = SAFE_STRDUP(optarg);
 				break;
 			case 'g':
 				if(opt.op_mode == MODE_CHECK)
 					opt.op_mode = MODE_VERIFY;
 				opt.search_mode = SEARCH_BY_GEN;
-				opt.str_gen = strdup(optarg);
+				opt.str_gen = SAFE_STRDUP(optarg);
 				break;
 			case 'v':
 				if ( strcmp(optarg, "forward") == 0)
@@ -346,11 +346,11 @@ int main(int argc, char **argv)
 					opt.traverse_mode = TRAVERSE_UNKNOWN;
 				break;
 			case '-':
-				opt.kmi_backend_name = strdup(optarg);
+				opt.kmi_backend_name = SAFE_STRDUP(optarg);
 				break;
 			case '+':
 				opt.op_mode = MODE_LIST_POINT;
-				opt.capture_dir = strdup(optarg);
+				opt.capture_dir = SAFE_STRDUP(optarg);
 				break;
 			case 'r':
 				opt.op_mode = MODE_ROLLBACK;
@@ -416,14 +416,14 @@ int main(int argc, char **argv)
 			ltfsmsg(LTFS_ERR, 10009E);
 			return LTFSCK_OPERATIONAL_ERROR;
 		}
-		opt.backend_path = strdup(default_backend);
+		opt.backend_path = SAFE_STRDUP(default_backend);
 	}
 	if (! opt.kmi_backend_name) {
 		const char *default_backend = config_file_get_default_plugin("kmi", opt.config);
 		if (default_backend)
-			opt.kmi_backend_name = strdup(default_backend);
+			opt.kmi_backend_name = SAFE_STRDUP(default_backend);
 		else
-			opt.kmi_backend_name = strdup("none");
+			opt.kmi_backend_name = SAFE_STRDUP("none");
 	}
 	if (opt.kmi_backend_name && strcmp(opt.kmi_backend_name, "none") == 0)
 		opt.kmi_backend_name = NULL;
@@ -488,9 +488,9 @@ int main(int argc, char **argv)
 	}
 
 	if(argv[optind + num_of_o])
-		opt.devname = strdup(argv[optind + num_of_o]);
+		opt.devname = SAFE_STRDUP(argv[optind + num_of_o]);
 
-	opt.prg_name = strdup(argv[0]);
+	opt.prg_name = SAFE_STRDUP(argv[0]);
 
 	if (_ltfsck_validate_options(&opt)) {
 		ltfsmsg(LTFS_ERR, 16002E);
@@ -752,7 +752,7 @@ void _store_index(struct index_info *dst, struct ltfs_index *src)
 	dst->selfptr    = src->selfptr;
 	dst->backptr    = src->backptr;
 	if(src->commit_message)
-		dst->commit_message= strdup(src->commit_message);
+		dst->commit_message= SAFE_STRDUP(src->commit_message);
 	dst->next       = NULL;
 }
 #endif

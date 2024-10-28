@@ -62,7 +62,22 @@ extern "C" {
 #endif
 
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
+	#include "arch/win/win_util.h"
+	#include "ltfs_unistd.h"
+	#include <time.h>
+#else
+	#include <unistd.h>
+	#include <sys/time.h>
+	#include <sys/ipc.h>
+	#include <sys/shm.h>
+	#ifndef __FreeBSD__
+		#include <sys/xattr.h>
+	#endif
+	#ifdef __APPLE_MAKEFILE__
+		#include <ICU/unicode/utypes.h>
+	#else
+		#include <unicode/utypes.h>
+	#endif
 #endif
 
 /* O_BINARY is defined only in MinGW */
@@ -74,33 +89,18 @@ extern "C" {
 #include <stdbool.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <unistd.h>
+
+#include <io.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>
 #include <limits.h>
 #include <time.h>
-#include <sys/time.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifndef mingw_PLATFORM
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#endif
-
-#ifdef __APPLE_MAKEFILE__
-#include <ICU/unicode/utypes.h>
-#else
-#include <unicode/utypes.h>
-#endif
-
-#ifndef mingw_PLATFORM
-  #ifndef __FreeBSD__
-    #include <sys/xattr.h>
-  #endif
-#endif
 
 #include "libltfs/arch/signal_internal.h"
 #include "libltfs/arch/arch_info.h"
@@ -520,7 +520,7 @@ struct index_criteria {
 	bool             have_criteria;         /**< Does this struct actually specify criteria? */
 	uint64_t         max_filesize_criteria; /**< Maximum file size that goes into the index partition */
 	struct ltfs_name *glob_patterns;       /**< NULL-terminated list of file name criteria */
-	UChar            **glob_cache;          /**< Cache of glob patterns in comparison-ready form */
+	unsigned char            **glob_cache;          /**< Cache of glob patterns in comparison-ready form */
 };
 
 struct ltfs_index {

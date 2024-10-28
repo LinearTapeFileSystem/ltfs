@@ -630,7 +630,7 @@ static int _reconnect_device(void *device)
 
 	for (i = 0; i < info_devs; i++) {
 		if (! strncmp(buf[i].serial_number, priv->drive_serial, TAPE_SERIAL_LEN_MAX) ) {
-			priv->devname = strdup(buf[i].name);
+			priv->devname = SAFE_STRDUP(buf[i].name);
 			break;
 		}
 	}
@@ -1051,7 +1051,7 @@ int scsipi_ibmtape_open(const char *devname, void **handle)
 		return -EDEV_NO_MEMORY;
 	}
 
-	priv->devname = strdup(devname);
+	priv->devname = SAFE_STRDUP(devname);
 	if (!priv->devname) {
 		ltfsmsg(LTFS_ERR, 10001E, "scsipi_ibmtape_open: devname");
 		free(priv);
@@ -4439,7 +4439,7 @@ int scsipi_ibmtape_get_serialnumber(void *device, char **result)
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_ENTER(REQ_TC_GETSER));
 
-	*result = strdup((const char *) priv->drive_serial);
+	*result = SAFE_STRDUP((const char *) priv->drive_serial);
 	if (! *result) {
 		ltfsmsg(LTFS_ERR, 10001E, "scsipi_ibmtape_get_serialnumber: result");
 		ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_EXIT(REQ_TC_GETSER));

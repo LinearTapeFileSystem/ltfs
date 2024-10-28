@@ -53,9 +53,11 @@
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
+#else
+#include <sched.h>
 #endif
 
-#include <sched.h>
+
 #include <string.h>
 
 #include "libltfs/ltfslogging.h"
@@ -77,7 +79,7 @@ static char* generate_hash_key_name(const char *src_str, int *rc)
 	char *key_name;
 
 #ifdef mingw_PLATFORM
-	UChar *uchar_name;
+	COMPAT_UCHAR *uchar_name;
 
 	*rc =  pathname_prepare_caseless(src_str, &uchar_name, true);	// malloc is called in this function
 	if (*rc == 0) {
@@ -89,7 +91,7 @@ static char* generate_hash_key_name(const char *src_str, int *rc)
 	} else
 		free(uchar_name);
 #else
-	key_name = strdup(src_str);
+	key_name = SAFE_STRDUP(src_str);
 	*rc = 0;
 #endif
 
@@ -262,7 +264,7 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 		d->name.name = NULL;
 		d->platform_safe_name = NULL;
 	} else if (name && !platform_safe_name) {
-		d->name.name = strdup(name);
+		d->name.name = SAFE_STRDUP(name);
 		update_platform_safe_name(d, false, idx);
 		if (! d->name.name || ! d->platform_safe_name) {
 			ltfsmsg(LTFS_ERR, 10001E, "fs_allocate_dentry: name");
@@ -274,8 +276,8 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 			return NULL;
 		}
 	} else if(!name && platform_safe_name) {
-		d->name.name = strdup(platform_safe_name);
-		d->platform_safe_name = strdup(platform_safe_name);
+		d->name.name = SAFE_STRDUP(platform_safe_name);
+		d->platform_safe_name = SAFE_STRDUP(platform_safe_name);
 		if (! d->name.name || ! d->platform_safe_name) {
 			ltfsmsg(LTFS_ERR, 10001E, "fs_allocate_dentry: name");
 			if (d->name.name)
@@ -288,8 +290,8 @@ struct dentry * fs_allocate_dentry(struct dentry *parent, const char *name, cons
 	} else {
 		/* Currently, it can be assumed that one of these names should
 		   be NULL. The codes below are just in case. */
-		d->name.name = strdup(name);
-		d->platform_safe_name = strdup(platform_safe_name);
+		d->name.name = SAFE_STRDUP(name);
+		d->platform_safe_name = SAFE_STRDUP(platform_safe_name);
 		if (! d->name.name || ! d->platform_safe_name) {
 			ltfsmsg(LTFS_ERR, 10001E, "fs_allocate_dentry: name");
 			if (d->name.name)
@@ -453,7 +455,7 @@ int fs_dentry_lookup(struct dentry *dentry, char **name)
 			}
 			lookup_name = "/";
 		}
-		dentry_names[i] = strdup(lookup_name);
+		dentry_names[i] = SAFE_STRDUP(lookup_name);
 		if (! dentry_names[i]) {
 			ltfsmsg(LTFS_ERR, 10001E, "fs_dentry_lookup: dentry_names member");
 			goto out;
@@ -477,9 +479,9 @@ int fs_dentry_lookup(struct dentry *dentry, char **name)
 	}
 
 	for (namelen=0, i=0; i<names; ++i) {
-		strcat(tmp_name, dentry_names[i]);
+		SAFE_STRCAT(tmp_name, dentry_names[i]);
 		if (i > 0 && i < names-1)
-			strcat(tmp_name, "/");
+			SAFE_STRCAT(tmp_name, "/");
 	}
 
 	ret = 0;
@@ -543,7 +545,7 @@ int fs_path_lookup(const char *path, int flags, struct dentry **dentry, struct l
 	CHECK_ARG_NULL(dentry, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(idx, -LTFS_NULL_ARG);
 
-	tmp_path = strdup(path);
+	tmp_path = SAFE_STRDUP(path);
 	if (! tmp_path) {
 		ltfsmsg(LTFS_ERR, 10001E, "fs_path_lookup: tmp_path");
 		return -LTFS_NO_MEMORY;
@@ -659,7 +661,7 @@ int fs_path_clean(const char *path, struct ltfs_index *idx)
 	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(idx, -LTFS_NULL_ARG);
 
-	tmp_path = strdup(path);
+	tmp_path = SAFE_STRDUP(path);
 	if (! tmp_path) {
 		ltfsmsg(LTFS_ERR, 10001E, "fs_path_clean: tmp_path");
 		return -LTFS_NO_MEMORY;
