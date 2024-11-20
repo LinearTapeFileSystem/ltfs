@@ -48,13 +48,15 @@
 
 #ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
+#include <fusefw.h>
 #else
 #include <syslog.h>
+#include <fuse.h>
 #endif /* mingw_PLATFORM */
 
 #include <getopt.h>
 #include "libltfs/ltfs_fuse_version.h"
-#include <fuse.h>
+
 
 #include "libltfs/ltfs.h"
 #include "libltfs/xml_libltfs.h"
@@ -63,7 +65,7 @@
 #include "libltfs/kmi.h"
 #include "libltfs/tape.h"
 
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
+static volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
 #ifdef __APPLE__
@@ -137,7 +139,7 @@ static inline int _open_output_file(tape_partition_t   part,
 	}
 
 	ltfsmsg(LTFS_INFO, 19547I, fname);
-	ret = open(fname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	SAFE_OPEN(ret,fname, O_WRONLY | O_CREAT | O_TRUNC,SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 19533E, fname, errno);
 	}
@@ -150,7 +152,7 @@ static inline int _open_output_file(tape_partition_t   part,
 static inline void _close_output_file(int fd)
 {
 	fsync(fd);
-	close(fd);
+	SAFE_CLOSE(fd);
 }
 
 /** Capture indexes on the partition.
@@ -201,7 +203,7 @@ static int ltfs_capture_index_raw(tape_partition_t   part,
 		pos.block++;
 
 		memset(check_buf, 0x00, KEY_MAX_OFFSET + 1);
-		strncpy(check_buf, buf, KEY_MAX_OFFSET);
+		SAFE_STRNCPY(check_buf, buf, KEY_MAX_OFFSET);
 		key = strstr(check_buf, "<ltfsindex");
 		if (key && (key - buf < 0x30)) {
 			ltfsmsg(LTFS_ERR, 19529I,
@@ -213,7 +215,7 @@ static int ltfs_capture_index_raw(tape_partition_t   part,
 				return -LTFS_CACHE_IO;
 			}
 
-			nwrite = write(fd, buf, nread);
+			nwrite = SAFE_WRITE(fd, buf, nread);
 			if (nwrite == nread) {
 				index_len += nread;
 			} else {
@@ -235,7 +237,7 @@ static int ltfs_capture_index_raw(tape_partition_t   part,
 
 				if (nread > 0) {
 					/* Write a block to the file */
-					nwrite = write(fd, buf, nread);
+					nwrite = SAFE_WRITE(fd, buf, nread);
 					if (nwrite == nread) {
 						index_len += nread;
 					} else {
@@ -527,7 +529,7 @@ static void show_usage(char *appname, struct config_file *config, bool full)
 }
 
 /* Main routine */
-int main(int argc, char **argv)
+static int main(int argc, char **argv)
 {
 	struct ltfs_volume *vol;
 	struct indextool_opts opt;
@@ -550,7 +552,7 @@ int main(int argc, char **argv)
 	struct fuse_args args = FUSE_ARGS_INIT(fuse_argc, fuse_argv);
 
 	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
-	lang = getenv("LANG");
+	SAFE_GETENV(lang,"LANG");
 	if (! lang) {
 		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting mkltfs.\n");
 		ret = setenv("LANG", "en_US.UTF-8", 1);
@@ -728,10 +730,10 @@ int main(int argc, char **argv)
 		ltfsmsg(LTFS_ERR, 10001E, "ltfsindextool (arguments)");
 		return INDEXTOOL_OPERATIONAL_ERROR;
 	}
-	strcat(cmd_args, argv[0]);
+	SAFE_STRCAT(cmd_args, argv[0]);
 	for (i = 1; i < argc; i++) {
-		strcat(cmd_args, " ");
-		strcat(cmd_args, argv[i]);
+		SAFE_STRCAT(cmd_args, " ");
+		SAFE_STRCAT(cmd_args, argv[i]);
 	}
 	ltfsmsg(LTFS_INFO, 19542I, cmd_args);
 	free(cmd_args);

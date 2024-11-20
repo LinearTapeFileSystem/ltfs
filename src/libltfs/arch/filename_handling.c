@@ -55,7 +55,7 @@
 bool _replace_invalid_chars(char * file_name, bool * dosdev);
 char * _generate_target_file_name(const char *prefix, const char *extension, int suffix, bool dosdev);
 int _utf8_strlen(const char *s);
-int _utf8_strncpy(char *t, const char *s, int n);
+int _utf8_strcpy(char *t, const char *s, int n);
 #endif
 
 /**
@@ -73,11 +73,11 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
 	char source_file_name[LTFS_FILENAME_MAX*4+1];
 	char *source_file_name_prefix, *source_file_name_extension;
 	char *target_file_name;
-	struct dentry *d;
+	struct dentry* d = NULL;
 	int ret;
 
 	dentry->platform_safe_name = NULL;
-	strcpy(source_file_name, dentry->name.name);
+	SAFE_STRCPY(source_file_name, dentry->name.name);
 
 	if (_replace_invalid_chars(source_file_name, &dosdev)) {
 		if (! handle_invalid_char)
@@ -208,7 +208,7 @@ char * _generate_target_file_name(const char *prefix, const char *extension, int
 	target = NULL;
 
 	if (suffix) {
-		sprintf( suffix_string, "~%d", suffix );
+		SAFE_SNPRINTF( suffix_string, "~%d", suffix );
 
 		prefix_length    = prefix    ? _utf8_strlen(prefix)    : 0;
 		extension_length = extension ? _utf8_strlen(extension) : 0;
@@ -218,7 +218,7 @@ char * _generate_target_file_name(const char *prefix, const char *extension, int
 			/* Need to trim source file name to add suffix */
 			if (! dosdev && prefix_length > suffix_length) {
 				/* Prefix is to be trimmed. */
-				_utf8_strncpy(trimmed_name, prefix, prefix_length - suffix_length);
+				_utf8_strcpy(trimmed_name, prefix, prefix_length - suffix_length);
 				if (extension)
 					ret = asprintf(&target, "%s%s.%s", trimmed_name, suffix_string, extension);
 				else
@@ -226,7 +226,7 @@ char * _generate_target_file_name(const char *prefix, const char *extension, int
 
 			} else if (extension_length > suffix_length) {
 				/* Extension is to be trimmed. */
-				_utf8_strncpy(trimmed_name, extension, extension_length - suffix_length);
+				_utf8_strcpy(trimmed_name, extension, extension_length - suffix_length);
 				ret = asprintf(&target, "%s%s.%s", prefix, suffix_string, trimmed_name);
 			} else {
 				/* Unable to generate target file name. NULL is to be returned. */
@@ -273,7 +273,7 @@ int _utf8_strlen(const char *s)
  * @param s Source string to be copied.
  * @param n Maximum length to be copied.
  */
-int _utf8_strncpy(char *t, const char *s, int n)
+int _utf8_strcpy(char *t, const char *s, int n)
 {
 	int ret = 0;
 

@@ -76,8 +76,9 @@ int fs_hash_sort_by_uid(struct name_list *a, struct name_list *b)
 
 static char* generate_hash_key_name(const char *src_str, int *rc)
 {
-	char *key_name;
-
+	char* key_name = NULL;
+	key_name = malloc(sizeof(char*));
+	if (key_name == NULL) return NULL;
 #ifdef mingw_PLATFORM
 	COMPAT_UCHAR *uchar_name;
 

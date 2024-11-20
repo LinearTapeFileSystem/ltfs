@@ -51,11 +51,14 @@
 #include <errno.h>
 #include "libltfs/kmi_ops.h"
 #include "libltfs/ltfs_fuse_version.h"
-#include <fuse.h>
+
 #include "key_format_ltfs.h"
 
 #ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
+#include <fusefw.h>
+#else
+#include <fuse.h>
 #endif
 
 struct kmi_flatfile_options_data {
@@ -268,7 +271,7 @@ struct kmi_ops flatfile_ops = {
 	.parse_opts   = flatfile_parse_opts,
 };
 
-struct kmi_ops *kmi_get_ops(void)
+static struct kmi_ops *kmi_get_ops(void)
 {
 	return &flatfile_ops;
 }
@@ -277,7 +280,7 @@ struct kmi_ops *kmi_get_ops(void)
 extern char kmi_flatfile_dat[];
 #endif
 
-const char *kmi_get_message_bundle_name(void ** const message_data)
+static const char *kmi_get_message_bundle_name(void ** const message_data)
 {
 #ifndef mingw_PLATFORM
 	*message_data = kmi_flatfile_dat;

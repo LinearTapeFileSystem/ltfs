@@ -1369,9 +1369,9 @@ int itdtimage_get_device_list(struct tc_drive_info *buf, int count)
 
 		if (buf && deventries < count) {
 			snprintf(buf[deventries].name, TAPE_DEVNAME_LEN_MAX, "%s/%s", devdir, entry->d_name);
-			strncpy(buf[deventries].vendor, "DUMMY", TAPE_VENDOR_NAME_LEN_MAX);
-			strncpy(buf[deventries].model, "DUMMYDEV", TAPE_MODEL_NAME_LEN_MAX);
-			strncpy(buf[deventries].serial_number, &(entry->d_name[strlen(DRIVE_FILE_PREFIX)]), TAPE_SERIAL_LEN_MAX);
+			SAFE_STRNCPY(buf[deventries].vendor, "DUMMY", TAPE_VENDOR_NAME_LEN_MAX);
+			SAFE_STRNCPY(buf[deventries].model, "DUMMYDEV", TAPE_MODEL_NAME_LEN_MAX);
+			SAFE_STRNCPY(buf[deventries].serial_number, &(entry->d_name[strlen(DRIVE_FILE_PREFIX)]), TAPE_SERIAL_LEN_MAX);
 			ltfsmsg(LTFS_DEBUG, 31030D, buf[deventries].name, buf[deventries].vendor,
 					buf[deventries].model, buf[deventries].serial_number);
 		}

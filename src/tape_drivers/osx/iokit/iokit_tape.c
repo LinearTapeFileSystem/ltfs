@@ -854,7 +854,7 @@ int iokit_open(const char *devname, void **handle)
 		ltfsmsg(LTFS_INFO, 30812I, devname);
 		goto free;
 	}
-	strncpy(priv->drive_serial, id_data.unit_serial, UNIT_SERIAL_LENGTH - 1);
+	SAFE_STRNCPY(priv->drive_serial, id_data.unit_serial, UNIT_SERIAL_LENGTH - 1);
 
 	/* Check the drive is supportable */
 	struct supported_device **cur = get_supported_devs(id_data.vendor_id);
@@ -994,7 +994,7 @@ int iokit_reopen(const char *devname, void *device)
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REOPEN));
 		return ret;
 	}
-	strncpy(priv->drive_serial, id_data.unit_serial, UNIT_SERIAL_LENGTH - 1);
+	SAFE_STRNCPY(priv->drive_serial, id_data.unit_serial, UNIT_SERIAL_LENGTH - 1);
 
 	/* Check the drive is supportable */
 	struct supported_device **cur = ibm_supported_drives;
@@ -1142,9 +1142,9 @@ int iokit_inquiry(void *device, struct tc_inq *inq)
 		return ret;
 
 	memset(inq, 0, sizeof(struct tc_inq));
-	strncpy((char*)inq->vid,      (char*)inq_page.data + 8,  VENDOR_ID_LENGTH);
-	strncpy((char*)inq->pid,      (char*)inq_page.data + 16, PRODUCT_ID_LENGTH);
-	strncpy((char*)inq->revision, (char*)inq_page.data + 32, PRODUCT_REV_LENGTH);
+	SAFE_STRNCPY((char*)inq->vid,      (char*)inq_page.data + 8,  VENDOR_ID_LENGTH);
+	SAFE_STRNCPY((char*)inq->pid,      (char*)inq_page.data + 16, PRODUCT_ID_LENGTH);
+	SAFE_STRNCPY((char*)inq->revision, (char*)inq_page.data + 32, PRODUCT_REV_LENGTH);
 
 	inq->devicetype = priv->drive_type;
 
@@ -1153,7 +1153,7 @@ int iokit_inquiry(void *device, struct tc_inq *inq)
 	else
 		vendor_length = 20;
 
-	strncpy((char*)inq->vendor, (char*)inq_page.data + 36, vendor_length);
+	SAFE_STRNCPY((char*)inq->vendor, (char*)inq_page.data + 36, vendor_length);
 	inq->vendor[vendor_length] = '\0';
 
 	return ret;

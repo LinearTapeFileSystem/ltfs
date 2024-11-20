@@ -532,7 +532,7 @@ static int _raw_open(struct sg_data *priv)
 			return -EDEV_DEVICE_UNOPENABLE; /* Unexpected device is opened */
 		}
 	} else
-		strncpy(priv->drive_serial, id_data.unit_serial, sizeof(priv->drive_serial) - 1);
+		SAFE_STRNCPY(priv->drive_serial, id_data.unit_serial, sizeof(priv->drive_serial) - 1);
 
 	/* Get SCSI ID */
 	if (! ioctl(priv->dev.fd, SG_GET_SCSI_ID, &scsi_id)) {
@@ -550,12 +550,12 @@ static int _raw_open(struct sg_data *priv)
 	ltfsmsg(LTFS_INFO, 30214I, id_data.product_rev);
 	ltfsmsg(LTFS_INFO, 30215I, priv->drive_serial);
 
-	strncpy(priv->info.name,          priv->devname,       TAPE_DEVNAME_LEN_MAX + 1);
-	strncpy(priv->info.vendor,        id_data.vendor_id,   TAPE_VENDOR_NAME_LEN_MAX + 1);
-	strncpy(priv->info.model,         id_data.product_id,  TAPE_MODEL_NAME_LEN_MAX + 1);
-	strncpy(priv->info.serial_number, id_data.unit_serial, TAPE_SERIAL_LEN_MAX + 1);
-	strncpy(priv->info.product_rev,   id_data.product_rev, PRODUCT_REV_LENGTH + 1);
-	strncpy(priv->info.product_name,  _generate_product_name(id_data.product_id), PRODUCT_NAME_LENGTH + 1);
+	SAFE_STRNCPY(priv->info.name,          priv->devname,       TAPE_DEVNAME_LEN_MAX + 1);
+	SAFE_STRNCPY(priv->info.vendor,        id_data.vendor_id,   TAPE_VENDOR_NAME_LEN_MAX + 1);
+	SAFE_STRNCPY(priv->info.model,         id_data.product_id,  TAPE_MODEL_NAME_LEN_MAX + 1);
+	SAFE_STRNCPY(priv->info.serial_number, id_data.unit_serial, TAPE_SERIAL_LEN_MAX + 1);
+	SAFE_STRNCPY(priv->info.product_rev,   id_data.product_rev, PRODUCT_REV_LENGTH + 1);
+	SAFE_STRNCPY(priv->info.product_name,  _generate_product_name(id_data.product_id), PRODUCT_NAME_LENGTH + 1);
 
 	return 0;
 }
@@ -1646,9 +1646,9 @@ int sg_inquiry(void *device, struct tc_inq *inq)
 		return ret;
 
 	memset(inq, 0, sizeof(struct tc_inq));
-	strncpy((char*)inq->vid,      (char*)inq_page.data + 8,  VENDOR_ID_LENGTH);
-	strncpy((char*)inq->pid,      (char*)inq_page.data + 16, PRODUCT_ID_LENGTH);
-	strncpy((char*)inq->revision, (char*)inq_page.data + 32, PRODUCT_REV_LENGTH);
+	SAFE_STRNCPY((char*)inq->vid,      (char*)inq_page.data + 8,  VENDOR_ID_LENGTH);
+	SAFE_STRNCPY((char*)inq->pid,      (char*)inq_page.data + 16, PRODUCT_ID_LENGTH);
+	SAFE_STRNCPY((char*)inq->revision, (char*)inq_page.data + 32, PRODUCT_REV_LENGTH);
 
 	inq->devicetype = priv->drive_type;
 
@@ -1657,7 +1657,7 @@ int sg_inquiry(void *device, struct tc_inq *inq)
 	else
 		vendor_length = 20;
 
-	strncpy((char*)inq->vendor, (char*)inq_page.data + 36, vendor_length);
+	SAFE_STRNCPY((char*)inq->vendor, (char*)inq_page.data + 36, vendor_length);
 	inq->vendor[vendor_length] = '\0';
 
 	return ret;
@@ -4441,12 +4441,12 @@ int sg_get_device_list(struct tc_drive_info *buf, int count)
 		}
 
 		if (found < count && buf) {
-			strncpy(buf[found].name,          devname,                TAPE_DEVNAME_LEN_MAX + 1);
-			strncpy(buf[found].vendor,        identifier.vendor_id,   TAPE_VENDOR_NAME_LEN_MAX + 1);
-			strncpy(buf[found].model,         identifier.product_id,  TAPE_MODEL_NAME_LEN_MAX + 1);
-			strncpy(buf[found].serial_number, identifier.unit_serial, TAPE_SERIAL_LEN_MAX + 1);
-			strncpy(buf[found].product_rev,   identifier.product_rev, PRODUCT_REV_LENGTH + 1);
-			strncpy(buf[found].product_name,  _generate_product_name(identifier.product_id), PRODUCT_NAME_LENGTH + 1);
+			SAFE_STRNCPY(buf[found].name,          devname,                TAPE_DEVNAME_LEN_MAX + 1);
+			SAFE_STRNCPY(buf[found].vendor,        identifier.vendor_id,   TAPE_VENDOR_NAME_LEN_MAX + 1);
+			SAFE_STRNCPY(buf[found].model,         identifier.product_id,  TAPE_MODEL_NAME_LEN_MAX + 1);
+			SAFE_STRNCPY(buf[found].serial_number, identifier.unit_serial, TAPE_SERIAL_LEN_MAX + 1);
+			SAFE_STRNCPY(buf[found].product_rev,   identifier.product_rev, PRODUCT_REV_LENGTH + 1);
+			SAFE_STRNCPY(buf[found].product_name,  _generate_product_name(identifier.product_id), PRODUCT_NAME_LENGTH + 1);
 
 			if (! ioctl(dev.fd, SG_GET_SCSI_ID, &scsi_id)) {
 				buf[found].host    = scsi_id.host_no;

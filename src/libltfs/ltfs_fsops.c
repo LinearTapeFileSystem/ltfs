@@ -1982,14 +1982,14 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 	if ( size < strlen(d->target.name) + 1 ) {
 		return -LTFS_SMALL_BUFFER;
 	}
-	strncpy(buf, d->target.name, size);
+	SAFE_STRNCPY(buf, d->target.name, size);
 
 	if ( vol->livelink ) {
 		memset( value, 0, sizeof(value));
 		ret = xattr_get(d, LTFS_LIVELINK_EA_NAME, value, sizeof(value), vol);
 		if ( ret > 0 ) {
 			ltfsmsg(LTFS_DEBUG, 11323D, value);
-			ret = sscanf(value, "%d:%d", &num1, &num2);
+			ret = SAFE_SCANF(value, "%d:%d", &num1, &num2);
 			if ( ( ret == 1 ) && ( num1 != 0 ) ){
 				memset( buf, 0, size);
 #ifndef mingw_PLATFORM
@@ -1998,7 +1998,7 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 				}
 				strcpy(buf, vol->mountpoint);
 #endif
-				strcat(buf, d->target.name + num1);
+				SAFE_STRCAT(buf, d->target.name + num1);
 				ltfsmsg(LTFS_DEBUG, 11324D, d->target.name, buf);
 			}
 		}
@@ -2031,7 +2031,7 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 		if ( size < (size_t)len2+1) {
 			return -LTFS_SMALL_BUFFER;
 		}
-		strcpy(buf, target);
+		SAFE_STRCPY(buf, target);
 		return 0;
 	}
 
@@ -2049,23 +2049,24 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 
 	if (target[0]=='/') {
 		temp_buf = strstr(target, "/.");  /* get "/../ccc/target.txt" of "/aaa/../ccc/target.txt" */
-		strcpy(target_buf, temp_buf + 1); /* copy "../ccc/target.txt" */
+		SAFE_STRCPY(target_buf, temp_buf + 1); /* copy "../ccc/target.txt" */
 		len = strlen(target_buf) + 1;
 		len = len2 - len;
-		strncpy(work_buf, target, len);   /* copy "/aaa" */
+		SAFE_STRNCPY(work_buf, target, len);   /* copy "/aaa" */
 	} else {
-		strcpy(work_buf, link);
-		strcpy(target_buf, target);
+		SAFE_STRCPY(work_buf, link);
+		SAFE_STRCPY(target_buf, target);
 
 		/* Split link file name then get current directory */
 		temp_buf = strrchr(work_buf, '/'); /* get "/link.txt" from "/aaa/bbb/link.txt" */
 		len -= strlen(temp_buf);           /* length of "/aaa/bbb" */
 	}
-
+	char* contextVal = malloc(sizeof(*contextVal));
+	if (contextVal == NULL) return -LTFS_NO_MEMORY;
 	/* Split target path directory then modify current directory with target path information */
-	token = strtok(target_buf, "/");     /*  get ".." from "../ccc/target.txt" */
+	SAFE_STRTOK(token,target_buf, "/", contextVal);     /*  get ".." from "../ccc/target.txt" */
 	while (token) {
-		next_token = strtok(NULL, "/");  /* if next_token is NULL then token is filename */
+		SAFE_STRTOK(next_token,NULL, "/", contextVal);  /* if next_token is NULL then token is filename */
 		if (!next_token)
 			break;
 		if (strcmp(token, "..") == 0) {
@@ -2078,23 +2079,25 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 			len -= strlen(temp_buf); /* length of "/aaa" */
 		} else if (strcmp(token, "." )) {                    /* have directory name */
 			work_buf[len] = '/';                             /* put '/ 'as "/aaa/" */
-			strncpy(work_buf+len+1, token, strlen(token)+1); /* "/aaa/ccc\0" */
+			SAFE_STRNCPY(work_buf+len+1, token, strlen(token)+1); /* "/aaa/ccc\0" */
 			len = strlen(work_buf);
 		}
 		token = next_token;
 	}
 	work_buf[len] = '/';                             /* put '/ 'as "/aaa/ccc/" */
-	strncpy(work_buf+len+1, token, strlen(token)+1); /* "/aaa/ccc/target.txt\0" */
+	SAFE_STRNCPY(work_buf+len+1, token, strlen(token)+1); /* "/aaa/ccc/target.txt\0" */
 
 	if (size < strlen(work_buf) + 1) {
 		free(work_buf);
 		free(target_buf);
+		free(contextVal);
 		return -LTFS_SMALL_BUFFER;
 	}
 
-	strcpy(buf, work_buf);
+	SAFE_STRCPY(buf, work_buf);
 	free(work_buf);
 	free(target_buf);
+	free(contextVal);
 	return 0;
 }
 

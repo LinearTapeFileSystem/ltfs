@@ -49,17 +49,18 @@
 
 #ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
+#include <fusefw.h>
+
 #else
 #include <uuid/uuid.h>
 #include <syslog.h>
+#include <fuse.h>
+#include <sys/param.h>
 #endif /* mingw_PLATFORM */
 
 #include <getopt.h>
-
 #include "libltfs/ltfs_fuse_version.h"
-#include <fuse.h>
 
-#include <sys/param.h>
 #include "libltfs/ltfs_internal.h"
 #include "libltfs/ltfs.h"
 #include "ltfs_copyright.h"
@@ -68,7 +69,7 @@
 #include "libltfs/arch/time_internal.h"
 #include "libltfs/kmi.h"
 
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
+static volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
 #ifdef __APPLE__
@@ -187,7 +188,7 @@ static struct option long_options[] = {
 	{0, 0, 0, 0}
 };
 
-void show_usage(char *appname, struct config_file *config, bool full)
+static void show_usage(char *appname, struct config_file *config, bool full)
 {
 	ltfsresult(16400I, appname); /* Usage: %s [options] filesys */
 	fprintf(stderr, "\n");
@@ -225,7 +226,7 @@ void show_usage(char *appname, struct config_file *config, bool full)
 	fprintf(stderr, "\n");
 }
 
-int main(int argc, char **argv)
+static int main(int argc, char **argv)
 {
 	struct ltfs_volume *vol;
 	struct other_check_opts opt;
@@ -248,7 +249,7 @@ int main(int argc, char **argv)
 	struct fuse_args args = FUSE_ARGS_INIT(fuse_argc, fuse_argv);
 
 	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
-	lang = getenv("LANG");
+	SAFE_GETENV(lang,"LANG");
 	if (! lang) {
 		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting ltfsck.\n");
 		ret = setenv("LANG", "en_US.UTF-8", 1);
@@ -465,10 +466,10 @@ int main(int argc, char **argv)
 		ltfsmsg(LTFS_ERR, 10001E, "ltfsck (arguments)");
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
-	strcat(cmd_args, argv[0]);
+	SAFE_STRCAT(cmd_args, argv[0]);
 	for (i = 1; i < argc; i++) {
-		strcat(cmd_args, " ");
-		strcat(cmd_args, argv[i]);
+		SAFE_STRCAT(cmd_args, " ");
+		SAFE_STRCAT(cmd_args, argv[i]);
 	}
 	ltfsmsg(LTFS_INFO, 16088I, cmd_args);
 	free(cmd_args);
@@ -1400,15 +1401,14 @@ int list_rollback_points_normal(struct ltfs_volume *vol, struct other_check_opts
 		ret = asprintf(&vol->index_cache_path_r, "%s/reading_index.xml", opt->capture_dir);
 
 		if (ret > 0) {
-			fd = open(vol->index_cache_path_r, O_WRONLY | O_BINARY | O_CREAT,
-					  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+			SAFE_OPEN(fd,vol->index_cache_path_r, O_WRONLY | O_BINARY | O_CREAT, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 			if (fd < 0) {
 				ltfsmsg(LTFS_WARN, 16113W, opt->capture_dir, errno);
 				free(vol->index_cache_path_r);
 				vol->index_cache_path_r = NULL;
 			} else {
 				ltfsmsg(LTFS_INFO, 16114I, opt->capture_dir);
-				close(fd);
+				SAFE_CLOSE(fd);
 				fd = -1;
 			}
 		} else {

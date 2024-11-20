@@ -107,7 +107,7 @@ char* my_dirname(char* path) {
 
 #include "filedebug_conf_tc.h"
 
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
+static volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
 /* Default directory where the emulated tape contents go to */
@@ -397,6 +397,41 @@ void filedebug_help_message(const char *progname)
 {
 	ltfsresult(30199I, filedebug_default_device);
 }
+#ifdef mingw_PLATFORM
+char* dirname(char* path) {
+	if (!path || !*path) {
+		return ".";
+	}
+
+	// Create a copy of the input path to avoid modifying the original
+	char* copy = _strdup(path);
+	if (!copy) {
+		return NULL;
+	}
+
+	// Find the last directory separator
+	char* last_sep = strrchr(copy, '\\');
+	if (!last_sep) {
+		last_sep = strrchr(copy, '/'); // Handle forward slashes
+	}
+
+	if (!last_sep) {
+		free(copy);
+		return "."; // No separator found, return current directory
+	}
+
+	// Remove the trailing component
+	if (last_sep == copy) {
+		// Root directory case (e.g., "/")
+		copy[1] = '\0';
+	}
+	else {
+		*last_sep = '\0';
+	}
+
+	return copy;
+}
+#endif
 
 int filedebug_open(const char *name, void **handle)
 {
@@ -426,7 +461,7 @@ int filedebug_open(const char *name, void **handle)
 	ret = stat(name, &d);
 	if (ret == 0 && S_ISDIR(d.st_mode)) {
 		ltfsmsg(LTFS_INFO, 30003I, name);
-		state->dirname = _SAFE_STRDUP(name);
+		state->dirname = SAFE_STRDUP(name);
 		if (!state->dirname) {
 			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirname");
 			free(state);
@@ -446,7 +481,7 @@ int filedebug_open(const char *name, void **handle)
 
 		for (i = 0; i < info_devs; i++) {
 			if (! strncmp(buf[i].serial_number, name, TAPE_SERIAL_LEN_MAX) ) {
-				devname = _SAFE_STRDUP(buf[i].name);
+				devname = SAFE_STRDUP(buf[i].name);
 				if (!devname) {
 					ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: devname");
 					if (buf) free(buf);
@@ -464,7 +499,7 @@ int filedebug_open(const char *name, void **handle)
 
 		/* Run on file mode */
 		if (devname == NULL)
-			devname = _SAFE_STRDUP(name);
+			devname = SAFE_STRDUP(name);
 		ltfsmsg(LTFS_INFO, 30001I, devname);
 
 		errno_t err = _sopen_s(state->fd, devname, _O_RDWR | _O_BINARY, _SH_DENYNO, 0);
@@ -507,7 +542,7 @@ int filedebug_open(const char *name, void **handle)
 		}
 
 		/* Store directory base */
-		tmp = _SAFE_STRDUP(devname);
+		tmp = SAFE_STRDUP(devname);
 		if (!tmp) {
 			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirbase tmp");
 			free(state);
@@ -2709,7 +2744,7 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 			continue;
 
 		if (buf && deventries < count) {
-			tmp = _SAFE_STRDUP(entry->d_name);
+			tmp = SAFE_STRDUP(entry->d_name);
 			if (! *tmp) {
 				ltfsmsg(LTFS_ERR, 10001E, "filedebug_get_device_list");
 				return -ENOMEM;
@@ -2816,9 +2851,9 @@ int filedebug_get_serialnumber(void *device, char **result)
 	CHECK_ARG_NULL(result, -LTFS_NULL_ARG);
 
 	if (state->serial_number)
-		*result = _SAFE_STRDUP((const char *) state->serial_number);
+		*result = SAFE_STRDUP((const char *) state->serial_number);
 	else
-		*result = _SAFE_STRDUP("DUMMY");
+		*result = SAFE_STRDUP("DUMMY");
 
 	if (! *result)
 		return -EDEV_NO_MEMORY;

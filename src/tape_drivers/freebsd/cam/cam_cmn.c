@@ -331,18 +331,18 @@ int camtape_inquiry(void *device, struct tc_inq *inq)
 	inq_data = &softc->cd->inq_data;
 	inq->devicetype = SID_TYPE(inq_data);
 	inq->cmdque = (inq_data->flags & SID_CmdQue) ? 1 : 0;
-	strncpy((char *)inq->vid, (char *)inq_data->vendor, 8);
+	SAFE_STRNCPY((char *)inq->vid, (char *)inq_data->vendor, 8);
 	inq->vid[8] = '\0';
-	strncpy((char *)inq->pid, (char *)inq_data->product, 16);
+	SAFE_STRNCPY((char *)inq->pid, (char *)inq_data->product, 16);
 	inq->pid[16] = '\0';
-	strncpy((char *)inq->revision, (char *)inq_data->revision, 4);
+	SAFE_STRNCPY((char *)inq->revision, (char *)inq_data->revision, 4);
 	inq->revision[4] = '\0';
 
 	vendor_length = 20;
 	if (IS_ENTERPRISE(softc->drive_type))
 		vendor_length = 18;
 
-	strncpy((char *)inq->vendor, (char *)inq_data->vendor_specific0,
+	SAFE_STRNCPY((char *)inq->vendor, (char *)inq_data->vendor_specific0,
 		vendor_length);
 	inq->vendor[vendor_length] = '\0';
 

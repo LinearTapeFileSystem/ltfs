@@ -57,11 +57,14 @@
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
+#include "ltfs_unistd.h"
+#else
+#include <unistd.h>
 #endif
 
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
+
 
 #ifdef __APPLE_MAKEFILE__
 #include <ICU/unicode/utf8.h>
@@ -1760,7 +1763,7 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	/* APPLICATION CLIENT SPECIFIC INFORMATION LENGTH */
 	coh_data[30] = 0;  /* Size of APPLICATION CLIENT SPECIFIC INFORMATION (Byte 1) */
 	coh_data[31] = 43; /* Size of APPLICATION CLIENT SPECIFIC INFORMATION (Byte 0) */
-	strcpy((char *)coh_data + 32, "LTFS");
+	SAFE_STRCPY((char *)coh_data + 32, "LTFS");
 	memcpy(coh_data + 37, coh->uuid, 37);
 	/*
 	   Version field
@@ -2979,16 +2982,16 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 	}
 
 	/*  APPLICATION VENDOR set */
-	strncpy(t_attr->vender, LTFS_VENDOR_NAME, TC_MAM_APP_VENDER_SIZE);
+	SAFE_STRNCPY(t_attr->vender, LTFS_VENDOR_NAME, TC_MAM_APP_VENDER_SIZE);
 	parse_vol(t_attr->vender, strlen(LTFS_VENDOR_NAME), TC_MAM_APP_VENDER_SIZE);
 
 	/* APPLICATION NAME set */
-	strncpy(t_attr->app_name, PACKAGE_NAME, TC_MAM_APP_NAME_SIZE);
+	SAFE_STRNCPY(t_attr->app_name, PACKAGE_NAME, TC_MAM_APP_NAME_SIZE);
 	parse_vol(t_attr->app_name, strlen(PACKAGE_NAME), TC_MAM_APP_NAME_SIZE);
 
 
 	/* APPLICATION VERSION set */
-	strncpy(t_attr->app_ver, PACKAGE_VERSION, TC_MAM_APP_VERSION_SIZE);
+	SAFE_STRNCPY(t_attr->app_ver, PACKAGE_VERSION, TC_MAM_APP_VERSION_SIZE);
 	parse_vol(t_attr->app_ver, strlen(PACKAGE_VERSION), TC_MAM_APP_VERSION_SIZE);
 
 	/* USER MEDIUM LABEL set */
@@ -3002,7 +3005,7 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 			if (len_volname == -LTFS_ICU_ERROR)
 				len_volname = TC_MAM_USER_MEDIUM_LABEL_SIZE - 1;
 		}
-		strncpy(t_attr->medium_label, vol->index->volume_name.name, len_volname);
+		SAFE_STRNCPY(t_attr->medium_label, vol->index->volume_name.name, len_volname);
 	}
 
 	/* TEXT LOCALIZATION IDENTIFIER set */
@@ -3012,7 +3015,7 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 	if ( vol->label->barcode[0] ) {
 		if ( strlen(vol->label->barcode) > TC_MAM_BARCODE_SIZE)
 			ltfsmsg(LTFS_WARN, 17203W, "BARCODE", vol->label->barcode, TC_MAM_BARCODE_SIZE);
-		strncpy(t_attr->barcode, vol->label->barcode, TC_MAM_BARCODE_SIZE);
+		SAFE_STRNCPY(t_attr->barcode, vol->label->barcode, TC_MAM_BARCODE_SIZE);
 		parse_vol(t_attr->barcode, strlen(vol->label->barcode), TC_MAM_BARCODE_SIZE);
 	} else {
 		ltfsmsg(LTFS_WARN, 17230W);
@@ -3020,7 +3023,7 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 	}
 
 	/* APPLICATION FORMAT VERSION set */
-	strncpy(t_attr->app_format_ver, LTFS_INDEX_VERSION_STR, TC_MAM_APP_FORMAT_VERSION_SIZE);
+	SAFE_STRNCPY(t_attr->app_format_ver, LTFS_INDEX_VERSION_STR, TC_MAM_APP_FORMAT_VERSION_SIZE);
 	parse_vol(t_attr->app_format_ver, strlen(LTFS_INDEX_VERSION_STR), TC_MAM_APP_FORMAT_VERSION_SIZE);
 
 	/* VOLUME LOCKED set */
@@ -3081,31 +3084,32 @@ int tape_set_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr, 
 		return -1;
 	}
 
-	unsigned char attr_data[attr_size + TC_MAM_PAGE_HEADER_SIZE];
-
+	unsigned char* attr_data = NULL;
+	attr_data = malloc(sizeof(char*)*(attr_size +TC_MAM_PAGE_HEADER_SIZE));
+	if (attr_data == NULL)	return -LTFS_NO_MEMORY;
 	ltfs_u16tobe(attr_data, type); 			/* set attribute type	*/
 	attr_data[2] = format;					/* set data format type */
 	ltfs_u16tobe(attr_data + 3, attr_size);	/* set data size		*/
 
 	/* set attribute data */
 	if ( type == TC_MAM_APP_VENDER ) {
-		strncpy((char *)attr_data + 5, t_attr->vender, attr_size);
+		SAFE_STRNCPY((char *)attr_data + 5, t_attr->vender, attr_size);
 	} else if ( type == TC_MAM_APP_NAME ) {
-		strncpy((char *)attr_data + 5, t_attr->app_name, attr_size);
+		SAFE_STRNCPY((char *)attr_data + 5, t_attr->app_name, attr_size);
 	} else if ( type == TC_MAM_APP_VERSION ) {
-		strncpy((char *)attr_data + 5, t_attr->app_ver, attr_size);
+		SAFE_STRNCPY((char *)attr_data + 5, t_attr->app_ver, attr_size);
 	} else if ( type == TC_MAM_USER_MEDIUM_LABEL ) {
-		strncpy((char *)attr_data + 5, t_attr->medium_label, attr_size);
+		SAFE_STRNCPY((char *)attr_data + 5, t_attr->medium_label, attr_size);
 	} else if ( type == TC_MAM_TEXT_LOCALIZATION_IDENTIFIER ) {
 		attr_data[5] =  t_attr->tli;
 	} else if ( type == TC_MAM_BARCODE ) {
-		strncpy((char *)attr_data + 5, t_attr->barcode, attr_size);
+		SAFE_STRNCPY((char *)attr_data + 5, t_attr->barcode, attr_size);
 	} else if ( type == TC_MAM_APP_FORMAT_VERSION ) {
-		strncpy((char *)attr_data + 5, t_attr->app_format_ver, attr_size);
+		SAFE_STRNCPY((char *)attr_data + 5, t_attr->app_format_ver, attr_size);
 	} else if ( type == TC_MAM_LOCKED_MAM ) {
 		attr_data[5] =  t_attr->vollock;
 	} else if ( type == TC_MAM_MEDIA_POOL) {
-		strncpy((char *)attr_data + 5, t_attr->media_pool, attr_size);
+		SAFE_STRNCPY((char *)attr_data + 5, t_attr->media_pool, attr_size);
 	}
 
 	ret = dev->backend->write_attribute(dev->backend_data,
@@ -3115,7 +3119,7 @@ int tape_set_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr, 
 
 	if (ret < 0)
 		ltfsmsg(LTFS_ERR, 17205E, type, "tape_set_attribute_to_cm");
-
+	free(attr_data);
 	return ret;
 
 }
@@ -3233,8 +3237,9 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 		break;
 	}
 
-	unsigned char attr_data[attr_len + TC_MAM_PAGE_HEADER_SIZE];
-
+	unsigned char* attr_data = NULL;
+	attr_data = malloc(sizeof(char*) * (attr_len + TC_MAM_PAGE_HEADER_SIZE));
+	if (attr_data == NULL)	return -LTFS_NO_MEMORY;
 	ret = dev->backend->read_attribute(dev->backend_data,
 										0,					/* partition	*/
 										type,
@@ -3282,7 +3287,7 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 		}
 	} else
 		ltfsmsg(LTFS_DEBUG, 17198D, type, "tape_get_attribute_from_cm");
-
+	free(attr_data);
 	return ret;
 }
 
@@ -3406,7 +3411,7 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 		}
 		memset(vol->t_attr->medium_label, '\0', TC_MAM_USER_MEDIUM_LABEL_SIZE + 1);
 		if ( new_value ) {
-			strncpy(vol->t_attr->medium_label, new_value, size);
+			SAFE_STRNCPY(vol->t_attr->medium_label, new_value, size);
 		}
 	} else if (type == TC_MAM_BARCODE) {
 		if ( size > TC_MAM_BARCODE_SIZE) {
@@ -3421,7 +3426,7 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 		}
 		memset(vol->t_attr->barcode, '\0', TC_MAM_BARCODE_SIZE + 1);
 		if ( new_value ) {
-			strncpy(vol->t_attr->barcode, new_value, size);
+			SAFE_STRNCPY(vol->t_attr->barcode, new_value, size);
 		}
 		parse_vol(vol->t_attr->barcode, strlen(new_value), TC_MAM_BARCODE_SIZE);
 	} else if (type == TC_MAM_LOCKED_MAM) {
@@ -3440,7 +3445,7 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 		}
 		memset(vol->t_attr->media_pool, '\0', TC_MAM_MEDIA_POOL_SIZE + 1);
 		if ( new_value ) {
-			strncpy(vol->t_attr->media_pool, new_value, size);
+			SAFE_STRNCPY(vol->t_attr->media_pool, new_value, size);
 		}
 	}
 
@@ -3448,10 +3453,10 @@ int update_tape_attribute(struct ltfs_volume *vol, const char *new_value, int ty
 	if (ret < 0) {
 		if ( type == TC_MAM_USER_MEDIUM_LABEL ) {
 			memset(vol->t_attr->medium_label, '\0', TC_MAM_USER_MEDIUM_LABEL_SIZE + 1);
-			strncpy(vol->t_attr->medium_label, pre_attr, strlen(pre_attr));
+			SAFE_STRNCPY(vol->t_attr->medium_label, pre_attr, strlen(pre_attr));
 		} else if (type == TC_MAM_BARCODE) {
 			memset(vol->t_attr->barcode, '\0', TC_MAM_BARCODE_SIZE + 1);
-			strncpy(vol->t_attr->barcode, pre_attr, strlen(pre_attr));
+			SAFE_STRNCPY(vol->t_attr->barcode, pre_attr, strlen(pre_attr));
 		}
 	}
 

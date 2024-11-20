@@ -398,7 +398,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		SAFE_STRNCPY(id, _id + 1, idlen - 2);
 		id[idlen - 2] = '\0';
 	} else {
-		strcpy(id, _id);
+		SAFE_STRCPY(id, sizeof(id), _id);
 	}
 
 	id_val = atol(id);
@@ -438,9 +438,9 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	/* Format and print the message string. */
 	ltfs_mutex_lock(&output_lock);
 	if (ltfs_print_thread_id)
-		prefix_len = print_id ? sprintf(output_buf, MSG_PREFIX_TID, (unsigned long)ltfs_get_thread_id(), id) : 0;
+		prefix_len = print_id ? SAFE_PRINTF(output_buf, MSG_PREFIX_TID, (unsigned long)ltfs_get_thread_id(), id) : 0;
 	else
-		prefix_len = print_id ? sprintf(output_buf, MSG_PREFIX, id) : 0;
+		prefix_len = print_id ? SAFE_PRINTF(output_buf, MSG_PREFIX, id) : 0;
 	ucnv_fromUChars(output_conv, output_buf + prefix_len, OUTPUT_BUF_SIZE - prefix_len - 1,
 		format_uc, format_len, &err);
 	if (err == U_BUFFER_OVERFLOW_ERROR) {
@@ -486,7 +486,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 
 	if (msg_out) {
 		va_start(argp, _id);
-		vsprintf(msg_buf, output_buf, argp);
+		SAFE_VSPRINTF(msg_buf, output_buf, argp);
 		va_end(argp);
 		*msg_out = SAFE_STRDUP(msg_buf);
 	}

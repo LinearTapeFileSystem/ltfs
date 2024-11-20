@@ -49,11 +49,13 @@
 
 #include "libltfs/kmi_ops.h"
 #include "libltfs/ltfs_fuse_version.h"
-#include <fuse.h>
 #include "key_format_ltfs.h"
 
 #ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
+#include <fusefw.h>
+#else
+#include <fuse.h>
 #endif
 
 struct kmi_simple_options_data {
@@ -203,10 +205,10 @@ int simple_parse_opts(void *opt_args)
 		*(priv.dk_list + original_dk_list_len) = '\0';
 
 		if (original_dk_list_len)
-			strcat((char *) priv.dk_list, "/");
-		strcat((char *) priv.dk_list, (char *) key[i].dk);
-		strcat((char *) priv.dk_list, ":");
-		strcat((char *) priv.dk_list, (char *) key[i].dki);
+			SAFE_STRCAT((char *) priv.dk_list, "/");
+		SAFE_STRCAT((char *) priv.dk_list, (char *) key[i].dk);
+		SAFE_STRCAT((char *) priv.dk_list, ":");
+		SAFE_STRCAT((char *) priv.dk_list, (char *) key[i].dki);
 	}
 
 	return 0;
@@ -220,7 +222,7 @@ struct kmi_ops simple_ops = {
 	.parse_opts   = simple_parse_opts,
 };
 
-struct kmi_ops *kmi_get_ops(void)
+static struct kmi_ops *kmi_get_ops(void)
 {
 	return &simple_ops;
 }
@@ -229,7 +231,7 @@ struct kmi_ops *kmi_get_ops(void)
 extern char kmi_simple_dat[];
 #endif
 
-const char *kmi_get_message_bundle_name(void ** const message_data)
+static const char *kmi_get_message_bundle_name(void ** const message_data)
 {
 #ifndef mingw_PLATFORM
 	*message_data = kmi_simple_dat;

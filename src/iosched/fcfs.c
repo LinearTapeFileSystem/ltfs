@@ -52,7 +52,7 @@
 #include "ltfs_copyright.h"
 #include "libltfs/iosched_ops.h"
 
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
+static volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
 struct fcfs_data {
@@ -264,7 +264,7 @@ struct iosched_ops fcfs_ops = {
 	.set_profiler = fcfs_set_profiler,
 };
 
-struct iosched_ops *iosched_get_ops(void)
+static struct iosched_ops *iosched_get_ops(void)
 {
 	return &fcfs_ops;
 }

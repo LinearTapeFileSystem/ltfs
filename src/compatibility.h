@@ -38,12 +38,13 @@
 **
 ** Abstract:
 **
-**  This include file has macros to ensure compatibility on cross-platform (Unix-Windows) builds.
+**  This include file has macros to ensure compatibility on cross-platform (UnixLike-Windows) builds.
 **
 ** Author(s):
 **
 **  Gustavo Padilla Valdez
 **  IBM Mexico Software Laboratory
+**	gustavo.padilla@ibm.com
 **
 ** Revision History:
 **
@@ -64,6 +65,7 @@ extern "C" {
 	#ifndef COMPAT_UCHAR
 		#define COMPAT_UCHAR UCHAR
 	#endif
+
 	#ifndef SHARE_FLAG_DENYNO
 		#define SHARE_FLAG_DENYNO  _SH_DENYNO
 	#endif
@@ -79,6 +81,32 @@ extern "C" {
 	#ifndef SHARE_FLAG_DENYRW
 		#define SHARE_FLAG_DENYRW   _SH_DENYRW
 	#endif
+
+	#ifndef PERMISSION_READWRITE
+		#define PERMISSION_READWRITE   _S_IREAD | _S_IWRITE
+	#endif
+
+	#ifndef PERMISSION_READ
+		#define PERMISSION_READ  _S_IREAD
+	#endif
+
+	#ifndef PERMISSION_WRITE
+		#define PERMISSION_WRITE  _S_IWRITE
+	#endif
+
+	#ifndef S_IFLNK
+		#define S_IFLNK 0xA000 
+	#endif
+
+	#ifndef O_NONBLOCK
+		#define O_NONBLOCK 0
+	#endif	
+	#ifndef INVALID_KEY
+		#define INVALID_KEY UINT_MAX
+	#endif
+
+
+
 #endif	
 
 // For Unix-Like
@@ -91,7 +119,7 @@ extern "C" {
 #endif
 
 #ifndef SHARE_FLAG_DENYWR
-	#define SHARE_FLAG_DENYWR   (S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH) // Deny write access
+	#define SHARE_FLAG_DENYWR   (S_IWUSR | S_IWGRP) // Deny write access
 #endif
 
 #ifndef SHARE_FLAG_DENYRD
@@ -99,10 +127,24 @@ extern "C" {
 #endif
 
 #ifndef SHARE_FLAG_DENYRW
-	#define SHARE_FLAG_DENYRW   (S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH) // Deny both read and write access
+	#define SHARE_FLAG_DENYRW   (S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP | S_IROTH) // Deny both read and write access
 #endif
 
-	
+#ifndef PERMISSION_READWRITE
+#define PERMISSION_READWRITE   0666
+#endif
+
+#ifndef PERMISSION_READ
+#define PERMISSION_READ  0444
+#endif
+
+#ifndef PERMISSION_WRITE
+#define PERMISSION_WRITE  0222
+#endif
+
+#ifndef INVALID_KEY
+#define INVALID_KEY (-1U)
+#endif
 #ifdef __cplusplus
 }
 #endif

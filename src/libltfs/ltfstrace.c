@@ -454,7 +454,7 @@ int ltfs_request_profiler_start(const char *work_dir)
 		return -LTFS_NO_MEMORY;
 	}
 
-	req_trace->profiler = fopen(path, PROFILER_FILE_MODE);
+	SAFE_FOPEN(path, PROFILER_FILE_MODE, req_trace->profiler);
 
 	free(path);
 
@@ -486,7 +486,7 @@ int ltfs_header_init(void)
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
-	strncpy(trc_header->signature, LTFS_TRACE_SIGNATURE, strlen(LTFS_TRACE_SIGNATURE));
+	SAFE_STRNCPY(trc_header->signature, LTFS_TRACE_SIGNATURE, strlen(LTFS_TRACE_SIGNATURE));
 	trc_header->header_size = sizeof(struct trace_header);
 	trc_header->req_header_offset = sizeof(struct trace_header);
 	trc_header->fn_header_offset = sizeof(struct trace_header) + sizeof(struct request_header) + REQ_TRACE_SIZE;
@@ -632,7 +632,7 @@ int ltfs_trace_dump(char *fname, const char *work_dir)
 	}
 
 	/* Open file */
-	fd = open(path, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+	SAFE_OPEN(&fd, path,O_WRONLY | O_CREAT | O_TRUNC, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 	if(fd < 0)
 		return -errno;
 
@@ -694,41 +694,41 @@ int ltfs_trace_dump(char *fname, const char *work_dir)
 			trc_header->header_size + req_header->header_size + fn_trc_header->header_size;
 
 		/* Write headers */
-		(void)write(fd, trc_header, sizeof(struct trace_header));
-		(void)write(fd, req_header, sizeof(struct request_header));
+		(void)SAFE_WRITE(fd, trc_header, sizeof(struct trace_header));
+		(void)SAFE_WRITE(fd, req_header, sizeof(struct request_header));
 
 		/* Write request trace data */
 		ltfs_mutex_lock(&req_trace->req_trace_lock);
-		(void)write(fd, req_trace->entries, REQ_TRACE_SIZE);
+		(void)SAFE_WRITE(fd, req_trace->entries, REQ_TRACE_SIZE);
 		ltfs_mutex_unlock(&req_trace->req_trace_lock);
 
 		/* Write function trace header */
-		(void)write(fd, &fn_trc_header->header_size, sizeof(uint32_t));
-		(void)write(fd, &fn_trc_header->num_of_fn_trace, sizeof(uint32_t));
+		(void)SAFE_WRITE(fd, &fn_trc_header->header_size, sizeof(uint32_t));
+		(void)SAFE_WRITE(fd, &fn_trc_header->num_of_fn_trace, sizeof(uint32_t));
 		for (unsigned int i=0; i<n; i++)
-			(void)write(fd, &fn_trc_header->req_t_desc[i], sizeof(struct function_trace_descriptor));
-		(void)write(fd, &fn_trc_header->crc, sizeof(uint32_t));
+			(void)SAFE_WRITE(fd, &fn_trc_header->req_t_desc[i], sizeof(struct function_trace_descriptor));
+		(void)SAFE_WRITE(fd, &fn_trc_header->crc, sizeof(uint32_t));
 		free(fn_trc_header->req_t_desc);
 		fn_trc_header->req_t_desc = NULL;
 
 		/* Write function trace data */
 		for (fsitem=fs_tr_list; fsitem != NULL; fsitem=fsitem->hh.next) {
 			acquireread_mrsw(&fsitem->fn_entry->trace_lock);
-			(void)write(fd, fsitem->fn_entry->entries, FS_FN_TRACE_SIZE);
+			(void)SAFE_WRITE(fd, fsitem->fn_entry->entries, FS_FN_TRACE_SIZE);
 			releaseread_mrsw(&fsitem->fn_entry->trace_lock);
 		}
 		for (admitem=admin_tr_list; admitem != NULL; admitem=admitem->hh.next) {
 			acquireread_mrsw(&admitem->fn_entry->trace_lock);
-			(void)write(fd, admitem->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
+			(void)SAFE_WRITE(fd, admitem->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
 			releaseread_mrsw(&admitem->fn_entry->trace_lock);
 		}
 		TAILQ_FOREACH (tailq_item, acomp, list) {
 			acquireread_mrsw(&tailq_item->fn_entry->trace_lock);
-			(void)write(fd, tailq_item->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
+			(void)SAFE_WRITE(fd, tailq_item->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
 			releaseread_mrsw(&tailq_item->fn_entry->trace_lock);
 		}
 	}
-	close(fd);
+	SAFE_CLOSE(fd);
 
 	return 0;
 }

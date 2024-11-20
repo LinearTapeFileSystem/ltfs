@@ -82,7 +82,7 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
+static volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
 /** \file
@@ -4432,14 +4432,14 @@ void ltfs_recover_eod_simple(struct ltfs_volume *vol)
  */
 int ltfs_print_device_list(struct tape_ops *ops)
 {
-	struct tc_drive_info *buf;
+	struct tc_drive_info* buf = NULL;
 	int i, count = 0, info_count = 0, c = 0, ret = 0;
 
 	/* Get device count */
 	count = tape_get_device_list(ops, NULL, 0);
 	if (count) {
 		buf = (struct tc_drive_info *)calloc(count * 2, sizeof(struct tc_drive_info));
-		if (! buf) {
+		if (buf == NULL) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			ret = -LTFS_NO_MEMORY;
 			return ret;
@@ -4532,7 +4532,7 @@ static int _ltfs_write_rao_file(char *file_path_org, unsigned char *buf, size_t 
 		
 	SAFE_OPEN(&fd, path,
 		O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-		SHARE_FLAG_DENYRW, _S_IREAD | _S_IWRITE);
+		SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 	if (fd < 0) {
 		ltfsmsg(LTFS_INFO, 17276I, path, errno);
 		free(path);
@@ -4575,7 +4575,7 @@ static int _ltfs_read_rao_file(char *file_path, unsigned char *buf,
 		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
-	SAFE_OPEN(&fd, path, SHARE_FLAG_DENYWR, O_RDONLY | O_BINARY, _S_IREAD);
+	SAFE_OPEN(&fd, path,  O_RDONLY | O_BINARY, SHARE_FLAG_DENYWR, PERMISSION_READ);
 	if (fd < 0) {
 		ltfsmsg(LTFS_INFO, 17279I, path, errno);
 		free(path);

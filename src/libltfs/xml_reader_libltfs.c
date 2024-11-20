@@ -379,7 +379,6 @@ static int _xml_parse_label_location(xmlTextReaderPtr reader, struct ltfs_label 
 {
 	declare_parser_vars("location");
 	declare_tracking_arrays(1, 0);
-
 	while (true) {
 		get_next_tag();
 

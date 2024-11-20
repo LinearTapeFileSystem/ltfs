@@ -960,11 +960,11 @@ int lin_tape_ibmtape_inquiry(void *device, struct tc_inq *inq)
 	if(rc == DEVICE_GOOD) {
 		inq->devicetype = inq_data.type;
 		inq->cmdque = inq_data.cmdque;
-		strncpy((char *)inq->vid, (char *)inq_data.vid, 8);
+		SAFE_STRNCPY((char *)inq->vid, (char *)inq_data.vid, 8);
 		inq->vid[8] = '\0';
-		strncpy((char *)inq->pid, (char *)inq_data.pid, 16);
+		SAFE_STRNCPY((char *)inq->pid, (char *)inq_data.pid, 16);
 		inq->pid[16] = '\0';
-		strncpy((char *)inq->revision, (char *)inq_data.revision, 4);
+		SAFE_STRNCPY((char *)inq->revision, (char *)inq_data.revision, 4);
 		inq->revision[4] = '\0';
 
 		vendor_length = 20;
@@ -973,7 +973,7 @@ int lin_tape_ibmtape_inquiry(void *device, struct tc_inq *inq)
 			vendor_length = 18;
 		}
 
-		strncpy((char *)inq->vendor, (char *)inq_data.vendor1, vendor_length);
+		SAFE_STRNCPY((char *)inq->vendor, (char *)inq_data.vendor1, vendor_length);
 		inq->vendor[vendor_length] = '\0';
 	}
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_INQUIRY));

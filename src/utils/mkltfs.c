@@ -53,13 +53,15 @@
 
 #ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
+#include <fusefw.h>
 #else
 #include <syslog.h>
+#include <fuse.h>
 #endif /* mingw_PLATFORM */
 
 #include <getopt.h>
 #include "libltfs/ltfs_fuse_version.h"
-#include <fuse.h>
+
 
 #include "libltfs/ltfs.h"
 #include "ltfs_copyright.h"
@@ -69,7 +71,7 @@
 #include "libltfs/kmi.h"
 #include "libltfs/tape.h"
 
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
+static volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
 #ifdef __APPLE__
@@ -143,7 +145,7 @@ static struct option long_options[] = {
 	{0, 0, 0, 0}
 };
 
-void show_usage(char *appname, struct config_file *config, bool full)
+static void show_usage(char *appname, struct config_file *config, bool full)
 {
 	struct libltfs_plugin backend;
 	const char *default_backend;
@@ -202,7 +204,7 @@ void show_usage(char *appname, struct config_file *config, bool full)
 
 
 /* Operation */
-int main(int argc, char **argv)
+static int main(int argc, char **argv)
 {
 	struct ltfs_volume *newvol;
 	struct other_format_opts opt;
@@ -225,7 +227,7 @@ int main(int argc, char **argv)
 	struct fuse_args args = FUSE_ARGS_INIT(fuse_argc, fuse_argv);
 
 	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
-	lang = getenv("LANG");
+	SAFE_GETENV(lang,"LANG");
 	if (! lang) {
 		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting mkltfs.\n");
 		ret = setenv("LANG", "en_US.UTF-8", 1);
@@ -439,10 +441,10 @@ int main(int argc, char **argv)
 		ltfsmsg(LTFS_ERR, 10001E, "mkltfs (arguments)");
 		return MKLTFS_OPERATIONAL_ERROR;
 	}
-	strcat(cmd_args, argv[0]);
+	SAFE_STRCAT(cmd_args, argv[0]);
 	for (i = 1; i < argc; i++) {
-		strcat(cmd_args, " ");
-		strcat(cmd_args, argv[i]);
+		SAFE_STRCAT(cmd_args, " ");
+		SAFE_STRCAT(cmd_args, argv[i]);
 	}
 	ltfsmsg(LTFS_INFO, 15041I, cmd_args);
 	free(cmd_args);

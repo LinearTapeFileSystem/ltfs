@@ -2326,7 +2326,7 @@ int unified_set_profiler(char *work_dir, bool enable, void *iosched_handle)
 			return -LTFS_NO_MEMORY;
 		}
 
-		p = fopen(path, PROFILER_FILE_MODE);
+		SAFE_FOPEN(path, PROFILER_FILE_MODE,p);
 
 		free(path);
 
@@ -2362,7 +2362,7 @@ struct iosched_ops unified_ops = {
 	.set_profiler = unified_set_profiler,
 };
 
-struct iosched_ops *iosched_get_ops(void)
+static struct iosched_ops *iosched_get_ops(void)
 {
 	return &unified_ops;
 }
@@ -2371,7 +2371,7 @@ struct iosched_ops *iosched_get_ops(void)
 extern char iosched_unified_dat[];
 #endif
 
-const char *iosched_get_message_bundle_name(void **message_data)
+static const char *iosched_get_message_bundle_name(void **message_data)
 {
 #ifndef mingw_PLATFORM
 	*message_data = iosched_unified_dat;

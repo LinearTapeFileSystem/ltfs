@@ -11,7 +11,7 @@ if [ "$KERNEL_NAME" = "Darwin" ]; then
 		export PATH=${PATH}:${ICU_FRAMEWORK}/Versions/Current/usr/bin
 		export DYLD_LIBRARY_PATH=${ICU_FRAMEWORK}/Versions/Current/usr/lib
 		GENRB=${ICU_FRAMEWORK}/Versions/Current/usr/bin/genrb
-		PKGDATA=${ICU_FRAMEWORK}/Versions/Current/usr/bin/pkgwdata
+		PKGDATA=${ICU_FRAMEWORK}/Versions/Current/usr/bin/pkgdata
 	else
 		GENRB=genrb
 		PKGDATA=pkgdata

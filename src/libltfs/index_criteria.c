@@ -105,7 +105,7 @@ bool index_criteria_contains_invalid_options(const char *str)
 
 	/* Check the beginning of the string */
 	for (valid_option = false, i=0; options[i]; ++i)
-		if (! strncasecmp(options[i], str, strlen(options[i]))) {
+		if (! SAFE_STRNCASECMP(options[i], str, strlen(options[i]))) {
 			valid_option = true;
 			break;
 		}
@@ -120,7 +120,7 @@ bool index_criteria_contains_invalid_options(const char *str)
 		if (! ptr)
 			break;
 		for (valid_option = false, i=0; options[i]; ++i)
-			if (! strncasecmp(options[i], ptr+1, strlen(options[i]))) {
+			if (!SAFE_STRNCASECMP(options[i], ptr+1, strlen(options[i]))) {
 				valid_option = true;
 				break;
 			}
@@ -152,7 +152,7 @@ bool index_criteria_find_option(const char *str, const char *substr,
 	if (strlen(str) < 5)
 		return false;
 
-	if (! strncasecmp(str, substr, substr_len)) {
+	if (!SAFE_STRNCASECMP(str, substr, substr_len)) {
 		/* Match at the start of the string */
 		str_start = str;
 	} else {
@@ -205,7 +205,7 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 	int ruleLen = (sizeof(char) * (int)(len + 1));
 	rule = (char)malloc(ruleLen);
 	if (rule == NULL) {
-		return -EDEV_NO_MEMORY;
+		return -LTFS_NO_MEMORY;
 	}
 	sizelen = strlen("size=");
 	if (len <= sizelen) {
@@ -246,7 +246,8 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 		return -LTFS_POLICY_INVALID;
 	}
 	ic->max_filesize_criteria = strtoull(rule, NULL, 10) * multiplier;
-
+	free(rule);
+	if (ptr != NULL) free(ptr);
 	return ret;
 }
 
@@ -263,7 +264,7 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 	rulebuf = (char)malloc(sizeof(char) * (len + 1));
 	if (rulebuf == NULL)
 	{
-		return -EDEV_NO_MEMORY;
+		return -LTFS_NO_MEMORY;
 	}
 	struct ltfs_name *rule_ptr;
 	int ret = 0, num_names = 0;
@@ -334,7 +335,9 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 			++rule_ptr;
 		}
 	}
-
+	free(rulebuf);
+	if (delim != NULL) free(delim);
+	if (rule != NULL) free(rule);
 	return ret;
 }
 

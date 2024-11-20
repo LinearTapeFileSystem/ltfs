@@ -53,7 +53,11 @@
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef mingw_PLATFORM
+#include "ltfs_unistd.h"
+#else
 #include <unistd.h>
+#endif
 #include <dirent.h>
 
 void show_runtime_system_info(void)

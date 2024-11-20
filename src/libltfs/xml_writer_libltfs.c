@@ -62,7 +62,13 @@
 #include "pathname.h"
 #include "inc_journal.h"
 #include "arch/time_internal.h"
-
+#ifdef mingw_PLATFORM
+#include "unicode/umachine.h"
+#include "unicode/utf8.h"
+#ifdef _MSC_VER
+    #pragma warning(disable : 4996)
+#endif
+#endif
 /* Structure to control EE's file offset cache and sync file list */
 struct ltfsee_cache
 {
@@ -77,7 +83,7 @@ struct ltfsee_cache
 static int encode_entry_name(char **new_name, const char *name)
 {
 	int len;
-	UChar32 c;
+	UChar32 c=NULL;
 
 	/* Printable ASCII characters
 	 * !\"#$&`'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
@@ -115,7 +121,7 @@ static int encode_entry_name(char **new_name, const char *name)
 		}
 
 		while (count < i - prev) {
-			sprintf(buf_encode, "%02X", name[prev+count] & 0xFF);
+			SAFE_SNPRINTF(buf_encode, "%02X", name[prev+count] & 0xFF);
 			tmp_name[j] = '%';
 			tmp_name[j+1] = buf_encode[0];
 			tmp_name[j+2] = buf_encode[1];
@@ -400,7 +406,7 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 			if (list_ptr->d->vol->index_cache_path_w && !strcmp(list_ptr->d->name.name, ".LTFSEE_DATA")) {
 				ret = asprintf(&offset_name, "%s.%s", list_ptr->d->vol->index_cache_path_w, "offsetcache.new");
 				if (ret > 0) {
-					offset->fp = fopen(offset_name, "w");
+					 SAFE_FOPEN(offset_name, "w", offset->fp);
 					free(offset_name);
 					if (!offset->fp)
 						ltfsmsg(LTFS_WARN, 17248W, "offset cache", list_ptr->d->vol->index_cache_path_w);
@@ -409,7 +415,7 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 
 				ret = asprintf(&sync_name, "%s.%s", list_ptr->d->vol->index_cache_path_w, "synclist.new");
 				if (ret > 0) {
-					sync->fp = fopen(sync_name, "w");
+					SAFE_FOPEN(sync_name, "w", sync->fp);
 					free(sync_name);
 					if (!sync->fp)
 						ltfsmsg(LTFS_WARN, 17248W, "sync list", list_ptr->d->vol->index_cache_path_w);
@@ -1147,13 +1153,12 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 		if (ret > 0) {
 			ret = asprintf(&offset_name, "%s.%s", path, "offsetcache");
 			if (ret > 0) {
-				unlink(offset_name);
+				SAFE_UNLINK(offset_name);
 				rename(offset_new, offset_name);
-				fd = open(offset_name, O_RDWR | O_BINARY,
-						  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP );
+				SAFE_OPEN(fd, offset_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 				if (fd >= 0) {
 					fsync(fd);
-					close(fd);
+					SAFE_CLOSE(fd);
 					fd = -1;
 				} else {
 					if (errno != ENOENT)
@@ -1168,13 +1173,12 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 		if (ret > 0) {
 			ret = asprintf(&sync_name, "%s.%s", path, "synclist");
 			if (ret > 0) {
-				unlink(sync_name);
+				SAFE_UNLINK(sync_name);
 				rename(sync_new, sync_name);
-				fd = open(sync_name, O_RDWR | O_BINARY,
-						  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP );
+				SAFE_OPEN(fd,sync_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW , PERMISSION_READWRITE);
 				if (fd >= 0) {
 					fsync(fd);
-					close(fd);
+					SAFE_CLOSE(fd);
 					fd = -1;
 				} else {
 					if (errno != ENOENT)

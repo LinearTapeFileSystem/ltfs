@@ -55,10 +55,12 @@
 #define TABLE_FILE_MODE "rb"
 
 #ifdef ENABLE_SNMP
-#define DEFAULT_DEFFILE LTFS_BASE_DIR "/share/snmp/LtfsSnmpTrapDef.txt"
+#define LTFS_BASE_DIR "/share/snmp/LtfsSnmpTrapDef.txt"
+#define DEFAULT_DEFFILE LTFS_BASE_DIR
 static const oid snmptrap_oid[] = { 1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0 };
 #else
-#define DEFAULT_DEFFILE LTFS_BASE_DIR "LtfsSnmpTrapDef.txt"
+#define LTFS_BASE_DIR "LtfsSnmpTrapDef.txt"
+#define DEFAULT_DEFFILE LTFS_BASE_DIR 
 #endif
 
 bool ltfs_snmp_enabled = false;
@@ -89,7 +91,7 @@ int read_trap_def_file(char *deffile)
 		trapfile = deffile;
 
 
-	fp = fopen(trapfile, TABLE_FILE_MODE);
+	SAFE_FOPEN(trapfile, TABLE_FILE_MODE, fp);
 	if (! fp) {
 		ret = -errno;
 		ltfsmsg(LTFS_ERR, 11268E, trapfile, ret);

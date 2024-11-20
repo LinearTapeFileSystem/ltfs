@@ -328,9 +328,9 @@ int iokit_get_drive_identifier(struct iokit_device *device,
 
 	memset(id_data, 0, sizeof(scsi_device_identifier));
 
-	strncpy(id_data->vendor_id,   (char*)(&(inquiry_buf[8])),  VENDOR_ID_LENGTH);
-	strncpy(id_data->product_id,  (char*)(&(inquiry_buf[16])), PRODUCT_ID_LENGTH);
-	strncpy(id_data->product_rev, (char*)(&(inquiry_buf[32])), PRODUCT_REV_LENGTH);
+	SAFE_STRNCPY(id_data->vendor_id,   (char*)(&(inquiry_buf[8])),  VENDOR_ID_LENGTH);
+	SAFE_STRNCPY(id_data->product_id,  (char*)(&(inquiry_buf[16])), PRODUCT_ID_LENGTH);
+	SAFE_STRNCPY(id_data->product_rev, (char*)(&(inquiry_buf[32])), PRODUCT_REV_LENGTH);
 
 	ret = _inquiry_low(device, 0x80, inquiry_buf, MAX_INQ_LEN);
 	if( ret < 0 ) {
@@ -338,7 +338,7 @@ int iokit_get_drive_identifier(struct iokit_device *device,
 		return ret;
 	}
 
-	strncpy(id_data->unit_serial, (char*)(&(inquiry_buf[4])), inquiry_buf[3]);
+	SAFE_STRNCPY(id_data->unit_serial, (char*)(&(inquiry_buf[4])), inquiry_buf[3]);
 
 	return 0;
 }

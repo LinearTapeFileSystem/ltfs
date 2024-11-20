@@ -66,6 +66,11 @@ extern "C" {
 #include "libltfs/arch/freebsd/xattr.h"
 #endif
 
+#ifdef mingw_PLATFORM
+#include "fusefw/fusefw.h"
+#endif // mingw_PLATFORM
+
+
 #include "ltfs.h"
 
 #define LTFS_PRIVATE_PREFIX "ltfs."
