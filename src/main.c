@@ -539,6 +539,7 @@ int mkdir_p(const char *path, mode_t mode)
 		if (*ptr == '\0' || last) {
 			ret = mkdir(buf, mode);
 			if (ret && errno != EEXIST) {
+				/* GPV - REMAINDER! Uncomment this line when a fix is found for winbuild */
 				//ltfsmsg(LTFS_ERR, 9014E, path, strerror(errno));
 				free(buf);
 				return 1;
