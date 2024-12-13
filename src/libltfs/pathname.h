@@ -60,7 +60,7 @@ extern "C" {
 
 #include <stdlib.h>
 #include <stdbool.h>
-#include "compatibility.h"
+#include "crossbuild/compatibility.h"
 #ifdef mingw_PLATFORM
 	#include <uchar.h>
 #else

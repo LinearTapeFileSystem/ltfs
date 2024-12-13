@@ -47,11 +47,14 @@
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
+#include <windows.h>
 #endif
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
+
 #ifndef mingw_PLATFORM
 #include <syslog.h>
 #endif
@@ -74,7 +77,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "ltfs_unistd.h"
+#include "ltfscommon/ltfs_unistd.h"
 #include "arch/win/winlog.h"
 #else
 #include <dlfcn.h>
@@ -167,12 +170,20 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 
 	/* Initialize output lock and plugin list */
 	TAILQ_INIT(&plugin_bundles);
+
+
 #ifdef mingw_PLATFORM
 	u_setDataDirectory(LTFS_RB_DIR);
 #endif
 
 	/* Load the libltfs message bundle and the primary message set */
-	ret = ltfsprintf_load_plugin("libltfs", libltfs_dat, (void **)&pl);
+	ret = ltfsprintf_load_plugin(
+#ifdef mingw_PLATFORM
+		"libltfs\\work"
+#else
+		"libltfs"
+#endif
+		, libltfs_dat, (void **)&pl);
 	if (ret < 0) {
 		fprintf(stderr, "LTFS11293E Cannot load messages for libltfs (%d)\n", ret);
 		ltfsprintf_finish();
@@ -189,7 +200,14 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 	}
 
 	/* Load the libltfs message bundle and the primary message set */
-	ret = ltfsprintf_load_plugin("internal_error", internal_error_dat, (void **)&pl);
+	ret = ltfsprintf_load_plugin(
+#ifdef mingw_PLATFORM
+		"internal_error\\work"
+#else
+		"internal_error"
+#endif
+		
+		,internal_error_dat, (void **)&pl);
 	if (ret < 0) {
 		fprintf(stderr, "LTFS11293E Cannot load messages for internal error (%d)\n", ret);
 		ltfsprintf_finish();
@@ -197,7 +215,13 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 	}
 
 	/* Load the libltfs message bundle and the primary message set */
-	ret = ltfsprintf_load_plugin("tape_common", tape_common_dat, (void **)&pl);
+	ret = ltfsprintf_load_plugin(
+#ifdef mingw_PLATFORM
+		"tape_common\\work"
+#else
+		"tape_common"
+#endif
+		, tape_common_dat, (void **)&pl);
 	if (ret < 0) {
 		fprintf(stderr, "LTFS11293E Cannot load messages for tape backend common messages (%d)\n", ret);
 		ltfsprintf_finish();
@@ -279,6 +303,7 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 			fprintf(stderr, "LTFS11287E Cannot load messages: failed to register message data (%d)\n", err);
 		return -1;
 	}
+
 #endif
 
 	pl = calloc(1, sizeof(struct plugin_bundle));
@@ -398,7 +423,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		SAFE_STRNCPY(id, _id + 1, idlen - 2);
 		id[idlen - 2] = '\0';
 	} else {
-		SAFE_STRCPY(id, sizeof(id), _id);
+		SAFE_STRCPY(id, _id);
 	}
 
 	id_val = atol(id);

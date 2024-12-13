@@ -63,7 +63,7 @@ extern "C" {
 
 #ifdef mingw_PLATFORM
 	#include "arch/win/win_util.h"
-	#include "ltfs_unistd.h"
+	#include "ltfscommon/ltfs_unistd.h"
 	#include <time.h>
 #else
 	#include <unistd.h>
@@ -185,7 +185,7 @@ enum ltfs_index_type {
 #define LTFS_NO_BARCODE               "NO_BARCODE"
 
 #ifndef __APPLE_MAKEFILE__
-#include "config.h"
+#include   "config.h"
 #endif
 
 #define LTFS_LOSTANDFOUND_DIR         "_ltfs_lostandfound"

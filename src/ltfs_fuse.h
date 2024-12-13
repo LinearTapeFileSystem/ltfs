@@ -64,7 +64,7 @@ extern "C" {
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#include <fusefw.h>
+#include <fusefw/fusefw.h>
 
 #else
 	#include <fuse.h>
@@ -75,7 +75,7 @@ extern "C" {
 #include "libltfs/plugin.h"
 #include "libltfs/uthash.h"
 #include <sys/types.h> 
-#include "compatibility.h"
+#include "crossbuild/compatibility.h"
 struct ltfs_fuse_data {
 	bool first_parsing_pass;       /**< Just looking for a config file? If so, don't print help */
 

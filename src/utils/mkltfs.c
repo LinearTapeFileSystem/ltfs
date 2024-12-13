@@ -52,14 +52,16 @@
 */
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
-#include <fusefw.h>
+#include "arch/win/win_util.h"
+#include <fusefw/fusefw.h>
+#include <ltfscommon/getopt.h>
 #else
 #include <syslog.h>
 #include <fuse.h>
+#include <getopt.h>
 #endif /* mingw_PLATFORM */
 
-#include <getopt.h>
+
 #include "libltfs/ltfs_fuse_version.h"
 
 
@@ -204,7 +206,7 @@ static void show_usage(char *appname, struct config_file *config, bool full)
 
 
 /* Operation */
-static int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	struct ltfs_volume *newvol;
 	struct other_format_opts opt;

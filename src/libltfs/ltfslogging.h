@@ -43,7 +43,8 @@ extern "C" {
 #include <stdio.h>
 #include <stdbool.h>
 #include <inttypes.h>
-#include "compatibility.h"
+#include "crossbuild/compatibility.h"
+
 
 enum ltfs_log_levels {
 	LTFS_NONE  = -1, /* Don't print any log (special use for mkltfs/ltfsck) */

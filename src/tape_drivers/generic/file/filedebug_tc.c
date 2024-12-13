@@ -52,11 +52,13 @@
 */
 #ifdef mingw_PLATFORM
 	#include "arch/win/win_util.h"
-	#include "ltfs_unistd.h"
-	#include "fusefw_opt.h"
+	#include "ltfscommon/ltfs_unistd.h"
+	#include "fusefw/fusefw_opt.h"
+	#include <ltfscommon/dirent.h>
 #else
 	#include <unistd.h>
 	#include <fuse_opt.h>
+	#include <dirent.h>
 #endif
 
 #include <stdlib.h>
@@ -70,7 +72,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stddef.h>
-#include "commons.h"
+#include "crossbuild/commons.h"
 
 #ifdef _WIN32
 char* my_basename(char* path) {
@@ -91,7 +93,7 @@ char* my_dirname(char* path) {
 	return buffer;
 }
 #endif
-#include <dirent.h>
+
 #include <limits.h>
 
 #include "libltfs/ltfs_fuse_version.h"

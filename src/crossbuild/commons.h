@@ -34,7 +34,7 @@
 **
 ** Module Name:
 **
-**  commons.h
+**  crossbuild/commons.h
 **
 ** Abstract:
 **
@@ -67,7 +67,7 @@ extern "C"
 
 #ifndef SAFE_PRINTF
 #ifdef _MSC_VER
-#define SAFE_PRINTF sprintf_s
+#define SAFE_PRINTF(buffer, format, ...) sprintf_s(buffer,sizeof(buffer),(format),__VA_ARGS__)
 #else
 #define SAFE_PRINTF sprintf
 #endif // _MSC_VER
@@ -127,7 +127,7 @@ extern "C"
 
 #ifndef SAFE_STRNCPY
 #ifdef _MSC_VER
-#define SAFE_STRNCPY(dest, destSize, src)                                     \
+#define SAFE_STRNCPY(dest, src, destSize)                                     \
     do                                                                           \
     {                                                                            \
         errno_t err = strncpy_s((dest), (destSize), (src), (destSize));        \
@@ -137,7 +137,7 @@ extern "C"
         }                                                                        \
     } while (0)
 #else
-#define SAFE_STRNCPY(dest, destSize, src)                                     \
+#define SAFE_STRNCPY(dest, src,destSize)                                     \
     do                                                                           \
     {                                                                            \
         strncpy((dest), (src), (destSize) - 1);                                \
@@ -174,6 +174,8 @@ extern "C"
     } while (0)
 #endif // _MSC_VER
 #endif // !SAFE_STRCAT
+
+
 
 #ifndef SAFE_SNPRINTF
 #define SAFE_SNPRINTF(dest, size, format, ...)                             \
@@ -409,6 +411,53 @@ extern "C"
 #endif // !_MSC_VER
 #endif // !SAFE_STRNCASECMP
 
+#ifndef SAFE_VSNWPRINTF
+#ifdef _MSC_VER
+#define SAFE_VSNWPRINTF _vsnwprintf_s
+#else
+#define SAFE_VSNWPRINTF _vsnwprintf
+#endif // !_MSC_VER
+#endif // !SAFE_VSNWPRINTF
+
+#ifndef SAFE_SWPRINTF
+#ifdef _MSC_VER
+#define SAFE_SWPRINTF(buffer, format, ...)                                      \
+    do {                                                                        \
+        int result = _stprintf_s((buffer), (format), __VA_ARGS__);              \
+        if (result < 0) {                                                       \
+            fwprintf(stderr, L"Error: _stprintf_s failed with error code: %d\n", errno); \
+        }                                                                       \
+    } while (0)
+#else
+#define SAFE_SWPRINTF(buffer, format, ...)                                      \
+    do {                                                                        \
+        int result = _stprintf((buffer), (format), __VA_ARGS__);                \
+        if (result < 0) {                                                       \
+            fwprintf(stderr, L"Error: _stprintf failed with error code: %d\n", errno); \
+        }                                                                       \
+    } while (0)
+#endif // _MSC_VER
+#endif // !SAFE_SWPRINTF
+
+#ifndef SAFE_CTIME
+#ifdef _MSC_VER
+#define SAFE_CTIME(buffer, time_ptr)                                            \
+    do {                                                                        \
+        errno_t result = ctime_s((buffer), sizeof(buffer), (time_ptr));         \
+        if (result != 0) {                                                      \
+            fprintf(stderr, "Error: ctime_s failed with error code: %d\n", result); \
+        }                                                                       \
+    } while (0)
+#else
+#define SAFE_CTIME(buffer, time_ptr)                                            \
+    do {                                                                        \
+        char *result = ctime_r((time_ptr), (buffer));                           \
+        if (result == NULL) {                                                   \
+            fprintf(stderr, "Error: ctime_r failed with error code: %d\n", errno); \
+        }                                                                       \
+    } while (0)
+#endif // _MSC_VER
+#endif // !SAFE_CTIME
 
 
 

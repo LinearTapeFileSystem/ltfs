@@ -48,17 +48,18 @@
 */
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
-#include <fusefw.h>
-
+#include "arch/win/win_util.h"
+#include <fusefw/fusefw.h>
+#include <ltfscommon/getopt.h>
 #else
+#include <getopt.h>
 #include <uuid/uuid.h>
 #include <syslog.h>
 #include <fuse.h>
 #include <sys/param.h>
 #endif /* mingw_PLATFORM */
 
-#include <getopt.h>
+
 #include "libltfs/ltfs_fuse_version.h"
 
 #include "libltfs/ltfs_internal.h"
@@ -226,7 +227,7 @@ static void show_usage(char *appname, struct config_file *config, bool full)
 	fprintf(stderr, "\n");
 }
 
-static int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	struct ltfs_volume *vol;
 	struct other_check_opts opt;

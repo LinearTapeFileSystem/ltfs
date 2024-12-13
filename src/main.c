@@ -58,8 +58,12 @@
 #include <syslog.h>
 #include <pwd.h>
 #include <grp.h>
+#include <dirent.h>
 #else
-#include "fusefw.h"
+#include "fusefw/fusefw.h"
+#include <ltfscommon/dirent.h>
+
+
 struct passwd* getpwnam(const char* username) {
 	SID_NAME_USE sidType;
 	DWORD sidSize = 0, domainSize = 0;
@@ -152,7 +156,7 @@ struct group* getgrnam(const char* groupname) {
 
 #endif
 
-#include <dirent.h>
+
 #include "ltfs_fuse.h"
 #include "libltfs/ltfs.h"
 #include "ltfs_copyright.h"
@@ -169,7 +173,11 @@ volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGH
 /* Defined in src/ltfs.c */
 extern struct fuse_operations ltfs_ops;
 /* Defined in messages/ */
-extern char bin_ltfs_dat[];
+
+char* bin_ltfs;
+
+
+
 
 /**
  * Command line parsing
@@ -674,7 +682,6 @@ int main(int argc, char **argv)
 	struct ltfs_fuse_data *priv = (struct ltfs_fuse_data *) calloc(1, sizeof(struct ltfs_fuse_data));
 	char *lang, **mount_options, **snmp_options, *cmd_args;
 	void *message_handle;
-
 	priv->verbose = LTFS_INFO;
 	priv->allow_other = (geteuid() == 0) ? 1 : 0;
 	priv->pid_orig = SAFE_GETPID();
@@ -700,7 +707,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Register messages with libltfs */
-	ret = ltfsprintf_load_plugin("bin_ltfs", bin_ltfs_dat, &message_handle);
+	ret = ltfsprintf_load_plugin("bin_ltfs", bin_ltfs, &message_handle);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10012E, ret);
 		return 1;

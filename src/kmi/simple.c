@@ -52,8 +52,8 @@
 #include "key_format_ltfs.h"
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
-#include <fusefw.h>
+#include "arch/win/win_util.h"
+#include <fusefw/fusefw.h>
 #else
 #include <fuse.h>
 #endif

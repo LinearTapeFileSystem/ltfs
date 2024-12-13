@@ -55,7 +55,7 @@
 #ifndef mingw_PLATFORM
 #include <dirent.h>
 #else
-#include "dirent.h"
+#include "ltfscommon/dirent.h"
 #endif // !mingw_PLATFORM
 
 

@@ -486,7 +486,7 @@ int ltfs_header_init(void)
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
-	SAFE_STRNCPY(trc_header->signature, LTFS_TRACE_SIGNATURE, strlen(LTFS_TRACE_SIGNATURE));
+	SAFE_STRNCPY(trc_header->signature, LTFS_TRACE_SIGNATURE, sizeof(LTFS_TRACE_SIGNATURE));
 	trc_header->header_size = sizeof(struct trace_header);
 	trc_header->req_header_offset = sizeof(struct trace_header);
 	trc_header->fn_header_offset = sizeof(struct trace_header) + sizeof(struct request_header) + REQ_TRACE_SIZE;
@@ -512,7 +512,7 @@ int ltfs_header_init(void)
 		return -LTFS_NO_MEMORY;
 	}
 	fn_trc_header->crc = 0xDEADBEEF;
-	return 0;
+ 	return 0;
 }
 
 int ltfs_trace_init(void)

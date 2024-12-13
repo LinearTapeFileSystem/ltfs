@@ -54,11 +54,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef mingw_PLATFORM
-#include "ltfs_unistd.h"
+#include "ltfscommon/ltfs_unistd.h"
+#include "ltfscommon/dirent.h"
 #else
 #include <unistd.h>
-#endif
 #include <dirent.h>
+#endif
+
 
 void show_runtime_system_info(void)
 #if defined(__linux__)
