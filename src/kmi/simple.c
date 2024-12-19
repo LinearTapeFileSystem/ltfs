@@ -222,7 +222,7 @@ struct kmi_ops simple_ops = {
 	.parse_opts   = simple_parse_opts,
 };
 
-static struct kmi_ops *kmi_get_ops(void)
+struct kmi_ops *kmi_get_ops(void)
 {
 	return &simple_ops;
 }
@@ -231,7 +231,7 @@ static struct kmi_ops *kmi_get_ops(void)
 extern char kmi_simple_dat[];
 #endif
 
-static const char *kmi_get_message_bundle_name(void ** const message_data)
+const char *kmi_get_message_bundle_name(void ** const message_data)
 {
 #ifndef mingw_PLATFORM
 	*message_data = kmi_simple_dat;

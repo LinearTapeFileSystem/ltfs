@@ -535,7 +535,7 @@ int mkdir_p(const char *path, mode_t mode)
 	struct stat statbuf;
 	int ret;
 
-	SAFE_PRINTF(buf, "%s", path);
+	SAFE_SNPRINTF(buf,bufLen, "%s", path);
 	ret = stat(path, &statbuf);
 	if (ret == 0)
 		return 0;
@@ -797,10 +797,10 @@ int main(int argc, char **argv)
 		ltfsmsg(LTFS_ERR, 10001E, "ltfs (arguments)");
 		return -ENOMEM;
 	}
-	SAFE_STRCAT(cmd_args, argv[0]);
+	SAFE_STRCAT_S(cmd_args, cmd_args_len, argv[0]);
 	for (i = 1; i < argc; i++) {
 		SAFE_STRCAT(cmd_args, " ");
-		SAFE_STRCAT(cmd_args, argv[i]);
+		SAFE_STRCAT_S(cmd_args, cmd_args_len, argv[i]);
 	}
 	ltfsmsg(LTFS_INFO, 14104I, cmd_args);
 	free(cmd_args);
@@ -1041,6 +1041,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	char *index_rules_utf8;
 	char *fsname_base = "-ofsname=ltfs:";
 	char *fsname;
+	int fsnameLen = 0;
 	char *invalid_start;
 #ifdef __APPLE__
 	char *opt_volname = NULL;
@@ -1051,12 +1052,14 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	bool is_worm = false, is_ro = false;
 
 	if (priv->devname) {
-		fsname = calloc(1, strlen(fsname_base) + strlen(priv->devname) + 1);
+		fsnameLen = (strlen(fsname_base) + strlen(priv->devname) + 1);
 	} else if (priv->rollback_str) {
-		fsname = calloc(1, strlen(fsname_base) + strlen(priv->rollback_str) + 1);
+		fsnameLen = (strlen(fsname_base) + strlen(priv->rollback_str) + 1);
 	} else {
-		fsname = calloc(1, strlen(fsname_base) + 1);
+		fsnameLen = (strlen(fsname_base) + 1);
+
 	}
+	fsname = calloc(1, fsnameLen);
 	if (!fsname) {
 		/* Memory allocation failed */
 		ltfsmsg(LTFS_ERR, 10001E, "fsname");
@@ -1113,11 +1116,11 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	}
 
 	/* Set file system name to "ltfs:devname" in case FUSE doesn't pick it up */
-	SAFE_STRCPY(fsname, fsname_base);
+	SAFE_STRNCPY(fsname, fsname_base, fsnameLen);
 	if (priv->devname) {
-		SAFE_STRCAT(fsname, priv->devname);
+		SAFE_STRCAT_S(fsname, fsnameLen, priv->devname);
 	} else if (priv->rollback_str) {
-		SAFE_STRCAT(fsname, priv->rollback_str);
+		SAFE_STRCAT_S(fsname, fsnameLen, priv->rollback_str);
 	}
 	ret = fuse_opt_add_arg(args, fsname);
 	if (ret < 0) {

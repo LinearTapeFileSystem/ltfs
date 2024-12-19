@@ -271,7 +271,7 @@ struct kmi_ops flatfile_ops = {
 	.parse_opts   = flatfile_parse_opts,
 };
 
-static struct kmi_ops *kmi_get_ops(void)
+struct kmi_ops *kmi_get_ops(void)
 {
 	return &flatfile_ops;
 }
@@ -280,7 +280,7 @@ static struct kmi_ops *kmi_get_ops(void)
 extern char kmi_flatfile_dat[];
 #endif
 
-static const char *kmi_get_message_bundle_name(void ** const message_data)
+const char *kmi_get_message_bundle_name(void ** const message_data)
 {
 #ifndef mingw_PLATFORM
 	*message_data = kmi_flatfile_dat;

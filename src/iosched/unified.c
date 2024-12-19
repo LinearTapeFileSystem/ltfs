@@ -2362,7 +2362,8 @@ struct iosched_ops unified_ops = {
 	.set_profiler = unified_set_profiler,
 };
 
-static struct iosched_ops *iosched_get_ops(void)
+
+struct iosched_ops *iosched_get_ops(void)
 {
 	return &unified_ops;
 }
@@ -2371,7 +2372,8 @@ static struct iosched_ops *iosched_get_ops(void)
 extern char iosched_unified_dat[];
 #endif
 
-static const char *iosched_get_message_bundle_name(void **message_data)
+
+const char *iosched_get_message_bundle_name(void **message_data)
 {
 #ifndef mingw_PLATFORM
 	*message_data = iosched_unified_dat;

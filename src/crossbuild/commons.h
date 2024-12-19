@@ -117,7 +117,7 @@ extern "C"
         }                                                                        \
     } while (0)
 #else
-#define SAFE_STRNCPY(dest,src)                                     \
+#define SAFE_STRCPY(dest,src)                                     \
     do                                                                           \
     {                                                                            \
         strcpy((dest), (src));                                \
@@ -166,12 +166,28 @@ extern "C"
 #define SAFE_STRCAT(dest, src)                                                    \
     do                                                                            \
     {                                                                             \
-        strncat((dest), (src), sizeof(dest) - strlen(dest) - 1);                  \
-        if (strlen((src)) > (sizeof(dest) - strlen(dest) - 1))                    \
-        {                                                                         \
-            fprintf(stderr, "Warning: String truncated during concatenation.\n"); \
-        }                                                                         \
+        strcat(dest,src);                                                                       \
+    } while (0)                                                                     \ 
+#endif // _MSC_VER
+#endif // !SAFE_STRCAT
+
+#ifndef SAFE_STRCAT_S
+#ifdef _MSC_VER
+#define SAFE_STRCAT_S(dest, size ,src)                                                              \
+    do                                                                                      \
+    {                                                                                       \
+        errno_t err = strcat_s((dest), size, (src));                                \
+        if (err != 0)                                                                       \
+        {                                                                                   \
+            fprintf(stderr, "Error: Failed to concatenate strings. Error code: %d\n", err); \
+        }                                                                                   \
     } while (0)
+#else
+#define SAFE_STRCAT_S(dest, unused ,src)                                                    \
+    do                                                                            \
+    {                                                                             \
+        strcat(dest,src);                  \                                                                   
+    } while (0)                             \ 
 #endif // _MSC_VER
 #endif // !SAFE_STRCAT
 
