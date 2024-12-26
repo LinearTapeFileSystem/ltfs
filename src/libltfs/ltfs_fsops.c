@@ -1998,7 +1998,7 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 				}
 				strcpy(buf, vol->mountpoint);
 #endif
-				SAFE_STRCAT(buf, d->target.name + num1);
+				SAFE_STRCAT_S(buf,size, d->target.name + num1);
 				ltfsmsg(LTFS_DEBUG, 11324D, d->target.name, buf);
 			}
 		}
@@ -2031,7 +2031,7 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 		if ( size < (size_t)len2+1) {
 			return -LTFS_SMALL_BUFFER;
 		}
-		SAFE_STRCPY(buf, target);
+		SAFE_STRCPY_S(buf,len2, target);
 		return 0;
 	}
 
@@ -2049,13 +2049,13 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 
 	if (target[0]=='/') {
 		temp_buf = strstr(target, "/.");  /* get "/../ccc/target.txt" of "/aaa/../ccc/target.txt" */
-		SAFE_STRCPY(target_buf, temp_buf + 1); /* copy "../ccc/target.txt" */
+		SAFE_STRCPY_S(target_buf,(len2+1), temp_buf + 1); /* copy "../ccc/target.txt" */
 		len = strlen(target_buf) + 1;
 		len = len2 - len;
 		SAFE_STRNCPY(work_buf, target, len);   /* copy "/aaa" */
 	} else {
-		SAFE_STRCPY(work_buf, link);
-		SAFE_STRCPY(target_buf, target);
+		SAFE_STRCPY_S(work_buf, (len + len2 + 1), link);
+		SAFE_STRCPY_S(target_buf, (len2 + 1), target);
 
 		/* Split link file name then get current directory */
 		temp_buf = strrchr(work_buf, '/'); /* get "/link.txt" from "/aaa/bbb/link.txt" */
@@ -2094,7 +2094,7 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 		return -LTFS_SMALL_BUFFER;
 	}
 
-	SAFE_STRCPY(buf, work_buf);
+	SAFE_STRCPY_S(buf,size, work_buf);
 	free(work_buf);
 	free(target_buf);
 	free(contextVal);

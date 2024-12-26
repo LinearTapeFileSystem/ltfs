@@ -121,7 +121,7 @@ static int encode_entry_name(char **new_name, const char *name)
 		}
 
 		while (count < i - prev) {
-			SAFE_SNPRINTF(buf_encode, "%02X", name[prev+count] & 0xFF);
+			SAFE_PRINTF(buf_encode, "%02X", name[prev+count] & 0xFF);
 			tmp_name[j] = '%';
 			tmp_name[j+1] = buf_encode[0];
 			tmp_name[j+2] = buf_encode[1];

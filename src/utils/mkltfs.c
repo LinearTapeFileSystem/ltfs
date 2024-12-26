@@ -443,10 +443,10 @@ int main(int argc, char **argv)
 		ltfsmsg(LTFS_ERR, 10001E, "mkltfs (arguments)");
 		return MKLTFS_OPERATIONAL_ERROR;
 	}
-	SAFE_STRCAT(cmd_args, argv[0]);
+	SAFE_STRCAT_S(cmd_args, cmd_args_len,argv[0]);
 	for (i = 1; i < argc; i++) {
-		SAFE_STRCAT(cmd_args, " ");
-		SAFE_STRCAT(cmd_args, argv[i]);
+		SAFE_STRCAT_S(cmd_args, cmd_args_len," ");
+		SAFE_STRCAT_S(cmd_args, cmd_args_len, argv[i]);
 	}
 	ltfsmsg(LTFS_INFO, 15041I, cmd_args);
 	free(cmd_args);

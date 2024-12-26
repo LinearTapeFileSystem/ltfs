@@ -554,6 +554,7 @@ int filedebug_open(const char *name, void **handle)
 		/* The dirname() function may return a pointer to static storage
 		   that may then be overwritten by subsequent calls to dirname(). */
 		p = dirname(tmp);
+		int len = (strlen(p) + 1)* sizeof(char);
 		state->dirbase = (char *) calloc(strlen(p) + 1, sizeof(char));
 		if (!state->dirbase) {
 			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirbase");
@@ -561,7 +562,7 @@ int filedebug_open(const char *name, void **handle)
 			free(tmp);
 			return -EDEV_NO_MEMORY;
 		}
-		SAFE_STRCPY(state->dirbase, p);
+		SAFE_STRCPY_S(state->dirbase, p,len);
 		free(tmp);
 		free(devname);
 		devname= NULL;

@@ -90,7 +90,7 @@ int xml_format_time(struct ltfs_timespec t, char** out)
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -1;
 	}
-	SAFE_SNPRINTF(timebuf, "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ", tm.tm_year+1900, tm.tm_mon+1,
+	SAFE_SNPRINTF(timebuf, (31*sizeof(char)), "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ", tm.tm_year + 1900, tm.tm_mon + 1,
 			tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, t.tv_nsec);
 	*out = timebuf;
 

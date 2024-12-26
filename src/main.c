@@ -129,12 +129,14 @@ struct group* getgrnam(const char* groupname) {
 	NET_API_STATUS status;
 
 	// Query local group information
-	status = NetLocalGroupGetInfo(NULL, (LPCWSTR)groupname, 1, (LPBYTE*)&groupInfo);
+	wchar_t* wstr = NULL;
+	CHAR_TO_WCHAR(groupname, wstr);
+	status = NetLocalGroupGetInfo(NULL, (LPCWSTR)wstr, 1, (LPBYTE*)&groupInfo);
 	if (status != NERR_Success) {
 		fprintf(stderr, "Error: Group '%s' not found (Error code: %d).\n", groupname, status);
 		return NULL;
 	}
-
+	if (NULL != wstr)free(wstr);
 	// Allocate and populate the group structure
 	struct group* result = (struct group*)malloc(sizeof(struct group));
 	if (!result) {
@@ -799,7 +801,7 @@ int main(int argc, char **argv)
 	}
 	SAFE_STRCAT_S(cmd_args, cmd_args_len, argv[0]);
 	for (i = 1; i < argc; i++) {
-		SAFE_STRCAT(cmd_args, " ");
+		SAFE_STRCAT_S(cmd_args, cmd_args_len, " ");
 		SAFE_STRCAT_S(cmd_args, cmd_args_len, argv[i]);
 	}
 	ltfsmsg(LTFS_INFO, 14104I, cmd_args);

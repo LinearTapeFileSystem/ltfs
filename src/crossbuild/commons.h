@@ -65,11 +65,59 @@ extern "C"
 #include <stdio.h>
 #include <string.h>
 
+#ifndef WCHAR_TO_CHAR
+#ifdef _MSC_VER
+#define WCHAR_TO_CHAR(wide_str, narrow_str)                       \
+    do {                                                         \
+        size_t len = 0;                                          \
+        wcstombs_s(&len, NULL, 0, wide_str, 0);                  \
+        if (len == 0) { narrow_str = NULL; break; }              \
+        narrow_str = (char *)malloc(len);                        \
+        if (narrow_str) wcstombs_s(&len, narrow_str, len, wide_str, len); \
+    } while (0)
+#endif // _MSC_VER
+#endif // !WCHAR_TO_CHAR
+
+#ifndef CHAR_TO_WCHAR
+#ifdef _MSC_VER
+#define CHAR_TO_WCHAR(narrow_str, wide_str)                       \
+    do {                                                         \
+        size_t len = 0;                                          \
+        mbstowcs_s(&len, NULL, 0, narrow_str, 0);                 \
+        if (len == 0) { wide_str = NULL; break; }                 \
+        if(wide_str == NULL ){wide_str = (wchar_t *)malloc(len * sizeof(wchar_t));}      \
+        if (wide_str) mbstowcs_s(&len, wide_str, len, narrow_str, len); \
+    } while (0)
+#endif // _MSC_VER
+#endif // !CHAR_TO_WCHAR
+
+
+#ifndef STRCPY_LIMITED
+#define STRCPY_LIMITED(dest, src, count)                       \
+    do {                                                         \
+        size_t i;                                                \
+        for (i = 0; i < (count) && (src)[i] != '\0'; i++) {      \
+            (dest)[i] = (src)[i];                                \
+        }                                                        \
+        if (i < (count)) {                                        \
+            (dest)[i] = '\0';                                     \
+        }                                                        \
+    } while (0)
+#endif   
+
 #ifndef SAFE_PRINTF
 #ifdef _MSC_VER
 #define SAFE_PRINTF(buffer, format, ...) sprintf_s(buffer,sizeof(buffer),(format),__VA_ARGS__)
 #else
 #define SAFE_PRINTF sprintf
+#endif // _MSC_VER
+#endif // !SAFE_PRINTF
+
+#ifndef SAFE_PRINTF_S
+#ifdef _MSC_VER
+#define SAFE_PRINTF_S(buffer,size, format, ...) sprintf_s(buffer,size,(format),__VA_ARGS__)
+#else
+#define SAFE_PRINTF_S(buffer,unused, format, ...) sprintf(buffer,(format),__VA_ARGS__)
 #endif // _MSC_VER
 #endif // !SAFE_PRINTF
 
@@ -125,6 +173,26 @@ extern "C"
 #endif // _MSC_VER
 #endif // !SAFE_STRNCPY
 
+#ifndef SAFE_STRCPY_S
+#ifdef _MSC_VER
+#define SAFE_STRCPY_S(dest,destSize, src)                                     \
+    do                                                                           \
+    {                                                                            \
+        errno_t err = strcpy_s((dest), destSize, (src));        \
+        if (err != 0)                                                            \
+        {                                                                        \
+            fprintf(stderr, "Error: Failed to copy string. Error code: %d\n", err); \
+        }                                                                        \
+    } while (0)
+#else
+#define SAFE_STRCPY_S(dest,unused,src)                                     \
+    do                                                                           \
+    {                                                                            \
+        strcpy((dest), (src));                                \
+    } while (0)
+#endif // _MSC_VER
+#endif // !SAFE_STRNCPY
+
 #ifndef SAFE_STRNCPY
 #ifdef _MSC_VER
 #define SAFE_STRNCPY(dest, src, destSize)                                     \
@@ -140,12 +208,7 @@ extern "C"
 #define SAFE_STRNCPY(dest, src,destSize)                                     \
     do                                                                           \
     {                                                                            \
-        strncpy((dest), (src), (destSize) - 1);                                \
-        (dest)[(destSize) - 1] = '\0';                                         \
-        if (strlen(src) >= (destSize))                                         \
-        {                                                                        \
-            fprintf(stderr, "Warning: String truncated during copy.\n");        \
-        }                                                                        \
+        strncpy((dest), (src), (destSize));                                \
     } while (0)
 #endif // _MSC_VER
 #endif // !SAFE_STRNCPY

@@ -279,7 +279,7 @@ int xml_parse_uuid(char *out_val, const char *val)
 		ltfsmsg(LTFS_ERR, 17029E, val);
 		return -1;
 	}
-	SAFE_STRCPY(out_val, val);
+	SAFE_STRCPY_S(out_val,(strlen(val) + 1), val);
 
 	for (i=0; i<36; ++i) {
 		if (i == 8 || i == 13 || i == 18 || i == 23) {

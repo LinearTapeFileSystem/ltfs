@@ -472,6 +472,7 @@ int fs_dentry_lookup(struct dentry *dentry, char **name)
 		parent = d->parent;
 	}
 
+	size_t tmp_len = ((namelen + names)* sizeof(char));
 	tmp_name = calloc(namelen + names, sizeof(char));
 	if (! tmp_name) {
 		ltfsmsg(LTFS_ERR, 10001E, "fs_dentry_lookup: tmp_name");
@@ -480,9 +481,9 @@ int fs_dentry_lookup(struct dentry *dentry, char **name)
 	}
 
 	for (namelen=0, i=0; i<names; ++i) {
-		SAFE_STRCAT(tmp_name, dentry_names[i]);
+		SAFE_STRCAT_S(tmp_name,tmp_len, dentry_names[i]);
 		if (i > 0 && i < names-1)
-			SAFE_STRCAT(tmp_name, "/");
+			SAFE_STRCAT_S(tmp_name, tmp_len, "/");
 	}
 
 	ret = 0;

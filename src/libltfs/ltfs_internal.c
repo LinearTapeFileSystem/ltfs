@@ -1434,7 +1434,7 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 	if ( iosched_initialized(vol) ) use_iosche=true;
 
 	/* check lost_and_found directory and make if it doesn't exist */
-	asprintf( &lfdir, "/%s", LTFS_LOSTANDFOUND_DIR );
+	int pathsize = asprintf( &lfdir, "/%s", LTFS_LOSTANDFOUND_DIR );
 	ret = fs_path_lookup(lfdir, 0, &workd, vol->index);
 	if ( ret==-LTFS_NO_DENTRY  ) {
 		ret = ltfs_fsops_create( lfdir, true, false, false, &workd, vol);
@@ -1523,7 +1523,7 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 		free(d->target.name);
 		free(name);
 		free(contextVal);
-		SAFE_STRCPY(path,lfdir);
+		SAFE_STRCPY_S(path, pathsize,lfdir);
 		basedir=true;
 	}
 	goto out_func;
