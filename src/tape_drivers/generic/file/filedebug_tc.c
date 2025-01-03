@@ -109,7 +109,10 @@ char* my_dirname(char* path) {
 
 #include "filedebug_conf_tc.h"
 
-static volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
+#ifndef _MSC_VER
+	static
+#endif // !_MSC_VER
+volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
 /* Default directory where the emulated tape contents go to */
@@ -935,7 +938,11 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 		}
 		errno_t err = _sopen_s(&fd,fname,
 				  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-				  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO, 0);
+			S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO
+#ifndef _MSC_VER
+			, 0
+#endif
+		);
 		if (err != 0) {
 			return 1;  
 		}
@@ -1055,7 +1062,11 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 
 			errno_t err = _sopen_s(&fd,fname,
 					  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-					  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO, 0);
+					  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO
+#ifndef _MSC_VER
+				, 0
+#endif
+			);
 			if (err != 0) {
 				return 1;  // Handle the error as needed
 			}
@@ -2174,7 +2185,11 @@ int filedebug_write_attribute(void *device, const tape_partition_t part
 		}
 		errno_t err = _sopen_s(&fd,fname,
 				  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-				  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO, 0);
+				  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO
+#ifndef _MSC_VER
+			, 0
+#endif
+		);
 		if (err != 0) {
 			return 1;  
 		}
@@ -2393,7 +2408,11 @@ int _filedebug_write_eod(struct filedebug_data *state)
 	}
 	errno_t err = _sopen_s(&fd,fname,
 			  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-			  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO, 0);
+			  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO
+#ifndef _MSC_VER
+		, 0
+#endif
+	);
 	if (err != 0) {
 		return 1;  
 	}

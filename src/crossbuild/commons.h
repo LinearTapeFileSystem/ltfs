@@ -498,25 +498,27 @@ extern "C"
 #endif // !_MSC_VER
 #endif // !SAFE_VSNWPRINTF
 
-#ifndef SAFE_SWPRINTF
+#ifndef SAFE_STPRINTF
 #ifdef _MSC_VER
-#define SAFE_SWPRINTF(buffer, format, ...)                                      \
+#define SAFE_STPRINTF(buffer, buffer_size, format, ...)                         \
     do {                                                                        \
-        int result = _stprintf_s((buffer), (format), __VA_ARGS__);              \
+        int result = _stprintf_s((buffer), ((buffer_size) / sizeof(TCHAR)), (format), __VA_ARGS__); \
         if (result < 0) {                                                       \
-            fwprintf(stderr, L"Error: _stprintf_s failed with error code: %d\n", errno); \
+            fwprintf(stderr, L"Error: _stprintf_s failed with error code: %d\n", result); \
         }                                                                       \
     } while (0)
 #else
-#define SAFE_SWPRINTF(buffer, format, ...)                                      \
+#define SAFE_STPRINTF(buffer, unused, format, ...)                         \
     do {                                                                        \
-        int result = _stprintf((buffer), (format), __VA_ARGS__);                \
+        int result = _stprintf((buffer), (format), __VA_ARGS__);  \
         if (result < 0) {                                                       \
-            fwprintf(stderr, L"Error: _stprintf failed with error code: %d\n", errno); \
+            fwprintf(stderr, L"Error: snprintf failed with error code: %d\n", result); \
         }                                                                       \
     } while (0)
 #endif // _MSC_VER
-#endif // !SAFE_SWPRINTF
+#endif // !SAFE_STPRINTF
+
+
 
 #ifndef SAFE_CTIME
 #ifdef _MSC_VER
@@ -537,6 +539,24 @@ extern "C"
     } while (0)
 #endif // _MSC_VER
 #endif // !SAFE_CTIME
+
+
+
+#ifndef SAFE_LOCALTIME
+#ifdef _MSC_VER
+#define SAFE_LOCALTIME(dest, src)                                     \
+    do                                                                           \
+    {                                                                            \
+       localtime_s((dest),(src));    \
+    } while (0)
+#else
+#define SAFE_LOCALTIME(dest,src)                                     \
+    do                                                                           \
+    {                                                                            \
+        (dest) = localtime(src);                                \
+    } while (0)
+#endif // _MSC_VER
+#endif // !SAFE_STRNCPY
 
 
 

@@ -62,7 +62,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "ltfs_types.h"
+#include <libltfs/ltfs_types.h>
 
 #define VENDOR_ID_LENGTH           (8)
 #define PRODUCT_ID_LENGTH          (16)

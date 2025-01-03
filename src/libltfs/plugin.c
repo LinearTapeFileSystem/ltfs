@@ -92,7 +92,14 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 
 	pl->lib_handle = dlopen(lib_path, RTLD_NOW);
 	if (! pl->lib_handle) {
+#ifdef _MSC_VER	
+		char* err = dlerror();
+		ltfsmsg(LTFS_ERR, 11261E,err);
+		free(err);
+#else
 		ltfsmsg(LTFS_ERR, 11261E, dlerror());
+
+#endif // _MSC_VER
 		return -LTFS_PLUGIN_LOAD;
 	}
 
