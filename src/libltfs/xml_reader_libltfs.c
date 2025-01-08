@@ -359,11 +359,11 @@ static int _xml_parser_init(xmlTextReaderPtr reader, const char *top_name, int *
 	}
 	if (ver < min_version || ver > max_version) {
 		ltfsmsg(LTFS_ERR, 17021E, top_name, value);
-		free(value);
+		//free(value);
 		return -LTFS_UNSUPPORTED_INDEX_VERSION;
 	}
 	*idx_version = ver;
-	free(value);
+	//free(value); -> No need to free memory from xml func
 
 	return 0;
 }

@@ -3144,7 +3144,7 @@ int ltfs_format_tape(struct ltfs_volume *vol, int density_code, bool destructive
 	}
 
 	/* Set up the label: generate UUID and format time */
-	ltfs_gen_uuid(vol->label->vol_uuid);
+	ltfs_gen_uuid((vol->label->vol_uuid),sizeof(vol->label->vol_uuid));
 	get_current_timespec(&vol->label->format_time);
 
 	/* Duplicate creator */

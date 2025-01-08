@@ -213,6 +213,26 @@ extern "C"
 #endif // _MSC_VER
 #endif // !SAFE_STRNCPY
 
+#ifndef SAFE_STRNCPY_S
+#ifdef _MSC_VER
+#define SAFE_STRNCPY_S(dest, src, destSize, count)                                     \
+    do                                                                           \
+    {                                                                            \
+        errno_t err = strncpy_s((dest), (destSize), (src), (count));        \
+        if (err != 0)                                                            \
+        {                                                                        \
+            fprintf(stderr, "Error: Failed to copy string. Error code: %d\n", err); \
+        }                                                                        \
+    } while (0)
+#else
+#define SAFE_STRNCPY_S(dest, src,unused, destSize)                                     \
+    do                                                                           \
+    {                                                                            \
+        strncpy((dest), (src), (destSize));                                \
+    } while (0)
+#endif // _MSC_VER
+#endif // !SAFE_STRNCPY_S
+
 
 #ifndef SAFE_STRCAT
 #ifdef _MSC_VER

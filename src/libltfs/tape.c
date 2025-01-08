@@ -3085,7 +3085,7 @@ int tape_set_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr, 
 	}
 
 	unsigned char* attr_data = NULL;
-	attr_data = malloc(sizeof(char*)*(attr_size +TC_MAM_PAGE_HEADER_SIZE));
+	attr_data = (unsigned char*)malloc(sizeof(unsigned char*)*(attr_size +TC_MAM_PAGE_HEADER_SIZE));
 	if (attr_data == NULL)	return -LTFS_NO_MEMORY;
 	ltfs_u16tobe(attr_data, type); 			/* set attribute type	*/
 	attr_data[2] = format;					/* set data format type */
@@ -3093,29 +3093,29 @@ int tape_set_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr, 
 
 	/* set attribute data */
 	if ( type == TC_MAM_APP_VENDER ) {
-		SAFE_STRNCPY((char *)attr_data + 5, t_attr->vender, attr_size);
+		SAFE_STRNCPY_S((char *)attr_data + 5, t_attr->vender, attr_size+ TC_MAM_PAGE_HEADER_SIZE , attr_size);
 	} else if ( type == TC_MAM_APP_NAME ) {
-		SAFE_STRNCPY((char *)attr_data + 5, t_attr->app_name, attr_size);
+		SAFE_STRNCPY_S((char *)attr_data + 5, t_attr->app_name, attr_size + TC_MAM_PAGE_HEADER_SIZE, attr_size);
 	} else if ( type == TC_MAM_APP_VERSION ) {
-		SAFE_STRNCPY((char *)attr_data + 5, t_attr->app_ver, attr_size);
+		SAFE_STRNCPY_S((char *)attr_data + 5, t_attr->app_ver, attr_size + TC_MAM_PAGE_HEADER_SIZE, attr_size);
 	} else if ( type == TC_MAM_USER_MEDIUM_LABEL ) {
-		SAFE_STRNCPY((char *)attr_data + 5, t_attr->medium_label, attr_size);
+		SAFE_STRNCPY_S((char *)attr_data + 5, t_attr->medium_label, attr_size + TC_MAM_PAGE_HEADER_SIZE, attr_size);
 	} else if ( type == TC_MAM_TEXT_LOCALIZATION_IDENTIFIER ) {
 		attr_data[5] =  t_attr->tli;
 	} else if ( type == TC_MAM_BARCODE ) {
-		SAFE_STRNCPY((char *)attr_data + 5, t_attr->barcode, attr_size);
+		SAFE_STRNCPY_S((char *)attr_data + 5, t_attr->barcode, attr_size + TC_MAM_PAGE_HEADER_SIZE, attr_size);
 	} else if ( type == TC_MAM_APP_FORMAT_VERSION ) {
-		SAFE_STRNCPY((char *)attr_data + 5, t_attr->app_format_ver, attr_size);
+		SAFE_STRNCPY_S((char *)attr_data + 5, t_attr->app_format_ver, attr_size + TC_MAM_PAGE_HEADER_SIZE, attr_size);
 	} else if ( type == TC_MAM_LOCKED_MAM ) {
 		attr_data[5] =  t_attr->vollock;
 	} else if ( type == TC_MAM_MEDIA_POOL) {
-		SAFE_STRNCPY((char *)attr_data + 5, t_attr->media_pool, attr_size);
+		SAFE_STRNCPY_S((char *)attr_data + 5, t_attr->media_pool, attr_size + TC_MAM_PAGE_HEADER_SIZE, attr_size);
 	}
 
 	ret = dev->backend->write_attribute(dev->backend_data,
 	                                      0,				/* partition */
 	                                      attr_data,
-	                                      sizeof(attr_data));
+	                                      (attr_size + TC_MAM_PAGE_HEADER_SIZE));
 
 	if (ret < 0)
 		ltfsmsg(LTFS_ERR, 17205E, type, "tape_set_attribute_to_cm");

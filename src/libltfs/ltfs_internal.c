@@ -221,9 +221,9 @@ int ltfs_read_labels(bool trial, struct ltfs_volume *vol)
 	/* Store label data in the supplied volume */
 	vol->label->creator = label0->creator;
 	label0->creator = NULL;
-	SAFE_STRNCPY(vol->label->barcode, label0->barcode, 6);
+	SAFE_STRCPY(vol->label->barcode, label0->barcode);
 	vol->label->barcode[6] = '\0';
-	SAFE_STRNCPY(vol->label->vol_uuid, label0->vol_uuid, 36);
+	SAFE_STRCPY(vol->label->vol_uuid, label0->vol_uuid);
 	vol->label->vol_uuid[36] = '\0';
 	vol->label->format_time = label0->format_time;
 	vol->label->blocksize = label0->blocksize;
