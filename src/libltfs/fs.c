@@ -473,7 +473,7 @@ int fs_dentry_lookup(struct dentry *dentry, char **name)
 	}
 
 	size_t tmp_len = ((namelen + names)* sizeof(char));
-	tmp_name = calloc(namelen + names, sizeof(char));
+	tmp_name = (char*)calloc(namelen + names, sizeof(char));
 	if (! tmp_name) {
 		ltfsmsg(LTFS_ERR, 10001E, "fs_dentry_lookup: tmp_name");
 		ret = -LTFS_NO_MEMORY;

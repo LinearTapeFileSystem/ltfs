@@ -2036,12 +2036,13 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 	}
 
 	len=strlen(link);
-	work_buf = malloc(len + len2 + 1);
+	int work_buf_len = len + len2 + 1;
+	work_buf = malloc(work_buf_len);
 	if (!work_buf)  {
 		return -LTFS_NO_MEMORY;
 	}
-
-	target_buf = malloc(len2 + 1);
+	int target_buf_len = len2 + 1;
+	target_buf = malloc(target_buf_len);
 	if (!target_buf) {
 		free(work_buf);
 		return -LTFS_NO_MEMORY;
@@ -2049,13 +2050,13 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 
 	if (target[0]=='/') {
 		temp_buf = strstr(target, "/.");  /* get "/../ccc/target.txt" of "/aaa/../ccc/target.txt" */
-		SAFE_STRCPY_S(target_buf,(len2+1), temp_buf + 1); /* copy "../ccc/target.txt" */
+		SAFE_STRCPY_S(target_buf, target_buf_len, temp_buf + 1); /* copy "../ccc/target.txt" */
 		len = strlen(target_buf) + 1;
 		len = len2 - len;
-		SAFE_STRNCPY(work_buf, target, len);   /* copy "/aaa" */
+		SAFE_STRNCPY_S(work_buf, target, work_buf_len,len);   /* copy "/aaa" */
 	} else {
-		SAFE_STRCPY_S(work_buf, (len + len2 + 1), link);
-		SAFE_STRCPY_S(target_buf, (len2 + 1), target);
+		SAFE_STRCPY_S(work_buf, work_buf_len, link);
+		SAFE_STRCPY_S(target_buf, target_buf_len, target);
 
 		/* Split link file name then get current directory */
 		temp_buf = strrchr(work_buf, '/'); /* get "/link.txt" from "/aaa/bbb/link.txt" */
@@ -2079,13 +2080,13 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 			len -= strlen(temp_buf); /* length of "/aaa" */
 		} else if (strcmp(token, "." )) {                    /* have directory name */
 			work_buf[len] = '/';                             /* put '/ 'as "/aaa/" */
-			SAFE_STRNCPY(work_buf+len+1, token, strlen(token)+1); /* "/aaa/ccc\0" */
+			SAFE_STRNCPY_S(work_buf+len+1, token, work_buf_len, strlen(token) + 1); /* "/aaa/ccc\0" */
 			len = strlen(work_buf);
 		}
 		token = next_token;
 	}
 	work_buf[len] = '/';                             /* put '/ 'as "/aaa/ccc/" */
-	SAFE_STRNCPY(work_buf+len+1, token, strlen(token)+1); /* "/aaa/ccc/target.txt\0" */
+	SAFE_STRNCPY_S(work_buf+len+1, token, work_buf_len, strlen(token)+1); /* "/aaa/ccc/target.txt\0" */
 
 	if (size < strlen(work_buf) + 1) {
 		free(work_buf);

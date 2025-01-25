@@ -565,7 +565,7 @@ int filedebug_open(const char *name, void **handle)
 			free(tmp);
 			return -EDEV_NO_MEMORY;
 		}
-		SAFE_STRCPY_S(state->dirbase, p,len);
+		SAFE_STRCPY_S(state->dirbase, len,p);
 		free(tmp);
 		free(devname);
 		devname= NULL;

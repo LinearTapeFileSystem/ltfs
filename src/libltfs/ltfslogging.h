@@ -76,6 +76,12 @@ extern bool ltfs_print_thread_id;
 		if (level <= ltfs_log_level) \
 			ltfsmsg_internal(true, level, NULL, #id, ##__VA_ARGS__);	\
 	} while (0)
+
+#define ltfsmsgplain(level, id, ...) \
+	do { \
+		if (level <= ltfs_log_level) \
+			ltfsmsg_internal(true, level, NULL, id, ##__VA_ARGS__);	\
+	} while (0)
 #endif
 
 /* CAUTION: ltfsmsg_buffer takes message ID as a text literal */

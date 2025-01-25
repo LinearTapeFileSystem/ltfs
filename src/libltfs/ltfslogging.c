@@ -175,14 +175,9 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 #ifdef mingw_PLATFORM
 	u_setDataDirectory(LTFS_RB_DIR);
 #endif
-
 	/* Load the libltfs message bundle and the primary message set */
 	ret = ltfsprintf_load_plugin(
-#ifdef mingw_PLATFORM
-		"libltfs\\work"
-#else
 		"libltfs"
-#endif
 		, libltfs_dat, (void **)&pl);
 	if (ret < 0) {
 		fprintf(stderr, "LTFS11293E Cannot load messages for libltfs (%d)\n", ret);
@@ -201,12 +196,7 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 
 	/* Load the libltfs message bundle and the primary message set */
 	ret = ltfsprintf_load_plugin(
-#ifdef mingw_PLATFORM
-		"internal_error\\work"
-#else
 		"internal_error"
-#endif
-		
 		,internal_error_dat, (void **)&pl);
 	if (ret < 0) {
 		fprintf(stderr, "LTFS11293E Cannot load messages for internal error (%d)\n", ret);
@@ -216,11 +206,7 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 
 	/* Load the libltfs message bundle and the primary message set */
 	ret = ltfsprintf_load_plugin(
-#ifdef mingw_PLATFORM
-		"tape_common\\work"
-#else
 		"tape_common"
-#endif
 		, tape_common_dat, (void **)&pl);
 	if (ret < 0) {
 		fprintf(stderr, "LTFS11293E Cannot load messages for tape backend common messages (%d)\n", ret);
@@ -420,7 +406,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		goto internal_error;
 
 	if (idlen > 1 && _id[0] == '"' && _id[idlen - 1] == '"') {
-		SAFE_STRNCPY(id, _id + 1, idlen - 2);
+		STRCPY_LIMITED(id, _id + 1, idlen - 2);
 		id[idlen - 2] = '\0';
 	} else {
 		SAFE_STRCPY(id, _id);
@@ -488,9 +474,14 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	}
 
 #ifdef mingw_PLATFORM
-	va_start(argp, _id);
-	vsyslog(level, output_buf, argp);
-	va_end(argp);
+	__try {
+		va_start(argp, _id);
+		vsyslog(level, output_buf, argp);
+		va_end(argp);
+	}__except (EXCEPTION_EXECUTE_HANDLER) {
+		EXCEPTION_POINTERS* exceptionInfo = GetExceptionInformation();
+		fprintf(stderr,"An exception occurred! Exception code: 0x%X\n", exceptionInfo->ExceptionRecord->ExceptionCode);
+	}
 #else
 	va_start(argp, _id);
 	vfprintf(stderr, output_buf, argp);

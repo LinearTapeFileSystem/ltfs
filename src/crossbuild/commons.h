@@ -225,10 +225,10 @@ extern "C"
         }                                                                        \
     } while (0)
 #else
-#define SAFE_STRNCPY_S(dest, src,unused, destSize)                                     \
+#define SAFE_STRNCPY_S(dest, src,unused, count)                                     \
     do                                                                           \
     {                                                                            \
-        strncpy((dest), (src), (destSize));                                \
+        strncpy((dest), (src), (count));                                \
     } while (0)
 #endif // _MSC_VER
 #endif // !SAFE_STRNCPY_S
@@ -514,7 +514,10 @@ extern "C"
 #ifdef _MSC_VER
 #define SAFE_VSNWPRINTF _vsnwprintf_s
 #else
-#define SAFE_VSNWPRINTF _vsnwprintf
+#define SAFE_VSNWPRINTF(buffer,unused,bufferCount,format,argptr)      \
+        do {    \
+                _vsnwprintf(buffer, bufferCount, format, argptr); \
+        } while (0)
 #endif // !_MSC_VER
 #endif // !SAFE_VSNWPRINTF
 
@@ -578,6 +581,17 @@ extern "C"
 #endif // _MSC_VER
 #endif // !SAFE_STRNCPY
 
+
+#ifndef SAFE_VSNPRINTF
+#ifdef _MSC_VER
+#define SAFE_VSNPRINTF vsnprintf_s
+#else
+#define SAFE_VSNPRINTF vsnprintf(buffer,unused,bufferCount,format,argptr)   \
+do { \
+        vsnprintf(buffer, bufferCount, format, argptr); \
+} while (0)
+#endif // !_MSC_VER
+#endif // !SAFE_VSNPRINTF
 
 
 #ifdef __cplusplus

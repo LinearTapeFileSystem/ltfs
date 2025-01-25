@@ -122,7 +122,9 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 	/* config_file_get_lib already verified that "type" contains one of the values above */
 
 	if (! get_ops) {
-		ltfsmsg(LTFS_ERR, 11263E, dlerror());
+		char* err = dlerror();
+		ltfsmsg(LTFS_ERR, 11263E, err);
+		free(err);
 		dlclose(pl->lib_handle);
 		pl->lib_handle = NULL;
 		return -LTFS_PLUGIN_LOAD;
@@ -144,7 +146,9 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 	/* config_file_get_lib already verified that "type" contains one of the values above */
 
 	if (! get_messages) {
-		ltfsmsg(LTFS_ERR, 11284E, dlerror());
+		char* err = dlerror();
+		ltfsmsg(LTFS_ERR, 11284E,err);
+		free(err);
 		dlclose(pl->lib_handle);
 		pl->lib_handle = NULL;
 		return -LTFS_PLUGIN_LOAD;
@@ -180,7 +184,9 @@ int plugin_unload(struct libltfs_plugin *pl)
 #ifndef VALGRIND_FRIENDLY
 	/* Valgrind cannot resolve function name after closing shared library */
 	if (dlclose(pl->lib_handle)) {
-		ltfsmsg(LTFS_ERR, 11262E, dlerror());
+		char* err = dlerror();
+		ltfsmsg(LTFS_ERR, 11262E, err);
+		free(err);
 		return -LTFS_PLUGIN_UNLOAD;
 	}
 #endif
