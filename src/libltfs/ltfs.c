@@ -1669,7 +1669,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 				seekpos.block = vol->dp_coh.set_id;
 			}
 		} else {
-			if (vollock != PWE_MAM_DP && vollock != PWE_MAM) {
+			if (vol->ip_coh.count > vol->dp_coh.count && vollock != PWE_MAM_DP && vollock != PWE_MAM) {
 				/*
 				 * The index on IP is newer but MAM shows write perm doesn't happen in DP.
 				 * LTFS already have written an index on DP when it is writing an index on IP,
@@ -1688,8 +1688,13 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 						(unsigned long long)vol->dp_coh.volume_change_ref,
 						(unsigned long long)volume_change_ref);
 
-				/* Index of DP could be corrupted. So set skip flag to false */
-				ret = _ltfs_search_index_wp(recover_symlink, false, &seekpos, vol);
+				if (vollock == PWE_MAM_BOTH) {
+					/* Index of IP could be corrupted (because of double write perm). So set skip flag to true */
+					ret = _ltfs_search_index_wp(recover_symlink, true, &seekpos, vol);
+				} else {
+					/* Index of DP could be corrupted. So set skip flag to false */
+					ret = _ltfs_search_index_wp(recover_symlink, false, &seekpos, vol);
+				}
 				if (ret < 0)
 					goto out_unlock;
 
