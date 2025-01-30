@@ -58,11 +58,10 @@
 extern "C" {
 #endif
 
-#include <stdlib.h>
-#include <stdbool.h>
-#include "crossbuild/compatibility.h"
+
 #ifdef mingw_PLATFORM
 	#include <uchar.h>
+#include <minwindef.h>
 #else
 	#ifdef __APPLE_MAKEFILE__
 		#include <ICU/unicode/utypes.h>
@@ -70,6 +69,9 @@ extern "C" {
 		#include <unicode/types.h>
 	#endif
 #endif
+#include <stdlib.h>
+#include <stdbool.h>
+#include "crossbuild/compatibility.h"
 
 int pathname_format(const char *name, char **new_name, bool validate, bool path);
 int pathname_unformat(const char *name, char **new_name);
