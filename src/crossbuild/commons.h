@@ -72,7 +72,7 @@ extern "C"
         size_t len = 0;                                          \
         wcstombs_s(&len, NULL, 0, wide_str, 0);                  \
         if (len == 0) { narrow_str = NULL; break; }              \
-        narrow_str = (char *)malloc(len);                        \
+        if (NULL == narrow_str){narrow_str = (char *)malloc(len);   }     \
         if (narrow_str) wcstombs_s(&len, narrow_str, len, wide_str, len); \
     } while (0)
 #endif // _MSC_VER
@@ -592,6 +592,13 @@ do { \
 } while (0)
 #endif // !_MSC_VER
 #endif // !SAFE_VSNPRINTF
+
+#ifndef SAFE_FREE   
+#define SAFE_FREE(memobject)                            \
+        do {                                            \
+            if(NULL != memobject)   free(memobject);    \
+        }while(0)
+#endif
 
 
 #ifdef __cplusplus
