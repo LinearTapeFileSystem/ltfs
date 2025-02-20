@@ -72,6 +72,7 @@ extern "C" {
 #include <stdlib.h>
 #include <stdbool.h>
 #include "crossbuild/compatibility.h"
+#include <unicode/ustring.h>
 
 int pathname_format(const char *name, char **new_name, bool validate, bool path);
 int pathname_unformat(const char *name, char **new_name);

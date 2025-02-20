@@ -63,7 +63,7 @@ extern "C" {
 // For Windows
 #ifdef mingw_PLATFORM	
 	#ifndef COMPAT_UCHAR
-		#define COMPAT_UCHAR UCHAR
+		#define COMPAT_UCHAR UChar
 	#endif
 
 	#ifndef SHARE_FLAG_DENYNO

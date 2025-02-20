@@ -477,7 +477,7 @@ int main(int argc, char **argv)
 
 	/* Show build time information */
 	ltfsmsg(LTFS_INFO, 16089I, BUILD_SYS_FOR);
-	ltfsmsg(LTFS_INFO, 16090I, BUILD_SYS_GCC);
+	//ltfsmsg(LTFS_INFO, 16090I, BUILD_SYS_GCC);
 
 	/* Show run time information */
 	show_runtime_system_info();
@@ -506,10 +506,10 @@ int main(int argc, char **argv)
 
 	ret = ltfsck(vol, &opt, &args);
 
-	free(opt.prg_name);
-	free(opt.backend_path);
-	free(opt.kmi_backend_name);
-	free(opt.devname);
+	SAFE_FREE(opt.prg_name);
+	SAFE_FREE(opt.backend_path);
+	SAFE_FREE(opt.kmi_backend_name);
+	SAFE_FREE(opt.devname);
 	config_file_free(opt.config);
 	ltfsprintf_unload_plugin(message_handle);
 	ltfs_finish();

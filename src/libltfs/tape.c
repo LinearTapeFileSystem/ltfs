@@ -3005,7 +3005,7 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 			if (len_volname == -LTFS_ICU_ERROR)
 				len_volname = TC_MAM_USER_MEDIUM_LABEL_SIZE - 1;
 		}
-		SAFE_STRNCPY(t_attr->medium_label, vol->index->volume_name.name, len_volname);
+		SAFE_STRNCPY_S(t_attr->medium_label, vol->index->volume_name.name, sizeof(t_attr->medium_label), len_volname);
 	}
 
 	/* TEXT LOCALIZATION IDENTIFIER set */

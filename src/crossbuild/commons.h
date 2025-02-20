@@ -596,7 +596,11 @@ do { \
 #ifndef SAFE_FREE   
 #define SAFE_FREE(memobject)                            \
         do {                                            \
-            if(NULL != memobject)   free(memobject);    \
+            if(NULL != memobject)                       \
+            {                                           \
+                free(memobject);                        \
+                memobject = NULL;                           \
+            }                                              \
         }while(0)
 #endif
 

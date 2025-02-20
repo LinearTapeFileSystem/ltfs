@@ -219,31 +219,36 @@ static inline void ltfs_request_trace(uint32_t req_num, uint64_t info1, uint64_t
 {
 	if (!trace_enable)
 		return;
+	return;
+	__try {
+		if (req_trace) {
+			uint32_t index;
 
-	if (req_trace) {
-		uint32_t index;
+			ltfs_mutex_lock(&req_trace->req_trace_lock);
 
-		ltfs_mutex_lock(&req_trace->req_trace_lock);
+			if (req_trace->cur_index >= req_trace->max_index) {
+				index = req_trace->cur_index;
+				req_trace->cur_index = 0;
+			}
+			else
+				index = req_trace->cur_index++;
 
-		if(req_trace->cur_index >= req_trace->max_index) {
-			index = req_trace->cur_index;
-			req_trace->cur_index = 0;
-		} else
-			index = req_trace->cur_index++;
+			ltfs_mutex_unlock(&req_trace->req_trace_lock);
 
-		ltfs_mutex_unlock(&req_trace->req_trace_lock);
+			req_trace->entries[index].time = get_time_stamp(&start_offset);
+			req_trace->entries[index].tid = ltfs_get_thread_id();
+			req_trace->entries[index].req_num = req_num;
+			req_trace->entries[index].info1 = info1;
+			req_trace->entries[index].info2 = info2;
 
-		req_trace->entries[index].time = get_time_stamp(&start_offset);
-		req_trace->entries[index].tid = ltfs_get_thread_id();
-		req_trace->entries[index].req_num = req_num;
-		req_trace->entries[index].info1 = info1;
-		req_trace->entries[index].info2 = info2;
-
-		if (req_trace->profiler) {
-			ltfs_mutex_lock(&req_trace->req_profiler_lock);
-			fwrite((void*)&req_trace->entries[index], REQ_PROF_ENTRY_SIZE, 1, req_trace->profiler);
-			ltfs_mutex_unlock(&req_trace->req_profiler_lock);
+			if (req_trace->profiler) {
+				ltfs_mutex_lock(&req_trace->req_profiler_lock);
+				fwrite((void*)&req_trace->entries[index], REQ_PROF_ENTRY_SIZE, 1, req_trace->profiler);
+				ltfs_mutex_unlock(&req_trace->req_profiler_lock);
+			}
 		}
+	}__except (EXCEPTION_EXECUTE_HANDLER) {
+		fprintf(stderr, "An exception occurred!\n");
 	}
 }
 

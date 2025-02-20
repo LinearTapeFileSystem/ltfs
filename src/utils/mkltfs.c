@@ -214,7 +214,10 @@ int main(int argc, char **argv)
 	char *lang, *cmd_args;
 	const char *config_file = NULL;
 	void *message_handle;
-
+	/* To do some tests sometimes GPV
+	struct slmain_device_info* wt_info = (struct slmain_device_info*)malloc(sizeof(struct slmain_device_info*));
+	slif_get_device_info("5.0.0.0", wt_info);
+	*/
 	int fuse_argc = argc;
 	char **fuse_argv = calloc(fuse_argc, sizeof(char *));
 	if (! fuse_argv) {
@@ -504,9 +507,10 @@ int main(int argc, char **argv)
 	else
 		ret = format_tape(newvol, &opt, &args);
 
-	free(opt.backend_path);
-	free(opt.kmi_backend_name);
-	free(opt.devname);
+
+	SAFE_FREE(opt.backend_path);
+	SAFE_FREE(opt.kmi_backend_name);
+	SAFE_FREE(opt.devname);
 	config_file_free(opt.config);
 	ltfsprintf_unload_plugin(message_handle);
 	ltfs_finish();

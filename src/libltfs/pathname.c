@@ -96,6 +96,21 @@ int _pathname_utf8_to_system_icu(const char *src, char **dest);
 int _pathname_normalize_utf8_nfd_icu(const char *src, char **dest);
 
 
+/*
+ * On Visual Studio, free() gets stuck when you use it with an allocated pointer like all these methods above.
+ * This method it is to reallocate the memory and then free it, it was easier than try to clean up this horrible code. 
+ * Seriously, what was the purpose of having a pointer of pointers if you use it all the time like a single pointer? - GPV -
+ * @param ptr, a useless allocated pointer.
+ */
+static void freeUselessAllocatedPointer(COMPAT_UCHAR** ptr)
+{
+	if (*ptr == NULL) return;
+	*ptr = realloc(*ptr, 1);
+	free(*ptr);
+	*ptr = NULL;
+}
+
+
 /**
  * Convert a path name in the system locale to the canonical LTFS form (UTF-8, NFC).
  * @param name file, directory, or xattr name to format
@@ -466,23 +481,23 @@ int _chars_valid_in_xml(UChar32 c)
 int _pathname_format_icu(const char *src, char **dest, bool validate, bool allow_slash)
 {
 	int ret;
-	COMPAT_UCHAR *utf16_name, *utf16_name_norm;
+	COMPAT_UCHAR *utf16_name = NULL, *utf16_name_norm = NULL;
 
 	/* convert to UTF-16 for normalization with ICU */
-	ret = _pathname_system_to_utf16_icu(src, &utf16_name);
+ 	ret = _pathname_system_to_utf16_icu(src, &utf16_name);
 	if (ret < 0)
 		return ret;
 
 	/* normalize */
 	ret = _pathname_normalize_nfc_icu(utf16_name, &utf16_name_norm);
 	if (utf16_name != utf16_name_norm)
-		free(utf16_name);
+		freeUselessAllocatedPointer(&utf16_name);
 	if (ret < 0)
 		return ret;
 
 	/* convert to UTF-8 */
 	ret = _pathname_utf16_to_utf8_icu(utf16_name_norm, dest);
-	free(utf16_name_norm);
+	freeUselessAllocatedPointer(&utf16_name_norm);
 	if (ret < 0)
 		return ret;
 
@@ -923,7 +938,7 @@ int _pathname_system_to_utf16_icu(const char *src, COMPAT_UCHAR **dest)
 		return -LTFS_NO_MEMORY;
 	}
 
-	ucnv_toUChars(syslocale, *dest, destlen + 1, src, -1, &err);
+	ucnv_toUChars(syslocale, *dest, destlen + 1, src, strlen(src), &err);
 	if (U_FAILURE(err)) {
 		ltfsmsg(LTFS_ERR, 11249E, err, src);
 		ucnv_close(syslocale);
