@@ -1471,20 +1471,25 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 				if ( ret==-LTFS_NO_DENTRY  )
 					basedir=false;
 				else if ( ret<0 )
+				{
+					free(contextVal);
 					goto err_out_func;
+				}
 			}
 
 			if( !basedir ) {
 				ret = ltfs_fsops_create( path, true, false, false, &workd, vol);
-				if ( ret<0 )
+				if (ret < 0)
+				{
+					free(contextVal);
 					goto err_out_func;
-
+				}
 			}
 			ret = ltfs_fsops_close( workd, true, true, use_iosche, vol);
 			tok = next_tok;
 			SAFE_STRTOK(next_tok, NULL, "/", contextVal);
 		}
-
+		free(contextVal);
 		/* Make filename with path in lost_and_found */
 		asprintf( &path, "%s/%s", path, tok);
 		ret = fs_path_lookup(path, 0, &workd, vol->index);
@@ -1522,7 +1527,7 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 		d->isslink = false;
 		free(d->target.name);
 		free(name);
-		free(contextVal);
+
 		SAFE_STRCPY_S(path, pathsize,lfdir);
 		basedir=true;
 	}
