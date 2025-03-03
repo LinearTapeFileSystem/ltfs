@@ -311,4 +311,8 @@ int xml_parse_time(bool msg, const char *fmt_time, struct ltfs_timespec *rawtime
 void xml_init();
 void xml_finish();
 
+#ifdef _WIN32
+int ftruncate(int fd, off_t length);
+#endif
+
 #endif /* __xml_h */
