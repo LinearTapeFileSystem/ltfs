@@ -2062,8 +2062,7 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 		temp_buf = strrchr(work_buf, '/'); /* get "/link.txt" from "/aaa/bbb/link.txt" */
 		len -= strlen(temp_buf);           /* length of "/aaa/bbb" */
 	}
-	char* contextVal = malloc(sizeof(*contextVal));
-	if (contextVal == NULL) return -LTFS_NO_MEMORY;
+	char* contextVal = NULL;
 	/* Split target path directory then modify current directory with target path information */
 	SAFE_STRTOK(token,target_buf, "/", contextVal);     /*  get ".." from "../ccc/target.txt" */
 	while (token) {
@@ -2091,14 +2090,12 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 	if (size < strlen(work_buf) + 1) {
 		free(work_buf);
 		free(target_buf);
-		free(contextVal);
 		return -LTFS_SMALL_BUFFER;
 	}
 
 	SAFE_STRCPY_S(buf,size, work_buf);
 	free(work_buf);
 	free(target_buf);
-	free(contextVal);
 	return 0;
 }
 

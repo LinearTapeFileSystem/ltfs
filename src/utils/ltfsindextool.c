@@ -141,7 +141,7 @@ static inline int _open_output_file(tape_partition_t   part,
 	}
 
 	ltfsmsg(LTFS_INFO, 19547I, fname);
-	SAFE_OPEN(ret,fname, O_WRONLY | O_CREAT | O_TRUNC,SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
+	SAFE_OPEN(&ret,fname, O_WRONLY | O_CREAT | O_TRUNC,SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 19533E, fname, errno);
 	}

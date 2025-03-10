@@ -1402,7 +1402,7 @@ int list_rollback_points_normal(struct ltfs_volume *vol, struct other_check_opts
 		ret = asprintf(&vol->index_cache_path_r, "%s/reading_index.xml", opt->capture_dir);
 
 		if (ret > 0) {
-			SAFE_OPEN(fd,vol->index_cache_path_r, O_WRONLY | O_BINARY | O_CREAT, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
+			SAFE_OPEN(&fd,vol->index_cache_path_r, O_WRONLY | O_BINARY | O_CREAT, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 			if (fd < 0) {
 				ltfsmsg(LTFS_WARN, 16113W, opt->capture_dir, errno);
 				free(vol->index_cache_path_r);

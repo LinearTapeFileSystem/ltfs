@@ -161,8 +161,7 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 			ret = -ENOMEM;
 			goto out_free;
 		}
-		char* contextVal = (char*)malloc(sizeof(char*));
-		if (contextVal == NULL) return -ENOMEM;
+		char* contextVal = NULL;
 		SAFE_STRTOK(option,line, " \t", contextVal);
 		if (! option) {
 			/* Failed to parse LTFS dcache configuration rules: invalid option '%s' */
@@ -188,11 +187,9 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 			/* Failed to parse LTFS dcache configuration rules: invalid option '%s' */
 			ltfsmsg(LTFS_ERR, 17170E, options[i]);
 			ret = -EINVAL;
-			SAFE_FREE(contextVal);
 			goto out_free;
 		}
 
-		SAFE_FREE(contextVal);
 
 		if (! strcmp(option, "minsize")) {
 			opt->minsize = atoi(value);

@@ -1155,7 +1155,7 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 			if (ret > 0) {
 				SAFE_UNLINK(offset_name);
 				rename(offset_new, offset_name);
-				SAFE_OPEN(fd, offset_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
+				SAFE_OPEN(&fd, offset_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 				if (fd >= 0) {
 					fsync(fd);
 					SAFE_CLOSE(fd);
@@ -1175,7 +1175,7 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 			if (ret > 0) {
 				SAFE_UNLINK(sync_name);
 				rename(sync_new, sync_name);
-				SAFE_OPEN(fd,sync_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW , PERMISSION_READWRITE);
+				SAFE_OPEN(&fd,sync_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW , PERMISSION_READWRITE);
 				if (fd >= 0) {
 					fsync(fd);
 					SAFE_CLOSE(fd);

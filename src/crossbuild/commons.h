@@ -329,10 +329,10 @@ extern "C"
 
 #ifndef SAFE_OPEN
 #ifdef _MSC_VER
-#define SAFE_OPEN(pFileHandle, pFileName, openFlag, shareFlag, permission)               \
+#define SAFE_OPEN(pFileDescriptor, pFileName, openFlag, shareFlag, permission)               \
     do                                                                                   \
     {                                                                                    \
-        errno_t err = _sopen_s(pFileHandle, pFileName, openFlag, shareFlag, permission); \
+        errno_t err = _sopen_s(pFileDescriptor, pFileName, openFlag, shareFlag, permission); \
         if (err != 0)                                                                    \
         {                                                                                \
             fprintf(stderr, "Error: Failed to open file. Error code: %d\n", err);        \
@@ -354,8 +354,7 @@ extern "C"
 #define SAFE_STRTOK(token, string, delimiter, contextValue) \
     do                                                      \
     {                                                       \
-        char *context = contextValue;                       \
-        token = strtok_s((string), (delimiter), &context);  \
+        token = strtok_s((string), (delimiter), &(contextValue));  \
     } while (0)
 #else
 #define SAFE_STRTOK(token, string, delimiter, UNUSED)       \

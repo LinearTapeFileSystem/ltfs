@@ -1458,8 +1458,7 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 		ret = fs_dentry_lookup(d, &name);
 		if (ret<0) goto out_func;
 
-		char* contextVal = malloc(sizeof(*contextVal));
-		if (contextVal == NULL) return -LTFS_NO_MEMORY;
+		char* contextVal = NULL;
 		SAFE_STRTOK(tok, name+1, "/", contextVal);
 		SAFE_STRTOK(next_tok, NULL, "/" , contextVal);
 
@@ -1472,7 +1471,6 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 					basedir=false;
 				else if ( ret<0 )
 				{
-					free(contextVal);
 					goto err_out_func;
 				}
 			}
@@ -1481,7 +1479,6 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 				ret = ltfs_fsops_create( path, true, false, false, &workd, vol);
 				if (ret < 0)
 				{
-					free(contextVal);
 					goto err_out_func;
 				}
 			}
@@ -1489,7 +1486,6 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 			tok = next_tok;
 			SAFE_STRTOK(next_tok, NULL, "/", contextVal);
 		}
-		free(contextVal);
 		/* Make filename with path in lost_and_found */
 		asprintf( &path, "%s/%s", path, tok);
 		ret = fs_path_lookup(path, 0, &workd, vol->index);
