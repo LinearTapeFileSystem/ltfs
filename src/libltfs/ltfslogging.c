@@ -480,7 +480,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		va_end(argp);
 	}__except (EXCEPTION_EXECUTE_HANDLER) {
 		EXCEPTION_POINTERS* exceptionInfo = GetExceptionInformation();
-		fprintf(stderr,"An exception occurred! Exception code: 0x%X\n", exceptionInfo->ExceptionRecord->ExceptionCode);
+		fprintf(stderr,"An exception occurred when logging! Exception code: 0x%X\n", exceptionInfo->ExceptionRecord->ExceptionCode);
 	}
 #else
 	va_start(argp, _id);

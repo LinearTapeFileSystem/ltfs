@@ -65,6 +65,13 @@ extern "C"
 #include <stdio.h>
 #include <string.h>
 
+
+#ifndef PRINT_COMMON
+#define PRINT_COMMON()                      \
+        fprintf(stderr, "[Func %s at line %d] ", __func__, __LINE__);
+#endif
+
+
 #ifndef WCHAR_TO_CHAR
 #ifdef _MSC_VER
 #define WCHAR_TO_CHAR(wide_str, narrow_str)                       \
@@ -135,6 +142,7 @@ extern "C"
     do {                                                                              \
         int result = vsprintf_s((buffer), sizeof(buffer), (format), __VA_ARGS__);           \
         if (result < 0) {                                                             \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: vsprintf_s failed with error code: %d\n", errno); \
         }                                                                             \
     } while (0)
@@ -161,6 +169,7 @@ extern "C"
         errno_t err = strcpy_s((dest), sizeof(dest), (src));        \
         if (err != 0)                                                            \
         {                                                                        \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: Failed to copy string. Error code: %d\n", err); \
         }                                                                        \
     } while (0)
@@ -181,6 +190,7 @@ extern "C"
         errno_t err = strcpy_s((dest), destSize, (src));        \
         if (err != 0)                                                            \
         {                                                                        \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: Failed to copy string. Error code: %d\n", err); \
         }                                                                        \
     } while (0)
@@ -201,6 +211,7 @@ extern "C"
         errno_t err = strncpy_s((dest), (destSize), (src), (destSize));        \
         if (err != 0)                                                            \
         {                                                                        \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: Failed to copy string. Error code: %d\n", err); \
         }                                                                        \
     } while (0)
@@ -221,6 +232,7 @@ extern "C"
         errno_t err = strncpy_s((dest), (destSize), (src), (count));        \
         if (err != 0)                                                            \
         {                                                                        \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: Failed to copy string. Error code: %d\n", err); \
         }                                                                        \
     } while (0)
@@ -242,6 +254,7 @@ extern "C"
         errno_t err = strcat_s((dest), sizeof(dest), (src));                                \
         if (err != 0)                                                                       \
         {                                                                                   \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: Failed to concatenate strings. Error code: %d\n", err); \
         }                                                                                   \
     } while (0)
@@ -262,6 +275,7 @@ extern "C"
         errno_t err = strcat_s((dest), size, (src));                                \
         if (err != 0)                                                                       \
         {                                                                                   \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: Failed to concatenate strings. Error code: %d\n", err); \
         }                                                                                   \
     } while (0)
@@ -285,11 +299,13 @@ extern "C"
             int result = snprintf((dest), (size), (format), __VA_ARGS__);  \
             if (result < 0 || result >= (size))                            \
             {                                                              \
+                PRINT_COMMON();                                           \
                 fprintf(stderr, "Error: snprintf failed or truncated.\n"); \
             }                                                              \
         }                                                                  \
         else                                                               \
         {                                                                  \
+            PRINT_COMMON();                                                \
             fprintf(stderr, "Error: Invalid buffer size.\n");              \
         }                                                                  \
     } while (0)
@@ -305,6 +321,7 @@ extern "C"
         }                                                                \
         else                                                             \
         {                                                                \
+            PRINT_COMMON();                                              \
             fprintf(stderr, "Error: NULL string provided to strcmp.\n"); \
             (cmp_result) = -1; /* Indicate error */                      \
         }                                                                \
@@ -321,6 +338,7 @@ extern "C"
         }                                                                \
         else                                                             \
         {                                                                \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: NULL string provided to strstr.\n"); \
             (result) = NULL; /* Indicate error */                        \
         }                                                                \
@@ -335,6 +353,7 @@ extern "C"
         errno_t err = _sopen_s(pFileDescriptor, pFileName, openFlag, shareFlag, permission); \
         if (err != 0)                                                                    \
         {                                                                                \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: Failed to open file. Error code: %d\n", err);        \
         }                                                                                \
     } while (0)
@@ -373,6 +392,7 @@ extern "C"
         errno_t err = fopen_s(&(file_ptr), file, mode);                            \
         if (err != 0)                                                              \
         {                                                                          \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: Failed to fopen file. Error code: %d\n", err); \
         }                                                                          \
     } while (0)
@@ -450,6 +470,7 @@ extern "C"
         errno_t err = strerror_s(buf, buf_size, errnum);              \
         if (err != 0)                                                 \
         {                                                             \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: Failed to retrieve error string. Error code: %d\n", err); \
         }                                                             \
     } while (0)
@@ -473,6 +494,7 @@ extern "C"
         errno_t err = _dupenv_s(&var, &len, name);                \
         if (err != 0 || var == NULL)                              \
         {                                                         \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: Failed to retrieve env var: %s\n", name); \
         }                                                         \
     } while (0)
@@ -526,6 +548,7 @@ extern "C"
     do {                                                                        \
         int result = _stprintf_s((buffer), ((buffer_size) / sizeof(TCHAR)), (format), __VA_ARGS__); \
         if (result < 0) {                                                       \
+            PRINT_COMMON();                                                                 \
             fwprintf(stderr, L"Error: _stprintf_s failed with error code: %d\n", result); \
         }                                                                       \
     } while (0)
@@ -548,6 +571,7 @@ extern "C"
     do {                                                                        \
         errno_t result = ctime_s((buffer), sizeof(buffer), (time_ptr));         \
         if (result != 0) {                                                      \
+            PRINT_COMMON();                                                                 \
             fprintf(stderr, "Error: ctime_s failed with error code: %d\n", result); \
         }                                                                       \
     } while (0)
@@ -602,6 +626,7 @@ do { \
             }                                              \
         }while(0)
 #endif
+
 
 
 #ifdef __cplusplus
