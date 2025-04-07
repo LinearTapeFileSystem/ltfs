@@ -150,12 +150,11 @@ static inline int _sense2errorcode(uint32_t sense, struct error_table *table, ch
 struct supported_device {
 	char vendor_id[VENDOR_ID_LENGTH + 1];
 	char product_id[PRODUCT_ID_LENGTH + 1];
-	int  vendor_type;
 	int  drive_type;
 	char product_name[PRODUCT_NAME_LENGTH + 1];
 };
 
-#define TAPEDRIVE(v, p, vt, dt, n) &(struct supported_device){ v, p, vt, dt, n }
+#define TAPEDRIVE(v, p, t, n) &(struct supported_device){ v, p, t, n }
 
 #define TAPE_FAMILY_MASK       (0xF000)
 #define TAPE_FAMILY_ENTERPRISE (0x1000)
@@ -179,8 +178,7 @@ enum {
 	VENDOR_UNKNOWN = 0,
 	VENDOR_IBM,
 	VENDOR_HP,
-	VENDOR_QUANTUM,   /* Quantum model C */
-	VENDOR_QUANTUM_B, /* Quantum model B */
+	VENDOR_QUANTUM,
 };
 
 enum {
@@ -195,6 +193,8 @@ enum {
 	DRIVE_LTO8_HH     = 0x2208, /* Ultrium Gen 8 Half-High */
 	DRIVE_LTO9        = 0x2109, /* Ultrium Gen 9 */
 	DRIVE_LTO9_HH     = 0x2209, /* Ultrium Gen 9 Half-High */
+	DRIVE_LTOA        = 0x210A, /* Ultrium Gen A */
+	DRIVE_LTOA_HH     = 0x220A, /* Ultrium Gen A Half-High */
 	DRIVE_TS1140      = 0x1104, /* TS1140 */
 	DRIVE_TS1150      = 0x1105, /* TS1150 */
 	DRIVE_TS1155      = 0x5105, /* TS1155 */
@@ -209,6 +209,8 @@ enum {
 	DRIVE_GEN_LTO7    = 0x2007,
 	DRIVE_GEN_LTO8    = 0x2008,
 	DRIVE_GEN_LTO9    = 0x2009,
+	DRIVE_GEN_LTOA    = 0x200A,
+	
 	DRIVE_GEN_JAG4    = 0x1004,
 	DRIVE_GEN_JAG5    = 0x1005,
 	DRIVE_GEN_JAG5A   = 0x5005,
@@ -227,6 +229,8 @@ enum {
 	TC_MP_LTO7D_CART  = 0x78,   /* LTO7 Data cartridge */
 	TC_MP_LTO8D_CART  = 0x88,   /* LTO8 Data cartridge */
 	TC_MP_LTO9D_CART  = 0x98,   /* LTO9 Data cartridge */
+	TC_MP_LTOAD_CART  = 0xA8,   /* LTOA Data cartridge */
+	TC_MP_LTOPAD_CART = 0xA9,   /* LTOPA Data cartridge */
 	TC_MP_LTO3W_CART  = 0x3C,   /* LTO3 WORM cartridge */
 	TC_MP_LTO4W_CART  = 0x4C,   /* LTO4 WORM cartridge */
 	TC_MP_LTO5W_CART  = 0x5C,   /* LTO5 WORM cartridge */
@@ -234,6 +238,7 @@ enum {
 	TC_MP_LTO7W_CART  = 0x7C,   /* LTO7 WORM cartridge */
 	TC_MP_LTO8W_CART  = 0x8C,   /* LTO8 WORM cartridge */
 	TC_MP_LTO9W_CART  = 0x9C,   /* LTO9 WORM cartridge */
+	TC_MP_LTOAW_CART  = 0xAC,   /* LTOA WORM cartridge */
 };
 
 /* Enterprise cartridge type in mode page header */

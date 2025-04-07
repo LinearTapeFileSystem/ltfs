@@ -63,12 +63,10 @@
 #include "libltfs/ltfs_endian.h"
 
 struct supported_device *hp_supported_drives[] = {
-		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 5-SCSI",  VENDOR_HP, DRIVE_LTO5,    "[Ultrium 5-SCSI]" ),  /* HP Ultrium Gen 5  */
-		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 6-SCSI",  VENDOR_HP, DRIVE_LTO6,    "[Ultrium 6-SCSI]" ),  /* HP Ultrium Gen 6  */
-		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 7-SCSI",  VENDOR_HP, DRIVE_LTO7,    "[Ultrium 7-SCSI]" ),  /* HP Ultrium Gen 7  */
-		TAPEDRIVE( HPE_VENDOR_ID, "Ultrium 8-SCSI",  VENDOR_HP, DRIVE_LTO8,    "[Ultrium 8-SCSI]" ),  /* HPE Ultrium Gen 8 */
-		TAPEDRIVE( TANDBERG_VENDOR_ID, "LTO-5 HH",   VENDOR_HP, DRIVE_LTO5_HH, "[TANDBERG LTO5]" ),  /* TANDBERG LTO-5 HH */
-		TAPEDRIVE( TANDBERG_VENDOR_ID, "LTO-6 HH",   VENDOR_HP, DRIVE_LTO6_HH, "[TANDBERG LTO6]" ),  /* TANDBERG LTO-6 HH */
+		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 5-SCSI",  DRIVE_LTO5,    "[Ultrium 5-SCSI]" ),  /* HP Ultrium Gen 5  */
+		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 6-SCSI",  DRIVE_LTO6,    "[Ultrium 6-SCSI]" ),  /* HP Ultrium Gen 6  */
+		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 7-SCSI",  DRIVE_LTO7,    "[Ultrium 7-SCSI]" ),  /* HP Ultrium Gen 7  */
+		TAPEDRIVE( HPE_VENDOR_ID, "Ultrium 8-SCSI",  DRIVE_LTO8,    "[Ultrium 8-SCSI]" ),  /* HPE Ultrium Gen 8 */
 		/* End of supported_devices */
 		NULL
 };
@@ -228,6 +226,26 @@ static struct _timeout_tape timeout_lto9[] = {
 	{-1, -1}
 };
 
+static struct _timeout_tape timeout_ltoA[] = {
+    { ERASE,                           16320  },
+    { FORMAT_MEDIUM,                   3180   },
+    { LOAD_UNLOAD,                     780    },
+    { LOCATE10,                        104880 },
+    { LOCATE16,                        104880 },
+    { READ,                            2340   },
+    { READ_BUFFER,                     480    },
+    { REWIND,                          600    },
+    { SEND_DIAGNOSTIC,                 1980   },
+    { SET_CAPACITY,                    780    },
+    { SPACE6,                          104880 },
+    { SPACE16,                         104880 },
+    { VERIFY,                          104880 },
+    { WRITE,                           1500   },
+    { WRITE_BUFFER,                    540    },
+    { WRITE_FILEMARKS6,                1620   },
+    {-1, -1}
+};
+
 static struct _timeout_tape timeout_lto5_hh[] = {
 	{ ERASE,                           18000 },
 	{ FORMAT_MEDIUM,                   1560  },
@@ -328,6 +346,26 @@ static struct _timeout_tape timeout_lto9_hh[] = {
 	{-1, -1}
 };
 
+static struct _timeout_tape timeout_ltoA_hh[] = {
+	{ ERASE,                           205440 },
+	{ FORMAT_MEDIUM,                   3180   },
+	{ LOAD_UNLOAD,                     780    },
+	{ LOCATE10,                        104880 },
+	{ LOCATE16,                        104880 },
+	{ READ,                            2340   },
+	{ READ_BUFFER,                     480    },
+	{ REWIND,                          600    },
+	{ SEND_DIAGNOSTIC,                 1980   },
+	{ SET_CAPACITY,                    780    },
+	{ SPACE6,                          2940   },
+	{ SPACE16,                         2940   },
+	{ VERIFY,                          104880 },
+	{ WRITE,                           1500   },
+	{ WRITE_BUFFER,                    540    },
+	{ WRITE_FILEMARKS6,                1620   },
+	{-1, -1}
+};
+
 static int _create_table_tape(struct timeout_tape **result,
 							  struct _timeout_tape* base,
 							  struct _timeout_tape* override)
@@ -403,6 +441,12 @@ int hp_tape_init_timeout(struct timeout_tape** table, int type)
 			break;
 		case DRIVE_LTO9_HH:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto9_hh);
+			break;
+		case DRIVE_LTOA:
+			ret = _create_table_tape(table, timeout_lto, timeout_ltoA);
+			break;
+		case DRIVE_LTOA_HH:
+			ret = _create_table_tape(table, timeout_lto, timeout_ltoA_hh);
 			break;
 		default:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto7_hh);
