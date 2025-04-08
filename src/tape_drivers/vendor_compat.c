@@ -281,20 +281,35 @@ struct error_table standard_tape_errors[] = {
 	{0xFFFFFF, -EDEV_UNKNOWN,                   "Unknown Error code"},
 };
 
-struct supported_device **get_supported_devs(const char *vendor_str)
+int get_vendor_id(char* vendor)
+{
+	if (!strncmp(vendor, IBM_VENDOR_ID, strlen(IBM_VENDOR_ID)))
+		return VENDOR_IBM;
+	else if (!strncmp(vendor, HP_VENDOR_ID, strlen(HP_VENDOR_ID)))
+		return VENDOR_HP;
+	else if (!strncmp(vendor, HPE_VENDOR_ID, strlen(HPE_VENDOR_ID)))
+		return VENDOR_HP;
+	else if (!strncmp(vendor, QUANTUM_VENDOR_ID, strlen(QUANTUM_VENDOR_ID)))
+		return VENDOR_QUANTUM;
+	else
+		return VENDOR_UNKNOWN;
+}
+
+struct supported_device **get_supported_devs(int vendor)
 {
 	struct supported_device **cur = NULL;
 
-	if (! strncmp(vendor_str, IBM_VENDOR_ID, strlen(IBM_VENDOR_ID)))
-		cur = ibm_supported_drives;
-	else if (! strncmp(vendor_str, HP_VENDOR_ID, strlen(HP_VENDOR_ID)))
-		cur = hp_supported_drives;
-	else if (! strncmp(vendor_str, HPE_VENDOR_ID, strlen(HPE_VENDOR_ID)))
-		cur = hp_supported_drives;
-	else if (! strncmp(vendor_str, TANDBERG_VENDOR_ID, strlen(TANDBERG_VENDOR_ID)))
-		cur = hp_supported_drives;
-	else if (! strncmp(vendor_str, QUANTUM_VENDOR_ID, strlen(QUANTUM_VENDOR_ID)))
-		cur = quantum_supported_drives;
+	switch (vendor) {
+		case VENDOR_IBM:
+			cur = ibm_supported_drives;
+			break;
+		case VENDOR_HP:
+			cur = hp_supported_drives;
+			break;
+		case VENDOR_QUANTUM:
+			cur = quantum_supported_drives;
+			break;
+	}
 
 	return cur;
 }
@@ -337,6 +352,12 @@ unsigned char assume_cart_type(const unsigned char dc)
 			break;
 		case TC_DC_LTO9:
 			cart = TC_MP_LTO9D_CART;
+			break;
+		case TC_DC_LTOA:
+			cart = TC_MP_LTOAD_CART;
+			break;
+		case TC_DC_LTOPA:
+			cart = TC_MP_LTOPAD_CART;
 			break;
 		default:
 			// Do nothing

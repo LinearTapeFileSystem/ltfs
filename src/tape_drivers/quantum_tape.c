@@ -63,12 +63,10 @@
 #include "libltfs/ltfs_endian.h"
 
 struct supported_device *quantum_supported_drives[] = {
-	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH5",  VENDOR_QUANTUM,   DRIVE_LTO5_HH, "[ULTRIUM-HH5]" ),  /* QUANTUM Ultrium Gen 5 Half-High */
-	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH6",  VENDOR_QUANTUM,   DRIVE_LTO6_HH, "[ULTRIUM-HH6]" ),  /* QUANTUM Ultrium Gen 6 Half-High */
-	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH7",  VENDOR_QUANTUM,   DRIVE_LTO7_HH, "[ULTRIUM-HH7]" ),  /* QUANTUM Ultrium Gen 7 Half-High */
-	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH8",  VENDOR_QUANTUM,   DRIVE_LTO8_HH, "[ULTRIUM-HH8]" ),  /* QUANTUM Ultrium Gen 8 Half-High */
-	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM 5",    VENDOR_QUANTUM_B, DRIVE_LTO5_HH, "[ULTRIUM-5]" ),    /* Another QUANTUM Ultrium Gen 5 Half-High */
-	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM 6",    VENDOR_QUANTUM_B, DRIVE_LTO6_HH, "[ULTRIUM-6]" ),    /* Another QUANTUM Ultrium Gen 6 Half-High */
+	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH5",  DRIVE_LTO5_HH, "[ULTRIUM-HH5]" ),  /* QUANTUM Ultrium Gen 5 Half-High */
+	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH6",  DRIVE_LTO6_HH, "[ULTRIUM-HH6]" ),  /* QUANTUM Ultrium Gen 6 Half-High */
+	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH7",  DRIVE_LTO7_HH, "[ULTRIUM-HH7]" ),  /* QUANTUM Ultrium Gen 7 Half-High */
+	TAPEDRIVE( QUANTUM_VENDOR_ID, "ULTRIUM-HH8",  DRIVE_LTO8_HH, "[ULTRIUM-HH8]" ),  /* QUANTUM Ultrium Gen 8 Half-High */
 	/* End of supported_devices */
 	NULL
 };
@@ -247,6 +245,25 @@ static struct _timeout_tape timeout_lto9_hh[] = {
 	{ WRITE_FILEMARKS6,                1680  },
 	{-1, -1}
 };
+static struct _timeout_tape timeout_ltoA_hh[] = {
+	{ ERASE,                           205440 },
+	{ FORMAT_MEDIUM,                   3180   },
+	{ LOAD_UNLOAD,                     780    },
+	{ LOCATE10,                        104880 },
+	{ LOCATE16,                        104880 },
+	{ READ,                            2340   },
+	{ READ_BUFFER,                     480    },
+	{ REWIND,                          600    },
+	{ SEND_DIAGNOSTIC,                 1980   },
+	{ SET_CAPACITY,                    780    },
+	{ SPACE6,                          2940   },
+	{ SPACE16,                         2940   },
+	{ VERIFY,                          104880 },
+	{ WRITE,                           1500   },
+	{ WRITE_BUFFER,                    540    },
+	{ WRITE_FILEMARKS6,                1620   },
+	{-1, -1}
+};
 
 static int _create_table_tape(struct timeout_tape **result,
 							  struct _timeout_tape* base,
@@ -308,6 +325,9 @@ int quantum_tape_init_timeout(struct timeout_tape** table, int type)
 			break;
 		case DRIVE_LTO9_HH:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto9_hh);
+			break;
+		case DRIVE_LTOA_HH:
+			ret = _create_table_tape(table, timeout_lto, timeout_ltoA_hh);
 			break;
 		default:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto7_hh);
