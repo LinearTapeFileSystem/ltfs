@@ -203,7 +203,7 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 	size_t sizelen = 0;
 	char *rule = NULL, last, *ptr;
 	int ruleLen = (sizeof(char) * (int)(len + 1));
-	rule = (char)malloc(ruleLen);
+	rule = (char*)calloc(ruleLen,sizeof(char));
 	if (rule == NULL) {
 		return -LTFS_NO_MEMORY;
 	}
@@ -212,9 +212,9 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 		ltfsmsg(LTFS_ERR, 11143E, len);
 		return -LTFS_POLICY_INVALID;
 	}
+	const char* param = criteria + sizelen;
 
-	memset(rule, 0, ruleLen);
-	snprintf(rule, len - sizelen, "%s", criteria + sizelen);
+	snprintf(rule, len - sizelen, "%s", param);
 
 	for (ptr=&rule[0]; *ptr; ptr++) {
 		if (isalpha(*ptr) && *(ptr+1) && isalpha(*(ptr+1))) {
@@ -233,6 +233,7 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 			multiplier = 1024 * 1024 * 1024;
 		else {
 			ltfsmsg(LTFS_ERR, 11149E, last);
+			SAFE_FREE(rule);
 			return -LTFS_POLICY_INVALID;
 		}
 		rule[strlen(rule)-1] = '\0';
@@ -240,14 +241,15 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 
 	if (strlen(rule) == 0) {
 		ltfsmsg(LTFS_ERR, 11150E);
+		SAFE_FREE(rule);
 		return -LTFS_POLICY_INVALID;
 	} else if (!isdigit(rule[0])) {
 		ltfsmsg(LTFS_ERR, 11151E);
+		SAFE_FREE(rule);
 		return -LTFS_POLICY_INVALID;
 	}
 	ic->max_filesize_criteria = strtoull(rule, NULL, 10) * multiplier;
-	free(rule);
-	if (ptr != NULL) free(ptr);
+	SAFE_FREE(rule);
 	return ret;
 }
 
@@ -261,7 +263,7 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 int index_criteria_parse_name(const char *criteria, size_t len, struct index_criteria *ic)
 {
 	char *delim, *rule, *rulebuf = NULL;
-	rulebuf = (char)malloc(sizeof(char) * (len + 1));
+	rulebuf = (char*)malloc(sizeof(char) * (len + 1));
 	if (rulebuf == NULL)
 	{
 		return -LTFS_NO_MEMORY;
@@ -276,12 +278,14 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 	/* Count the rules and check for empty ones */
 	if (rule[5] == ':') {
 		ltfsmsg(LTFS_ERR, 11305E, rule);
+		SAFE_FREE(rulebuf);
 		return -LTFS_POLICY_EMPTY_RULE;
 	}
 	for (delim=rule+6; *delim; delim++) {
 		if (*delim == ':') {
 			if (*(delim-1) == ':' || *(delim+1) == '\0') {
 				ltfsmsg(LTFS_ERR, 11305E, rule);
+				SAFE_FREE(rulebuf);
 				return -LTFS_POLICY_EMPTY_RULE;
 			}
 			++num_names;
@@ -291,6 +295,7 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 	ic->glob_patterns = calloc(num_names+1, sizeof(struct ltfs_name));
 	if (! ic->glob_patterns) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		SAFE_FREE(rulebuf);
 		return -LTFS_NO_MEMORY;
 	}
 	rule_ptr = ic->glob_patterns;
@@ -335,9 +340,7 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 			++rule_ptr;
 		}
 	}
-	free(rulebuf);
-	if (delim != NULL) free(delim);
-	if (rule != NULL) free(rule);
+	SAFE_FREE(rulebuf);
 	return ret;
 }
 
