@@ -58,7 +58,7 @@
 extern "C" {
 #endif
 
-#define LTFS_COPYRIGHT_0 "Copyright 2010, 2024 The LTFS project. All rights reserved."
+#define LTFS_COPYRIGHT_0 "Copyright 2010, 2025 The LTFS project. All rights reserved."
 #define LTFS_COPYRIGHT_1 "Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:"
 #define LTFS_COPYRIGHT_2 "* Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer."
 #define LTFS_COPYRIGHT_3 "* Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution."

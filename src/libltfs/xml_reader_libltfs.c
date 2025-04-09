@@ -359,11 +359,11 @@ static int _xml_parser_init(xmlTextReaderPtr reader, const char *top_name, int *
 	}
 	if (ver < min_version || ver > max_version) {
 		ltfsmsg(LTFS_ERR, 17021E, top_name, value);
-		xmlFree(value);
+		SAFE_XMLFREE(value);
 		return -LTFS_UNSUPPORTED_INDEX_VERSION;
 	}
 	*idx_version = ver;
-	xmlFree(value); 
+	SAFE_XMLFREE(value);
 
 	return 0;
 }

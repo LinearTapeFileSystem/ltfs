@@ -619,13 +619,21 @@ do { \
 #ifndef SAFE_FREE   
 #define SAFE_FREE(memobject)                            \
         do {                                            \
-            if(NULL != memobject)                       \
+            if(memobject)                              \
             {                                           \
                 free(memobject);                        \
                 memobject = NULL;                           \
             }                                              \
         }while(0)
 #endif
+
+#ifndef SAFE_XMLFREE  
+#ifdef _MSC_VER
+#define SAFE_XMLFREE xmlFree
+#else
+#define SAFE_XMLFREE SAFE_FREE
+#endif // !_MSC_VER
+#endif // !SAFE_VSNPRINTF
 
 
 
