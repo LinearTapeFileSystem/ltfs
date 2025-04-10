@@ -353,6 +353,12 @@ unsigned char assume_cart_type(const unsigned char dc)
 		case TC_DC_LTO9:
 			cart = TC_MP_LTO9D_CART;
 			break;
+		case TC_DC_LTOA:
+			cart = TC_MP_LTOAD_CART;
+			break;
+		case TC_DC_LTOPA:
+			cart = TC_MP_LTOPAD_CART;
+			break;
 		default:
 			// Do nothing
 			break;
