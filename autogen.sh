@@ -35,7 +35,7 @@
 #
 
 # Bootstrap LTFS
-echo "================================= ENTERING SCRIPT $0 on  $(pwd) ================================="
+
 
 mkdir -p build-aux
 

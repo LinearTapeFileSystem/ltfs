@@ -52,15 +52,12 @@
 */
 #ifdef mingw_PLATFORM
 	#include "arch/win/win_util.h"
-	#include "ltfscommon/ltfs_unistd.h"
-	#include "fusefw/fusefw_opt.h"
-	#include <ltfscommon/dirent.h>
 #else
-	#include <unistd.h>
-	#include <fuse_opt.h>
-	#include <dirent.h>
-#endif
 
+#endif
+#include <unistd.h>
+#include <fuse_opt.h>
+#include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -507,10 +504,7 @@ int filedebug_open(const char *name, void **handle)
 			devname = SAFE_STRDUP(name);
 		ltfsmsg(LTFS_INFO, 30001I, devname);
 
-		errno_t err = _sopen_s(state->fd, devname, _O_RDWR | _O_BINARY, _SH_DENYNO, 0);
-		if (err != 0) {
-			return 1;  
-		}
+		SAFE_OPEN(state->fd, devname, _O_RDWR | _O_BINARY, _SH_DENYWR, PERMISSION_READWRITE);
 		if (state->fd < 0) {
 			ltfsmsg(LTFS_ERR, 30002E, devname);
 			return -EDEV_INTERNAL_ERROR;
@@ -639,7 +633,7 @@ int filedebug_close(void *device)
 
 	if (state) {
 		if (state->fd > 0)
-			_close(state->fd);
+			SAFE_CLOSE(state->fd);
 		if (state->dirbase)
 			free(state->dirbase);
 		if (state->dirname)
@@ -784,10 +778,7 @@ int filedebug_read(void *device, char *buf, size_t count, struct tc_position *po
 			return ret;
 		}
 		if (ret > 0) {
-			errno_t err = _sopen_s(&fd,fname, O_RDONLY | O_BINARY, _SH_DENYNO, 0);
-			if (err != 0) {
-				return 1;  
-			}
+			SAFE_OPEN(&fd,fname, O_RDONLY | O_BINARY, _SH_DENYWR, PERMISSION_READWRITE);
 			free(fname);
 			if (fd < 0) {
 				ltfsmsg(LTFS_ERR, 30011E, errno);
@@ -798,11 +789,11 @@ int filedebug_read(void *device, char *buf, size_t count, struct tc_position *po
 			bytes_read = _read(fd, buf, count);
 			if (bytes_read < 0) {
 				ltfsmsg(LTFS_ERR, 30012E, errno);
-				_close(fd);
+				SAFE_CLOSE(fd);
 				return -EDEV_RW_PERM;
 			}
 
-			ret = _close(fd);
+			ret = SAFE_CLOSE(fd);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 30013E, errno);
 				return -EDEV_RW_PERM;
@@ -936,16 +927,7 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 			ret = -EDEV_NO_MEMORY;
 			return ret;
 		}
-		errno_t err = _sopen_s(&fd,fname,
-				  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-			S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO
-#ifndef _MSC_VER
-			, 0
-#endif
-		);
-		if (err != 0) {
-			return 1;  
-		}
+		SAFE_OPEN(&fd,fname,O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYWR, PERMISSION_READWRITE);
 		if (fd < 0) {
 			ltfsmsg(LTFS_ERR, 30024E, fname, errno);
 			free(fname);
@@ -954,13 +936,13 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 		free(fname);
 
 		/* write and close the file */
-		written = _write(fd, buf, count);
+		written = SAFE_WRITE(fd, buf, count);
 		if (written < 0) {
 			ltfsmsg(LTFS_ERR, 30025E, errno);
-			_close(fd);
+			SAFE_CLOSE(fd);
 			return -EDEV_RW_PERM;
 		}
-		ret = _close(fd);
+		ret = SAFE_CLOSE(fd);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 30026E, errno);
 			return -EDEV_RW_PERM;
@@ -1060,16 +1042,9 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 				return ret;
 			}
 
-			errno_t err = _sopen_s(&fd,fname,
+			SAFE_OPEN(&fd,fname,
 					  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-					  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO
-#ifndef _MSC_VER
-				, 0
-#endif
-			);
-			if (err != 0) {
-				return 1;  // Handle the error as needed
-			}
+					  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYWR, PERMISSION_READWRITE);
 			if (fd < 0) {
 				ltfsmsg(LTFS_ERR, 30033E, fname, errno);
 				free(fname);
@@ -1077,7 +1052,7 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 			}
 			free(fname);
 
-			ret = _close(fd);
+			ret = SAFE_CLOSE(fd);
 			if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 30034E, errno);
 			return -EDEV_RW_PERM;
@@ -2134,10 +2109,7 @@ int filedebug_read_attribute(void *device, const tape_partition_t part, const ui
 	fname = _filedebug_make_attrname(state, part, id);
 	if (!fname)
 		return -EDEV_NO_MEMORY;
-	errno_t err = _sopen_s(&fd,fname, O_RDONLY | O_BINARY, _SH_DENYNO, 0);
-	if (err != 0) {
-		return 1; 
-	}
+	SAFE_OPEN(&fd,fname, O_RDONLY | O_BINARY, _SH_DENYNO, PERMISSION_READ);
 	free(fname);
 	if (fd < 0) {
 		if (errno == ENOENT) {
@@ -2152,10 +2124,10 @@ int filedebug_read_attribute(void *device, const tape_partition_t part, const ui
 	bytes_read = _read(fd, buf, size);
 	if(bytes_read == -1) {
 		ltfsmsg(LTFS_WARN, 30063W, errno);
-		_close(fd);
+		SAFE_CLOSE(fd);
 		return -EDEV_CM_PERM;
 	}
-	_close(fd);
+	SAFE_CLOSE(fd);
 
 	return DEVICE_GOOD;
 }
@@ -2183,16 +2155,10 @@ int filedebug_write_attribute(void *device, const tape_partition_t part
 			ltfsmsg(LTFS_ERR, 30064E);
 			return -EDEV_NO_MEMORY;
 		}
-		errno_t err = _sopen_s(&fd,fname,
+		SAFE_OPEN(&fd,fname,
 				  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-				  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO
-#ifndef _MSC_VER
-			, 0
-#endif
-		);
-		if (err != 0) {
-			return 1;  
-		}
+				  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYWR, PERMISSION_READWRITE);
+
 
 		free(fname);
 		if (fd < 0) {
@@ -2201,13 +2167,13 @@ int filedebug_write_attribute(void *device, const tape_partition_t part
 		}
 
 		/* write and close the file */
-		written = _write(fd, buf, size);
+		written = SAFE_WRITE(fd, buf, size);
 		if (written < 0) {
 			ltfsmsg(LTFS_ERR, 30066E, errno);
-			_close(fd);
+			SAFE_CLOSE(fd);
 			return -EDEV_CM_PERM;
 		}
-		_close(fd);
+		SAFE_CLOSE(fd);
 
 		i += (attr_size + 5); /* Add header size of an attribute */
 	}
@@ -2406,18 +2372,13 @@ int _filedebug_write_eod(struct filedebug_data *state)
 		ltfsmsg(LTFS_ERR, 30072E);
 		return -EDEV_NO_MEMORY;
 	}
-	errno_t err = _sopen_s(&fd,fname,
+	SAFE_OPEN(&fd,fname,
 			  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-			  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYNO
-#ifndef _MSC_VER
-		, 0
-#endif
+			  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYWR
+		, PERMISSION_READWRITE
 	);
-	if (err != 0) {
-		return 1;  
-	}
 	free(fname);
-	if (fd < 0 || _close(fd) < 0) {
+	if (fd < 0 || SAFE_CLOSE(fd) < 0) {
 		ltfsmsg(LTFS_ERR, 30073E, errno);
 		return -EDEV_RW_PERM;
 	}
@@ -2469,7 +2430,7 @@ int _filedebug_remove_record(const struct filedebug_data *state,
 
 	for (i=0; i<3; ++i) {
 		fname[fname_len-1] = rec_suffixes[i];
-		ret = _unlink(fname);
+		ret = SAFE_UNLINK(fname);
 		if (ret < 0 && errno != ENOENT) {
 			ltfsmsg(LTFS_ERR, 30076E, errno);
 			free(fname);
@@ -2491,17 +2452,14 @@ int _filedebug_check_file(const char *fname)
 	int fd;
 	int ret;
 
-	errno_t err = _sopen_s(&fd,fname, O_RDWR | O_BINARY, _SH_DENYNO, 0);
-	if (err != 0) {
-		return 1;  
-	}
+	SAFE_OPEN(&fd,fname, O_RDWR | O_BINARY, _SH_DENYNO, 0);
 	if (fd < 0) {
 		if (errno == ENOENT)
 			return 0;
 		else
 			return -EDEV_RW_PERM;
 	} else {
-		ret = _close(fd);
+		ret = SAFE_CLOSE(fd);
 		if (ret < 0)
 			return -EDEV_RW_PERM;
 		else
@@ -2739,8 +2697,8 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 		return -LTFS_NO_MEMORY;
 	}
 	ltfsmsg(LTFS_INFO, 30081I, filename);
-	errno_t err = fopen_s(&infile,filename, "r");
-	if (err != 0 || infile == NULL) {
+	SAFE_FOPEN(&infile,filename, "r");
+	if (infile == NULL) {
 		return 1;
 	}
 	if (!infile) {

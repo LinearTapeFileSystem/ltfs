@@ -57,11 +57,8 @@
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#include "ltfscommon/ltfs_unistd.h"
-#else
-#include <unistd.h>
 #endif
-
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

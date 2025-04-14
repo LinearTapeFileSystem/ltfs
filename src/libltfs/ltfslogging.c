@@ -77,13 +77,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "ltfscommon/ltfs_unistd.h"
 #include "arch/win/winlog.h"
 #else
 #include <dlfcn.h>
 #include <sys/types.h>
 #endif
-
+#include <unistd.h>
 #include "libltfs/ltfslogging.h"
 #include "libltfs/ltfs_thread.h"
 #include "libltfs/ltfs_locking.h"

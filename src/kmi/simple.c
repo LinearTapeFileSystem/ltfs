@@ -50,12 +50,10 @@
 #include "libltfs/kmi_ops.h"
 #include "libltfs/ltfs_fuse_version.h"
 #include "key_format_ltfs.h"
-
+#include <fuse.h>
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#include <fusefw/fusefw.h>
-#else
-#include <fuse.h>
+
 #endif
 
 struct kmi_simple_options_data {

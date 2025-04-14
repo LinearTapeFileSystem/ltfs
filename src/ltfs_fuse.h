@@ -64,12 +64,9 @@ extern "C" {
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#include <fusefw/fusefw.h>
-
-#else
-	#include <fuse.h>
 #endif
 
+#include <fuse.h>
 #include "libltfs/ltfs_fuse_version.h"
 #include "libltfs/ltfs.h"
 #include "libltfs/plugin.h"

@@ -53,18 +53,14 @@
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#include <fusefw/fusefw.h>
-#include <ltfscommon/getopt.h>
 #else
 #include <syslog.h>
-#include <fuse.h>
-#include <getopt.h>
 #endif /* mingw_PLATFORM */
 
 
 #include "libltfs/ltfs_fuse_version.h"
-
-
+#include <fuse.h>
+#include <getopt.h>
 #include "libltfs/ltfs.h"
 #include "ltfs_copyright.h"
 #include "libltfs/index_criteria.h"

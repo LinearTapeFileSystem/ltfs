@@ -63,7 +63,6 @@ extern "C" {
 
 #ifdef mingw_PLATFORM
 	#include "arch/win/win_util.h"
-	#include "ltfscommon/ltfs_unistd.h"
 	#include <time.h>
 #else
 	#include <unistd.h>
@@ -89,7 +88,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stdlib.h>
 #include <inttypes.h>
-
+#include <unistd.h>
 #include <io.h>
 #include <errno.h>
 #include <fcntl.h>

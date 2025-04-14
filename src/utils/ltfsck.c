@@ -49,17 +49,14 @@
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#include <fusefw/fusefw.h>
-#include <ltfscommon/getopt.h>
 #else
-#include <getopt.h>
 #include <uuid/uuid.h>
 #include <syslog.h>
-#include <fuse.h>
 #include <sys/param.h>
 #endif /* mingw_PLATFORM */
 
-
+#include <fuse.h>
+#include <getopt.h>
 #include "libltfs/ltfs_fuse_version.h"
 
 #include "libltfs/ltfs_internal.h"
