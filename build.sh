@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 # This is the script for building the tree under CodeQL scanning in github flow.
 # Do not use on other environments
 

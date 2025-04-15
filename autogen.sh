@@ -36,7 +36,6 @@
 
 # Bootstrap LTFS
 
-
 mkdir -p build-aux
 
 aclocal
