@@ -67,7 +67,6 @@
 #include "config.h"
 #endif
 
-/* GPV - REMAINDER! Unwrap this line when a fix is found for winbuild */
 #ifndef mingw_PLATFORM
 #if ! ((SIZEOF_TIME_T == 4) || (SIZEOF_TIME_T == 8))
 	#error time_t width is not 4 or 8

@@ -210,10 +210,6 @@ int main(int argc, char **argv)
 	char *lang, *cmd_args;
 	const char *config_file = NULL;
 	void *message_handle;
-	/* To do some tests sometimes GPV
-	struct slmain_device_info* wt_info = (struct slmain_device_info*)malloc(sizeof(struct slmain_device_info*));
-	slif_get_device_info("5.0.0.0", wt_info);
-	*/
 	int fuse_argc = argc;
 	char **fuse_argv = calloc(fuse_argc, sizeof(char *));
 	if (! fuse_argv) {
