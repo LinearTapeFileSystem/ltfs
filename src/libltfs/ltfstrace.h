@@ -217,6 +217,9 @@ extern _time_stamp_t        start_offset;
 
 static inline void ltfs_request_trace(uint32_t req_num, uint64_t info1, uint64_t info2)
 {
+#ifdef mingw_PLATFORM
+	return;
+#endif
 	if (!trace_enable)
 		return;
 	if (req_trace) {
