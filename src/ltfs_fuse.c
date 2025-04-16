@@ -68,8 +68,7 @@
 #include "libltfs/kmi.h"
 
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
-
+#include "libltfs/arch/win/win_util.h"
 #endif
 
 #if (__WORDSIZE == 64 || ULONG_MAX == 0xffffffffffffffffUL)
@@ -81,7 +80,6 @@
 #endif
 
 #ifdef mingw_PLATFORM
-
 static struct fuse_context *context;
 #define fuse_get_context() context
 #endif
@@ -131,7 +129,7 @@ static struct file_info *_new_file_info(const char *path)
 		return NULL;
 	}
 	if (path) {
-		fi->path = SAFE_STRDUP(path);
+		fi->path = strdup(path);
 		if (! fi->path) {
 			ltfsmsg(LTFS_ERR, 10001E, "_new_file_info: path");
 			ltfs_mutex_destroy(&fi->lock);
@@ -361,7 +359,7 @@ int ltfs_fuse_statfs(const char *path, struct statvfs *buf)
 int ltfs_fuse_open(const char *path, struct fuse_file_info *fi)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
-	struct ltfs_file_handle *file=NULL;
+	struct ltfs_file_handle *file;
 	struct file_info *file_info;
 	void *dentry_handle;
 	int ret;
@@ -468,7 +466,7 @@ int ltfs_fuse_release(const char *path, struct fuse_file_info *fi)
 int ltfs_fuse_opendir(const char *path, struct fuse_file_info *fi)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
-	struct ltfs_file_handle *file=NULL;
+	struct ltfs_file_handle *file;
 	struct file_info *file_info;
 	void *dentry_handle;
 	int ret;
@@ -1075,7 +1073,7 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_MOUNT), 0, 0);
 
-	if (priv->pid_orig != SAFE_GETPID()) {
+	if (priv->pid_orig != getpid()) {
 		/*
 		 * Reopen device when LTFS was forked in fuse_main().
 		 * Backend must handle reopen correctly if it sis needed.

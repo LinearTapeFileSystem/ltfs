@@ -54,110 +54,10 @@
 **
 *************************************************************************************
 */
-#ifndef mingw_PLATFORM
 #include <syslog.h>
+#include <dirent.h>
 #include <pwd.h>
 #include <grp.h>
-#include <dirent.h>
-#else
-#include "fusefw/fusefw.h"
-#include <ltfscommon/dirent.h>
-
-
-struct passwd* getpwnam(const char* username) {
-	SID_NAME_USE sidType;
-	DWORD sidSize = 0, domainSize = 0;
-	char* sidBuffer = NULL, * domainBuffer = NULL;
-	struct passwd* result = NULL;
-
-	// First call to determine buffer sizes
-	LookupAccountNameA(NULL, username, NULL, &sidSize, NULL, &domainSize, &sidType);
-
-	if (sidSize == 0 || domainSize == 0) {
-		fprintf(stderr, "Error: User '%s' not found.\n", username);
-		return NULL;
-	}
-
-	// Allocate memory for SID and domain name
-	sidBuffer = (char*)malloc(sidSize);
-	domainBuffer = (char*)malloc(domainSize);
-	if (!sidBuffer || !domainBuffer) {
-		fprintf(stderr, "Error: Memory allocation failed.\n");
-		free(sidBuffer);
-		free(domainBuffer);
-		return NULL;
-	}
-
-	// Look up the user
-	if (!LookupAccountNameA(NULL, username, sidBuffer, &sidSize, domainBuffer, &domainSize, &sidType)) {
-		fprintf(stderr, "Error: LookupAccountNameA failed for user '%s'.\n", username);
-		free(sidBuffer);
-		free(domainBuffer);
-		return NULL;
-	}
-
-	// Populate the passwd structure
-	result = (struct passwd*)malloc(sizeof(struct passwd));
-	if (!result) {
-		fprintf(stderr, "Error: Memory allocation for passwd structure failed.\n");
-		free(sidBuffer);
-		free(domainBuffer);
-		return NULL;
-	}
-
-	result->pw_name = _strdup(username);  // Duplicate the username
-	result->pw_passwd = NULL;            // Windows doesn't use /etc/passwd
-	result->pw_uid = sidSize;            // Use SID size as a unique ID for demo
-	result->pw_gid = 0;                  // Not applicable on Windows
-	result->pw_gecos = _strdup(domainBuffer); // Domain name as description
-	result->pw_dir = NULL;               // No home directory information
-	result->pw_shell = NULL;             // No shell information
-
-	// Clean up
-	free(sidBuffer);
-	free(domainBuffer);
-
-	return result;
-}
-
-#include <windows.h>
-#include <lm.h>
-
-struct group* getgrnam(const char* groupname) {
-	LOCALGROUP_INFO_1* groupInfo = NULL;
-	DWORD entriesRead = 0, totalEntries = 0;
-	NET_API_STATUS status;
-
-	// Query local group information
-	wchar_t* wstr = NULL;
-	CHAR_TO_WCHAR(groupname, wstr);
-	status = NetLocalGroupGetInfo(NULL, (LPCWSTR)wstr, 1, (LPBYTE*)&groupInfo);
-	if (status != NERR_Success) {
-		fprintf(stderr, "Error: Group '%s' not found (Error code: %d).\n", groupname, status);
-		return NULL;
-	}
-	if (NULL != wstr)free(wstr);
-	// Allocate and populate the group structure
-	struct group* result = (struct group*)malloc(sizeof(struct group));
-	if (!result) {
-		fprintf(stderr, "Error: Memory allocation failed.\n");
-		NetApiBufferFree(groupInfo);
-		return NULL;
-	}
-
-	result->gr_name = _strdup(groupname); // Duplicate the group name
-	result->gr_passwd = NULL;             // No password in Windows groups
-	result->gr_gid = (int)entriesRead;    // Use entry count as GID placeholder
-	result->gr_mem = NULL;                // Members not implemented
-
-	// Clean up
-	NetApiBufferFree(groupInfo);
-
-	return result;
-}
-
-#endif
-
 
 #include "ltfs_fuse.h"
 #include "libltfs/ltfs.h"
@@ -175,11 +75,7 @@ volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGH
 /* Defined in src/ltfs.c */
 extern struct fuse_operations ltfs_ops;
 /* Defined in messages/ */
-
-char* bin_ltfs;
-
-
-
+extern char bin_ltfs_dat[];
 
 /**
  * Command line parsing
@@ -192,7 +88,7 @@ enum {
 };
 
 #define LTFS_OPT(templ,offset,value) { templ, offsetof(struct ltfs_fuse_data, offset), value }
-#define LTFS_OPT_KEY(templ, key)     { templ, INVALID_KEY, key }
+#define LTFS_OPT_KEY(templ, key)     { templ, -1U, key }
 
 /* Forward declarations */
 int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv);
@@ -529,15 +425,11 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 
 int mkdir_p(const char *path, mode_t mode)
 {
-	char* ptr;
-	char* buf = NULL;
-	int bufLen = (int)(strlen(path) + 1);
-	buf = (char*)malloc(sizeof(char*) * bufLen);
-	if(buf == NULL) return -LTFS_NO_MEMORY;
+	char *ptr, buf[strlen(path)+1];
 	struct stat statbuf;
 	int ret;
 
-	SAFE_SNPRINTF(buf,bufLen, "%s", path);
+	sprintf(buf, "%s", path);
 	ret = stat(path, &statbuf);
 	if (ret == 0)
 		return 0;
@@ -549,16 +441,13 @@ int mkdir_p(const char *path, mode_t mode)
 		if (*ptr == '\0' || last) {
 			ret = mkdir(buf, mode);
 			if (ret && errno != EEXIST) {
-				/* GPV - REMAINDER! Uncomment this line when a fix is found for winbuild */
-				//ltfsmsg(LTFS_ERR, 9014E, path, strerror(errno));
-				free(buf);
+				ltfsmsg(LTFS_ERR, 9014E, path, strerror(errno));
 				return 1;
 			}
 			if (! last)
 				*(ptr++) = '/';
 		}
 	}
-	free(buf);
 	return 0;
 }
 
@@ -603,11 +492,11 @@ int validate_sync_option(struct ltfs_fuse_data *priv)
 	}
 
 	/* Detect sync type */
-	if (SAFE_STRCASECMP(priv->sync_type_str, "time") == 0)
+	if (strcasecmp(priv->sync_type_str, "time") == 0)
 		priv->sync_type = LTFS_SYNC_TIME;
-	else if (SAFE_STRCASECMP(priv->sync_type_str, "close") == 0)
+	else if (strcasecmp(priv->sync_type_str, "close") == 0)
 		priv->sync_type = LTFS_SYNC_CLOSE;
-	else if (SAFE_STRCASECMP(priv->sync_type_str, "unmount") == 0)
+	else if (strcasecmp(priv->sync_type_str, "unmount") == 0)
 		priv->sync_type = LTFS_SYNC_UNMOUNT;
 	else {
 		ltfsmsg(LTFS_ERR, 14061E, priv->sync_type_str);
@@ -684,12 +573,13 @@ int main(int argc, char **argv)
 	struct ltfs_fuse_data *priv = (struct ltfs_fuse_data *) calloc(1, sizeof(struct ltfs_fuse_data));
 	char *lang, **mount_options, **snmp_options, *cmd_args;
 	void *message_handle;
+
 	priv->verbose = LTFS_INFO;
 	priv->allow_other = (geteuid() == 0) ? 1 : 0;
-	priv->pid_orig = SAFE_GETPID();
+	priv->pid_orig = getpid();
 
 	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
-	SAFE_GETENV(lang,"LANG");
+	lang = getenv("LANG");
 	if (! lang) {
 		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting ltfs.\n");
 		ret = setenv("LANG", "en_US.UTF-8", 1);
@@ -709,7 +599,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Register messages with libltfs */
-	ret = ltfsprintf_load_plugin("bin_ltfs", bin_ltfs, &message_handle);
+	ret = ltfsprintf_load_plugin("bin_ltfs", bin_ltfs_dat, &message_handle);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10012E, ret);
 		return 1;
@@ -799,10 +689,10 @@ int main(int argc, char **argv)
 		ltfsmsg(LTFS_ERR, 10001E, "ltfs (arguments)");
 		return -ENOMEM;
 	}
-	SAFE_STRCAT_S(cmd_args, cmd_args_len, argv[0]);
+	strcat(cmd_args, argv[0]);
 	for (i = 1; i < argc; i++) {
-		SAFE_STRCAT_S(cmd_args, cmd_args_len, " ");
-		SAFE_STRCAT_S(cmd_args, cmd_args_len, argv[i]);
+		strcat(cmd_args, " ");
+		strcat(cmd_args, argv[i]);
 	}
 	ltfsmsg(LTFS_INFO, 14104I, cmd_args);
 	free(cmd_args);
@@ -992,7 +882,7 @@ int main(int argc, char **argv)
 	/* Make sure we have a device name */
 	if (! priv->devname) {
 		/* Accept no devname when accessible index file is specified by '-o rollback_mount' */
-		if ( !priv->rollback_str || SAFE_ACCESS(priv->rollback_str, R_OK) ) {
+		if ( !priv->rollback_str || access(priv->rollback_str, R_OK) ) {
 			priv->devname = ltfs_default_device_name(priv->tape_plugin.ops);
 			if (! priv->devname) {
 				/* The backend \'%s\' does not have a default device */
@@ -1043,7 +933,6 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	char *index_rules_utf8;
 	char *fsname_base = "-ofsname=ltfs:";
 	char *fsname;
-	int fsnameLen = 0;
 	char *invalid_start;
 #ifdef __APPLE__
 	char *opt_volname = NULL;
@@ -1054,14 +943,12 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	bool is_worm = false, is_ro = false;
 
 	if (priv->devname) {
-		fsnameLen = (strlen(fsname_base) + strlen(priv->devname) + 1);
+		fsname = calloc(1, strlen(fsname_base) + strlen(priv->devname) + 1);
 	} else if (priv->rollback_str) {
-		fsnameLen = (strlen(fsname_base) + strlen(priv->rollback_str) + 1);
+		fsname = calloc(1, strlen(fsname_base) + strlen(priv->rollback_str) + 1);
 	} else {
-		fsnameLen = (strlen(fsname_base) + 1);
-
+		fsname = calloc(1, strlen(fsname_base) + 1);
 	}
-	fsname = calloc(1, fsnameLen);
 	if (!fsname) {
 		/* Memory allocation failed */
 		ltfsmsg(LTFS_ERR, 10001E, "fsname");
@@ -1076,7 +963,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 
 	/* Validate rollback_mount option */
 	if (priv->rollback_str) {
-		if (SAFE_ACCESS(priv->rollback_str, R_OK)) {
+		if (access(priv->rollback_str, R_OK)) {
 			errno = 0;
 			priv->rollback_gen = strtoul(priv->rollback_str, &invalid_start, 0);
 			if( (*invalid_start != '\0') || priv->rollback_gen == 0 ) {
@@ -1088,9 +975,9 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 
 	/* Validate append_only_mode */
 	if (priv->str_append_only_mode) {
-		if (SAFE_STRCASECMP(priv->str_append_only_mode, "on") == 0)
+		if (strcasecmp(priv->str_append_only_mode, "on") == 0)
 			priv->append_only_mode = 1;
-		else if (SAFE_STRCASECMP(priv->str_append_only_mode, "off") == 0)
+		else if (strcasecmp(priv->str_append_only_mode, "off") == 0)
 			priv->append_only_mode = 0;
 		else {
 			ltfsmsg(LTFS_ERR, 14115E, priv->str_append_only_mode);
@@ -1118,11 +1005,11 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	}
 
 	/* Set file system name to "ltfs:devname" in case FUSE doesn't pick it up */
-	SAFE_STRNCPY(fsname, fsname_base, fsnameLen);
+	strcpy(fsname, fsname_base);
 	if (priv->devname) {
-		SAFE_STRCAT_S(fsname, fsnameLen, priv->devname);
+		strcat(fsname, priv->devname);
 	} else if (priv->rollback_str) {
-		SAFE_STRCAT_S(fsname, fsnameLen, priv->rollback_str);
+		strcat(fsname, priv->rollback_str);
 	}
 	ret = fuse_opt_add_arg(args, fsname);
 	if (ret < 0) {
@@ -1208,9 +1095,9 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		/* Validate symbolic link type */
 		priv->data->livelink = false;
 		if (priv->symlink_str) {
-			if (SAFE_STRCASECMP(priv->symlink_str, "live") == 0)
+			if (strcasecmp(priv->symlink_str, "live") == 0)
 				priv->data->livelink = true;
-			else if (SAFE_STRCASECMP(priv->symlink_str, "posix") == 0)
+			else if (strcasecmp(priv->symlink_str, "posix") == 0)
 				priv->data->livelink = false;
 			else {
 				ltfsmsg(LTFS_ERR, 14093E, priv->symlink_str);
@@ -1372,14 +1259,15 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 						   priv->capture_dir, priv->data->label->vol_uuid);
 
 		if (ret > 0) {
-			SAFE_OPEN(fd,priv->data->index_cache_path_w, O_WRONLY | O_BINARY | O_CREAT, SHARE_FLAG_DENYRW , PERMISSION_READWRITE);
+			fd = open(priv->data->index_cache_path_w, O_WRONLY | O_BINARY | O_CREAT,
+					  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 			if (fd < 0) {
 				ltfsmsg(LTFS_WARN, 14120W, priv->capture_dir, errno);
 				free(priv->data->index_cache_path_w);
 				priv->data->index_cache_path_w = NULL;
 			} else {
 				ltfsmsg(LTFS_INFO, 14121I, priv->data->index_cache_path_w);
-				SAFE_CLOSE(fd);
+				close(fd);
 				fd = -1;
 			}
 		} else {
