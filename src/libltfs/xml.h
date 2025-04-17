@@ -279,8 +279,6 @@ struct xml_input_tape {
 	uint64_t           eod_pos;         /**< EOD position of the current partition. */
 	bool               saw_small_block; /**< Have we seen a small block yet? */
 	bool               saw_file_mark;   /**< If we saw a small blilock, was it a file mark? */
-	int                fd;              /**< File Descriptor for index cache if fd > 0 */
-	int                errno_fd;        /**< errno from the index cache */
 	char               *buf;            /**< 1-block input buffer. */
 	uint32_t           buf_size;        /**< Input buffer size. */
 	uint32_t           buf_start;       /**< Offset of first valid byte in input buffer. */

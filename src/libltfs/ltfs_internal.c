@@ -65,7 +65,6 @@
 #include "iosched.h"
 #include "ltfs_fsops.h"
 #include "xattr.h"
-#include "inc_journal.h"
 
 /**
  * Allocate an empty LTFS index.
@@ -395,7 +394,7 @@ out_free:
  * @return 0 on success, 1 if index file does not end with a file mark (but is otherwise valid),
  *         or a negative value on error.
  */
-int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, bool skip_dir, struct ltfs_volume *vol)
+int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume* vol)
 {
 	int ret, ret_sym;
 	struct tc_position pos;
@@ -417,26 +416,29 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, bool skip_dir, struc
 	}
 
 	/* Parse and validate the schema */
-	ret = xml_schema_from_tape(eod_pos, skip_dir, vol);
-	if ( vol->index->symerr_count ) {
-		if ( recover_symlink ) {
-			ret_sym = ltfs_split_symlink( vol );
+	ret = xml_schema_from_tape(eod_pos, vol);
+	if (vol->index->symerr_count) {
+		if (recover_symlink) {
+			ret_sym = ltfs_split_symlink(vol);
 			if (ret_sym < 0) {
 				ret = ret_sym;
-			} else if (ret == -LTFS_SYMLINK_CONFLICT) {
+			}
+			else if (ret == -LTFS_SYMLINK_CONFLICT) {
 				ret = 0;
 			}
-		} else {
+		}
+		else {
 			ltfsmsg(LTFS_ERR, 11321E);
 		}
-		free( vol->index->symlink_conflict );
+		free(vol->index->symlink_conflict);
 		vol->index->symerr_count = 0;
 	}
 
 	if (ret < 0) {
 		ltfsmsg(LTFS_WARN, 11194W, ret);
 		return ret;
-	} else if (ret == LTFS_NO_TRAIL_FM)
+	}
+	else if (ret == LTFS_NO_TRAIL_FM)
 		end_fm = false;
 
 	/* check volume UUID */
@@ -457,13 +459,15 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, bool skip_dir, struc
 		vol->index->backptr.partition != vol->label->partid_dp) {
 		ltfsmsg(LTFS_ERR, 11197E);
 		return -LTFS_INDEX_INVALID;
-	} else if (vol->index->backptr.partition == vol->index->selfptr.partition &&
+	}
+	else if (vol->index->backptr.partition == vol->index->selfptr.partition &&
 		vol->index->selfptr.block != 5 &&
 		vol->index->backptr.block != vol->index->selfptr.block &&
-		vol->index->backptr.block >= vol->index->selfptr.block - 2 ) {
+		vol->index->backptr.block >= vol->index->selfptr.block - 2) {
 		ltfsmsg(LTFS_ERR, 11197E);
 		return -LTFS_INDEX_INVALID;
-	} else if (vol->index->backptr.partition != 0 && vol->index->backptr.block < 5) {
+	}
+	else if (vol->index->backptr.partition != 0 && vol->index->backptr.block < 5) {
 		ltfsmsg(LTFS_ERR, 11197E);
 		return -LTFS_INDEX_INVALID;
 	}
@@ -479,6 +483,7 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, bool skip_dir, struc
 
 	return end_fm ? 0 : 1;
 }
+
 
 /**
  * Read an index file from file, storing the result in the given volume.
@@ -590,7 +595,7 @@ int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_e
 
 		/* try to read an index file */
 		check_err(tape_spacefm(vol->device, 1), 11202E, out);
-		ret = ltfs_read_index(*eod_pos, recover_symlink, false, vol);
+		ret = ltfs_read_index(*eod_pos, recover_symlink, vol);
 		if (ret < 0) { /* no index file found: go back 2 file marks and try again */
 			ltfsmsg(LTFS_DEBUG, 11204D);
 
@@ -754,7 +759,7 @@ int _ltfs_check_pointers(struct ltfs_index *ip_index, struct ltfs_index *dp_inde
 				ret = tape_seek(vol->device, &seekpos);
 				if (ret < 0)
 					return ret;
-				ret = ltfs_read_index(0, false, true, vol);
+				ret = ltfs_read_index(0, false, vol);
 				if (ret < 0)
 					return ret;
 				dp_backptr = vol->index->backptr.block;
@@ -1323,14 +1328,14 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 				}
 			}
 			/* write to data partition if it doesn't end in an index file */
-			ltfs_set_commit_message_reason(SYNC_RECOVERY, vol);
+
 			if (! dp_have_index || dp_blocks_after) {
 				ltfsmsg(LTFS_INFO, 17259I, "DP", vol->index->selfptr.partition, (unsigned long long)vol->index->selfptr.block);
-				ret = ltfs_write_index(vol->label->partid_dp, SYNC_RECOVERY, LTFS_FULL_INDEX, vol);
+				ret = ltfs_write_index(vol->label->partid_dp, SYNC_RECOVERY, vol);
 			}
 			if (!ret) {
 				ltfsmsg(LTFS_INFO, 17259I, "IP", vol->index->selfptr.partition, (unsigned long long)vol->index->selfptr.block);
-				ltfs_write_index(vol->label->partid_ip, SYNC_RECOVERY, LTFS_FULL_INDEX, vol);
+				ltfs_write_index(vol->label->partid_ip, SYNC_RECOVERY, vol);
 			}
 		} else {
 			ltfsmsg(LTFS_ERR, 11231E);
@@ -1409,13 +1414,11 @@ int ltfs_write_index_conditional(char partition, struct ltfs_volume *vol)
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	if (partition == ltfs_ip_id(vol) && ! vol->ip_index_file_end) {
-		ltfs_set_commit_message_reason(SYNC_CASCHE_PRESSURE, vol);
-		ret = ltfs_write_index(partition, SYNC_CASCHE_PRESSURE, LTFS_FULL_INDEX, vol);
+		ret = ltfs_write_index(partition, SYNC_CASCHE_PRESSURE, vol);
 	} else if (partition == ltfs_dp_id(vol) &&
 	         (! vol->dp_index_file_end ||
 	          (vol->ip_index_file_end && vol->index->selfptr.partition == ltfs_ip_id(vol)))) {
-		ltfs_set_commit_message_reason(SYNC_CASCHE_PRESSURE, vol);
-		ret = ltfs_write_index(partition, SYNC_CASCHE_PRESSURE, LTFS_FULL_INDEX, vol);
+		ret = ltfs_write_index(partition, SYNC_CASCHE_PRESSURE, vol);
 	}
 
 	return ret;
@@ -1534,24 +1537,5 @@ err_out_func:
 out_func:
 	free(lfdir);
 	free(path);
-	return ret;
-}
-
-int ltfs_set_dentry_dirty(struct dentry *d, struct ltfs_volume *vol)
-{
-	int ret = 0;
-	char *full_path = NULL;
-
-	if (!d->dirty) {
-		ret = ltfs_build_fullpath(&full_path, d);
-		if (!ret) {
-			incj_modify(full_path, d, vol);
-		} else {
-			vol->journal_err = true;
-		}
-	}
-
-	d->dirty = true;
-
 	return ret;
 }

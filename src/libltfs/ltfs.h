@@ -422,20 +422,19 @@ struct ltfs_volume {
 	/* LTFS format data */
 	struct tc_coherency ip_coh;    /**< Index partition coherency info */
 	struct tc_coherency dp_coh;    /**< Data partition coherency info */
-	struct ltfs_label *label;      /**< Information from the partition labels */
-	struct ltfs_index *index;      /**< Current cartridge index */
-	char   *index_cache_path_w;    /**< File name of on-disk index cache update at writing an index */
-	char   *index_cache_path_r;    /**< File name of on-disk index cache update at parsing an index */
+	struct ltfs_label* label;      /**< Information from the partition labels */
+	struct ltfs_index* index;      /**< Current cartridge index */
+	char* index_cache_path;      /**< File name of on-disk index cache */
 
 	/* Opaque handles to higher-level structures */
-	void *iosched_handle;          /**< Handle to the I/O scheduler state */
-	void *changer_handle;          /**< Handle to changer controller state */
-	void *dcache_handle;           /**< Handle to the Dentry cache manager state */
-	void *periodic_sync_handle;    /**< Handle to the periodic sync state */
-	void *kmi_handle;              /**< Handle to the key manager interface state */
+	void* iosched_handle;          /**< Handle to the I/O scheduler state */
+	void* changer_handle;          /**< Handle to changer controller state */
+	void* dcache_handle;           /**< Handle to the Dentry cache manager state */
+	void* periodic_sync_handle;    /**< Handle to the periodic sync state */
+	void* kmi_handle;              /**< Handle to the key manager interface state */
 
 	/* Internal state variables */
-	struct device_data *device;        /**< Device-specific data */
+	struct device_data* device;        /**< Device-specific data */
 	bool ip_index_file_end;            /**< Does the index partition end in an index file? */
 	bool dp_index_file_end;            /**< Does the data partition end in an index file? */
 	enum volume_mount_type mount_type; /**< Mount type defined by enum */
@@ -447,7 +446,7 @@ struct ltfs_volume {
 	 * You MUST hold the tape device lock before accessing this buffer. */
 	struct tape_offset last_pos;   /**< Position of last block read from the tape. */
 	unsigned long last_size;       /**< Size of last block read from the tape. */
-	char *last_block;              /**< Contents of last block read from the tape. */
+	char* last_block;              /**< Contents of last block read from the tape. */
 
 	/* Caches of cartridge health and capacity data. Take the device lock before using these. */
 	cartridge_health_info health_cache;
@@ -455,8 +454,8 @@ struct ltfs_volume {
 	struct device_capacity capacity_cache;
 
 	/* User-controlled parameters */
-	char *creator;                 /**< Creator string to use when writing labels, index files */
-	void *opt_args;                /**< FUSE command-line arguments */
+	char* creator;                 /**< Creator string to use when writing labels, index files */
+	void* opt_args;                /**< FUSE command-line arguments */
 	size_t cache_size_min;         /**< Starting scheduler cache size in MiB */
 	size_t cache_size_max;         /**< Maximum scheduler cache size in MiB */
 	bool reset_capacity;           /**< Force to reset tape capacity when formatting tape */
@@ -472,20 +471,15 @@ struct ltfs_volume {
 	bool set_pew;                  /**< Set PEW value */
 
 	bool livelink;                 /**< Live Link enabled? (SDE) */
-	char *mountpoint;              /**< Store mount point for Live Link (SDE) */
+	char* mountpoint;              /**< Store mount point for Live Link (SDE) */
 	size_t mountpoint_len;         /**< Store mount point path length (SDE) */
-	struct tape_attr *t_attr;      /**< Tape Attribute data */
-	mam_lockval_t lock_status;     /**< Total volume lock status from t_attr->vollock and index->vollock */
+	struct tape_attr* t_attr;      /**< Tape Attribute data */
+	mam_lockval_t lock_status;       /**< Total volume lock status from t_attr->vollock and index->vollock */
 	struct ltfs_timespec first_locate; /**< Time to first locate */
-	int file_open_count;           /**< Number of opened files */
+	int file_open_count;            /**< Number of opened files */
 
-	/* Journal structure for incremental index */
-	struct jentry       *journal;      /**< Journal for incremental index */
-	TAILQ_HEAD(jcreated_struct, jcreated_entry) created_dirs;
-	bool                journal_err;   /**< Journal error flag, write a full index next time forcibly */
+	const char* work_directory;
 
-	/* Misc */
-	const char *work_directory;    /**< work directory for profiler data, dump etc.*/
 };
 
 struct ltfs_label {
@@ -722,21 +716,21 @@ int ltfs_parse_library_backend_opts(void *opt_args, void *opts);
 
 void ltfs_set_index_dirty(bool locking, bool atime, struct ltfs_index *idx);
 void ltfs_unset_index_dirty(bool update_version, struct ltfs_index *idx);
-int ltfs_write_index(char partition, char *reason, enum ltfs_index_type type, struct ltfs_volume *vol);
-int ltfs_save_index_to_disk(const char *work_dir, char *reason, char id, struct ltfs_volume *vol);
+int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol);
+int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, struct ltfs_volume *vol);
 
 char ltfs_dp_id(struct ltfs_volume *vol);
 char ltfs_ip_id(struct ltfs_volume *vol);
 const char *ltfs_get_volume_uuid(struct ltfs_volume *vol);
 
-int ltfs_sync_index(char *reason, bool index_locking, enum ltfs_index_type type, struct ltfs_volume *vol);
+int ltfs_sync_index(char* reason, bool index_locking, struct ltfs_volume* vol);
 
 int ltfs_traverse_index_forward(struct ltfs_volume *vol, char partition, unsigned int gen,
-								bool skip_dir, f_index_found func, void **list, void *priv);
+								f_index_found func, void **list, void *priv);
 int ltfs_traverse_index_backward(struct ltfs_volume *vol, char partition, unsigned int gen,
-								 bool skip_dir, f_index_found func, void **list, void *priv);
+								 f_index_found func, void **list, void *priv);
 int ltfs_traverse_index_no_eod(struct ltfs_volume *vol, char partition, unsigned int gen,
-							   bool skip_dir, f_index_found func, void **list, void *priv);
+							    f_index_found func, void **list, void *priv);
 int ltfs_check_eod_status(struct ltfs_volume *vol);
 int ltfs_recover_eod(struct ltfs_volume *vol);
 int ltfs_release_medium(struct ltfs_volume *vol);
@@ -753,10 +747,6 @@ void ltfs_enable_livelink_mode(struct ltfs_volume *vol);
 int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol);
 
 int ltfs_get_rao_list(char *path, struct ltfs_volume *vol);
-int ltfs_build_fullpath(char **dest, struct dentry *d);
-
-void ltfs_set_commit_message_reason(char *reason, struct ltfs_volume *vol);
-void ltfs_set_commit_message_reason_unlocked(char *reason, struct ltfs_volume *vol);
 
 #ifdef __cplusplus
 }

@@ -4,7 +4,7 @@
           ]>
 
 <reference>
-  <title>LTFS Command Reference</title>
+  <title>IBM Storage Archive Command Reference</title>
 
   <refentry>
     <refmeta>
@@ -12,7 +12,7 @@
         <command>&dhcommand;</command>
       </refentrytitle>
       <manvolnum>8</manvolnum>
-      <refmiscinfo>LTFS</refmiscinfo>
+      <refmiscinfo>IBM Storage Archive</refmiscinfo>
     </refmeta>
 
     <refnamediv>

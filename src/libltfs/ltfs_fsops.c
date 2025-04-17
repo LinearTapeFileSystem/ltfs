@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2022 IBM Corp. All rights reserved.
+**  Copyright 2010, 2021 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -66,7 +66,6 @@
 #include "dcache.h"
 #include "pathname.h"
 #include "index_criteria.h"
-#include "inc_journal.h"
 #include "arch/time_internal.h"
 
 int ltfs_fsops_open(const char *path, bool open_write, bool use_iosched, struct dentry **d,
@@ -368,7 +367,6 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 	if (! isdir)
 		++vol->index->file_count;
 	ltfs_set_index_dirty(false, false, vol->index);
-	incj_create(path_norm, d, vol);
 	d->dirty = true;
 	ltfs_mutex_unlock(&vol->index->dirty_lock);
 	vol->file_open_count++;
@@ -524,10 +522,7 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
 	releasewrite_mrsw(&d->meta_lock);
 
 	ltfs_mutex_lock(&vol->index->dirty_lock);
-	if (d->isdir) {
-		incj_rmdir(path_norm, d, vol);
-	} else {
-		incj_rmfile(path_norm, d, vol);
+	if (!d->isdir) {
 		--vol->index->file_count;
 	}
 	ltfs_set_index_dirty(false, false, vol->index);
@@ -871,15 +866,6 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	}
 
 	fromdentry->dirty = true;
-
-	/* Process the incremental journal */
-	if (fromdentry->isdir)
-		incj_rmdir(from_norm_copy, fromdentry, vol);
-	else
-		incj_rmfile(from_norm_copy, fromdentry, vol);
-
-	fs_split_path(to_norm_copy, &to_filename_incj, strlen(to_norm_copy) + 1);
-	incj_create(to_norm_copy, fromdentry, vol);
 
 	/* Release dentry of source */
 	if (! iosched_initialized(vol))
@@ -1579,7 +1565,7 @@ int ltfs_fsops_utimens(struct dentry *d, const struct ltfs_timespec ts[2], struc
 					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[0].tv_sec);
 		get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, true, vol->index);
-		ltfs_set_dentry_dirty(d, vol);
+
 	}
 	if (d->modify_time.tv_sec != ts[1].tv_sec || d->modify_time.tv_nsec != ts[1].tv_nsec) {
 		d->modify_time = ts[1];
@@ -1589,7 +1575,7 @@ int ltfs_fsops_utimens(struct dentry *d, const struct ltfs_timespec ts[2], struc
 					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[1].tv_sec);
 		get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, false, vol->index);
-		ltfs_set_dentry_dirty(d, vol);
+
 	}
 	if (dcache_initialized(vol))
 		dcache_flush(d, FLUSH_METADATA, vol);
@@ -1656,7 +1642,7 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[3].tv_sec);
 		isctime=true;
 		ltfs_set_index_dirty(true, false, vol->index);
-		ltfs_set_dentry_dirty(d, vol);
+
 	}
 	if (ts[0].tv_sec != 0 || ts[0].tv_nsec != 0) {
 		d->access_time = ts[0];
@@ -1666,7 +1652,7 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[0].tv_sec);
 		if(!isctime) get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, true, vol->index);
-		ltfs_set_dentry_dirty(d, vol);
+
 	}
 	if (ts[1].tv_sec != 0 || ts[1].tv_nsec != 0) {
 		d->modify_time = ts[1];
@@ -1676,7 +1662,7 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[1].tv_sec);
 		if(!isctime) get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, false, vol->index);
-		ltfs_set_dentry_dirty(d, vol);
+
 	}
 	if (ts[2].tv_sec != 0 || ts[2].tv_nsec != 0) {
 		d->creation_time = ts[2];
@@ -1686,7 +1672,7 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
 					d->platform_safe_name, (unsigned long long)d->uid, (unsigned long long)ts[2].tv_sec);
 		if(!isctime) get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, false, vol->index);
-		ltfs_set_dentry_dirty(d, vol);
+
 	}
 
 	if (dcache_initialized(vol))
@@ -1723,7 +1709,7 @@ int ltfs_fsops_set_readonly(struct dentry *d, bool readonly, struct ltfs_volume 
 		d->readonly = readonly;
 		get_current_timespec(&d->change_time);
 		ltfs_set_index_dirty(true, false, vol->index);
-		ltfs_set_dentry_dirty(d, vol);
+
 		if (dcache_initialized(vol))
 			dcache_flush(d, FLUSH_METADATA, vol);
 	}
@@ -2108,10 +2094,10 @@ int ltfs_fsops_volume_sync(char *reason, struct ltfs_volume *vol)
 		return ret;
 
 	ltfs_mutex_lock(&vol->index->dirty_lock);
-	ltfs_set_commit_message_reason_unlocked(reason, vol);
+
 	ltfs_mutex_unlock(&vol->index->dirty_lock);
 
-	ret = ltfs_sync_index(reason, true, LTFS_INDEX_AUTO, vol);
+	ret = ltfs_sync_index(reason, true, vol);
 
 	return ret;
 }

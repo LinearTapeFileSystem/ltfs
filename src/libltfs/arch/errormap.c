@@ -342,7 +342,6 @@ static struct error_map fuse_error_list[] = {
 	{ LTFS_XML_WRONG_PART_MAP,       "I5048E", EINVAL},
 	{ LTFS_XML_WRONG_BLOCKSIZE,      "I5049E", EINVAL},
 	{ LTFS_XML_WRONG_COMP,           "I5050E", EINVAL},
-    { LTFS_BAD_INDEX_TYPE,           "I5051E", EINVAL},
 	{ EDEV_NO_SENSE,                 "D0000E", EIO},
 	{ EDEV_OVERRUN,                  "D0002E", EIO},
 	{ EDEV_UNDERRUN,                 "D0003E", ENODATA},

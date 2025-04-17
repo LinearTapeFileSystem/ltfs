@@ -83,13 +83,13 @@ xmlBufferPtr xml_make_label(const char *creator, tape_partition_t partition,
 xmlBufferPtr xml_make_schema(const char *creator, const struct ltfs_index *idx);
 int xml_schema_to_file(const char *filename, const char *creator,
 					   const char *reason, const struct ltfs_index *idx);
-int xml_schema_to_tape(char *reason, int type, struct ltfs_volume *vol);
+int xml_schema_to_tape(char *reason, struct ltfs_volume *vol);
 
 /* Functions for reading XML files. See xml_reader_libltfs.c */
 int xml_label_from_file(const char *filename, struct ltfs_label *label);
 int xml_label_from_mem(const char *buf, int buf_size, struct ltfs_label *label);
 int xml_schema_from_file(const char *filename, struct ltfs_index *idx, struct ltfs_volume *vol);
-int xml_schema_from_tape(uint64_t eod_pos, bool skip_dir, struct ltfs_volume *vol);
+int xml_schema_from_tape(uint64_t eod_pos,  struct ltfs_volume *vol);
 int xml_extent_symlink_info_from_file(const char *filename, struct dentry *d);
 
 #endif /* __xml_libltfs_h */

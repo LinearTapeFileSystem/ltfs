@@ -506,31 +506,33 @@ int xml_parse_time(bool msg, const char *fmt_time, struct ltfs_timespec *rawtime
  * This function detects whether the Index being parsed ends in a file mark, and if so, it
  * positions the tape before the file mark.
  */
-int xml_input_tape_read_callback(void *context, char *buffer, int len)
+int xml_input_tape_read_callback(void* context, char* buffer, int len)
 {
-	struct xml_input_tape *ctx = context;
+	struct xml_input_tape* ctx = context;
 	ssize_t nread, nr2;
-	char *buf2;
-	int bytes_saved, bytes_remaining, ret_sp, ret_fd;
+	char* buf2;
+	int bytes_saved, bytes_remaining, ret_sp;
 
 	if (len == 0)
 		return 0;
 
 	/* Try to fill the whole buffer from cache. If that fails, try to read from tape. */
-	if (len <= (int32_t) ctx->buf_used) {
+	if (len <= (int32_t)ctx->buf_used) {
 		memcpy(buffer, ctx->buf + ctx->buf_start, len);
 		ctx->buf_used -= len;
 		if (ctx->buf_used > 0)
 			ctx->buf_start += len;
 		else
 			ctx->buf_start = 0;
-	} else {
+	}
+	else {
 		if (ctx->buf_used > 0) {
 			memcpy(buffer, ctx->buf + ctx->buf_start, ctx->buf_used);
 			bytes_saved = ctx->buf_used;
 			ctx->buf_used = 0;
 			ctx->buf_start = 0;
-		} else
+		}
+		else
 			bytes_saved = 0;
 		bytes_remaining = len - bytes_saved;
 
@@ -545,26 +547,15 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 
 			/* Try to read a block into the buffer. */
 			nread = tape_read(ctx->vol->device, ctx->buf, ctx->buf_size, false,
-							  ctx->vol->kmi_handle);
+				ctx->vol->kmi_handle);
 			++ctx->current_pos;
-
-			/* Write down the data read to the read cache */
-			if (ctx->fd > 0 && nread > 0) {
-				ret_fd = SAFE_WRITE(ctx->fd, ctx->buf, nread);
-				if (ret_fd < 0) {
-					ltfsmsg(LTFS_ERR, 17244E, (int)errno);
-					ctx->errno_fd = -LTFS_CACHE_IO;
-					return -1;
-				}
-			}
-
-			/* Condition check of data read */
 			if (nread < 0) {
 				/* We know we're not at EOD, so read errors are unexpected. */
 				ltfsmsg(LTFS_ERR, 17039E, (int)nread);
 				ctx->err_code = nread;
 				return -1;
-			} else if ((size_t) nread < ctx->buf_size) {
+			}
+			else if ((size_t)nread < ctx->buf_size) {
 				/* Caught a small read. If this is a file mark, position before it. If
 				 * it's a record, look for a file mark following it. */
 				ctx->saw_small_block = true;
@@ -576,7 +567,8 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 						ctx->err_code = ret_sp;
 						return -1;
 					}
-				} else if (ctx->eod_pos == 0 ||
+				}
+				else if (ctx->eod_pos == 0 ||
 					(ctx->eod_pos > 0 && ctx->current_pos < ctx->eod_pos)) {
 					/* Look for a trailing file mark. */
 					buf2 = malloc(ctx->vol->label->blocksize);
@@ -593,7 +585,8 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 						ltfsmsg(LTFS_ERR, 17041E, (int)nr2);
 						ctx->err_code = nr2;
 						return -1;
-					} else if (nr2 == 0) {
+					}
+					else if (nr2 == 0) {
 						ctx->saw_file_mark = true;
 						ret_sp = tape_spacefm(ctx->vol->device, -1);
 						if (ret_sp < 0) {
@@ -610,7 +603,8 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 				memcpy(buffer + bytes_saved, ctx->buf, nread);
 				bytes_saved += nread;
 				bytes_remaining -= nread;
-			} else {
+			}
+			else {
 				memcpy(buffer + bytes_saved, ctx->buf, bytes_remaining);
 				ctx->buf_start = bytes_remaining;
 				ctx->buf_used = nread - bytes_remaining;
@@ -622,6 +616,7 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 
 	return len;
 }
+
 
 /** Close callback for XML parser input using the libxml2 I/O routines.
  */

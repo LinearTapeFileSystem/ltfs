@@ -95,27 +95,27 @@ enum {
 };
 
 struct other_check_opts {
-	struct config_file *config;           /**< Configurate data read from the global LTFS config file. */
-	char               *devname;          /**< Device to format */
-	char               *backend_path;     /**< Path to tape backend shared library */
-	char               *kmi_backend_name; /**< Name or path to the key manager interface backend library */
-	int                op_mode;           /**< Operation mode */
-	int                search_mode;       /**< Search mode for index */
-	char               *str_gen;          /**< Rollback point specified by command line (generation)*/
-	unsigned int       point_gen;         /**< Rollback point (generation) */
-	bool               erase_history;     /**< overwrite existing data at rollback */
-	bool               recover_blocks;    /**< Recover unreferenced blocks at the ends of the partitions? */
-	bool               deep_recovery;     /**< Recover EOD missing cartridge? */
-	int                verbosity;          /**< Print extra messages? */
-	char               *prg_name;         /**< Program name */
-	bool               quiet;             /**< Suppress information messages */
-	bool               trace;             /**< Generate debug output */
-	bool               syslogtrace;       /**< Generate debug output to stderr and syslog*/
-	bool               fulltrace;         /**< Trace function calls */
-	int                traverse_mode;     /**< Traverse strategy for listing index */
-	bool               full_index_info;   /**< Print full index infomation in list mode */
-	char               *capture_dir;      /**< Capture index in list mode and it's directory */
-	bool               salvage_points;    /**< List rollback points from no-EOD cartridge? */
+	struct config_file* config; /**< Configurate data read from the global LTFS config file. */
+	char* devname;              /**< Device to format */
+	char* backend_path;         /**< Path to tape backend shared library */
+	char* kmi_backend_name;     /**< Name or path to the key manager interface backend library */
+	int  op_mode;               /**< Operation mode */
+	int  search_mode;           /**< Search mode for index */
+	char* str_gen;              /**< Rollback point specified by command line (generation)*/
+	unsigned int point_gen;     /**< Rollback point (generation) */
+	bool erase_history;         /**< overwrite existing data at rollback */
+	bool recover_blocks;        /**< Recover unreferenced blocks at the ends of the partitions? */
+	bool deep_recovery;         /**< Recover EOD missing cartridge? */
+	int verbosity;              /**< Print extra messages? */
+	char* prg_name;             /**< Program name */
+	bool quiet;                 /**< Suppress information messages */
+	bool trace;                 /**< Generate debug output */
+	bool syslogtrace;           /**< Generate debug output to stderr and syslog*/
+	bool fulltrace;             /**< Trace function calls */
+	int  traverse_mode;         /**< Traverse strategy for listing index */
+	bool full_index_info;       /**< Print full index infomation in list mode */
+	bool capture_index;         /**< Capture index in list mode */
+	bool salvage_points;		/**< List rollback points from no-EOD cartridge? */
 };
 
 struct index_info
@@ -349,7 +349,7 @@ int main(int argc, char **argv)
 				break;
 			case '+':
 				opt.op_mode = MODE_LIST_POINT;
-				opt.capture_dir = SAFE_STRDUP(optarg);
+				opt.capture_index = true;
 				break;
 			case 'r':
 				opt.op_mode = MODE_ROLLBACK;
@@ -710,7 +710,7 @@ int check_ltfs_volume(struct ltfs_volume *vol, struct other_check_opts *opt)
 		return LTFSCK_UNCORRECTED;
 	} else {
 		print_criteria_info(vol);
-		ltfs_set_commit_message_reason(SYNC_CHECK, vol);
+
 		ltfs_unmount(SYNC_CHECK, vol);
 		ltfsmsg(LTFS_INFO, 16022I);
 		return LTFSCK_CORRECTED;
@@ -837,65 +837,68 @@ void _print_index_header(bool full_info)
 	printf("-------------------------------------------------------------------------------\n");
 }
 
-void _print_index(struct ltfs_volume *vol, struct index_info *list, struct other_check_opts *opt)
+void _print_index(struct ltfs_volume* vol, struct index_info* list, struct other_check_opts* opt)
 {
-	struct tm *t_st;
-	char *new_path = NULL;
-	int i, ret;
+	struct tm* t_st;
+	int i;
 
-	if(!opt)
+	if (!opt)
 		return;
 
 	t_st = get_localtime(&list->mod_time.tv_sec);
 
-	if (list->generation == (unsigned int)-1){
+	if (list->generation == (unsigned int)-1) {
 		printf("%s: %04d-%02d-%02d %02d:%02d:%02d.%09ld %s      (%d, %"PRIu64")->(\?\?, \?\?)\n",
-			   " WRONG VER", 0, 0, 0,
-			   0, 0, 0, (unsigned long) 0, "---",
-			   ltfs_part_id2num(list->selfptr.partition, vol), list->selfptr.block);
-	} else if(list->backptr.partition == 0 &&
+			" WRONG VER", 0, 0, 0,
+			0, 0, 0, (unsigned long)0, "---",
+			ltfs_part_id2num(list->selfptr.partition, vol), list->selfptr.block);
+	}
+	else if (list->backptr.partition == 0 &&
 		list->backptr.block == 0) {
 		printf("%10d: %04d-%02d-%02d %02d:%02d:%02d.%09ld %s      (%d, %"PRIu64") <<Initial Index>>\n",
-			   list->generation, t_st->tm_year+1900, t_st->tm_mon+1, t_st->tm_mday,
+			list->generation, t_st->tm_year + 1900, t_st->tm_mon + 1, t_st->tm_mday,
 #ifdef mingw_PLATFORM
-			   t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, "   ",
+			t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, "   ",
 #else
-			   t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, t_st->tm_zone,
+			t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, t_st->tm_zone,
 #endif
-			   ltfs_part_id2num(list->selfptr.partition, vol), list->selfptr.block);
-	} else {
+			ltfs_part_id2num(list->selfptr.partition, vol), list->selfptr.block);
+	}
+	else {
 		printf("%10d: %04d-%02d-%02d %02d:%02d:%02d.%09ld %s      (%d, %"PRIu64")->(%d, %"PRIu64")\n",
-			   list->generation, t_st->tm_year+1900, t_st->tm_mon+1, t_st->tm_mday,
+			list->generation, t_st->tm_year + 1900, t_st->tm_mon + 1, t_st->tm_mday,
 #ifdef mingw_PLATFORM
-			   t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, "   ",
+			t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, "   ",
 #else
-			   t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, t_st->tm_zone,
+			t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, t_st->tm_zone,
 #endif
-			   ltfs_part_id2num(list->selfptr.partition, vol), list->selfptr.block,
-			   ltfs_part_id2num(list->backptr.partition, vol), list->backptr.block);
+			ltfs_part_id2num(list->selfptr.partition, vol), list->selfptr.block,
+			ltfs_part_id2num(list->backptr.partition, vol), list->backptr.block);
 	}
 
 	/* Print UTC time */
 	if (list->generation == (unsigned int)-1) {
 		printf("           (%04d-%02d-%02d %02d:%02d:%02d.%09ld %s)\n",
-			   0, 0, 0,
-			   0, 0, 0, (unsigned long) 0, "---");
+			0, 0, 0,
+			0, 0, 0, (unsigned long)0, "---");
 #ifdef mingw_PLATFORM
-	} else if(strcmp(get_local_timezone(), TIMEZONE_UTC) != 0) {
+	}
+	else if (strcmp(get_local_timezone(), TIMEZONE_UTC) != 0) {
 		t_st = get_gmtime(&list->mod_time.tv_sec);
 		printf("           (%04d-%02d-%02d %02d:%02d:%02d.%09ld)\n",
-			   t_st->tm_year+1900, t_st->tm_mon+1, t_st->tm_mday,
-			   t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec);
+			t_st->tm_year + 1900, t_st->tm_mon + 1, t_st->tm_mday,
+			t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec);
 #else
-	}else if(strcmp(t_st->tm_zone, "UTC") != 0) {
-		const char *tz = getenv("TZ");
+	}
+	else if (strcmp(t_st->tm_zone, "UTC") != 0) {
+		const char* tz = getenv("TZ");
 		setenv("TZ", "", 1);
 		tzset();
 		t_st = get_localtime(&list->mod_time.tv_sec);
 		printf("           (%04d-%02d-%02d %02d:%02d:%02d.%09ld %s)\n",
-			   t_st->tm_year+1900, t_st->tm_mon+1, t_st->tm_mday,
-			   t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, t_st->tm_zone);
-		if(tz)
+			t_st->tm_year + 1900, t_st->tm_mon + 1, t_st->tm_mday,
+			t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, t_st->tm_zone);
+		if (tz)
 			setenv("TZ", tz, 1);
 		else
 			unsetenv("TZ");
@@ -905,57 +908,40 @@ void _print_index(struct ltfs_volume *vol, struct index_info *list, struct other
 
 	if (opt->full_index_info) {
 		printf("            %d.%d.%d, \"%s\"\n",
-			   list->version / 10000, (list->version / 100) % 100, list->version % 100,
-			   list->creator);
+			list->version / 10000, (list->version / 100) % 100, list->version % 100,
+			list->creator);
 
-		if(list->volume_name)
+		if (list->volume_name)
 			printf("            %s\n", list->volume_name);
 		else
 			printf("            No Volume Name\n");
 
-		if(list->criteria && list->criteria->have_criteria) {
+		if (list->criteria && list->criteria->have_criteria) {
 			printf("            [%s] ", list->criteria_allow_update ? "  Allowed  " : "Not allowed");
 			printf("%llu ", (long long unsigned int)list->criteria->max_filesize_criteria);
 
-			if(list->criteria->glob_patterns) {
+			if (list->criteria->glob_patterns) {
 				i = 0;
-				while(1) {
-					if(list->criteria->glob_patterns[i].name == NULL)
+				while (1) {
+					if (list->criteria->glob_patterns[i].name == NULL)
 						break;
 					printf("%s ", list->criteria->glob_patterns[i].name);
 					i++;
 				}
 			}
 			printf("\n");
-		} else
+		}
+		else
 			printf("            No criteria\n");
 	}
 
-	if(list->commit_message)
+	if (list->commit_message)
 		printf("           %s\n", list->commit_message);
 	else
 		printf("            No commit message\n");
 
-	/* Rename reading xml to official name */
-	if (vol->index_cache_path_r && opt->capture_dir) {
-		if (HAVE_BARCODE(vol))
-			ret = asprintf(&new_path, "%s/%s-%d-%c.schema", opt->capture_dir, vol->label->barcode,
-						   vol->index->generation, list->selfptr.partition);
-		else
-			ret = asprintf(&new_path, "%s/%s-%d-%c.schema", opt->capture_dir, vol->label->vol_uuid,
-						   vol->index->generation, list->selfptr.partition);
-
-		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, 10001E, "_print_index: path");
-			return;
-		}
-
-		ret = rename(vol->index_cache_path_r, new_path);
-		if (ret < 0) {
-			ltfsmsg(LTFS_WARN, 16112W, vol->index_cache_path_r, new_path, errno);
-		}
-		free(new_path);
-	}
+	if (opt->capture_index)
+		ltfs_save_index_to_disk(".", NULL, true, vol);
 
 	return;
 }
@@ -1153,7 +1139,7 @@ int _rollback_ip(struct ltfs_volume *vol, struct other_check_opts *opt, struct t
 		if (ret != LTFSCK_NO_ERRORS)
 			ltfsmsg(LTFS_ERR, 16059E, ret);
 	} else {
-		ret = ltfs_write_index(ltfs_ip_id(vol), SYNC_ROLLBACK, LTFS_FULL_INDEX, vol);
+		ret = ltfs_write_index(ltfs_ip_id(vol), SYNC_ROLLBACK, vol);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 16060E, ret);
 			ret = LTFSCK_OPERATIONAL_ERROR;
@@ -1174,8 +1160,7 @@ int _rollback_dp(struct ltfs_volume *vol, struct other_check_opts *opt, struct t
 		if (ret != LTFSCK_NO_ERRORS)
 			ltfsmsg(LTFS_ERR, 16055E, ret);
 	} else {
-		ltfs_set_commit_message_reason(SYNC_ROLLBACK, vol);
-		ret = ltfs_write_index(ltfs_dp_id(vol), SYNC_ROLLBACK, LTFS_FULL_INDEX, vol);
+		ret = ltfs_write_index(ltfs_dp_id(vol), SYNC_ROLLBACK, vol);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 16056E, ret);
 			ret = LTFSCK_OPERATIONAL_ERROR;
@@ -1289,7 +1274,6 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 		r.current_pos = ltfs_get_index_selfpointer(vol);
 		ltfsmsg(LTFS_DEBUG, 16081D, ltfs_get_index_generation(vol),
 				(int)r.current_pos.partition, (unsigned long long)r.current_pos.block);
-		ltfs_set_commit_message_reason(SYNC_ROLLBACK, vol);
 		ltfs_unmount(SYNC_ROLLBACK, vol);
 		vol->index = NULL;
 	}
@@ -1301,11 +1285,11 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 	}
 
 	/* Find target index */
-	ret = ltfs_traverse_index_backward(vol, ltfs_ip_id(vol), opt->point_gen, false,
+	ret = ltfs_traverse_index_backward(vol, ltfs_ip_id(vol), opt->point_gen,
 									   search_index_by_gen, (void *)(&(r.target_info)), (void *)opt);
 	if (ret == -LTFS_NO_INDEX) {
 		if (opt->erase_history) {
-			ret = ltfs_traverse_index_forward(vol, ltfs_dp_id(vol), opt->point_gen, false,
+			ret = ltfs_traverse_index_forward(vol, ltfs_dp_id(vol), opt->point_gen,
 											  search_index_by_gen, (void *)(&(r.target_info)), (void *)opt);
 			if (ret == -LTFS_NO_INDEX) {
 				ltfsmsg(LTFS_ERR, 16072E, ret);
@@ -1315,7 +1299,7 @@ int rollback(struct ltfs_volume *vol, struct other_check_opts *opt)
 				return LTFSCK_OPERATIONAL_ERROR;;
 			}
 		} else {
-			ret = ltfs_traverse_index_backward(vol, ltfs_dp_id(vol), opt->point_gen, false,
+			ret = ltfs_traverse_index_backward(vol, ltfs_dp_id(vol), opt->point_gen,
 											   search_index_by_gen, (void *)(&(r.target_info)), (void *)opt);
 			if (ret !=  LTFSCK_NO_ERRORS) {
 				ltfsmsg(LTFS_ERR, 16072E, ret);
@@ -1371,13 +1355,13 @@ out_destroy:
 	return ret;
 }
 
-int list_rollback_points_normal(struct ltfs_volume *vol, struct other_check_opts *opt)
+int list_rollback_points_normal(struct ltfs_volume* vol, struct other_check_opts* opt)
 {
-	int ret = LTFSCK_NO_ERRORS, fd = -1;
+	int ret = LTFSCK_NO_ERRORS;
 
 	/* Load tape and read labels */
 	ret = load_tape(vol);
-	if (ret !=  LTFSCK_NO_ERRORS) {
+	if (ret != LTFSCK_NO_ERRORS) {
 		ltfsmsg(LTFS_ERR, 16074E, ret);
 		return ret;
 	}
@@ -1385,7 +1369,7 @@ int list_rollback_points_normal(struct ltfs_volume *vol, struct other_check_opts
 	/* Attempt to mount a medium to confirm the consistency */
 	ret = ltfs_mount(false, false, false, false, 0, vol);
 	if (ret < 0) {
-		if(ret == -LTFS_BOTH_EOD_MISSING)
+		if (ret == -LTFS_BOTH_EOD_MISSING)
 			ltfsmsg(LTFS_WARN, 16096W);
 		else {
 			ltfsmsg(LTFS_ERR, 16087E);
@@ -1393,60 +1377,33 @@ int list_rollback_points_normal(struct ltfs_volume *vol, struct other_check_opts
 		}
 	}
 
-	/* Configure index capturing */
-	if (opt->capture_dir) {
-		/* Confirm the directory and construct read cache path */
-		ret = asprintf(&vol->index_cache_path_r, "%s/reading_index.xml", opt->capture_dir);
-
-		if (ret > 0) {
-			SAFE_OPEN(&fd,vol->index_cache_path_r, O_WRONLY | O_BINARY | O_CREAT, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
-			if (fd < 0) {
-				ltfsmsg(LTFS_WARN, 16113W, opt->capture_dir, errno);
-				free(vol->index_cache_path_r);
-				vol->index_cache_path_r = NULL;
-			} else {
-				ltfsmsg(LTFS_INFO, 16114I, opt->capture_dir);
-				SAFE_CLOSE(fd);
-				fd = -1;
-			}
-		} else {
-			ltfsmsg(LTFS_ERR, 10001E, "capture_dir");
-			ltfs_volume_free(&vol);
-			return 1;
-		}
-	} else {
-		ltfsmsg(LTFS_INFO, 16115I);
-	}
-
-	/* Print header */
 	_print_index_header(opt->full_index_info);
 
 	/* read index from the index partition */
-	if(opt->traverse_mode == TRAVERSE_FORWARD)
-		ret = ltfs_traverse_index_forward(vol, ltfs_ip_id(vol), opt->point_gen, true,
-										  print_a_index_noheader, NULL, (void *)opt);
+	if (opt->traverse_mode == TRAVERSE_FORWARD)
+		ret = ltfs_traverse_index_forward(vol, ltfs_ip_id(vol), opt->point_gen,
+			print_a_index_noheader, NULL, (void*)opt);
 	else
-		ret = ltfs_traverse_index_backward(vol, ltfs_ip_id(vol), opt->point_gen, true,
-										   print_a_index_noheader, NULL, (void *)opt);
-	if (ret !=  LTFSCK_NO_ERRORS) {
+		ret = ltfs_traverse_index_backward(vol, ltfs_ip_id(vol), opt->point_gen,
+			print_a_index_noheader, NULL, (void*)opt);
+	if (ret != LTFSCK_NO_ERRORS) {
 		ltfsmsg(LTFS_ERR, 16075E, ret);
 		return ret;
 	}
 
 	/* read index from the data partition */
-	if(opt->traverse_mode == TRAVERSE_FORWARD)
-		ret = ltfs_traverse_index_forward(vol, ltfs_dp_id(vol), opt->point_gen, true,
-										  print_a_index_noheader, NULL, (void *)opt);
+	if (opt->traverse_mode == TRAVERSE_FORWARD)
+		ret = ltfs_traverse_index_forward(vol, ltfs_dp_id(vol), opt->point_gen,
+			print_a_index_noheader, NULL, (void*)opt);
 	else
-		ret = ltfs_traverse_index_backward(vol, ltfs_dp_id(vol), opt->point_gen, true,
-										   print_a_index_noheader, NULL, (void *)opt);
-	if (ret !=  LTFSCK_NO_ERRORS) {
+		ret = ltfs_traverse_index_backward(vol, ltfs_dp_id(vol), opt->point_gen,
+			print_a_index_noheader, NULL, (void*)opt);
+	if (ret != LTFSCK_NO_ERRORS) {
 		ltfsmsg(LTFS_ERR, 16076E, ret);
 	}
 
 	return ret;
 }
-
 int list_rollback_points_no_eod(struct ltfs_volume *vol, struct other_check_opts *opt)
 {
 	int ret = LTFSCK_NO_ERRORS;
@@ -1474,7 +1431,7 @@ int list_rollback_points_no_eod(struct ltfs_volume *vol, struct other_check_opts
 
 	/* Read index from the data partition */
 	/* We don't need to read IP because index in DP is always newer (or same) than IP in case of WORM */
-	ret = ltfs_traverse_index_no_eod(vol, ltfs_dp_id(vol), opt->point_gen, true,
+	ret = ltfs_traverse_index_no_eod(vol, ltfs_dp_id(vol), opt->point_gen,
 									  print_a_index_noheader, NULL, (void *)opt);
 	if (ret !=  LTFSCK_NO_ERRORS) {
 		ltfsmsg(LTFS_ERR, 16076E, ret);
@@ -1497,9 +1454,9 @@ int list_rollback_points(struct ltfs_volume *vol, struct other_check_opts *opt)
 	return ret;
 }
 
-int _ltfsck_validate_options(struct other_check_opts *opt)
+int _ltfsck_validate_options(struct other_check_opts* opt)
 {
-	if(opt->op_mode == MODE_VERIFY || opt->op_mode == MODE_ROLLBACK) {
+	if (opt->op_mode == MODE_VERIFY || opt->op_mode == MODE_ROLLBACK) {
 		if (!opt->str_gen) {
 			ltfsmsg(LTFS_ERR, 16003E);
 			return LTFSCK_USAGE_SYNTAX_ERROR;
@@ -1509,11 +1466,12 @@ int _ltfsck_validate_options(struct other_check_opts *opt)
 			if (!opt->str_gen) {
 				ltfsmsg(LTFS_ERR, 16004E);
 				return LTFSCK_USAGE_SYNTAX_ERROR;
-			} else {
-				char *invalid_start;
+			}
+			else {
+				char* invalid_start;
 				errno = 0;
 				opt->point_gen = strtoul(opt->str_gen, &invalid_start, 0);
-				if( (*invalid_start == '\0') && opt->str_gen )
+				if ((*invalid_start == '\0') && opt->str_gen)
 					ltfsmsg(LTFS_INFO, 16006I, opt->point_gen);
 				else {
 					ltfsmsg(LTFS_ERR, 16005E, opt->str_gen);
@@ -1528,21 +1486,22 @@ int _ltfsck_validate_options(struct other_check_opts *opt)
 		return LTFSCK_USAGE_SYNTAX_ERROR;
 	}
 
-	if(opt->op_mode == MODE_LIST_POINT) {
-		if ( opt->traverse_mode == TRAVERSE_FORWARD )
+	if (opt->op_mode == MODE_LIST_POINT) {
+		if (opt->traverse_mode == TRAVERSE_FORWARD)
 			ltfsmsg(LTFS_INFO, 16083I);
 		else if (opt->traverse_mode == TRAVERSE_BACKWARD)
 			ltfsmsg(LTFS_INFO, 16084I);
 
-		if (opt->capture_dir && opt->search_mode == SEARCH_BY_GEN) {
+		if (opt->capture_index && opt->search_mode == SEARCH_BY_GEN) {
 			if (!opt->str_gen) {
 				ltfsmsg(LTFS_ERR, 16004E);
 				return LTFSCK_USAGE_SYNTAX_ERROR;
-			} else {
-				char *invalid_start;
+			}
+			else {
+				char* invalid_start;
 				errno = 0;
 				opt->point_gen = strtoul(opt->str_gen, &invalid_start, 0);
-				if( (*invalid_start == '\0') && opt->str_gen )
+				if ((*invalid_start == '\0') && opt->str_gen)
 					ltfsmsg(LTFS_INFO, 16006I, opt->point_gen);
 				else {
 					ltfsmsg(LTFS_ERR, 16005E, opt->str_gen);

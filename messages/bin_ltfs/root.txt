@@ -152,15 +152,9 @@ root:table {
 		14113I:string { "Specified mount point is listed if succeeded." }
 		14114E:string { "Cannot initialize the open file table." }
 		14115E:string { "Invalid scsi_append_only_mode option: %s." }
-		14116E:string { "This medium is not supported (%d)." }
-		14117I:string { "Metadata only rollback mount is specified. Mounting as meta read-only from %s." }
-		14118E:string { "Unexpected option is specified for read only mount (%d)." }
-		14119I:string { "Rollback mount from index file is specified. Mounting as read-only from %s." }
-		14120W:string { "Cannot access to directory %s, disabled index capture mode (%d)." }
-		14121I:string { "Index will be captured at %s at update" }
-		14122I:string { "Index will not be captured." }
+                14116E:string { "This medium is not supported (%d)." }
 		14123W:string { "The main function of FUSE returned error (%d)." }
-
+		
 		// 14150 - 14199 are reserved for LE+
 
 		// Help messages

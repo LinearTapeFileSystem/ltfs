@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2022 IBM Corp. All rights reserved.
+**  Copyright 2010, 2021 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -66,7 +66,6 @@
 #include "pathname.h"
 #include "tape.h"
 #include "ltfs_internal.h"
-#include "inc_journal.h"
 #include "arch/time_internal.h"
 
 /* Helper functions for formatting virtual EA output */
@@ -210,9 +209,7 @@ static int _xattr_set_time(struct dentry *d, struct ltfs_timespec *out, const ch
 
 	acquirewrite_mrsw(&d->meta_lock);
 	*out = t;
-
-	ltfs_set_dentry_dirty(d, vol);
-
+	d->dirty = true;
 	releasewrite_mrsw(&d->meta_lock);
 
 	ltfs_set_index_dirty(true, false, vol->index);
@@ -269,6 +266,7 @@ static inline bool _xattr_is_worm_ea(const char *name)
 static inline bool _xattr_is_stored_vea(const char *name)
 {
 	if (strcmp(name, "ltfs.spannedFileOffset") &&
+		strcmp(name, "ltfs.mediaPool.name") &&
 		strcasestr(name, "ltfs.permissions.") != name &&
 		strcasestr(name, "ltfs.hash.") != name)
 	{
@@ -482,7 +480,6 @@ static bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_vo
 			|| ! strcmp(name, "ltfs.mediaIndexPartitionAvailableSpace")
 			|| ! strcmp(name, "ltfs.mediaEncrypted")
 			|| ! strcmp(name, "ltfs.mediaPool.additionalInfo")
-			|| ! strcmp(name, "ltfs.mediaPool.name")
 			|| ! strcmp(name, "ltfs.driveEncryptionState")
 			|| ! strcmp(name, "ltfs.driveEncryptionMethod")
 			/* Vendor specific EAs */
@@ -495,7 +492,6 @@ static bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_vo
 			|| ! strcmp(name, "ltfs.vendor.IBM.rao")
 			|| ! strcmp(name, "ltfs.vendor.IBM.logPage")
 			|| ! strcmp(name, "ltfs.vendor.IBM.mediaMAM")
-			|| ! strcmp(name, "ltfs.vendor.IBM.dumpincj")
 			|| ! strncmp(name, "ltfs.vendor", strlen("ltfs.vendor")))
 			return true;
 	}
@@ -791,18 +787,9 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 			ret = _xattr_get_cartridge_capacity(&cap, &cap.remaining_ip, &val, name, vol);
 		} else if (! strcmp(name, "ltfs.mediaEncrypted")) {
 			ret = xattr_get_string(tape_get_media_encrypted(vol->device), &val, name);
-        } else if (! strcmp(name, "ltfs.mediaPool.name")) {
-			char *tmp=NULL;
-			ret = tape_get_media_pool_info(vol, &val, &tmp);
-            if (tmp)
-                free(tmp);
-			if (ret < 0 || !val)
-				ret = -LTFS_NO_XATTR;
 		} else if (! strcmp(name, "ltfs.mediaPool.additionalInfo")) {
 			char *tmp=NULL;
 			ret = tape_get_media_pool_info(vol, &tmp, &val);
-            if (tmp)
-                free(tmp);
 			if (ret < 0 || !val)
 				ret = -LTFS_NO_XATTR;
 		} else if (! strcmp(name, "ltfs.driveEncryptionState")) {
@@ -872,17 +859,12 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 
 			ret = ltfs_mam(part, (unsigned char *)buf, buf_size, vol);
 
-		} else if (! strcmp(name, "ltfs.vendor.IBM.dumpincj")) {
-			incj_dump(vol);
-			ret = 0;
-
 		} else if (! strncmp(name, "ltfs.vendor", strlen("ltfs.vendor"))) {
 			if (! strncmp(name + strlen("ltfs.vendor."), LTFS_VENDOR_NAME, strlen(LTFS_VENDOR_NAME))) {
 				ret = _xattr_get_vendorunique_xattr(&val, name, vol);
 			}
 		} else if (! strcmp(name, "ltfs.sync")) {
-			ltfs_set_commit_message_reason(SYNC_EA, vol);
-			ret = ltfs_sync_index(SYNC_EA, false, LTFS_FULL_INDEX, vol);
+			ret = ltfs_sync_index(SYNC_EA, false, vol);
 		}
 	}
 
@@ -915,13 +897,10 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 							  size_t size, struct ltfs_volume *vol)
 {
 	int ret = 0;
-	enum ltfs_index_type idx_type = LTFS_INDEX_AUTO;
 
-	if ((! strcmp(name, "ltfs.commitMessage") ||
-		 ! strcmp(name, "ltfs.sync") ||
-		 ! strcmp(name, "ltfs.vendor.IBM.FullSync") ||
-		 ! strcmp(name, "ltfs.vendor.IBM.IncrementalSync"))
-		&& d == vol->index->root) {
+	if (! strcmp(name, "ltfs.sync") && d == vol->index->root)
+		ret = ltfs_sync_index(SYNC_EA, false, vol);
+	else if (! strcmp(name, "ltfs.commitMessage") && d == vol->index->root) {
 		char *value_null_terminated, *new_value;
 
 		if (size > INDEX_MAX_COMMENT_LEN) {
@@ -929,61 +908,39 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 			ret = -LTFS_LARGE_XATTR;
 		}
 
-#ifdef FORMAT_SPEC25
-		if (! strcmp(name, "ltfs.vendor.IBM.FullSync"))
-			idx_type = LTFS_FULL_INDEX;
-		else if (! strcmp(name, "ltfs.vendor.IBM.IncrementalSync"))
-			idx_type = LTFS_INCREMENTAL_INDEX;
-#else
-		if (! strcmp(name, "ltfs.vendor.IBM.FullSync") ||
-			! strcmp(name, "ltfs.vendor.IBM.IncrementalSync")) {
-		}
-#endif
-
 		ltfs_mutex_lock(&vol->index->dirty_lock);
-		if (! vol->index->dirty) {
-			/* Do nothing because index is clean */
-			ret = 0;
-		} else {
-			if (! value || ! size) {
-				/* Clear the current comment field */
-				if (vol->index->commit_message) {
-					free(vol->index->commit_message);
-					vol->index->commit_message = NULL;
-				}
-			} else {
-				value_null_terminated = malloc(size + 1);
-				if (! value_null_terminated) {
-					ltfsmsg(LTFS_ERR, 10001E, "_xattr_set_virtual: commit_message");
-					ltfs_mutex_unlock(&vol->index->dirty_lock);
-					return -LTFS_NO_MEMORY;
-				}
-				memcpy(value_null_terminated, value, size);
-				value_null_terminated[size] = '\0';
-
-				ret = pathname_format(value_null_terminated, &new_value, false, true);
-				free(value_null_terminated);
-				if (ret < 0) {
-					/* Try to sync index even if the value is not valid */
-					ltfs_set_commit_message_reason_unlocked(SYNC_EA, vol);
-					ltfs_mutex_unlock(&vol->index->dirty_lock);
-
-					ret = ltfs_sync_index(SYNC_EA, false, LTFS_FULL_INDEX, vol);
-					return ret;
-				}
-				ret = 0;
-
-				/* Update the commit message in the index */
-				if (vol->index->commit_message)
-					free(vol->index->commit_message);
-				vol->index->commit_message = new_value;
+		if (! value || ! size) {
+			/* Clear the current comment field */
+			if (vol->index->commit_message) {
+				free(vol->index->commit_message);
+				vol->index->commit_message = NULL;
 			}
+		} else {
+			value_null_terminated = malloc(size + 1);
+			if (! value_null_terminated) {
+				ltfsmsg(LTFS_ERR, 10001E, "_xattr_set_virtual: commit_message");
+				ltfs_mutex_unlock(&vol->index->dirty_lock);
+				return -LTFS_NO_MEMORY;
+			}
+			memcpy(value_null_terminated, value, size);
+			value_null_terminated[size] = '\0';
 
-			ltfs_set_index_dirty(false, false, vol->index);
+			ret = pathname_format(value_null_terminated, &new_value, false, true);
+			free(value_null_terminated);
+			if (ret < 0) {
+				ltfs_mutex_unlock(&vol->index->dirty_lock);
+				return ret;
+			}
+			ret = 0;
+
+			/* Update the commit message in the index */
+			if (vol->index->commit_message)
+				free(vol->index->commit_message);
+			vol->index->commit_message = new_value;
 		}
 
+		ltfs_set_index_dirty(false, false, vol->index);
 		ltfs_mutex_unlock(&vol->index->dirty_lock);
-		ret = ltfs_sync_index(SYNC_EA, false, idx_type, vol);
 
 	} else if (! strcmp(name, "ltfs.volumeName") && d == vol->index->root) {
 		char *value_null_terminated, *new_value;
@@ -1254,15 +1211,13 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 			vol->lock_status = new;
 
 			ltfs_set_index_dirty(false, false, vol->index);
-			ltfs_set_commit_message_reason_unlocked(SYNC_ADV_LOCK, vol);
-
-			ret = ltfs_sync_index(SYNC_ADV_LOCK, false, LTFS_FULL_INDEX, vol);
+			ret = ltfs_sync_index(SYNC_ADV_LOCK, false, vol);
 			ret = tape_device_lock(vol->device);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 12010E, __FUNCTION__);
 				return ret;
 			}
-			ret = ltfs_write_index(ltfs_ip_id(vol), SYNC_EA, LTFS_FULL_INDEX, vol);
+			ret = ltfs_write_index(ltfs_ip_id(vol), SYNC_EA, vol);
 			tape_device_unlock(vol->device);
 		} else
 			ret = -LTFS_STRING_CONVERSION;
@@ -1270,8 +1225,6 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 		free(v);
 	} else if (! strcmp(name, "ltfs.mediaPool.additionalInfo")) {
 		ret = tape_set_media_pool_info(vol, value, size, false);
-    } else if (! strcmp(name, "ltfs.mediaPool.name")) {
-		ret = tape_set_media_pool_info(vol, value, size, true);
 	} else
 		ret = -LTFS_NO_XATTR;
 
@@ -1508,18 +1461,14 @@ int xattr_set(struct dentry *d, const char *name, const char *value, size_t size
 	}
 
 	get_current_timespec(&d->change_time);
-
-	ltfs_set_index_dirty(true, false, vol->index);
-	ltfs_set_dentry_dirty(d, vol);
-
 	releasewrite_mrsw(&d->meta_lock);
+	d->dirty = true;
+	ltfs_set_index_dirty(true, false, vol->index);
 
-	if (write_idx) {
-		ltfs_set_commit_message_reason(SYNC_EA, vol);
-		ret = ltfs_sync_index(SYNC_EA, false, LTFS_INDEX_AUTO, vol);
-	} else
+	if (write_idx)
+		ret = ltfs_sync_index(SYNC_EA, false, vol);
+	else
 		ret = 0;
-
 out_unlock:
 	_xattr_unlock_dentry(name, true, d, vol);
 	return ret;
@@ -1772,10 +1721,9 @@ int xattr_remove(struct dentry *d, const char *name, struct ltfs_volume *vol)
 		d->is_appendonly = false;
 		ltfsmsg(LTFS_INFO, 17238I, "appendonly", d->is_appendonly, d->name.name);
 	}
-
+	d->dirty = true;
 	ltfs_set_index_dirty(true, false, vol->index);
-	ltfs_set_dentry_dirty(d, vol);
-
+	
 out_dunlk:
 	_xattr_unlock_dentry(name, true, d, vol);
 	return ret;

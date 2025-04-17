@@ -398,7 +398,7 @@ int _ltfs_fsraw_add_extent_unlocked(struct dentry *d, struct extent_info *ext, b
 	 *  No need to mark at this time but reserve this value for fueture release
 	 */
 	d->extents_dirty = true;
-	ltfs_set_dentry_dirty(d, vol);
+	d->dirty = true;
 	releasewrite_mrsw(&d->meta_lock);
 
 	ltfs_set_index_dirty(true, false, vol->index);
@@ -793,13 +793,12 @@ int ltfs_fsraw_truncate(struct dentry *d, off_t length, struct ltfs_volume *vol)
 	d->realsize = new_realsize;
 	get_current_timespec(&d->modify_time);
 	d->change_time = d->modify_time;
-	ltfs_set_dentry_dirty(d, vol);
 	releasewrite_mrsw(&d->meta_lock);
 
 	releasewrite_mrsw(&d->contents_lock);
 
 	ltfs_set_index_dirty(true, false, vol->index);
-
+	d->dirty = true;
 	releaseread_mrsw(&vol->lock);
 	return 0;
 }
