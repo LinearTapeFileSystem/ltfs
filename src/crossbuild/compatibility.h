@@ -111,7 +111,7 @@ extern "C" {
 
 // For Unix-Like
 #ifndef COMPAT_UCHAR
-	#define COMPAT_UCHAR Uchar
+	#define COMPAT_UCHAR UChar
 #endif
 
 #ifndef SHARE_FLAG_DENYNO
