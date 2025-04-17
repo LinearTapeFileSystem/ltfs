@@ -96,7 +96,7 @@ extern bool ltfs_print_thread_id;
 
 /* Wrapper for ltfsmsg_internal that prints a message without the LTFSnnnnn prefix. It
  * always invokes the message print function, regardless of the message level. */
-#ifdef MSG_CHECK
+#if 0
 #define ltfsresult(id, ...)						\
 	do {										\
 		printf(LTFS ## id, ##__VA_ARGS__);		\
