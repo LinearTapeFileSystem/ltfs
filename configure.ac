@@ -498,7 +498,7 @@ fi
 
 if test "x$use_msg_check" = "xyes"
 then
-dnl    AM_CPPFLAGS="${AM_CPPFLAGS} -DMSG_CHECK" Not working currently
+    AM_CPPFLAGS="${AM_CPPFLAGS} -DMSG_CHECK"
 fi
 
 if test "x$warning_as_error" = "xyes"
