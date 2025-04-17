@@ -283,7 +283,7 @@ extern "C"
 #define SAFE_STRCAT_S(dest, unused ,src)                                                    \
     do                                                                            \
     {                                                                             \
-        strcat(dest,src);                  \                                                                   
+        strcat(dest,src);                                                           \
     } while (0)                             
 #endif // _MSC_VER
 #endif // !SAFE_STRCAT

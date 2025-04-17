@@ -120,7 +120,7 @@ make_obj() {
 			libtool --mode=link --tag=CC cc -o ../../lib${BASENAME}_dat.la ${LTFILES}
 			;;
 		*)
-			mv ${RETREAT}${BASENAME}_dat.o ../../lib${BASENAME}_dat.a
+			mv ${BASENAME}_dat.o ../../lib${BASENAME}_dat.a
 			;;
 	esac
 
