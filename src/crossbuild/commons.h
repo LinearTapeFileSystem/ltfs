@@ -263,7 +263,7 @@ extern "C"
     do                                                                            \
     {                                                                             \
         strcat(dest,src);                                                                       \
-    } while (0)                                                                     \ 
+    } while (0)                                                                      
 #endif // _MSC_VER
 #endif // !SAFE_STRCAT
 
@@ -284,7 +284,7 @@ extern "C"
     do                                                                            \
     {                                                                             \
         strcat(dest,src);                  \                                                                   
-    } while (0)                             \ 
+    } while (0)                             
 #endif // _MSC_VER
 #endif // !SAFE_STRCAT
 
@@ -358,10 +358,10 @@ extern "C"
         }                                                                                \
     } while (0)
 #else
-#define SAFE_OPEN(pFileHandle, pFileName, openFlag, shareFlag, UNUSED)                   \
+#define SAFE_OPEN(pFileDescriptor, pFileName, openFlag, shareFlag, UNUSED)                   \
     do                                                                                   \
     {                                                                                    \
-        pFileHandle = open(pFileName, openFlag, shareFlag);                              \
+        *pFileDescriptor = open(pFileName, openFlag, shareFlag);                              \
      } while (0)
 #endif // !_MSC_VER
 
