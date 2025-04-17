@@ -65,7 +65,7 @@ extern bool ltfs_print_thread_id;
 /* Wrapper for ltfsmsg_internal. It only invokes the message print function if the requested
  * log level is not too verbose. */
 #ifdef MSG_CHECK
-#include "ltfsmsg.h"
+//#include "ltfsmsg.h"
 #define ltfsmsg(level, id, ...)					\
 	do {										\
 		printf(LTFS ## id, ##__VA_ARGS__);		\
