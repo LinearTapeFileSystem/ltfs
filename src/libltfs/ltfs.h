@@ -89,7 +89,7 @@ extern "C" {
 #include <stdlib.h>
 #include <inttypes.h>
 #include <unistd.h>
-#include <io.h>
+
 #include <errno.h>
 #include <fcntl.h>
 #include <ctype.h>
@@ -121,6 +121,7 @@ struct device_data;
 #ifndef LTFS_DEFAULT_WORK_DIR
 #ifdef mingw_PLATFORM
 #define LTFS_DEFAULT_WORK_DIR         "c:/tmp/ltfs"
+#include <io.h>
 #else
 #define LTFS_DEFAULT_WORK_DIR         "/tmp/ltfs"
 #endif
