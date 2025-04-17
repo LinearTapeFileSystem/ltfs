@@ -96,7 +96,8 @@ extern "C" {
 #include <string.h>
 #include <limits.h>
 #include <time.h>
-
+#include <crossbuild/compatibility.h>
+#include <crossbuild/commons.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
