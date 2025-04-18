@@ -288,7 +288,7 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 	/* Assign rules to the glob_patterns[] array */
 	rule = rule+5;
 	for (delim = rule; *delim; delim++) {
-		/*bool doDelimAssign = false;
+		bool doDelimAssign = false;
 		bool doRuleAdd = false;
 		if (*delim == ':') {
 			doDelimAssign = true;
@@ -309,7 +309,8 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 				return -EDEV_NO_MEMORY;
 		}
 		rule_ptr++;
-		if (doRuleAdd) rule = delim+1;*/
+		if (doRuleAdd) rule = delim+1;
+		/*
 		if (*delim == ':') {
 			*delim = '\0';
 			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
@@ -325,7 +326,7 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
 			rule_ptr->name = strdup(rule);
 			rule_ptr++;
-		}
+		}*/
 	}
 
 	if (ic->glob_patterns == rule_ptr) {
