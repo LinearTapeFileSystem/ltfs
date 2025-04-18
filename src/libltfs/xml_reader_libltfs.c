@@ -1489,7 +1489,6 @@ static int _xml_parse_dirtree(xmlTextReaderPtr reader, struct dentry *parent,
  * with the nodes found during the scanning.
  * @param reader Source of XML data
  * @param idx LTFS index
- * @param skip_dir skip parsing directory and file
  * @param vol LTFS volume to which the index belongs. May be NULL.
  * @return 0 on success or a negative value on error.
  */
@@ -1889,7 +1888,6 @@ int xml_schema_from_file(const char *filename, struct ltfs_index *idx, struct lt
  * the file mark.
  * @param eod_pos EOD block position for the current partition, or 0 to assume EOD will not be
  *                encountered during parsing.
- * @param skip_dir skip parsing directory
  * @param vol LTFS volume.
  * @return 0 on success, 1 if parsing succeeded but no file mark was encountered,
  *         or a negative value on error.

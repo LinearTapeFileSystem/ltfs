@@ -492,7 +492,7 @@ struct index_criteria {
 	bool             have_criteria;         /**< Does this struct actually specify criteria? */
 	uint64_t         max_filesize_criteria; /**< Maximum file size that goes into the index partition */
 	struct ltfs_name *glob_patterns;       /**< NULL-terminated list of file name criteria */
-	unsigned char            **glob_cache;          /**< Cache of glob patterns in comparison-ready form */
+	COMPAT_UCHAR            **glob_cache;          /**< Cache of glob patterns in comparison-ready form */
 };
 
 struct ltfs_index {
