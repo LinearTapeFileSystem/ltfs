@@ -294,10 +294,15 @@ int main(int argc, char **argv)
 	while (true) {
 		int option_index = 0;
 		int c = getopt_long(argc, argv, short_options, long_options, &option_index);
+		// TODO: Check for optarg to not be null before using it
 		if (c == -1)
 			break;
 		if (c == 'i') {
 			config_file = strdup(optarg);
+			if (! config_file) {
+				ltfsmsg(LTFS_ERR, 10001E, "main: config file assign");
+				return LTFSCK_OPERATIONAL_ERROR;
+			}
 			break;
 		}
 	}
@@ -336,6 +341,10 @@ int main(int argc, char **argv)
 					opt.op_mode = MODE_VERIFY;
 				opt.search_mode = SEARCH_BY_GEN;
 				opt.str_gen = strdup(optarg);
+				if (! opt.str_gen) {
+					ltfsmsg(LTFS_ERR, 10001E, "main: opt strgen assign");
+					return LTFSCK_OPERATIONAL_ERROR;
+				}
 				break;
 			case 'v':
 				if ( strcmp(optarg, "forward") == 0)
@@ -417,6 +426,10 @@ int main(int argc, char **argv)
 			return LTFSCK_OPERATIONAL_ERROR;
 		}
 		opt.backend_path = strdup(default_backend);
+		if (! opt.backend_path) {
+			ltfsmsg(LTFS_ERR, 10001E, "main: opt backend path assign");
+			return LTFSCK_OPERATIONAL_ERROR;
+		}
 	}
 	if (! opt.kmi_backend_name) {
 		const char *default_backend = config_file_get_default_plugin("kmi", opt.config);
@@ -424,6 +437,11 @@ int main(int argc, char **argv)
 			opt.kmi_backend_name = strdup(default_backend);
 		else
 			opt.kmi_backend_name = strdup("none");
+		
+		if (! opt.kmi_backend_name) {
+			ltfsmsg(LTFS_ERR, 10001E, "main: opt kmi backend name assign");
+			return LTFSCK_OPERATIONAL_ERROR;
+		}
 	}
 	if (opt.kmi_backend_name && strcmp(opt.kmi_backend_name, "none") == 0)
 		opt.kmi_backend_name = NULL;
@@ -487,10 +505,19 @@ int main(int argc, char **argv)
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 
-	if(argv[optind + num_of_o])
+	if(argv[optind + num_of_o]) {
 		opt.devname = strdup(argv[optind + num_of_o]);
+		if (! opt.devname) {
+			ltfsmsg(LTFS_ERR, 10001E, "main: opt devname assign");
+			return LTFSCK_OPERATIONAL_ERROR;
+		}
+	}
 
 	opt.prg_name = strdup(argv[0]);
+	if (! opt.prg_name) {
+		ltfsmsg(LTFS_ERR, 10001E, "main: opt prg name assign");
+		return LTFSCK_OPERATIONAL_ERROR;
+	}
 
 	if (_ltfsck_validate_options(&opt)) {
 		ltfsmsg(LTFS_ERR, 16002E);

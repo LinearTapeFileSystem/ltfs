@@ -953,8 +953,10 @@ int _pathname_utf8_to_system_icu(const char *src, char **dest)
 	syslocale = ucnv_getDefaultName();
 	if (! strcmp(syslocale, "UTF-8")) {
 		*dest = strdup(src);
-		if (! *dest)
+		if (! (*dest)) {
+			ltfsmsg(LTFS_ERR, 10001E, "_pathname_utf8_to_system_icu: dest assign");
 			return -LTFS_NO_MEMORY;
+		}
 		return 0;
 	}
 

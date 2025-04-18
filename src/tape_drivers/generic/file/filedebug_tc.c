@@ -439,8 +439,13 @@ int filedebug_open(const char *name, void **handle)
 		}
 
 		/* Run on file mode */
-		if (devname == NULL)
+		if (devname == NULL) {
 			devname = strdup(name);
+			if (!devname) {
+				ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: devname");
+				return -EDEV_NO_MEMORY;
+			}
+		}
 		ltfsmsg(LTFS_INFO, 30001I, devname);
 		state->fd = open(devname, O_RDWR | O_BINARY);
 		if (state->fd < 0) {
@@ -2657,9 +2662,9 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 
 		if (buf && deventries < count) {
 			tmp = strdup(entry->d_name);
-			if (! *tmp) {
+			if (! tmp) {
 				ltfsmsg(LTFS_ERR, 10001E, "filedebug_get_device_list");
-				return -ENOMEM;
+				return -LTFS_NO_MEMORY;
 			}
 
 			for (i = strlen(tmp) - 1; i > 0; --i) {
@@ -2767,7 +2772,7 @@ int filedebug_get_serialnumber(void *device, char **result)
 	else
 		*result = strdup("DUMMY");
 
-	if (! *result)
+	if (! (*result))
 		return -EDEV_NO_MEMORY;
 
 	return DEVICE_GOOD;

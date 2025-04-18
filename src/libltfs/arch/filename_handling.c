@@ -130,6 +130,7 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
 		}
 	}
 #else
+	// Checkup not needed here, memory error handling happens after function calls.
 	dentry->platform_safe_name = strdup(dentry->name.name);
 #endif
 }
@@ -242,6 +243,10 @@ char * _generate_target_file_name(const char *prefix, const char *extension, int
 			ret = asprintf(&target, "%s.%s", prefix, extension);
 		else {
 			target = strdup(prefix);
+			if (!target) {
+				ltfsmsg(LTFS_ERR, 10001E, "_generate_target_file_name: target assign");
+				ret = -1;
+			}
 			ret = target ? strlen(target) : -1;
 		}
 	}

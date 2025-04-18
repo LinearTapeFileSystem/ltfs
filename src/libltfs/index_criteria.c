@@ -288,27 +288,30 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 	/* Assign rules to the glob_patterns[] array */
 	rule = rule+5;
 	for (delim = rule; *delim; delim++) {
-		if (*delim == ':') {
-			*delim = '\0';
+			if (*delim == ':' || *delim == '/') {
+				*delim = '\0';
+			}
 			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
 			rule_ptr->name = strdup(rule);
+			if (! rule_ptr->name) {
+					ltfsmsg(LTFS_ERR, 10001E, "index_criteria_parse_name: rule assign");
+					free(rule_ptr->name);
+					return -EDEV_NO_MEMORY;
+			}
 			rule_ptr++;
-			rule = delim+1;
-		} else if (*delim == '/') {
-			*delim = '\0';
-			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
-			rule_ptr->name = strdup(rule);
-			rule_ptr++;
-		} else if (*(delim+1) == '\0') {
-			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
-			rule_ptr->name = strdup(rule);
-			rule_ptr++;
-		}
+			if (*delim == ':') {
+				rule = delim+1;
+			}
 	}
 
 	if (ic->glob_patterns == rule_ptr) {
 		rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
 		rule_ptr->name = strdup(rule);
+		if (! rule_ptr->name) {
+			ltfsmsg(LTFS_ERR, 10001E, "index_criteria_parse_name: glob_patterns assign");
+			free(rule_ptr->name);
+			return -EDEV_NO_MEMORY;
+		}
 	}
 
 	/* Validate rules */

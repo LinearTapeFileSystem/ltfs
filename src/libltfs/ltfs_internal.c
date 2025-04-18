@@ -1313,6 +1313,10 @@ int ltfs_split_symlink( struct ltfs_volume *vol )
 	}
 	ret = ltfs_fsops_close( workd, true, true, use_iosche, vol);
 	path=strdup(lfdir);
+	if (! path) {
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs_split_symlink: path assign");
+		return -LTFS_NO_MEMORY;
+	}
 
 	/* loop for conflicted files */
 	for( i=0; i<(vol->index->symerr_count); i++ ){

@@ -131,6 +131,10 @@ static int encode_entry_name(char **new_name, const char *name)
 	tmp_name[j] = '\0';
 
 	*new_name = strdup(tmp_name);
+	if (! (*new_name)) {
+		ltfsmsg(LTFS_ERR, 10001E, "encode_entry_name: new name assign");
+		return -LTFS_NO_MEMORY;
+	}
 	free(tmp_name);
 
 	return 0;

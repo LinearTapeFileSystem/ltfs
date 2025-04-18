@@ -489,6 +489,11 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		vsprintf(msg_buf, output_buf, argp);
 		va_end(argp);
 		*msg_out = strdup(msg_buf);
+		// TODO: Check if the return -1 is needed, or the program can just continue
+		if (!(*msg_out)) {
+			ltfsmsg(LTFS_ERR, 10001E, "ltfsmsg_internal: msg_out assign");
+			return -1;
+		}
 	}
 
 #ifdef ENABLE_SNMP

@@ -89,6 +89,7 @@ static char* generate_hash_key_name(const char *src_str, int *rc)
 	} else
 		free(uchar_name);
 #else
+	// Chek not needed here for strdup because the error is handled where the function is called
 	key_name = strdup(src_str);
 	*rc = 0;
 #endif

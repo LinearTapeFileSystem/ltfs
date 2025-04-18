@@ -515,6 +515,10 @@ static inline int _sense2errcode(uint32_t sense, struct error_table *table, char
 			rc  = table[i].err_code;
 			if (msg)
 				*msg = strdup(table[i].msg);
+				if (! (*msg)) {
+					ltfsmsg(LTFS_ERR, 10001E, "_sense2errcode: msg assign");
+					// TODO: Check if error return is needed
+				}
 			break;
 		}
 		i++;
@@ -524,7 +528,10 @@ static inline int _sense2errcode(uint32_t sense, struct error_table *table, char
 		rc = DEVICE_GOOD;
 	else if (table[i].sense == 0xFFFFFF && table[i].err_code == rc && msg)
 		*msg = strdup(table[i].msg);
-
+		if (! (*msg)) {
+			ltfsmsg(LTFS_ERR, 10001E, "_sense2errcode: msg assign");
+			// TODO: Check if error return is needed
+		}
 	return rc;
 }
 
@@ -545,6 +552,10 @@ static inline int camtape_send_ccb(struct camtape_data *softc, union ccb *ccb, c
 
 		snprintf(tmpstr, sizeof(tmpstr), "cam_send_ccb() failed: %s", strerror(errno));
 		*msg = strdup(tmpstr);
+		if (! (*msg)) {
+			ltfsmsg(LTFS_ERR, 10001E, "camtape_send_ccb: msg assign");
+			// TODO: Check if error return is needed
+		}
 		rc = -errno;
 	} else
 		rc = camtape_ccb2rc(softc, ccb);
