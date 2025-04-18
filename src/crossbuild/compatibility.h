@@ -64,10 +64,6 @@ extern "C" {
 #ifdef mingw_PLATFORM	
 #include <unicode/umachine.h>
 
-	#ifndef COMPAT_UCHAR
-		#define COMPAT_UCHAR UChar
-	#endif
-
 	#ifndef SHARE_FLAG_DENYNO
 		#define SHARE_FLAG_DENYNO  _SH_DENYNO
 	#endif

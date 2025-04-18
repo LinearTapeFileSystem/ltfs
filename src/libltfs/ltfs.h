@@ -61,7 +61,6 @@ extern "C" {
 	#include "arch/win/win_util.h"
 	#include <time.h>
 #else
-	#include <unistd.h>
 	#include <sys/time.h>
 	#include <sys/ipc.h>
 	#include <sys/shm.h>
