@@ -54,6 +54,7 @@ cd ${BASENAME}
 
 make_obj() {
 	RETREAT="../../"
+	MODE="static"
 
 	case $KERNEL_NAME in
 		MINGW32_NT*)
@@ -63,6 +64,7 @@ make_obj() {
 				echo "Changing directory"
 				RETREAT="../../../../messages/"
 			fi
+			MODE="common"
 			;;
 		*)
 			;;
@@ -81,7 +83,7 @@ make_obj() {
 	cd work
 	echo "dir: $(pwd)"
 	ls *.res >packagelist.txt
-	${PKGDATA} --verbose -p ${BASENAME} -m common -q packagelist.txt > /dev/null
+	${PKGDATA} --verbose -p ${BASENAME} -m ${MODE} -q packagelist.txt > /dev/null
 
 
 	case $KERNEL_NAME in
