@@ -49,8 +49,11 @@
 #ifndef __filedebug_conf_tc_h
 #define __filedebug_conf_tc_h
 
+#ifdef mingw_PLATFORM
+#include "xml.h"
+#else
 #include <libltfs/xml.h>
-
+#endif
 #define DEFAULT_CAPACITY_MB (3 * (GB / MB))
 
 /* emulation of delays due to tape seeks */

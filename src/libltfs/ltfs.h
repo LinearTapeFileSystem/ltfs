@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -58,41 +58,45 @@ extern "C" {
 #endif
 
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
+	#include "arch/win/win_util.h"
+	#include <time.h>
+#else
+	#include <unistd.h>
+	#include <sys/time.h>
+	#include <sys/ipc.h>
+	#include <sys/shm.h>
+	#ifndef __FreeBSD__
+		#include <sys/xattr.h>
+	#endif
+	#ifdef __APPLE_MAKEFILE__
+		#include <ICU/unicode/utypes.h>
+	#else
+		#include <unicode/utypes.h>
+	#endif
 #endif
 
+/* O_BINARY is defined only in MinGW */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include <unistd.h>
+
 #include <errno.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>
 #include <limits.h>
 #include <time.h>
-#include <sys/time.h>
+#include <crossbuild/compatibility.h>
+#include <crossbuild/commons.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifndef mingw_PLATFORM
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#endif
-
-#ifdef __APPLE_MAKEFILE__
-#include <ICU/unicode/utypes.h>
-#else
-#include <unicode/utypes.h>
-#endif
-
-#ifndef mingw_PLATFORM
-  #ifndef __FreeBSD__
-    #include <sys/xattr.h>
-  #endif
-#endif
 
 #include "libltfs/arch/signal_internal.h"
 #include "libltfs/arch/arch_info.h"
@@ -114,6 +118,7 @@ struct device_data;
 #ifndef LTFS_DEFAULT_WORK_DIR
 #ifdef mingw_PLATFORM
 #define LTFS_DEFAULT_WORK_DIR         "c:/tmp/ltfs"
+#include <io.h>
 #else
 #define LTFS_DEFAULT_WORK_DIR         "/tmp/ltfs"
 #endif
@@ -159,7 +164,7 @@ struct device_data;
 #define LTFS_NO_BARCODE               "NO_BARCODE"
 
 #ifndef __APPLE_MAKEFILE__
-#include "config.h"
+#include   "config.h"
 #endif
 
 #define LTFS_LOSTANDFOUND_DIR         "_ltfs_lostandfound"
@@ -199,6 +204,9 @@ struct device_data;
 		kill(getpid(), SIGABRT);				\
 		do {sleep(1);}while(1);					\
 	}while(0)
+
+#define NO_BARCODE "      "
+#define HAVE_BARCODE(v) strcmp(v->label->barcode, NO_BARCODE)
 
 /* Callback prototype used to list directories. The function must return 0 on success
  * or a negative value on error. */
@@ -391,19 +399,19 @@ struct ltfs_volume {
 	/* LTFS format data */
 	struct tc_coherency ip_coh;    /**< Index partition coherency info */
 	struct tc_coherency dp_coh;    /**< Data partition coherency info */
-	struct ltfs_label *label;      /**< Information from the partition labels */
-	struct ltfs_index *index;      /**< Current cartridge index */
-	char   *index_cache_path;      /**< File name of on-disk index cache */
+	struct ltfs_label* label;      /**< Information from the partition labels */
+	struct ltfs_index* index;      /**< Current cartridge index */
+	char* index_cache_path;      /**< File name of on-disk index cache */
 
 	/* Opaque handles to higher-level structures */
-	void *iosched_handle;          /**< Handle to the I/O scheduler state */
-	void *changer_handle;          /**< Handle to changer controller state */
-	void *dcache_handle;           /**< Handle to the Dentry cache manager state */
-	void *periodic_sync_handle;    /**< Handle to the periodic sync state */
-	void *kmi_handle;              /**< Handle to the key manager interface state */
+	void* iosched_handle;          /**< Handle to the I/O scheduler state */
+	void* changer_handle;          /**< Handle to changer controller state */
+	void* dcache_handle;           /**< Handle to the Dentry cache manager state */
+	void* periodic_sync_handle;    /**< Handle to the periodic sync state */
+	void* kmi_handle;              /**< Handle to the key manager interface state */
 
 	/* Internal state variables */
-	struct device_data *device;        /**< Device-specific data */
+	struct device_data* device;        /**< Device-specific data */
 	bool ip_index_file_end;            /**< Does the index partition end in an index file? */
 	bool dp_index_file_end;            /**< Does the data partition end in an index file? */
 	enum volume_mount_type mount_type; /**< Mount type defined by enum */
@@ -415,7 +423,7 @@ struct ltfs_volume {
 	 * You MUST hold the tape device lock before accessing this buffer. */
 	struct tape_offset last_pos;   /**< Position of last block read from the tape. */
 	unsigned long last_size;       /**< Size of last block read from the tape. */
-	char *last_block;              /**< Contents of last block read from the tape. */
+	char* last_block;              /**< Contents of last block read from the tape. */
 
 	/* Caches of cartridge health and capacity data. Take the device lock before using these. */
 	cartridge_health_info health_cache;
@@ -423,8 +431,8 @@ struct ltfs_volume {
 	struct device_capacity capacity_cache;
 
 	/* User-controlled parameters */
-	char *creator;                 /**< Creator string to use when writing labels, index files */
-	void *opt_args;                /**< FUSE command-line arguments */
+	char* creator;                 /**< Creator string to use when writing labels, index files */
+	void* opt_args;                /**< FUSE command-line arguments */
 	size_t cache_size_min;         /**< Starting scheduler cache size in MiB */
 	size_t cache_size_max;         /**< Maximum scheduler cache size in MiB */
 	bool reset_capacity;           /**< Force to reset tape capacity when formatting tape */
@@ -440,14 +448,14 @@ struct ltfs_volume {
 	bool set_pew;                  /**< Set PEW value */
 
 	bool livelink;                 /**< Live Link enabled? (SDE) */
-	char *mountpoint;              /**< Store mount point for Live Link (SDE) */
+	char* mountpoint;              /**< Store mount point for Live Link (SDE) */
 	size_t mountpoint_len;         /**< Store mount point path length (SDE) */
-	struct tape_attr *t_attr;      /**< Tape Attribute data */
+	struct tape_attr* t_attr;      /**< Tape Attribute data */
 	mam_lockval lock_status;       /**< Total volume lock status from t_attr->vollock and index->vollock */
 	struct ltfs_timespec first_locate; /**< Time to first locate */
 	int file_open_count;            /**< Number of opened files */
 
-	const char *work_directory;
+	const char* work_directory;
 
 };
 
@@ -484,7 +492,7 @@ struct index_criteria {
 	bool             have_criteria;         /**< Does this struct actually specify criteria? */
 	uint64_t         max_filesize_criteria; /**< Maximum file size that goes into the index partition */
 	struct ltfs_name *glob_patterns;       /**< NULL-terminated list of file name criteria */
-	UChar            **glob_cache;          /**< Cache of glob patterns in comparison-ready form */
+	unsigned char            **glob_cache;          /**< Cache of glob patterns in comparison-ready form */
 };
 
 struct ltfs_index {
@@ -502,10 +510,10 @@ struct ltfs_index {
 	struct index_criteria index_criteria;    /**< Active index criteria */
 
 	struct dentry *root;                /**< The directory tree */
-	ltfs_mutex_t rename_lock;        /**< Controls name tree access during renames */
+	ltfs_mutex_t rename_lock;           /**< Controls name tree access during renames */
 
 	/* Update tracking */
-	ltfs_mutex_t dirty_lock;         /**< Controls access to the update tracking bits */
+	ltfs_mutex_t dirty_lock;            /**< Controls access to the update tracking bits */
 	bool dirty;                         /**< Set on metadata update, cleared on write to tape */
 	bool atime_dirty;                   /**< Set on atime update, cleared on write to tape */
 	bool use_atime;                     /**< Set if atime updates should make the index dirty */
@@ -642,6 +650,7 @@ bool ltfs_get_criteria_allow_update(struct ltfs_volume *vol);
 int ltfs_start_mount(bool trial, struct ltfs_volume *vol);
 int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool recover_symlink,
 			   unsigned short gen, struct ltfs_volume *vol);
+int ltfs_print_device_list(struct tape_ops* ops);
 int ltfs_unmount(char *reason, struct ltfs_volume *vol);
 void ltfs_dump_tree_unlocked(struct ltfs_index *index);
 void ltfs_dump_tree(struct ltfs_volume *vol);
@@ -685,14 +694,14 @@ char ltfs_dp_id(struct ltfs_volume *vol);
 char ltfs_ip_id(struct ltfs_volume *vol);
 const char *ltfs_get_volume_uuid(struct ltfs_volume *vol);
 
-int ltfs_sync_index(char *reason, bool index_locking, struct ltfs_volume *vol);
+int ltfs_sync_index(char* reason, bool index_locking, struct ltfs_volume* vol);
 
 int ltfs_traverse_index_forward(struct ltfs_volume *vol, char partition, unsigned int gen,
 								f_index_found func, void **list, void *priv);
 int ltfs_traverse_index_backward(struct ltfs_volume *vol, char partition, unsigned int gen,
 								 f_index_found func, void **list, void *priv);
 int ltfs_traverse_index_no_eod(struct ltfs_volume *vol, char partition, unsigned int gen,
-								f_index_found func, void **list, void *priv);
+							    f_index_found func, void **list, void *priv);
 int ltfs_check_eod_status(struct ltfs_volume *vol);
 int ltfs_recover_eod(struct ltfs_volume *vol);
 int ltfs_release_medium(struct ltfs_volume *vol);
@@ -703,7 +712,6 @@ int ltfs_mam(const tape_partition_t part, unsigned char *buf,
 int ltfs_wait_device_ready(struct ltfs_volume *vol);
 void ltfs_recover_eod_simple(struct ltfs_volume *vol);
 
-int ltfs_print_device_list(struct tape_ops *ops);
 void ltfs_enable_livelink_mode(struct ltfs_volume *vol);
 
 int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol);

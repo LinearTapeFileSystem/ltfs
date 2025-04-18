@@ -369,7 +369,7 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
 	ltfs_set_index_dirty(false, false, vol->index);
 	d->dirty = true;
 	ltfs_mutex_unlock(&vol->index->dirty_lock);
-	vol->file_open_count ++;
+	vol->file_open_count++;
 
 	*dentry = d;
 	ret = 0;
@@ -522,8 +522,9 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
 	releasewrite_mrsw(&d->meta_lock);
 
 	ltfs_mutex_lock(&vol->index->dirty_lock);
-	if (! d->isdir)
+	if (!d->isdir) {
 		--vol->index->file_count;
+	}
 	ltfs_set_index_dirty(false, false, vol->index);
 	ltfs_mutex_unlock(&vol->index->dirty_lock);
 
@@ -548,7 +549,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	int ret;
 	char *from_norm = NULL, *to_norm = NULL;
 	char *from_norm_copy = NULL, *to_norm_copy = NULL;
-	char *from_filename, *to_filename;
+	char *from_filename = NULL, *to_filename = NULL, *to_filename_incj = NULL;
 	char *to_filename_copy = NULL, *to_filename_copy2 = NULL;
 	struct dentry *fromdir = NULL, *todir = NULL;
 	struct dentry *fromdentry = NULL, *todentry = NULL;
@@ -588,8 +589,8 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	}
 
 	if (dcache_initialized(vol)) {
-		from_norm_copy = strdup(from_norm);
-		to_norm_copy = strdup(to_norm);
+		from_norm_copy = SAFE_STRDUP(from_norm);
+		to_norm_copy = SAFE_STRDUP(to_norm);
 		if (! from_norm_copy || ! to_norm_copy) {
 			ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_rename: file name copy");
 			ret = -LTFS_NO_MEMORY;
@@ -602,8 +603,8 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	fs_split_path(to_norm, &to_filename, strlen(to_norm) + 1);
 
 	/* Allocate memory for new file name */
-	to_filename_copy = strdup(to_filename);
-	to_filename_copy2 = strdup(to_filename);
+	to_filename_copy = SAFE_STRDUP(to_filename);
+	to_filename_copy2 = SAFE_STRDUP(to_filename);
 	if (! to_filename_copy || ! to_filename_copy2) {
 		ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_rename: file name copy");
 		ret = -LTFS_NO_MEMORY;
@@ -868,6 +869,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 
 	fromdentry->dirty = true;
 
+	/* Release dentry of source */
 	if (! iosched_initialized(vol))
 		fs_release_dentry_unlocked(fromdentry);
 	else
@@ -1912,7 +1914,7 @@ int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, 
 
 	id->uid = d->uid;
 	id->ino = d->ino;
-	d->target.name = strdup(to);
+	d->target.name = SAFE_STRDUP(to);
 	d->target.percent_encode = fs_is_percent_encode_required(to);
 	d->isslink = true;
 
@@ -1964,14 +1966,14 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 	if ( size < strlen(d->target.name) + 1 ) {
 		return -LTFS_SMALL_BUFFER;
 	}
-	strncpy(buf, d->target.name, size);
+	SAFE_STRNCPY(buf, d->target.name, size);
 
 	if ( vol->livelink ) {
 		memset( value, 0, sizeof(value));
 		ret = xattr_get(d, LTFS_LIVELINK_EA_NAME, value, sizeof(value), vol);
 		if ( ret > 0 ) {
 			ltfsmsg(LTFS_DEBUG, 11323D, value);
-			ret = sscanf(value, "%d:%d", &num1, &num2);
+			ret = SAFE_SCANF(value, "%d:%d", &num1, &num2);
 			if ( ( ret == 1 ) && ( num1 != 0 ) ){
 				memset( buf, 0, size);
 #ifndef mingw_PLATFORM
@@ -1980,7 +1982,7 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 				}
 				strcpy(buf, vol->mountpoint);
 #endif
-				strcat(buf, d->target.name + num1);
+				SAFE_STRCAT_S(buf,size, d->target.name + num1);
 				ltfsmsg(LTFS_DEBUG, 11324D, d->target.name, buf);
 			}
 		}
@@ -1996,86 +1998,88 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 
 int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* buf, size_t size )
 {
-	char *work_buf, *target_buf, *temp_buf, *token, *next_token; // work buffer for string
-	int len=0,len2=0;	// work variables for string length
+	char *work_buf, *target_buf, *temp_buf, *token, *next_token; /* work buffers for string */
+	int  len=0, len2=0;                                          /* work variables for string length */
 
 	CHECK_ARG_NULL(link, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(target, -LTFS_NULL_ARG);
 
-	// need to set message and return code
+	/* need to set message and return code */
 	if (link[0]!='/') {
 		return -LTFS_BAD_ARG;
 	}
 
+	/* Check input target string is already absolute path or not */
 	len2 = strlen(target);
-	// input target string is already absolute path
 	if ( (target[0]=='/') && !strstr(target,"./" ) ) {
 		if ( size < (size_t)len2+1) {
 			return -LTFS_SMALL_BUFFER;
 		}
-		strcpy( buf, target );
+		SAFE_STRCPY_S(buf,len2, target);
 		return 0;
 	}
 
 	len=strlen(link);
-	work_buf = malloc(len+len2+1);
+	int work_buf_len = len + len2 + 1;
+	work_buf = malloc(work_buf_len);
 	if (!work_buf)  {
 		return -LTFS_NO_MEMORY;
 	}
-
-	target_buf = malloc(len2+1);
+	int target_buf_len = len2 + 1;
+	target_buf = malloc(target_buf_len);
 	if (!target_buf) {
-		free( work_buf );
+		free(work_buf);
 		return -LTFS_NO_MEMORY;
 	}
 
-	if ( target[0]=='/' ) {
-		temp_buf=strstr( target, "/." );		// get "/../ccc/target.txt" of "/aaa/../ccc/target.txt"
-		strcpy(target_buf,temp_buf+1);			// copy "../ccc/target.txt"
-		len=strlen(target_buf)+1;
-		len=len2-len;
-		strncpy( work_buf, target, len );		// copy "/aaa"
+	if (target[0]=='/') {
+		temp_buf = strstr(target, "/.");  /* get "/../ccc/target.txt" of "/aaa/../ccc/target.txt" */
+		SAFE_STRCPY_S(target_buf, target_buf_len, temp_buf + 1); /* copy "../ccc/target.txt" */
+		len = strlen(target_buf) + 1;
+		len = len2 - len;
+		SAFE_STRNCPY_S(work_buf, target, work_buf_len,len);   /* copy "/aaa" */
 	} else {
-		strcpy( work_buf, link );
-		strcpy( target_buf, target );
+		SAFE_STRCPY_S(work_buf, work_buf_len, link);
+		SAFE_STRCPY_S(target_buf, target_buf_len, target);
 
-		// split link file name then get current directory
-		temp_buf=strrchr( work_buf, '/' );		// get "/link.txt" from "/aaa/bbb/link.txt"
-		len = len-strlen(temp_buf);				// length of "/aaa/bbb"
+		/* Split link file name then get current directory */
+		temp_buf = strrchr(work_buf, '/'); /* get "/link.txt" from "/aaa/bbb/link.txt" */
+		len -= strlen(temp_buf);           /* length of "/aaa/bbb" */
 	}
-
-	// split target path directory then modify current directory with target path information
-	token = strtok( target_buf,"/" );			//  get ".." from "../ccc/target.txt"
-	while ( token ) {
-		next_token = strtok( NULL,"/" );		// if next_token is NULL then token is filename
-		if ( !next_token ) break;
-		if ( strcmp( token,".." )==0 ) {
-			work_buf[len]='\0';					// "/aaa/bbb\0link.txt"
-			temp_buf=strrchr( work_buf, '/' );	// get "/bbb"
+	char* contextVal = NULL;
+	/* Split target path directory then modify current directory with target path information */
+	SAFE_STRTOK(token,target_buf, "/", contextVal);     /*  get ".." from "../ccc/target.txt" */
+	while (token) {
+		SAFE_STRTOK(next_token,NULL, "/", contextVal);  /* if next_token is NULL then token is filename */
+		if (!next_token)
+			break;
+		if (strcmp(token, "..") == 0) {
+			work_buf[len] = '\0';               /* "/aaa/bbb\0link.txt" */
+			temp_buf = strrchr(work_buf, '/' ); /* get "/bbb" */
 			if (!temp_buf) {
-				*buf = '\0';					// out of ltfs range
+				*buf = '\0';         /* out of ltfs range */
 				return 0;
 			}
-			len = len-strlen(temp_buf);			// length of "/aaa"
-		} else if ( strcmp( token, "." ) ) {	// have directory name
-			work_buf[len]='/';					// put '/ 'as "/aaa/"
-			strncpy( work_buf+len+1, token, strlen(token)+1 );	// "/aaa/ccc\0"
-			len=strlen(work_buf);
+			len -= strlen(temp_buf); /* length of "/aaa" */
+		} else if (strcmp(token, "." )) {                    /* have directory name */
+			work_buf[len] = '/';                             /* put '/ 'as "/aaa/" */
+			SAFE_STRNCPY_S(work_buf+len+1, token, work_buf_len, strlen(token) + 1); /* "/aaa/ccc\0" */
+			len = strlen(work_buf);
 		}
 		token = next_token;
 	}
-	work_buf[len]='/';									// put '/ 'as "/aaa/ccc/"
-	strncpy( work_buf+len+1, token, strlen(token)+1 );	// "/aaa/ccc/target.txt\0"
+	work_buf[len] = '/';                             /* put '/ 'as "/aaa/ccc/" */
+	SAFE_STRNCPY_S(work_buf+len+1, token, work_buf_len, strlen(token)+1); /* "/aaa/ccc/target.txt\0" */
 
-	if ( size < strlen(work_buf)+1 ) {
-		free( work_buf );
-		free( target_buf );
+	if (size < strlen(work_buf) + 1) {
+		free(work_buf);
+		free(target_buf);
 		return -LTFS_SMALL_BUFFER;
 	}
 
-	strcpy( buf, work_buf );
-	free( work_buf );
-	free( target_buf );
+	SAFE_STRCPY_S(buf,size, work_buf);
+	free(work_buf);
+	free(target_buf);
 	return 0;
 }
 
@@ -2086,6 +2090,10 @@ int ltfs_fsops_volume_sync(char *reason, struct ltfs_volume *vol)
 	ret = ltfs_fsops_flush(NULL, false, vol);
 	if (ret < 0)
 		return ret;
+
+	ltfs_mutex_lock(&vol->index->dirty_lock);
+
+	ltfs_mutex_unlock(&vol->index->dirty_lock);
 
 	ret = ltfs_sync_index(reason, true, vol);
 

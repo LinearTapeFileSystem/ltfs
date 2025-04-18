@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -43,11 +43,25 @@
 ** AUTHOR:          Atsushi Abe
 **                  IBM Yamato, Japan
 **                  PISTE@jp.ibm.com
+**
 *************************************************************************************
 */
 
 #include "ltfs.h"
 #include "ltfs_fsops.h"
+
+#ifdef mingw_PLATFORM
+int gettimeofday(struct timeval* tv, struct timezone* tz) {
+	LARGE_INTEGER freq, count;
+	QueryPerformanceFrequency(&freq);
+	QueryPerformanceCounter(&count);
+
+	tv->tv_sec = count.QuadPart / freq.QuadPart;
+	tv->tv_usec = (count.QuadPart % freq.QuadPart) * 1000000 / freq.QuadPart;
+
+	return 0; // success
+}
+#endif
 
 /**
  * Periodic sync scheduler private data structure.

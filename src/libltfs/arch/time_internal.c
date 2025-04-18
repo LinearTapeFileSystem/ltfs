@@ -67,8 +67,10 @@
 #include "config.h"
 #endif
 
+#ifndef mingw_PLATFORM
 #if ! ((SIZEOF_TIME_T == 4) || (SIZEOF_TIME_T == 8))
-#error time_t width is not 4 or 8
+	#error time_t width is not 4 or 8
+#endif
 #endif
 
 ltfs_time_t ltfs_timegm(struct tm *t)

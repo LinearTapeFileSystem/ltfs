@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -61,12 +61,13 @@
 #include "tape.h"
 #include "pathname.h"
 #include "arch/time_internal.h"
-
-/* O_BINARY is defined only in MinGW */
-#ifndef O_BINARY
-#define O_BINARY 0
+#ifdef mingw_PLATFORM
+#include "unicode/umachine.h"
+#include "unicode/utf8.h"
+#ifdef _MSC_VER
+    #pragma warning(disable : 4996)
 #endif
-
+#endif
 /* Structure to control EE's file offset cache and sync file list */
 struct ltfsee_cache
 {
@@ -81,7 +82,7 @@ struct ltfsee_cache
 static int encode_entry_name(char **new_name, const char *name)
 {
 	int len;
-	UChar32 c;
+	UChar32 c=NULL;
 
 	/* Printable ASCII characters
 	 * !\"#$&`'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
@@ -97,7 +98,7 @@ static int encode_entry_name(char **new_name, const char *name)
 
 	len = strlen(name);
 
-	tmp_name = malloc(len * 3 * sizeof(UChar));
+	tmp_name = malloc(len * 3 * sizeof(COMPAT_UCHAR));
 	buf_encode[2] = '\0';
 
 	while (i < len) {
@@ -119,7 +120,7 @@ static int encode_entry_name(char **new_name, const char *name)
 		}
 
 		while (count < i - prev) {
-			sprintf(buf_encode, "%02X", name[prev+count] & 0xFF);
+			SAFE_PRINTF(buf_encode, "%02X", name[prev+count] & 0xFF);
 			tmp_name[j] = '%';
 			tmp_name[j+1] = buf_encode[0];
 			tmp_name[j+2] = buf_encode[1];
@@ -130,7 +131,7 @@ static int encode_entry_name(char **new_name, const char *name)
 
 	tmp_name[j] = '\0';
 
-	*new_name = strdup(tmp_name);
+	*new_name = SAFE_STRDUP(tmp_name);
 	free(tmp_name);
 
 	return 0;
@@ -343,9 +344,10 @@ static int _xml_write_file(xmlTextWriterPtr writer, struct dentry *file, struct 
 	/* Write dirty file list */
 	if (sync_list->fp && file->dirty) {
 		fprintf(sync_list->fp, "%s,%"PRIu64"\n", file->name.name, file->size);
-		file->dirty = false;
 		sync_list->count++;
+		file->dirty = false;
 	}
+
 
 	return 0;
 }
@@ -359,13 +361,13 @@ static int _xml_write_file(xmlTextWriterPtr writer, struct dentry *file, struct 
  * @param sync_list file pointer to write sync file list
  * @return 0 on success or negative on failure
  */
-static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
-					   const struct ltfs_index *idx, struct ltfsee_cache* offset_c, struct ltfsee_cache* sync_list)
+static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry* dir,
+	const struct ltfs_index* idx, struct ltfsee_cache* offset_c, struct ltfsee_cache* sync_list)
 {
 	size_t i;
-	char *offset_name, *sync_name;
-	struct ltfsee_cache *offset = offset_c, *sync = sync_list;
-	struct name_list *list_ptr, *list_tmp;
+	char* offset_name, * sync_name;
+	struct ltfsee_cache* offset = offset_c, * sync = sync_list;
+	struct name_list* list_ptr, * list_tmp;
 	int ret;
 
 	if (!dir)
@@ -376,15 +378,17 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 	if (dir == idx->root) {
 		if (idx->volume_name.name) {
 			xml_mktag(_xml_write_nametype(writer, "name", (struct ltfs_name*)(&idx->volume_name)), -1);
-		} else {
+		}
+		else {
 			xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "name"), -1);
 			xml_mktag(xmlTextWriterEndElement(writer), -1);
 		}
-	} else
+	}
+	else
 		xml_mktag(_xml_write_nametype(writer, "name", &dir->name), -1);
 
 	xml_mktag(xmlTextWriterWriteElement(
-		writer, BAD_CAST "readonly", BAD_CAST (dir->readonly ? "true" : "false")), -1);
+		writer, BAD_CAST "readonly", BAD_CAST(dir->readonly ? "true" : "false")), -1);
 	xml_mktag(_xml_write_dentry_times(writer, dir), -1);
 	xml_mktag(xmlTextWriterWriteFormatElement(
 		writer, BAD_CAST UID_TAGNAME, "%"PRIu64, dir->uid), -1);
@@ -407,7 +411,8 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 					free(offset_name);
 					if (!offset->fp)
 						ltfsmsg(LTFS_WARN, 17248W, "offset cache", list_ptr->d->vol->index_cache_path);
-				} else
+				}
+				else
 					ltfsmsg(LTFS_WARN, 17247W, "offset cache", list_ptr->d->vol->index_cache_path);
 
 				ret = asprintf(&sync_name, "%s.%s", list_ptr->d->vol->index_cache_path, "synclist.new");
@@ -416,7 +421,8 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 					free(sync_name);
 					if (!sync->fp)
 						ltfsmsg(LTFS_WARN, 17248W, "sync list", list_ptr->d->vol->index_cache_path);
-				} else
+				}
+				else
 					ltfsmsg(LTFS_WARN, 17247W, "sync list", list_ptr->d->vol->index_cache_path);
 			}
 
@@ -435,7 +441,8 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 				sync->fp = NULL;
 			}
 
-		} else
+		}
+		else
 			xml_mktag(_xml_write_file(writer, list_ptr->d, offset_c, sync_list), -1);
 	}
 
@@ -443,7 +450,7 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 
 	/* Save unrecognized tags */
 	if (dir->tag_count > 0) {
-		for (i=0; i<dir->tag_count; ++i) {
+		for (i = 0; i < dir->tag_count; ++i) {
 			if (xmlTextWriterWriteRaw(writer, dir->preserved_tags[i]) < 0) {
 				ltfsmsg(LTFS_ERR, 17092E, __FUNCTION__);
 				return -1;
@@ -723,13 +730,12 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 		if (ret > 0) {
 			ret = asprintf(&offset_name, "%s.%s", path, "offsetcache");
 			if (ret > 0) {
-				unlink(offset_name);
+				SAFE_UNLINK(offset_name);
 				rename(offset_new, offset_name);
-				fd = open(offset_name, O_RDWR | O_BINARY,
-						  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+				SAFE_OPEN(&fd, offset_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 				if (fd >= 0) {
 					fsync(fd);
-					close(fd);
+					SAFE_CLOSE(fd);
 					fd = -1;
 				} else {
 					if (errno != ENOENT)
@@ -744,13 +750,12 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 		if (ret > 0) {
 			ret = asprintf(&sync_name, "%s.%s", path, "synclist");
 			if (ret > 0) {
-				unlink(sync_name);
+				SAFE_UNLINK(sync_name);
 				rename(sync_new, sync_name);
-				fd = open(sync_name, O_RDWR | O_BINARY,
-						  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+				SAFE_OPEN(&fd,sync_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW , PERMISSION_READWRITE);
 				if (fd >= 0) {
 					fsync(fd);
-					close(fd);
+					SAFE_CLOSE(fd);
 					fd = -1;
 				} else {
 					if (errno != ENOENT)
@@ -791,7 +796,7 @@ int xml_schema_to_file(const char *filename, const char *creator,
 	if (reason)
 		asprintf(&alt_creator, "%s - %s", creator , reason);
 	else
-		alt_creator = strdup(creator);
+		alt_creator = SAFE_STRDUP(creator);
 
 	if (alt_creator) {
 		ret = _xml_write_schema(writer, alt_creator, idx);
@@ -817,13 +822,13 @@ int xml_schema_to_file(const char *filename, const char *creator,
  * @param vol LTFS volume.
  * @return 0 on success or a negative value on error.
  */
-int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
+int xml_schema_to_tape(char* reason, struct ltfs_volume* vol)
 {
 	int ret, bk = -1;
 	xmlOutputBufferPtr write_buf;
 	xmlTextWriterPtr writer;
-	struct xml_output_tape *out_ctx;
-	char *creator = NULL;
+	struct xml_output_tape* out_ctx;
+	char* creator = NULL;
 	bool immed = false;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -831,32 +836,32 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 
 	/* Create output callback context data structure. */
 	out_ctx = calloc(1, sizeof(struct xml_output_tape));
-	if (! out_ctx) {
+	if (!out_ctx) {
 		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_tape: output context");
 		return -LTFS_NO_MEMORY;
 	}
 	out_ctx->buf = malloc(vol->label->blocksize + LTFS_CRC_SIZE);
-	if (! out_ctx->buf) {
+	if (!out_ctx->buf) {
 		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_tape: output buffer");
 		free(out_ctx);
 		return -LTFS_NO_MEMORY;
 	}
 
-	out_ctx->fd       = -1;
+	out_ctx->fd = -1;
 	out_ctx->errno_fd = 0;
 	if (vol->index_cache_path)
 		xml_acquire_file_lock(vol->index_cache_path, &out_ctx->fd, &bk, true);
 
 	out_ctx->buf_size = vol->label->blocksize;
 	out_ctx->buf_used = 0;
-	out_ctx->device   = vol->device;
+	out_ctx->device = vol->device;
 	out_ctx->err_code = 0;
 
 	/* Create output buffer pointer. */
 	write_buf = xmlOutputBufferCreateIO(xml_output_tape_write_callback,
-										xml_output_tape_close_callback,
-										out_ctx, NULL);
-	if (! write_buf) {
+		xml_output_tape_close_callback,
+		out_ctx, NULL);
+	if (!write_buf) {
 		ltfsmsg(LTFS_ERR, 17053E);
 		if (out_ctx->fd >= 0)
 			xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, false);
@@ -867,7 +872,7 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 
 	/* Create XML writer. */
 	writer = xmlNewTextWriter(write_buf);
-	if (! writer) {
+	if (!writer) {
 		ltfsmsg(LTFS_ERR, 17054E);
 		if (out_ctx->fd >= 0)
 			xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, false);
@@ -894,7 +899,8 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 
 			if (out_ctx->fd >= 0)
 				xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, true);
-		} else {
+		}
+		else {
 			/* New index is successfully sent to the internal buffer of tape drive */
 			immed = (strcmp(reason, SYNC_FORMAT) == 0); /* Use immediate write FM only at format */
 			ret = tape_write_filemark(vol->device, 1, true, true, immed);
@@ -905,7 +911,8 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 				 */
 				if (vol->index_cache_path)
 					_commit_offset_caches(vol->index_cache_path, vol->index);
-			} else {
+			}
+			else {
 				ltfsmsg(LTFS_ERR, 11084E, ret);
 			}
 
@@ -914,18 +921,19 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 		}
 
 		/* Update the creator string */
-		if (! vol->index->creator || strcmp(vol->creator, vol->index->creator)) {
+		if (!vol->index->creator || strcmp(vol->creator, vol->index->creator)) {
 			if (vol->index->creator)
 				free(vol->index->creator);
 			vol->index->creator = strdup(vol->creator);
-			if (! vol->index->creator) {
+			if (!vol->index->creator) {
 				ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_tape: new creator string");
 				ret = -LTFS_NO_MEMORY;
 			}
 		}
 
 		free(creator);
-	} else {
+	}
+	else {
 		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_tape: creator string");
 		xmlFreeTextWriter(writer);
 		xml_release_file_lock(vol->index_cache_path, out_ctx->fd, bk, true);

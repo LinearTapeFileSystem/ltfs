@@ -61,7 +61,7 @@
 #include "libltfs/queue.h"
 #include "libltfs/ltfs_error.h"
 #include "libltfs/ltfslogging.h"
-
+#include "crossbuild/commons.h"
 /*
  * function declarations
  */

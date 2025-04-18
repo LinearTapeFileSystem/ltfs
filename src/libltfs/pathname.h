@@ -58,19 +58,26 @@
 extern "C" {
 #endif
 
+
+#ifdef mingw_PLATFORM
+	#include <uchar.h>
+#include <minwindef.h>
+#else
+	#ifdef __APPLE_MAKEFILE__
+		#include <ICU/unicode/utypes.h>
+	#else
+		#include <unicode/utypes.h>
+	#endif
+#endif
 #include <stdlib.h>
 #include <stdbool.h>
-
-#ifdef __APPLE_MAKEFILE__
-#include <ICU/unicode/utypes.h>
-#else
-#include <unicode/utypes.h>
-#endif
+#include "crossbuild/compatibility.h"
+#include <unicode/ustring.h>
 
 int pathname_format(const char *name, char **new_name, bool validate, bool path);
 int pathname_unformat(const char *name, char **new_name);
 int pathname_caseless_match(const char *name1, const char *name2, int *result);
-int pathname_prepare_caseless(const char *name, UChar **new_name, bool use_nfc);
+int pathname_prepare_caseless(const char *name, COMPAT_UCHAR **new_name, bool use_nfc);
 int pathname_normalize(const char *name, char **new_name);
 int pathname_validate_file(const char *name);
 int pathname_validate_target(const char *name);

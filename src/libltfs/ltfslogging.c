@@ -47,11 +47,14 @@
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
+#include <windows.h>
 #endif
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
+
 #ifndef mingw_PLATFORM
 #include <syslog.h>
 #endif
@@ -74,13 +77,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include "arch/win/winlog.h"
 #else
 #include <dlfcn.h>
 #include <sys/types.h>
 #endif
-
+#include <unistd.h>
 #include "libltfs/ltfslogging.h"
 #include "libltfs/ltfs_thread.h"
 #include "libltfs/ltfs_locking.h"
@@ -377,7 +379,7 @@ void ltfsprintf_unload_plugin(void *handle)
 /* Print a formatted message in the current system locale. */
 int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, ...)
 {
-	const UChar *format_uc = NULL;
+	const COMPAT_UCHAR *format_uc = NULL;
 	int32_t prefix_len, format_len;
 	int32_t id_val;
 	char id[16];
@@ -395,10 +397,10 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		goto internal_error;
 
 	if (idlen > 1 && _id[0] == '"' && _id[idlen - 1] == '"') {
-		strncpy(id, _id + 1, idlen - 2);
+		STRCPY_LIMITED(id, _id + 1, idlen - 2);
 		id[idlen - 2] = '\0';
 	} else {
-		strcpy(id, _id);
+		SAFE_STRCPY(id, _id);
 	}
 
 	id_val = atol(id);
@@ -438,9 +440,9 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	/* Format and print the message string. */
 	ltfs_mutex_lock(&output_lock);
 	if (ltfs_print_thread_id)
-		prefix_len = print_id ? sprintf(output_buf, MSG_PREFIX_TID, (unsigned long)ltfs_get_thread_id(), id) : 0;
+		prefix_len = print_id ? SAFE_PRINTF(output_buf, MSG_PREFIX_TID, (unsigned long)ltfs_get_thread_id(), id) : 0;
 	else
-		prefix_len = print_id ? sprintf(output_buf, MSG_PREFIX, id) : 0;
+		prefix_len = print_id ? SAFE_PRINTF(output_buf, MSG_PREFIX, id) : 0;
 	ucnv_fromUChars(output_conv, output_buf + prefix_len, OUTPUT_BUF_SIZE - prefix_len - 1,
 		format_uc, format_len, &err);
 	if (err == U_BUFFER_OVERFLOW_ERROR) {
@@ -463,9 +465,14 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	}
 
 #ifdef mingw_PLATFORM
-	va_start(argp, _id);
-	vsyslog(level, output_buf, argp);
-	va_end(argp);
+	__try {
+		va_start(argp, _id);
+		vsyslog(level, output_buf, argp);
+		va_end(argp);
+	}__except (EXCEPTION_EXECUTE_HANDLER) {
+		EXCEPTION_POINTERS* exceptionInfo = GetExceptionInformation();
+		fprintf(stderr,"An exception occurred when logging! Exception code: 0x%X\n", exceptionInfo->ExceptionRecord->ExceptionCode);
+	}
 #else
 	va_start(argp, _id);
 	vfprintf(stderr, output_buf, argp);
@@ -486,9 +493,9 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 
 	if (msg_out) {
 		va_start(argp, _id);
-		vsprintf(msg_buf, output_buf, argp);
+		SAFE_VSPRINTF(msg_buf, output_buf, argp);
 		va_end(argp);
-		*msg_out = strdup(msg_buf);
+		*msg_out = SAFE_STRDUP(msg_buf);
 	}
 
 #ifdef ENABLE_SNMP

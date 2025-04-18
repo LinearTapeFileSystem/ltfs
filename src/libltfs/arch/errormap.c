@@ -48,7 +48,7 @@
 */
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
+#include "arch/win/win_util.h"
 #endif
 
 #ifdef __FreeBSD__

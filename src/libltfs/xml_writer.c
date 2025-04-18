@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -61,11 +61,6 @@
 #include "pathname.h"
 #include "arch/time_internal.h"
 
-/* O_BINARY is defined only in MinGW */
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
 /**
  * Format a raw timespec structure for the XML file.
  */
@@ -91,7 +86,7 @@ int xml_format_time(struct ltfs_timespec t, char** out)
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -1;
 	}
-	sprintf(timebuf, "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ", tm.tm_year+1900, tm.tm_mon+1,
+	SAFE_SNPRINTF(timebuf, (31*sizeof(char)), "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ", tm.tm_year + 1900, tm.tm_mon + 1,
 			tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, t.tv_nsec);
 	*out = timebuf;
 
@@ -131,7 +126,7 @@ int xml_output_tape_write_callback(void *context, const char *buffer, int len)
 			}
 
 			if (ctx->fd > 0) {
-				ret = write(ctx->fd, ctx->buf, ctx->buf_size);
+				ret = SAFE_WRITE(ctx->fd, ctx->buf, ctx->buf_size);
 				if (ret < 0) {
 					ltfsmsg(LTFS_ERR, 17244E, (int)errno);
 					ctx->errno_fd = -LTFS_CACHE_IO;
@@ -167,7 +162,7 @@ int xml_output_tape_close_callback(void *context)
 			ret = -1;
 		} else {
 			if (ctx->fd >= 0)
-				ret_d = write(ctx->fd, ctx->buf, ctx->buf_used);
+				ret_d = SAFE_WRITE(ctx->fd, ctx->buf, ctx->buf_used);
 			if (ret_d < 0) {
 				ltfsmsg(LTFS_ERR, 17245E, (int)errno);
 				ctx->errno_fd = -LTFS_CACHE_IO;
@@ -197,7 +192,7 @@ int xml_output_fd_write_callback(void *context, const char *buffer, int len)
 	struct xml_output_fd *ctx = context;
 
 	if (len > 0) {
-		ret = write(ctx->fd, buffer, len);
+		ret = SAFE_WRITE(ctx->fd, buffer, len);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 17206E, "write callback (write)", errno, (unsigned long)len);
 			return -1;
@@ -227,6 +222,33 @@ int xml_output_fd_close_callback(void *context)
 }
 
 #define COPY_BUF_SIZE (512 * KB)
+
+#ifdef _WIN32
+#include <windows.h>
+#include <io.h>
+
+int ftruncate(int fd, off_t length) {
+	HANDLE hFile = (HANDLE)_get_osfhandle(fd);
+	if (hFile == INVALID_HANDLE_VALUE) {
+		return -1;
+	}
+
+	LARGE_INTEGER li;
+	li.QuadPart = length;
+
+	if (!SetFilePointerEx(hFile, li, NULL, FILE_BEGIN)) {
+		return -1;
+	}
+
+	if (!SetEndOfFile(hFile)) {
+		return -1;
+	}
+
+	return 0;
+}
+
+#endif
+
 
 static int _copy_file_contents(int dest, int src)
 {
@@ -261,8 +283,8 @@ static int _copy_file_contents(int dest, int src)
 		return -LTFS_CACHE_IO;
 	}
 
-	while ((len_read = read(src, buf, COPY_BUF_SIZE)) > 0) {
-		len_written = write(dest, buf, len_read);
+	while ((len_read = SAFE_READ(src, buf, COPY_BUF_SIZE)) > 0) {
+		len_written = SAFE_WRITE(dest, buf, len_read);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 17246E, "_copy_file", errno);
 			free(buf);
@@ -319,9 +341,7 @@ int xml_acquire_file_lock(const char *file, int *fd, int *bk_fd, bool is_write)
 	*fd = *bk_fd = -1;
 
 	/* Open specified file to lock */
-	*fd = open(file,
-			  O_RDWR | O_CREAT | O_BINARY,
-			  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH );
+	SAFE_OPEN(fd,file,O_RDWR | O_CREAT | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 	if (*fd < 0) {
 		/* Failed to open the advisory lock '%s' (%d) */
 		errno_save = errno;
@@ -391,17 +411,16 @@ retry:
 		asprintf(&backup_file, "%s.%s", file, "bk");
 		if (!backup_file){
 			ltfsmsg(LTFS_ERR, 10001E, "xml_acquire_file_lock: backup name");
-			close(*fd);
+			SAFE_CLOSE(*fd);
 			*fd = -1;
 			goto out;
 		}
-		*bk_fd = open(backup_file,
-					  O_RDWR | O_CREAT | O_BINARY | O_TRUNC,
-					  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH );
+		SAFE_OPEN(bk_fd,backup_file,
+					  O_RDWR | O_CREAT | O_BINARY | O_TRUNC,SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 		if (*bk_fd < 0) {
 			ltfsmsg(LTFS_ERR, 17246E, "backup file creation", errno);
 			errno_save = errno;
-			close(*fd);
+			SAFE_CLOSE(*fd);
 			*fd = -1;
 			goto out;
 		}
@@ -411,9 +430,9 @@ retry:
 		ret = _copy_file_contents(*bk_fd, *fd);
 		if (ret < 0) {
 			errno_save = errno;
-			close(*fd);
+			SAFE_CLOSE(*fd);
 			*fd = -1;
-			close(*bk_fd);
+			SAFE_CLOSE(*bk_fd);
 			*bk_fd = -1;
 			goto out;
 		}
@@ -423,9 +442,9 @@ retry:
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17246E, "seek", errno);
 		errno_save = errno;
-		close(*fd);
+		SAFE_CLOSE(*fd);
 		*fd = -1;
-		close(*bk_fd);
+		SAFE_CLOSE(*bk_fd);
 		*bk_fd = -1;
 		goto out;
 	}
@@ -434,9 +453,9 @@ retry:
 	if (ret < 0){
 		ltfsmsg(LTFS_ERR, 17246E, "truncate", errno);
 		errno_save = errno;
-		close(*fd);
+		SAFE_CLOSE(*fd);
 		*fd = -1;
-		close(*bk_fd);
+		SAFE_CLOSE(*bk_fd);
 		*bk_fd = -1;
 		goto out;
 	}
@@ -465,8 +484,8 @@ int xml_release_file_lock(const char *file, int fd, int bk_fd, bool revert)
 		ret = _copy_file_contents(fd, bk_fd);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 17246E, "revert seek", errno);
-			close(bk_fd);
-			close(fd);
+			SAFE_CLOSE(bk_fd);
+			SAFE_CLOSE(fd);
 			return -1;
 		}
 	}
@@ -486,8 +505,8 @@ int xml_release_file_lock(const char *file, int fd, int bk_fd, bool revert)
 	}
 #endif
 
-	if (fd >= 0) close(fd);
-	if (bk_fd >= 0) close(bk_fd);
+	if (fd >= 0) SAFE_CLOSE(fd);
+	if (bk_fd >= 0) SAFE_CLOSE(bk_fd);
     errno = errno_save;
 
 	asprintf(&backup_file, "%s.%s", file, "bk");
@@ -495,7 +514,7 @@ int xml_release_file_lock(const char *file, int fd, int bk_fd, bool revert)
 		ltfsmsg(LTFS_ERR, 10001E, "xml_release_file_lock: backup name");
 		ret = -LTFS_NO_MEMORY;
 	} else {
-		unlink(backup_file);
+		SAFE_UNLINK(backup_file);
 		free(backup_file);
 	}
 

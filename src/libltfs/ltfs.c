@@ -81,12 +81,7 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-/* O_BINARY is defined only in MinGW */
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
+static volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
 /** \file
@@ -378,6 +373,7 @@ int ltfs_volume_alloc(const char *execname, struct ltfs_volume **volume)
 		}
 	}
 
+
 	*volume = newvol;
 	return 0;
 
@@ -404,7 +400,7 @@ out_volfree:
  * @param force force free memory if reference counter is not 0
  * @param volume the volume to free, set to NULL on success
  */
-void _ltfs_volume_free(bool force, struct ltfs_volume **volume)
+void _ltfs_volume_free(bool force, struct ltfs_volume** volume)
 {
 	if (volume && *volume) {
 		label_free(&(*volume)->label);
@@ -1260,7 +1256,7 @@ int ltfs_get_index_commit_message(char **msg, struct ltfs_volume *vol)
 	if (err < 0)
 		return err;
 	if (vol->index->commit_message) {
-		ret = strdup(vol->index->commit_message);
+		ret = SAFE_STRDUP(vol->index->commit_message);
 		if (! ret) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			releaseread_mrsw(&vol->lock);
@@ -1285,7 +1281,7 @@ int ltfs_get_index_creator(char **msg, struct ltfs_volume *vol)
 	if (err < 0)
 		return err;
 	if (vol->index->creator) {
-		ret = strdup(vol->index->creator);
+		ret = SAFE_STRDUP(vol->index->creator);
 		if (! ret) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			releaseread_mrsw(&vol->lock);
@@ -1310,7 +1306,7 @@ int ltfs_get_volume_name(char **msg, struct ltfs_volume *vol)
 	if (err < 0)
 		return err;
 	if (vol->index->volume_name.name) {
-		ret = strdup(vol->index->volume_name.name);
+		ret = SAFE_STRDUP(vol->index->volume_name.name);
 		if (! ret) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			releaseread_mrsw(&vol->lock);
@@ -1770,6 +1766,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 				}
 				INTERRUPTED_GOTO(ret, out_unlock);
 				ltfsmsg(LTFS_INFO, 11022I);
+				
 				ret = ltfs_write_index(vol->label->partid_ip, SYNC_RECOVERY, vol);
 				if (ret < 0)
 					goto out_unlock;
@@ -2375,21 +2372,22 @@ size_t ltfs_max_cache_size(struct ltfs_volume *vol)
  * when the cartridge is known to be in a sane state.
  * The caller must hold vol->lock for write if thread safety is required.
  * @param partition partition in which the schema should be written to
+ * @param reason the reason to write down an index
  * @param vol LTFS volume
  * @return 0 on success or a negative value on error
  */
-int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
+int ltfs_write_index(char partition, char* reason, struct ltfs_volume* vol)
 {
 	int ret, ret_mam;
 	struct tape_offset old_selfptr, old_backptr;
 	struct ltfs_timespec modtime_old = { .tv_sec = 0, .tv_nsec = 0 };
 	bool generation_inc = false;
 	struct tc_position physical_selfptr;
-	char *cache_path_save = NULL;
+	char* cache_path_save = NULL;
 	bool write_perm = (strcmp(reason, SYNC_WRITE_PERM) == 0);
 	bool update_vollock = false;
 	int volstat = -1, new_volstat = 0;
-	char *bc_print = NULL;
+	char* bc_print = NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
@@ -2416,7 +2414,7 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		/* Check read-only status. Ignore the out-of-space condition, as this should not
 		 * prevent writing an Index. */
 		ret = ltfs_get_partition_readonly(ltfs_ip_id(vol), vol);
-		if (! ret || ret == -LTFS_NO_SPACE || ret == -LTFS_LESS_SPACE)
+		if (!ret || ret == -LTFS_NO_SPACE || ret == -LTFS_LESS_SPACE)
 			ret = ltfs_get_partition_readonly(ltfs_dp_id(vol), vol);
 		if (ret < 0 && ret != -LTFS_NO_SPACE && ret != -LTFS_LESS_SPACE)
 			return ret;
@@ -2426,11 +2424,11 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	 * of the tape device do so with some kind of volume lock held, and this function
 	 * executes with an exclusive lock on the volume. */
 
-	/* write to data partition first if required */
+	 /* write to data partition first if required */
 	if (partition == ltfs_ip_id(vol) &&
-		! write_perm &&
-		(! vol->dp_index_file_end ||
-		 (vol->ip_index_file_end && vol->index->selfptr.partition == ltfs_ip_id(vol)))) {
+		!write_perm &&
+		(!vol->dp_index_file_end ||
+			(vol->ip_index_file_end && vol->index->selfptr.partition == ltfs_ip_id(vol)))) {
 
 		/* Surpress on-disk index cache write on the recursive call */
 		cache_path_save = vol->index_cache_path;
@@ -2532,7 +2530,7 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	}
 
 	ltfsmsg(LTFS_INFO, 17235I, bc_print, partition, reason,
-			(unsigned long long)vol->index->file_count, tape_get_serialnumber(vol->device));
+		(unsigned long long)vol->index->file_count, tape_get_serialnumber(vol->device));
 
 	ret = tape_write_filemark(vol->device, 1, true, true, true);	// immediate WFM
 	if (ret < 0) {
@@ -2578,11 +2576,11 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	ltfs_update_cart_coherency(vol);
 
 	ltfsmsg(LTFS_INFO, 17236I,
-			bc_print,
-			(unsigned long long)vol->index->generation,
-			vol->index->selfptr.partition,
-			(unsigned long long)vol->index->selfptr.block,
-			tape_get_serialnumber(vol->device));
+		bc_print,
+		(unsigned long long)vol->index->generation,
+		vol->index->selfptr.partition,
+		(unsigned long long)vol->index->selfptr.block,
+		tape_get_serialnumber(vol->device));
 
 	/* update append position */
 	if (partition == ltfs_ip_id(vol)) {
@@ -2635,9 +2633,9 @@ out_write_perm:
  * @param vol LTFS volume
  * @return 0 on success or a negative value on error
  */
-int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, struct ltfs_volume *vol)
+int ltfs_save_index_to_disk(const char* work_dir, char* reason, bool need_gen, struct ltfs_volume* vol)
 {
-	char *path;
+	char* path;
 	int ret;
 
 	CHECK_ARG_NULL(work_dir, -LTFS_NULL_ARG);
@@ -2652,7 +2650,8 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, 
 			ret = asprintf(&path, "%s/%s-%d.schema", work_dir, vol->label->barcode, vol->index->generation);
 		else
 			ret = asprintf(&path, "%s/%s-%d.schema", work_dir, vol->label->vol_uuid, vol->index->generation);
-	} else {
+	}
+	else {
 		if (strcmp(vol->label->barcode, "      "))
 			ret = asprintf(&path, "%s/%s.schema", work_dir, vol->label->barcode);
 		else
@@ -2666,7 +2665,7 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, 
 
 
 	ltfsmsg(LTFS_INFO, 17235I, _get_barcode(vol), 'Z', "Volume Cache",
-			(unsigned long long)vol->index->file_count, path);
+		(unsigned long long)vol->index->file_count, path);
 
 	ret = xml_schema_to_file(path, vol->index->creator, reason, vol->index);
 	if (ret < 0) {
@@ -2677,17 +2676,17 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, 
 	}
 
 	/* Change index file's mode */
-	if (chmod(path, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) {
+	if (SAFE_CHMOD(path, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) {
 		ret = -errno;
 		ltfsmsg(LTFS_ERR, 17184E, errno);
 	}
 
 	ltfsmsg(LTFS_INFO, 17236I,
-			_get_barcode(vol),
-			(unsigned long long)vol->index->generation,
-			'Z',
-			(unsigned long long)vol->index->selfptr.block,
-			path);
+		_get_barcode(vol),
+		(unsigned long long)vol->index->generation,
+		'Z',
+		(unsigned long long)vol->index->selfptr.block,
+		path);
 
 	free(path);
 	return ret;
@@ -2781,9 +2780,9 @@ int ltfs_set_barcode(const char *barcode, struct ltfs_volume *vol)
 				return -LTFS_BARCODE_INVALID;
 			++tmp;
 		}
-		strcpy(vol->label->barcode, barcode);
+		SAFE_STRCPY(vol->label->barcode, barcode);
 	} else
-		strcpy(vol->label->barcode, "      ");
+		SAFE_STRCPY(vol->label->barcode, NO_BARCODE);
 	return 0;
 }
 
@@ -2805,7 +2804,7 @@ int ltfs_set_volume_name(const char *volname, struct ltfs_volume *vol)
 		ret = pathname_validate_file(volname);
 		if (ret < 0)
 			return ret;
-		name_dup = strdup(volname);
+		name_dup = SAFE_STRDUP(volname);
 		if (! name_dup) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
@@ -2997,21 +2996,21 @@ int ltfs_format_tape(struct ltfs_volume *vol, int density_code, bool destructive
 	}
 
 	/* Set up the label: generate UUID and format time */
-	ltfs_gen_uuid(vol->label->vol_uuid);
+	ltfs_gen_uuid((vol->label->vol_uuid),sizeof(vol->label->vol_uuid));
 	get_current_timespec(&vol->label->format_time);
 
 	/* Duplicate creator */
 	if (vol->label->creator)
 		free(vol->label->creator);
 
-	vol->label->creator = strdup(vol->creator);
+	vol->label->creator = SAFE_STRDUP(vol->creator);
 	if (!vol->label->creator) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
 	/* Set appropriate volume modification time, UUID, and root directory's uid */
-	strcpy(vol->index->vol_uuid, vol->label->vol_uuid);
+	SAFE_STRCPY(vol->index->vol_uuid, vol->label->vol_uuid);
 	vol->index->mod_time = vol->label->format_time;
 	vol->index->root->creation_time = vol->index->mod_time;
 	vol->index->root->change_time = vol->index->mod_time;
@@ -3070,6 +3069,7 @@ int ltfs_format_tape(struct ltfs_volume *vol, int density_code, bool destructive
 	if (ret < 0)
 		return ret;
 	ltfsmsg(LTFS_INFO, 11278I, vol->label->partid_dp); /* "Writing Index to ..." */
+
 	ret = ltfs_write_index(vol->label->partid_dp, SYNC_FORMAT, vol);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 11279E, vol->label->partid_dp, ret);
@@ -3486,15 +3486,17 @@ out:
  * on the data partition.
  * @param vol LTFS volume
  * @param index_locking Take index lock while writing an index
+ * @param type index type to write
+ * @param vol LTFS volume
  * @return 0 on success or a negative value on error
  */
-int ltfs_sync_index(char *reason, bool index_locking, struct ltfs_volume *vol)
+int ltfs_sync_index(char* reason, bool index_locking, struct ltfs_volume* vol)
 {
 	int ret = 0, ret_r = 0;
 	bool dirty;
 	char partition;
 	bool dp_index_file_end, ip_index_file_end;
-	char *bc_print = NULL;
+	char* bc_print = NULL;
 
 start:
 	ret = ltfs_get_partition_readonly(ltfs_dp_id(vol), vol);
@@ -3526,7 +3528,7 @@ start:
 		/* If the DP ends in an index and the IP doesn't, then we're most likely positioned
 		 * at the end of the IP, and writing an index there is allowed without first putting
 		 * down a DP index. */
-		if (dp_index_file_end && ! ip_index_file_end)
+		if (dp_index_file_end && !ip_index_file_end)
 			partition = ltfs_ip_id(vol);
 		else /* Otherwise, it's faster to write an index to the DP. */
 			partition = ltfs_dp_id(vol);
@@ -3570,7 +3572,8 @@ start:
 			if (!ret_r) {
 				ltfsmsg(LTFS_INFO, 11344I, bc_print);
 				ret = -LTFS_SYNC_FAIL_ON_DP;
-			} else {
+			}
+			else {
 				ltfsmsg(LTFS_ERR, 11345E, bc_print);
 				ltfsmsg(LTFS_ERR, 11346E, bc_print);
 			}
@@ -3584,20 +3587,21 @@ start:
 			ret = ltfs_revalidate(true, vol);
 			if (ret == 0)
 				goto start;
-		} else if (index_locking)
+		}
+		else if (index_locking)
 			releasewrite_mrsw(&vol->lock);
 		if (ret)
 			ltfsmsg(LTFS_ERR, 17069E);
 
 		ltfsmsg(LTFS_INFO, 17070I, bc_print, ret, vol->device->serial_number);
-	} else {
+	}
+	else {
 		/* Do nothing and return 0 when filesystem is not dirty */
 		ret = 0;
 	}
 
 	return ret;
 }
-
 /**
  * Traverse index on a partition of EOD-less tape by forward direction
  * @param vol LTFS volume
@@ -3608,8 +3612,8 @@ start:
  * @param priv private data for call back function
  * @return 0 on success or a negative value on error
  */
-int ltfs_traverse_index_no_eod(struct ltfs_volume *vol, char partition, unsigned int gen,
-								f_index_found func, void **list, void* priv)
+int ltfs_traverse_index_no_eod(struct ltfs_volume* vol, char partition, unsigned int gen,
+	f_index_found func, void** list, void* priv)
 {
 	int ret, func_ret;
 
@@ -3626,7 +3630,8 @@ int ltfs_traverse_index_no_eod(struct ltfs_volume *vol, char partition, unsigned
 		if (ret < 0 && ret != -LTFS_UNSUPPORTED_INDEX_VERSION) {
 			ltfsmsg(LTFS_ERR, 17075E, 'N', (int)vol->device->position.block, partition);
 			return ret;
-		} else if (ret == -LTFS_UNSUPPORTED_INDEX_VERSION) {
+		}
+		else if (ret == -LTFS_UNSUPPORTED_INDEX_VERSION) {
 			ret = tape_spacefm(vol->device, 1);
 			if (ret < 0)
 				return ret;
@@ -3640,15 +3645,16 @@ int ltfs_traverse_index_no_eod(struct ltfs_volume *vol, char partition, unsigned
 		ltfsmsg(LTFS_DEBUG, 17080D, 'N', vol->index->generation, partition);
 		if (func) {
 			func_ret = (*func)(vol, gen, list, priv);
-			if(func_ret < 0) {
+			if (func_ret < 0) {
 				ltfsmsg(LTFS_ERR, 17081E, 'N', func_ret, partition);
 				return func_ret;
-			} else if (func_ret > 0) /* Break if call back function returns positive value */
+			}
+			else if (func_ret > 0) /* Break if call back function returns positive value */
 				return 0;
 		}
 		INTERRUPTED_RETURN();
 
-		if(vol->index->generation != (unsigned int)-1 && gen != 0 && vol->index->generation >= gen)
+		if (vol->index->generation != (unsigned int)-1 && gen != 0 && vol->index->generation >= gen)
 			break;
 
 		ret = tape_locate_next_index(vol->device);
@@ -3658,11 +3664,12 @@ int ltfs_traverse_index_no_eod(struct ltfs_volume *vol, char partition, unsigned
 		}
 	}
 
-	if(gen != 0) {
-		if(vol->index->generation != gen) {
+	if (gen != 0) {
+		if (vol->index->generation != gen) {
 			ltfsmsg(LTFS_DEBUG, 17078D, 'N', gen, partition);
 			return -LTFS_NO_INDEX;
-		} else {
+		}
+		else {
 			ltfsmsg(LTFS_INFO, 17077I, 'N', gen, partition);
 			return 0;
 		}
@@ -3681,8 +3688,8 @@ int ltfs_traverse_index_no_eod(struct ltfs_volume *vol, char partition, unsigned
  * @param priv private data for call back function
  * @return 0 on success or a negative value on error
  */
-int ltfs_traverse_index_forward(struct ltfs_volume *vol, char partition, unsigned int gen,
-								f_index_found func, void **list, void* priv)
+int ltfs_traverse_index_forward(struct ltfs_volume* vol, char partition, unsigned int gen,
+	f_index_found func, void** list, void* priv)
 {
 	int ret, func_ret;
 	struct tape_offset last_index;
@@ -3709,7 +3716,8 @@ int ltfs_traverse_index_forward(struct ltfs_volume *vol, char partition, unsigne
 		if (ret < 0 && ret != -LTFS_UNSUPPORTED_INDEX_VERSION) {
 			ltfsmsg(LTFS_ERR, 17075E, 'F', (int)vol->device->position.block, partition);
 			return ret;
-		} else if (ret == -LTFS_UNSUPPORTED_INDEX_VERSION) {
+		}
+		else if (ret == -LTFS_UNSUPPORTED_INDEX_VERSION) {
 			ret = tape_spacefm(vol->device, 1);
 			if (ret < 0)
 				return ret;
@@ -3722,15 +3730,16 @@ int ltfs_traverse_index_forward(struct ltfs_volume *vol, char partition, unsigne
 		ltfsmsg(LTFS_DEBUG, 17080D, 'F', vol->index->generation, partition);
 		if (func) {
 			func_ret = (*func)(vol, gen, list, priv);
-			if(func_ret < 0) {
+			if (func_ret < 0) {
 				ltfsmsg(LTFS_ERR, 17081E, 'F', func_ret, partition);
 				return func_ret;
-			} else if (func_ret > 0) /* Break if call back function returns positive value */
+			}
+			else if (func_ret > 0) /* Break if call back function returns positive value */
 				return 0;
 		}
 		INTERRUPTED_RETURN();
 
-		if(vol->index->generation != (unsigned int)-1 && gen != 0 && vol->index->generation >= gen)
+		if (vol->index->generation != (unsigned int)-1 && gen != 0 && vol->index->generation >= gen)
 			break;
 
 		if (last_index.block > vol->device->position.block) {
@@ -3742,11 +3751,12 @@ int ltfs_traverse_index_forward(struct ltfs_volume *vol, char partition, unsigne
 		}
 	}
 
-	if(gen != 0) {
-		if(vol->index->generation != gen) {
+	if (gen != 0) {
+		if (vol->index->generation != gen) {
 			ltfsmsg(LTFS_DEBUG, 17078D, 'F', gen, partition);
 			return -LTFS_NO_INDEX;
-		} else {
+		}
+		else {
 			ltfsmsg(LTFS_INFO, 17077I, 'F', gen, partition);
 			return 0;
 		}
@@ -3764,8 +3774,8 @@ int ltfs_traverse_index_forward(struct ltfs_volume *vol, char partition, unsigne
  * @param list this pointer is specified as 3rd arguments of call back function
  * @return 0 on success or a negative value on error
  */
-int ltfs_traverse_index_backward(struct ltfs_volume *vol, char partition, unsigned int gen,
-								 f_index_found func, void **list, void* priv)
+int ltfs_traverse_index_backward(struct ltfs_volume* vol, char partition, unsigned int gen,
+	f_index_found func, void** list, void* priv)
 {
 	int ret, func_ret;
 
@@ -3785,7 +3795,8 @@ int ltfs_traverse_index_backward(struct ltfs_volume *vol, char partition, unsign
 		if (ret < 0 && ret != -LTFS_UNSUPPORTED_INDEX_VERSION) {
 			ltfsmsg(LTFS_ERR, 17075E, 'B', (int)vol->device->position.block, partition);
 			return ret;
-		} else if (ret == -LTFS_UNSUPPORTED_INDEX_VERSION) {
+		}
+		else if (ret == -LTFS_UNSUPPORTED_INDEX_VERSION) {
 			ret = tape_spacefm(vol->device, 1);
 			if (ret < 0)
 				return ret;
@@ -3799,15 +3810,16 @@ int ltfs_traverse_index_backward(struct ltfs_volume *vol, char partition, unsign
 
 		if (func) {
 			func_ret = (*func)(vol, gen, list, priv);
-			if(func_ret < 0) {
+			if (func_ret < 0) {
 				ltfsmsg(LTFS_ERR, 17081E, 'B', func_ret, partition);
 				return func_ret;
-			} else if (func_ret > 0) /* Break if call back function returns positive value */
+			}
+			else if (func_ret > 0) /* Break if call back function returns positive value */
 				return 0;
 		}
 		INTERRUPTED_RETURN();
 
-		if(vol->index->generation != (unsigned int)-1 && gen != 0 && vol->index->generation <= gen)
+		if (vol->index->generation != (unsigned int)-1 && gen != 0 && vol->index->generation <= gen)
 			break;
 
 		ret = tape_locate_previous_index(vol->device);
@@ -3817,11 +3829,12 @@ int ltfs_traverse_index_backward(struct ltfs_volume *vol, char partition, unsign
 		}
 	}
 
-	if(gen != 0) {
-		if(vol->index->generation != gen) {
+	if (gen != 0) {
+		if (vol->index->generation != gen) {
 			ltfsmsg(LTFS_DEBUG, 17078D, 'B', gen, partition);
 			return -LTFS_NO_INDEX;
-		} else {
+		}
+		else {
 			ltfsmsg(LTFS_INFO, 17077I, 'B', gen, partition);
 			return 0;
 		}
@@ -3829,7 +3842,6 @@ int ltfs_traverse_index_backward(struct ltfs_volume *vol, char partition, unsign
 
 	return 0;
 }
-
 /**
  * Check EOD status
  * @param vol LTFS volume
@@ -4274,7 +4286,7 @@ void ltfs_recover_eod_simple(struct ltfs_volume *vol)
  */
 int ltfs_print_device_list(struct tape_ops *ops)
 {
-	struct tc_drive_info *buf;
+	struct tc_drive_info* buf = NULL;
 	int i, count = 0, info_count = 0, c = 0, ret = 0;
 
 	/* Get device count */
@@ -4371,10 +4383,10 @@ static int _ltfs_write_rao_file(char *file_path_org, unsigned char *buf, size_t 
 		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
-
-	fd = open(path,
-			  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-			  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+		
+	SAFE_OPEN(&fd, path,
+		O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
+		SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 	if (fd < 0) {
 		ltfsmsg(LTFS_INFO, 17276I, path, errno);
 		free(path);
@@ -4382,7 +4394,7 @@ static int _ltfs_write_rao_file(char *file_path_org, unsigned char *buf, size_t 
 		return ret;
 	}
 
-	size = write(fd, buf, len);
+	size = SAFE_WRITE(fd, buf, len);
 	if (size < 0) {
 		ltfsmsg(LTFS_INFO, 17277I, path, errno);
 		ret = -errno;
@@ -4399,7 +4411,7 @@ static int _ltfs_write_rao_file(char *file_path_org, unsigned char *buf, size_t 
 
 out:
 	free(path);
-	close(fd);
+	SAFE_CLOSE(fd);
 	return ret;
 }
 
@@ -4417,8 +4429,7 @@ static int _ltfs_read_rao_file(char *file_path, unsigned char *buf,
 		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
-
-	fd = open(path, O_RDONLY | O_BINARY);
+	SAFE_OPEN(&fd, path,  O_RDONLY | O_BINARY, SHARE_FLAG_DENYWR, PERMISSION_READ);
 	if (fd < 0) {
 		ltfsmsg(LTFS_INFO, 17279I, path, errno);
 		free(path);
@@ -4433,7 +4444,7 @@ static int _ltfs_read_rao_file(char *file_path, unsigned char *buf,
 		goto out;
 	}
 
-	size = read(fd, buf, len);
+	size = SAFE_READ(fd, buf, len);
 	if (size < 0) {
 		ltfsmsg(LTFS_INFO, 17281I, path, errno);
 		ret = -errno;
@@ -4449,7 +4460,7 @@ static int _ltfs_read_rao_file(char *file_path, unsigned char *buf,
 
 out:
 	free(path);
-	close(fd);
+	SAFE_CLOSE(fd);
 	return ret;
 }
 

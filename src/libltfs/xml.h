@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -50,7 +50,7 @@
 **
 **                  Atsushi Abe
 **                  IBM Tokyo Lab., Japan
-**               	piste@jp.ibm.com
+**                  piste@jp.ibm.com
 **
 *************************************************************************************
 */
@@ -141,9 +141,8 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 /* generate required/optional tag tracking arrays for the parser */
 #define declare_tracking_arrays(num_req, num_opt) \
 	const int ntags_req = (num_req), ntags_opt = (num_opt); \
-	bool have_required_tags[ntags_req], have_optional_tags[ntags_opt]; \
-	if (ntags_req > 0) memset(have_required_tags, 0, sizeof(have_required_tags)); \
-	if (ntags_opt > 0) memset(have_optional_tags, 0, sizeof(have_optional_tags));
+	bool* have_required_tags = ntags_req > 0 ? (bool*)calloc(ntags_req, sizeof(bool)) : NULL; \
+	bool* have_optional_tags = ntags_opt > 0 ? (bool*)calloc(ntags_opt, sizeof(bool)) : NULL;
 
 /* grab the next tag inside the given tag. It breaks if the end of the given tag is detected.
  * NOTE: in order for break to work correctly, this macro is not wrapped in a do { ... } while (0)
@@ -309,5 +308,9 @@ int xml_parse_time(bool msg, const char *fmt_time, struct ltfs_timespec *rawtime
 /* Call these to initialize or tear down the XML library. See xml_common.c */
 void xml_init();
 void xml_finish();
+
+#ifdef _WIN32
+int ftruncate(int fd, off_t length);
+#endif
 
 #endif /* __xml_h */
