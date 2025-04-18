@@ -62,6 +62,8 @@ extern "C" {
 
 // For Windows
 #ifdef mingw_PLATFORM	
+#include <unicode/umachine.h>
+
 	#ifndef COMPAT_UCHAR
 		#define COMPAT_UCHAR UChar
 	#endif
