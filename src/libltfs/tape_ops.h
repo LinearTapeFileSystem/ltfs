@@ -62,12 +62,12 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "ltfs_types.h"
+#include <libltfs/ltfs_types.h>
 
 #define VENDOR_ID_LENGTH           (8)
 #define PRODUCT_ID_LENGTH          (16)
 #define PRODUCT_REV_LENGTH         (4)
-#define PRODUCT_NAME_LENGTH        (PRODUCT_ID_LENGTH + 3) /* " [PRODUCT_ID]" */
+#define PRODUCT_NAME_LENGTH        (PRODUCT_ID_LENGTH + 5) /* " [PRODUCT_ID]" */
 #define PRODUCT_NAME_REPORT_LENGTH (15)
 
 #define UNIT_SERIAL_LENGTH         (255)

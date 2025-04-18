@@ -51,7 +51,7 @@
 #define signal_internal_h_
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
+#include "arch/win/win_util.h"
 #endif
 #include <signal.h>
 

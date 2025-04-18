@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -47,6 +47,10 @@
 **                  Lucas C. Villa Real
 **                  IBM Almaden Research Center
 **                  lucasvr@us.ibm.com
+**
+**                  Atsushi Abe
+**                  IBM Tokyo Lab., Japan
+**                  piste@jp.ibm.com
 **
 *************************************************************************************
 */
@@ -275,7 +279,7 @@ int xml_parse_uuid(char *out_val, const char *val)
 		ltfsmsg(LTFS_ERR, 17029E, val);
 		return -1;
 	}
-	strcpy(out_val, val);
+	SAFE_STRCPY_S(out_val,(strlen(val) + 1), val);
 
 	for (i=0; i<36; ++i) {
 		if (i == 8 || i == 13 || i == 18 || i == 23) {
@@ -473,7 +477,7 @@ int xml_parse_time(bool msg, const char *fmt_time, struct ltfs_timespec *rawtime
 	CHECK_ARG_NULL(fmt_time, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(rawtime, -LTFS_NULL_ARG);
 
-	ret = sscanf(fmt_time, "%d-%2d-%2dT%2d:%2d:%2d.%9ldZ",
+	ret = SAFE_SCANF(fmt_time, "%d-%2d-%2dT%2d:%2d:%2d.%9ldZ",
 				 &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 				 &tm.tm_hour, &tm.tm_min, &tm.tm_sec,
 				 &rawtime->tv_nsec);
@@ -502,31 +506,33 @@ int xml_parse_time(bool msg, const char *fmt_time, struct ltfs_timespec *rawtime
  * This function detects whether the Index being parsed ends in a file mark, and if so, it
  * positions the tape before the file mark.
  */
-int xml_input_tape_read_callback(void *context, char *buffer, int len)
+int xml_input_tape_read_callback(void* context, char* buffer, int len)
 {
-	struct xml_input_tape *ctx = context;
+	struct xml_input_tape* ctx = context;
 	ssize_t nread, nr2;
-	char *buf2;
+	char* buf2;
 	int bytes_saved, bytes_remaining, ret_sp;
 
 	if (len == 0)
 		return 0;
 
 	/* Try to fill the whole buffer from cache. If that fails, try to read from tape. */
-	if (len <= (int32_t) ctx->buf_used) {
+	if (len <= (int32_t)ctx->buf_used) {
 		memcpy(buffer, ctx->buf + ctx->buf_start, len);
 		ctx->buf_used -= len;
 		if (ctx->buf_used > 0)
 			ctx->buf_start += len;
 		else
 			ctx->buf_start = 0;
-	} else {
+	}
+	else {
 		if (ctx->buf_used > 0) {
 			memcpy(buffer, ctx->buf + ctx->buf_start, ctx->buf_used);
 			bytes_saved = ctx->buf_used;
 			ctx->buf_used = 0;
 			ctx->buf_start = 0;
-		} else
+		}
+		else
 			bytes_saved = 0;
 		bytes_remaining = len - bytes_saved;
 
@@ -548,7 +554,8 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 				ltfsmsg(LTFS_ERR, 17039E, (int)nread);
 				ctx->err_code = nread;
 				return -1;
-			} else if ((size_t) nread < ctx->buf_size) {
+			}
+			else if ((size_t)nread < ctx->buf_size) {
 				/* Caught a small read. If this is a file mark, position before it. If
 				 * it's a record, look for a file mark following it. */
 				ctx->saw_small_block = true;
@@ -560,7 +567,8 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 						ctx->err_code = ret_sp;
 						return -1;
 					}
-				} else if (ctx->eod_pos == 0 ||
+				}
+				else if (ctx->eod_pos == 0 ||
 					(ctx->eod_pos > 0 && ctx->current_pos < ctx->eod_pos)) {
 					/* Look for a trailing file mark. */
 					buf2 = malloc(ctx->vol->label->blocksize);
@@ -577,7 +585,8 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 						ltfsmsg(LTFS_ERR, 17041E, (int)nr2);
 						ctx->err_code = nr2;
 						return -1;
-					} else if (nr2 == 0) {
+					}
+					else if (nr2 == 0) {
 						ctx->saw_file_mark = true;
 						ret_sp = tape_spacefm(ctx->vol->device, -1);
 						if (ret_sp < 0) {
@@ -594,7 +603,8 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 				memcpy(buffer + bytes_saved, ctx->buf, nread);
 				bytes_saved += nread;
 				bytes_remaining -= nread;
-			} else {
+			}
+			else {
 				memcpy(buffer + bytes_saved, ctx->buf, bytes_remaining);
 				ctx->buf_start = bytes_remaining;
 				ctx->buf_used = nread - bytes_remaining;
@@ -606,6 +616,7 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 
 	return len;
 }
+
 
 /** Close callback for XML parser input using the libxml2 I/O routines.
  */

@@ -52,7 +52,13 @@
 #include "ltfs.h"
 
 #include <sys/types.h>
+#ifndef mingw_PLATFORM
 #include <dirent.h>
+#else
+#include "ltfscommon/dirent.h"
+#endif // !mingw_PLATFORM
+
+
 
 enum dcache_flush_flags {
 	FLUSH_XATTRS           = 0x01, /**< Flush extended attribute to the dentry cache */

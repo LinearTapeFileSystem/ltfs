@@ -54,16 +54,18 @@ extern "C" {
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
+#include <fcntl.h>
 #define PROFILER_FILE_MODE "wb+"
 #else
 #define PROFILER_FILE_MODE "w+"
 #include <sys/wait.h>
+#include <sys/fcntl.h>
 #endif
 
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/fcntl.h>
+
 #include <errno.h>
 #include <stdint.h>
 
@@ -215,18 +217,21 @@ extern _time_stamp_t        start_offset;
 
 static inline void ltfs_request_trace(uint32_t req_num, uint64_t info1, uint64_t info2)
 {
+#ifdef mingw_PLATFORM
+	return;
+#endif
 	if (!trace_enable)
 		return;
-
 	if (req_trace) {
 		uint32_t index;
 
 		ltfs_mutex_lock(&req_trace->req_trace_lock);
 
-		if(req_trace->cur_index >= req_trace->max_index) {
+		if (req_trace->cur_index >= req_trace->max_index) {
 			index = req_trace->cur_index;
 			req_trace->cur_index = 0;
-		} else
+		}
+		else
 			index = req_trace->cur_index++;
 
 		ltfs_mutex_unlock(&req_trace->req_trace_lock);
@@ -243,6 +248,7 @@ static inline void ltfs_request_trace(uint32_t req_num, uint64_t info1, uint64_t
 			ltfs_mutex_unlock(&req_trace->req_profiler_lock);
 		}
 	}
+
 }
 
 static inline void ltfs_profiler_add_entry(FILE* file, ltfs_mutex_t *mutex, uint32_t req_num)

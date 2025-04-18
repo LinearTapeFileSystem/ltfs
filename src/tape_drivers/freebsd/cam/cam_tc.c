@@ -1133,7 +1133,6 @@ int camtape_load(void *device, struct tc_position *pos)
 	softc->force_readperm  = DEFAULT_READPERM;
 	softc->write_counter = 0;
 	softc->read_counter = 0;
-	softc->cart_type = buf[2];
 	softc->density_code = buf[8];
 
 	if (softc->vendor == VENDOR_HP) {
@@ -1297,12 +1296,12 @@ static int camtape_load_attr(struct mt_status_data *mtinfo, xmlDocPtr doc, xmlAt
 			if (need_nv != 0) {
 				nv = malloc(sizeof(*nv));
 				if (nv == NULL) {
-					*msg = strdup("Unable to allocate memory");
+					*msg = SAFE_STRDUP("Unable to allocate memory");
 					retval = -EDEV_NO_MEMORY;
 					goto bailout;
 				}
 				memset(nv, 0, sizeof(*nv));
-				nv->name = strdup((char *)xattr->name);
+				nv->name = SAFE_STRDUP((char *)xattr->name);
 				nv->value = str;
 				STAILQ_INSERT_TAIL(&entry->nv_list, nv, links);
 				need_free = 0;
@@ -1330,21 +1329,21 @@ static int camtape_load_elements(struct mt_status_data *mtinfo, xmlDocPtr doc, x
 			mtinfo->level++;
 			if ((u_int)mtinfo->level > sizeof(mtinfo->cur_entry) /
 			    sizeof(mtinfo->cur_entry[0])) {
-				*msg = strdup("Too many nesting levels");
+				*msg = SAFE_STRDUP("Too many nesting levels");
 				retval = -EDEV_INVALID_ARG;
 				goto bailout;
 			}
 			created_element = 1;
 			entry = malloc(sizeof(*entry));
 			if (entry == NULL) {
-				*msg = strdup("Unable to allocate memory");
+				*msg = SAFE_STRDUP("Unable to allocate memory");
 				retval = -EDEV_NO_MEMORY;
 				goto bailout;
 			}
 			memset(entry, 0, sizeof(*entry));
 			STAILQ_INIT(&entry->nv_list);
 			STAILQ_INIT(&entry->child_entries);
-			entry->entry_name = strdup((char *)xnode->name);
+			entry->entry_name = SAFE_STRDUP((char *)xnode->name);
 			mtinfo->cur_entry[mtinfo->level] = entry;
 			if (mtinfo->cur_entry[mtinfo->level - 1] == NULL) {
 				STAILQ_INSERT_TAIL(&mtinfo->entries, entry, links);
@@ -1412,7 +1411,7 @@ extget_retry:
 	memset(&extget, 0, sizeof(extget));
 	xml_str = malloc(alloc_size);
 	if (xml_str == NULL) {
-		*msg = strdup("Unable to allocate memory");
+		*msg = SAFE_STRDUP("Unable to allocate memory");
 		retval = -EDEV_NO_MEMORY;
 		goto bailout;
 	}
@@ -1424,7 +1423,7 @@ extget_retry:
 
 		snprintf(tmpstr, sizeof(tmpstr), "ioctl error from sa(4) driver: %s",
 		    strerror(errno));
-		*msg = strdup(tmpstr);
+		*msg = SAFE_STRDUP(tmpstr);
 		retval = -errno;
 		goto bailout;
 	}
@@ -1444,7 +1443,7 @@ extget_retry:
 		retval = -EDEV_DRIVER_ERROR;
 		snprintf(tmpstr, sizeof(tmpstr), "Error getting status data from sa(4) driver: status = %d",
 			extget.status);
-		*msg = strdup(tmpstr);
+		*msg = SAFE_STRDUP(tmpstr);
 		goto bailout;
 	}
 
@@ -1452,19 +1451,19 @@ extget_retry:
 
 	ctx = xmlNewParserCtxt();
 	if (ctx == NULL) {
-		*msg = strdup("Unable to create new XML parser context");
+		*msg = SAFE_STRDUP("Unable to create new XML parser context");
 		retval = -EDEV_NO_MEMORY;
 		goto bailout;
 	}
 
 	doc = xmlCtxtReadMemory(ctx, xml_str, strlen(xml_str), NULL, NULL, 0);
 	if (doc == NULL) {
-		*msg = strdup("Unable to parse XML");
+		*msg = SAFE_STRDUP("Unable to parse XML");
 		retval = -EDEV_DRIVER_ERROR;
 		goto bailout;
 	} else {
 		if (ctx->valid == 0) {
-			*msg = strdup("XML parsing result is: not valid");
+			*msg = SAFE_STRDUP("XML parsing result is: not valid");
 			retval = -EDEV_INVALID_ARG;
 			goto bailout;
 		}
@@ -1536,7 +1535,7 @@ int camtape_getstatus(struct camtape_data *softc, struct mt_status_data *mtinfo,
 			char tmpstr[512];
 
 			snprintf(tmpstr, sizeof(tmpstr), "Unable to fetch sa(4) status item %s", name);
-			*msg = strdup(tmpstr);
+			*msg = SAFE_STRDUP(tmpstr);
 			retval = -EDEV_INVALID_ARG;
 			goto bailout;
 		}
@@ -1781,7 +1780,10 @@ int camtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 	int rc;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REMAINCAP));
-	if (IS_LTO(softc->drive_type) && (DRIVE_GEN(softc->drive_type) == 0x05)) {
+	if ((IS_LTO(softc->drive_type) && (DRIVE_GEN(softc->drive_type) == 0x05)) ||
+		(softc->vendor == VENDOR_HP && IS_LTO(softc->drive_type) && (DRIVE_GEN(softc->drive_type) == 0x06)) ||
+		(softc->vendor == VENDOR_QUANTUM_B && IS_LTO(softc->drive_type))) {
+
 		/* Issue LogPage 0x31 */
 		rc = camtape_logsense(device, LOG_TAPECAPACITY, (uint8_t)0, logdata, LOGSENSEPAGE);
 		if (rc < 0) {
@@ -1984,7 +1986,7 @@ int camtape_modeselect(void *device, unsigned char *buf, const size_t size)
 						 /*retries*/ 1,
 						 /*cbfcnp*/ NULL,
 						 /*tag_action*/ MSG_SIMPLE_Q_TAG,
-						 /*scsi_page_fmt*/ 0,
+						 /*scsi_page_fmt*/ 1,
 						 /*save_pages*/ 0,
 						 /*param_buf*/ buf,
 						 /*param_len*/ size,
@@ -2402,7 +2404,7 @@ int camtape_set_default(void *device)
 	 * something that we need to do here?
 	 */
 	if (ioctl(softc->fd_sa, MTIOCPARAMSET, &sili_param) == -1) {
-		msg = strdup("Error returned from MTIOCPARAMSET ioctl to set the SILI bit");
+		msg = SAFE_STRDUP("Error returned from MTIOCPARAMSET ioctl to set the SILI bit");
 		rc = -EDEV_DRIVER_ERROR;
 		camtape_process_errors(device, rc, msg, "set default parameter", true);
 		goto bailout;
@@ -2436,7 +2438,7 @@ int camtape_set_default(void *device)
 	 */
 	eot_model = 1;
 	if (ioctl(softc->fd_sa, MTIOCSETEOTMODEL, &eot_model) == -1) {
-		msg = strdup("Error returned from MTIOCSETEOTMODEL ioctl to set the EOT model to 1FM");
+		msg = SAFE_STRDUP("Error returned from MTIOCSETEOTMODEL ioctl to set the EOT model to 1FM");
 		rc = -EDEV_DRIVER_ERROR;
 		camtape_process_errors(device, rc, msg, "set default parameter", true);
 		goto bailout;
@@ -3945,7 +3947,7 @@ int camtape_set_lbp(void *device, bool enable)
 	snprintf(tmpname, sizeof(tmpname), "%s.protection_supported", MT_PROTECTION_NAME);
 	entry = mt_status_entry_find(&mtinfo, tmpname);
 	if (entry == NULL) {
-		msg = strdup("Cannot find sa(4) protection.protection_supported parameter");
+		msg = SAFE_STRDUP("Cannot find sa(4) protection.protection_supported parameter");
 		rc = -EDEV_INVALID_ARG;
 		camtape_process_errors(device, rc, msg, "get lbp", true);
 		goto bailout;
@@ -3964,7 +3966,7 @@ int camtape_set_lbp(void *device, bool enable)
 	 */
 	prot_entry = mt_status_entry_find(&mtinfo, MT_PROTECTION_NAME);
 	if (prot_entry == NULL) {
-		msg = strdup("Cannot find sa(4) protection node!");
+		msg = SAFE_STRDUP("Cannot find sa(4) protection node!");
 		rc = -EDEV_INVALID_ARG;
 		camtape_process_errors(device, rc, msg, "get lbp", true);
 		goto bailout;
@@ -3997,7 +3999,7 @@ int camtape_set_lbp(void *device, bool enable)
 	for (i = 0; i < CT_NUM_PROTECT_PARAMS; i++) {
 		entry = mt_entry_find(prot_entry, __DECONST(char *, protect_list[i].name));
 		if (entry == NULL) {
-			msg = strdup("Cannot find all protection information entries");
+			msg = SAFE_STRDUP("Cannot find all protection information entries");
 			rc = -EDEV_INVALID_ARG;
 			camtape_process_errors(device, rc, msg, "get lbp", true);
 			goto bailout;
@@ -4019,7 +4021,7 @@ int camtape_set_lbp(void *device, bool enable)
 
 		snprintf(tmpstr, sizeof(tmpstr), "Error returned from MTIOCSETLIST ioctl to set "
 			"protection parameters: %s", strerror(errno));
-		msg = strdup(tmpstr);
+		msg = SAFE_STRDUP(tmpstr);
 		rc = -errno;
 		camtape_process_errors(device, rc, msg, "get lbp", true);
 		goto bailout;

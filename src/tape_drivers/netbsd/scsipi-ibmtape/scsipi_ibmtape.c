@@ -508,7 +508,7 @@ static int _raw_open(struct scsipi_ibmtape_data *priv)
 			return -EDEV_DEVICE_UNOPENABLE; /* Unexpected device is opened */
 		}
 	} else
-		strncpy(priv->drive_serial, id_data.unit_serial, sizeof(priv->drive_serial) - 1);
+		SAFE_STRNCPY(priv->drive_serial, id_data.unit_serial, sizeof(priv->drive_serial) - 1);
 
 	ltfsmsg(LTFS_INFO, 30207I, id_data.vendor_id);
 	ltfsmsg(LTFS_INFO, 30208I, id_data.product_id);
@@ -630,7 +630,7 @@ static int _reconnect_device(void *device)
 
 	for (i = 0; i < info_devs; i++) {
 		if (! strncmp(buf[i].serial_number, priv->drive_serial, TAPE_SERIAL_LEN_MAX) ) {
-			priv->devname = strdup(buf[i].name);
+			priv->devname = SAFE_STRDUP(buf[i].name);
 			break;
 		}
 	}
@@ -1051,7 +1051,7 @@ int scsipi_ibmtape_open(const char *devname, void **handle)
 		return -EDEV_NO_MEMORY;
 	}
 
-	priv->devname = strdup(devname);
+	priv->devname = SAFE_STRDUP(devname);
 	if (!priv->devname) {
 		ltfsmsg(LTFS_ERR, 10001E, "scsipi_ibmtape_open: devname");
 		free(priv);
@@ -1223,9 +1223,9 @@ int scsipi_ibmtape_inquiry(void *device, struct tc_inq *inq)
 		return ret;
 
 	memset(inq, 0, sizeof(struct tc_inq));
-	strncpy((char*)inq->vid,      (char*)inq_page.data + 8,  VENDOR_ID_LENGTH);
-	strncpy((char*)inq->pid,      (char*)inq_page.data + 16, PRODUCT_ID_LENGTH);
-	strncpy((char*)inq->revision, (char*)inq_page.data + 32, PRODUCT_REV_LENGTH);
+	SAFE_STRNCPY((char*)inq->vid,      (char*)inq_page.data + 8,  VENDOR_ID_LENGTH);
+	SAFE_STRNCPY((char*)inq->pid,      (char*)inq_page.data + 16, PRODUCT_ID_LENGTH);
+	SAFE_STRNCPY((char*)inq->revision, (char*)inq_page.data + 32, PRODUCT_REV_LENGTH);
 
 	inq->devicetype = priv->drive_type;
 
@@ -1234,7 +1234,7 @@ int scsipi_ibmtape_inquiry(void *device, struct tc_inq *inq)
 	else
 		vendor_length = 20;
 
-	strncpy((char*)inq->vendor, (char*)inq_page.data + 36, vendor_length);
+	SAFE_STRNCPY((char*)inq->vendor, (char*)inq_page.data + 36, vendor_length);
 	inq->vendor[vendor_length] = '\0';
 
 	return ret;
@@ -4439,7 +4439,7 @@ int scsipi_ibmtape_get_serialnumber(void *device, char **result)
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_ENTER(REQ_TC_GETSER));
 
-	*result = strdup((const char *) priv->drive_serial);
+	*result = SAFE_STRDUP((const char *) priv->drive_serial);
 	if (! *result) {
 		ltfsmsg(LTFS_ERR, 10001E, "scsipi_ibmtape_get_serialnumber: result");
 		ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_EXIT(REQ_TC_GETSER));

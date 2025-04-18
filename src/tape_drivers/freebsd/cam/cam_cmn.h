@@ -514,7 +514,7 @@ static inline int _sense2errcode(uint32_t sense, struct error_table *table, char
 		if((table[i].sense & mask) == (sense & mask)) {
 			rc  = table[i].err_code;
 			if (msg)
-				*msg = strdup(table[i].msg);
+				*msg = SAFE_STRDUP(table[i].msg);
 			break;
 		}
 		i++;
@@ -523,7 +523,7 @@ static inline int _sense2errcode(uint32_t sense, struct error_table *table, char
 	if (table[i].err_code == -EDEV_RECOVERED_ERROR)
 		rc = DEVICE_GOOD;
 	else if (table[i].sense == 0xFFFFFF && table[i].err_code == rc && msg)
-		*msg = strdup(table[i].msg);
+		*msg = SAFE_STRDUP(table[i].msg);
 
 	return rc;
 }
@@ -544,7 +544,7 @@ static inline int camtape_send_ccb(struct camtape_data *softc, union ccb *ccb, c
 		char tmpstr[512];
 
 		snprintf(tmpstr, sizeof(tmpstr), "cam_send_ccb() failed: %s", strerror(errno));
-		*msg = strdup(tmpstr);
+		*msg = SAFE_STRDUP(tmpstr);
 		rc = -errno;
 	} else
 		rc = camtape_ccb2rc(softc, ccb);

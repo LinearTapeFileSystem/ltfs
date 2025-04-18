@@ -172,7 +172,7 @@ static int _xattr_get_version(int version, char **outval, const char *msg)
 {
 	int ret;
 	if (version == 10000) {
-		*outval = strdup("1.0");
+		*outval = SAFE_STRDUP("1.0");
 		if (! (*outval)) {
 			ltfsmsg(LTFS_ERR, 10001E, msg);
 			return -LTFS_NO_MEMORY;
@@ -1276,7 +1276,7 @@ int xattr_get_string(const char *val, char **outval, const char *msg)
 {
 	if (! val)
 		return 0;
-	*outval = strdup(val);
+	*outval = SAFE_STRDUP(val);
 	if (! (*outval)) {
 		ltfsmsg(LTFS_ERR, 10001E, msg);
 		return -LTFS_NO_MEMORY;
@@ -1312,7 +1312,7 @@ int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t s
 			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr");
 			return -LTFS_NO_MEMORY;
 		}
-		xattr->key.name = strdup(name);
+		xattr->key.name = SAFE_STRDUP(name);
 		if (! xattr->key.name) {
 			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr key");
 			ret = -LTFS_NO_MEMORY;
@@ -1725,10 +1725,9 @@ int xattr_remove(struct dentry *d, const char *name, struct ltfs_volume *vol)
 		d->is_appendonly = false;
 		ltfsmsg(LTFS_INFO, 17238I, "appendonly", d->is_appendonly, d->name.name);
 	}
-
 	d->dirty = true;
 	ltfs_set_index_dirty(true, false, vol->index);
-
+	
 out_dunlk:
 	_xattr_unlock_dentry(name, true, d, vol);
 	return ret;

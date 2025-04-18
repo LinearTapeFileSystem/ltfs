@@ -188,7 +188,7 @@ int camtape_ioctlrc2err(void *device, int fd, struct scsi_sense_data *sense_data
 			ltfsmsg(LTFS_DEBUG, 31209D);
 
 			if (msg) {
-				*msg = strdup("No Sense Information");
+				*msg = SAFE_STRDUP("No Sense Information");
 			}
 			rc = -EDEV_NO_SENSE;
 		} else {
@@ -216,7 +216,7 @@ int camtape_ioctlrc2err(void *device, int fd, struct scsi_sense_data *sense_data
 	} else {
 		ltfsmsg(LTFS_INFO, 31212I, rc_sense);
 		if (msg)
-			*msg = strdup("Cannot get sense information");
+			*msg = SAFE_STRDUP("Cannot get sense information");
 
 		rc = -EDEV_CANNOT_GET_SENSE;
 	}
@@ -331,18 +331,18 @@ int camtape_inquiry(void *device, struct tc_inq *inq)
 	inq_data = &softc->cd->inq_data;
 	inq->devicetype = SID_TYPE(inq_data);
 	inq->cmdque = (inq_data->flags & SID_CmdQue) ? 1 : 0;
-	strncpy((char *)inq->vid, (char *)inq_data->vendor, 8);
+	SAFE_STRNCPY((char *)inq->vid, (char *)inq_data->vendor, 8);
 	inq->vid[8] = '\0';
-	strncpy((char *)inq->pid, (char *)inq_data->product, 16);
+	SAFE_STRNCPY((char *)inq->pid, (char *)inq_data->product, 16);
 	inq->pid[16] = '\0';
-	strncpy((char *)inq->revision, (char *)inq_data->revision, 4);
+	SAFE_STRNCPY((char *)inq->revision, (char *)inq_data->revision, 4);
 	inq->revision[4] = '\0';
 
 	vendor_length = 20;
 	if (IS_ENTERPRISE(softc->drive_type))
 		vendor_length = 18;
 
-	strncpy((char *)inq->vendor, (char *)inq_data->vendor_specific0,
+	SAFE_STRNCPY((char *)inq->vendor, (char *)inq_data->vendor_specific0,
 		vendor_length);
 	inq->vendor[vendor_length] = '\0';
 
@@ -819,7 +819,7 @@ int camtape_get_serialnumber(void *device, char **result)
 	CHECK_ARG_NULL(result, -LTFS_NULL_ARG);
 	ltfs_profiler_add_entry(softc->profiler, NULL, CHANGER_REQ_ENTER(REQ_TC_GETSER));
 
-	*result = strdup((const char *) softc->drive_serial);
+	*result = SAFE_STRDUP((const char *) softc->drive_serial);
 	if (! *result) {
 		ltfsmsg(LTFS_ERR, 10001E, "camtape_get_serialnumber: result");
 		ltfs_profiler_add_entry(softc->profiler, NULL, CHANGER_REQ_EXIT(REQ_TC_GETSER));

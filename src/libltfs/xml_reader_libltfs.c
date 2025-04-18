@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2022 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -97,7 +97,7 @@ static int decode_entry_name(char **new_name, const char *name)
 
 	/* Always, length must be shorter than original but allocate null termination space */
 	len = strlen(name);
-	tmp_name = malloc((len * sizeof(UChar)) + 1);
+	tmp_name = malloc((len * sizeof(COMPAT_UCHAR)) + 1);
 	buf_decode[2] = '\0';
 
 	while (i < len) {
@@ -153,7 +153,7 @@ static int decode_entry_name(char **new_name, const char *name)
 	}
 	tmp_name[j] = '\0';
 
-	*new_name = strdup(tmp_name);
+	*new_name = SAFE_STRDUP(tmp_name);
 	free(tmp_name);
 
 	return 0;
@@ -180,7 +180,7 @@ static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, boo
 
 	get_tag_text();
 
-	encoded_name = strdup(value);
+	encoded_name = SAFE_STRDUP(value);
 	if (!encoded_name) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -234,7 +234,7 @@ static int _xml_parse_nametype_allow_zero_length(xmlTextReaderPtr reader, struct
 		return 0;
 	}
 
-	encoded_name = strdup(value);
+	encoded_name = SAFE_STRDUP(value);
 	if (!encoded_name) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -359,11 +359,11 @@ static int _xml_parser_init(xmlTextReaderPtr reader, const char *top_name, int *
 	}
 	if (ver < min_version || ver > max_version) {
 		ltfsmsg(LTFS_ERR, 17021E, top_name, value);
-		free(value);
+		SAFE_XMLFREE(value);
 		return -LTFS_UNSUPPORTED_INDEX_VERSION;
 	}
 	*idx_version = ver;
-	free(value);
+	SAFE_XMLFREE(value);
 
 	return 0;
 }
@@ -379,7 +379,6 @@ static int _xml_parse_label_location(xmlTextReaderPtr reader, struct ltfs_label 
 {
 	declare_parser_vars("location");
 	declare_tracking_arrays(1, 0);
-
 	while (true) {
 		get_next_tag();
 
@@ -460,7 +459,7 @@ static int _xml_parse_label(xmlTextReaderPtr reader, struct ltfs_label *label)
 			get_tag_text();
 			if (label->creator)
 				free(label->creator);
-			label->creator = strdup(value);
+			label->creator = SAFE_STRDUP(value);
 			if (! label->creator) {
 				ltfsmsg(LTFS_ERR, 10001E, name);
 				return -LTFS_NO_MEMORY;
@@ -819,7 +818,7 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 					}
 
 					if (! xattr_type || ! strcmp(xattr_type, "text")) {
-						xattr->value = strdup(value);
+						xattr->value = SAFE_STRDUP(value);
 						if (! xattr->value) {
 							ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 							free(xattr->key.name);
@@ -1490,10 +1489,11 @@ static int _xml_parse_dirtree(xmlTextReaderPtr reader, struct dentry *parent,
  * with the nodes found during the scanning.
  * @param reader Source of XML data
  * @param idx LTFS index
+ * @param skip_dir skip parsing directory and file
  * @param vol LTFS volume to which the index belongs. May be NULL.
  * @return 0 on success or a negative value on error.
  */
-static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, struct ltfs_volume *vol)
+static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index* idx, struct ltfs_volume* vol)
 {
 	unsigned long long value_int;
 	declare_parser_vars("ltfsindex");
@@ -1501,28 +1501,28 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 
 	/* start the parser: find top-level "index" tag, check version and encoding */
 	ret = _xml_parser_init(reader, parent_tag, &idx->version,
-						   LTFS_INDEX_VERSION_MIN, LTFS_INDEX_VERSION_MAX);
+		LTFS_INDEX_VERSION_MIN, LTFS_INDEX_VERSION_MAX);
 	if (ret < 0)
 		return ret;
 
 	if (idx->version < LTFS_INDEX_VERSION)
 		ltfsmsg(LTFS_WARN, 17095W,
-				LTFS_INDEX_VERSION_STR,
-				LTFS_FORMAT_MAJOR(idx->version),
-				LTFS_FORMAT_MINOR(idx->version),
-				LTFS_FORMAT_REVISION(idx->version));
+			LTFS_INDEX_VERSION_STR,
+			LTFS_FORMAT_MAJOR(idx->version),
+			LTFS_FORMAT_MINOR(idx->version),
+			LTFS_FORMAT_REVISION(idx->version));
 	else if (idx->version / 100 > LTFS_INDEX_VERSION / 100)
 		ltfsmsg(LTFS_WARN, 17096W,
-				LTFS_INDEX_VERSION_STR,
-				LTFS_FORMAT_MAJOR(idx->version),
-				LTFS_FORMAT_MINOR(idx->version),
-				LTFS_FORMAT_REVISION(idx->version));
+			LTFS_INDEX_VERSION_STR,
+			LTFS_FORMAT_MAJOR(idx->version),
+			LTFS_FORMAT_MINOR(idx->version),
+			LTFS_FORMAT_REVISION(idx->version));
 	else if (idx->version > LTFS_INDEX_VERSION)
 		ltfsmsg(LTFS_WARN, 17234W,
-				LTFS_INDEX_VERSION_STR,
-				LTFS_FORMAT_MAJOR(idx->version),
-				LTFS_FORMAT_MINOR(idx->version),
-				LTFS_FORMAT_REVISION(idx->version));
+			LTFS_INDEX_VERSION_STR,
+			LTFS_FORMAT_MAJOR(idx->version),
+			LTFS_FORMAT_MINOR(idx->version),
+			LTFS_FORMAT_REVISION(idx->version));
 
 	if (idx->commit_message) {
 		free(idx->commit_message);
@@ -1533,26 +1533,28 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 	while (true) {
 		get_next_tag();
 
-		if (! strcmp(name, "creator")) {
+		if (!strcmp(name, "creator")) {
 			check_required_tag(0);
 			get_tag_text();
 			if (idx->creator)
 				free(idx->creator);
-			idx->creator = strdup(value);
-			if (! idx->creator) {
+			idx->creator = SAFE_STRDUP(value);
+			if (!idx->creator) {
 				ltfsmsg(LTFS_ERR, 10001E, name);
 				return -LTFS_NO_MEMORY;
 			}
 			check_tag_end("creator");
 
-		} else if (! strcmp(name, "volumeuuid")) {
+		}
+		else if (!strcmp(name, "volumeuuid")) {
 			check_required_tag(1);
 			get_tag_text();
 			if (xml_parse_uuid(idx->vol_uuid, value) < 0)
 				return -LTFS_XML_WRONG_UUID;
 			check_tag_end("volumeuuid");
 
-		} else if (! strcmp(name, "generationnumber")) {
+		}
+		else if (!strcmp(name, "generationnumber")) {
 			check_required_tag(2);
 			get_tag_text();
 			if (xml_parse_ull(&value_int, value) < 0) {
@@ -1562,7 +1564,8 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 			idx->generation = value_int;
 			check_tag_end("generationnumber");
 
-		} else if (! strcmp(name, "updatetime")) {
+		}
+		else if (!strcmp(name, "updatetime")) {
 			check_required_tag(3);
 			get_tag_text();
 			ret = xml_parse_time(true, value, &idx->mod_time);
@@ -1573,67 +1576,77 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 
 			check_tag_end("updatetime");
 
-		} else if (! strcmp(name, "location")) {
+		}
+		else if (!strcmp(name, "location")) {
 			check_required_tag(4);
 			assert_not_empty();
 			if (_xml_parse_tapepos(reader, "location", &idx->selfptr) < 0)
 				return -LTFS_XML_WRONG_LOC;
 
-		} else if (! strcmp(name, "allowpolicyupdate")) {
+		}
+		else if (!strcmp(name, "allowpolicyupdate")) {
 			check_required_tag(5);
 			get_tag_text();
 			if (xml_parse_bool(&idx->criteria_allow_update, value) < 0)
 				return -LTFS_XML_WRONG_PA;
 			check_tag_end("allowpolicyupdate");
 
-		} else if (! strcmp(name, "directory")) {
+		}
+		else if (!strcmp(name, "directory")) {
 			check_required_tag(6);
 			assert_not_empty();
 			ret = _xml_parse_dirtree(reader, NULL, idx, vol, NULL);
 			if (ret < 0)
 				return ret;
 
-		} else if (! strcmp(name, "previousgenerationlocation")) {
+		}
+		else if (!strcmp(name, "previousgenerationlocation")) {
 			check_optional_tag(0);
 			assert_not_empty();
 			if (_xml_parse_tapepos(reader, "previousgenerationlocation", &idx->backptr) < 0)
 				return -LTFS_XML_WRONG_LOC_PREV;
 
-		} else if (! strcmp(name, "dataplacementpolicy")) {
+		}
+		else if (!strcmp(name, "dataplacementpolicy")) {
 			check_optional_tag(1);
 			assert_not_empty();
 			ret = _xml_parse_policy(reader, idx);
 			if (ret < 0)
 				return ret;
 
-		} else if (! strcmp(name, "comment")) {
+		}
+		else if (!strcmp(name, "comment")) {
 			check_optional_tag(2);
 			get_tag_text();
 			if (strlen(value) > INDEX_MAX_COMMENT_LEN) {
 				ltfsmsg(LTFS_ERR, 17094E);
 				return -LTFS_XML_TOO_LONG_COMMENT;
 			}
-			idx->commit_message = strdup(value);
-			if (! idx->commit_message) {
+			idx->commit_message = SAFE_STRDUP(value);
+			if (!idx->commit_message) {
 				ltfsmsg(LTFS_ERR, 10001E, "_xml_parse_schema: index comment");
 				return -LTFS_NO_MEMORY;
 			}
 			check_tag_end("comment");
 
-		} else if (! strcmp(name, "volumelockstate")) {
+		}
+		else if (!strcmp(name, "volumelockstate")) {
 			check_optional_tag(3);
 			get_tag_text();
 
 			if (!strcmp(value, "unlocked")) {
 				idx->vollock = UNLOCKED_MAM;
-			} else if (!strcmp(value, "locked")) {
+			}
+			else if (!strcmp(value, "locked")) {
 				idx->vollock = LOCKED_MAM;
-			} else if (!strcmp(value, "permlocked")) {
+			}
+			else if (!strcmp(value, "permlocked")) {
 				idx->vollock = PERMLOCKED_MAM;
 			}
 			check_tag_end("volumelockstate");
 
-		} else if (idx->version >= IDX_VERSION_UID && ! strcmp(name, NEXTUID_TAGNAME)) {
+		}
+		else if (idx->version >= IDX_VERSION_UID && !strcmp(name, NEXTUID_TAGNAME)) {
 			check_required_tag(7);
 			get_tag_text();
 			if (xml_parse_ull(&value_int, value) < 0)
@@ -1642,10 +1655,12 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 				idx->uid_number = value_int;
 			check_tag_end(NEXTUID_TAGNAME);
 
-		} else if (! strcmp(name, NEXTUID_TAGNAME)) {
+		}
+		else if (!strcmp(name, NEXTUID_TAGNAME)) {
 			ignore_unrecognized_tag();
 
-		} else
+		}
+		else
 			preserve_unrecognized_tag(idx);
 	}
 
@@ -1657,7 +1672,7 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 
 	check_required_tags();
 
-	if ( idx->symerr_count != 0 ) {
+	if (idx->symerr_count != 0) {
 		return -LTFS_SYMLINK_CONFLICT;
 	}
 
@@ -1829,7 +1844,7 @@ int xml_label_from_mem(const char *buf, int buf_size, struct ltfs_label *label)
  * with the nodes found during the scanning.
  * @param filename XML input file.
  * @param idx LTFS index.
- * @param vol LTFS volume to which the index belongs. May be NULL.
+ * @param vol LTFS volume to which the index belongs. Can be NULL.
  * @return 0 on success or a negative value on error.
  */
 int xml_schema_from_file(const char *filename, struct ltfs_index *idx, struct ltfs_volume *vol)
@@ -1844,7 +1859,7 @@ int xml_schema_from_file(const char *filename, struct ltfs_index *idx, struct lt
 	reader = xmlReaderForFile(filename, NULL, XML_PARSE_NOERROR | XML_PARSE_NOWARNING | XML_PARSE_HUGE);
 	if (! reader) {
 		ltfsmsg(LTFS_ERR, 17011E, filename);
-		return -1;
+		return -LTFS_FILE_ERR;
 	}
 
 	/* Workaround for old libxml2 version on OS X 10.5: the method used to preserve
@@ -1874,15 +1889,16 @@ int xml_schema_from_file(const char *filename, struct ltfs_index *idx, struct lt
  * the file mark.
  * @param eod_pos EOD block position for the current partition, or 0 to assume EOD will not be
  *                encountered during parsing.
+ * @param skip_dir skip parsing directory
  * @param vol LTFS volume.
  * @return 0 on success, 1 if parsing succeeded but no file mark was encountered,
  *         or a negative value on error.
  */
-int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
+int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume* vol)
 {
 	int ret;
 	struct tc_position current_pos;
-	struct xml_input_tape *ctx;
+	struct xml_input_tape* ctx;
 	xmlParserInputBufferPtr read_buf;
 	xmlTextReaderPtr reader;
 	xmlDocPtr doc;
@@ -1897,12 +1913,12 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 
 	/* Create output callback context data structure. */
 	ctx = malloc(sizeof(struct xml_input_tape));
-	if (! ctx) {
+	if (!ctx) {
 		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_from_tape: ctx");
 		return -LTFS_NO_MEMORY;
 	}
 	ctx->buf = malloc(vol->label->blocksize + LTFS_CRC_SIZE);
-	if (! ctx->buf) {
+	if (!ctx->buf) {
 		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_from_tape: ctx->buf");
 		free(ctx);
 		return -LTFS_NO_MEMORY;
@@ -1919,9 +1935,9 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 
 	/* Create input buffer pointer. */
 	read_buf = xmlParserInputBufferCreateIO(xml_input_tape_read_callback,
-											xml_input_tape_close_callback,
-											ctx, XML_CHAR_ENCODING_NONE);
-	if (! read_buf) {
+		xml_input_tape_close_callback,
+		ctx, XML_CHAR_ENCODING_NONE);
+	if (!read_buf) {
 		ltfsmsg(LTFS_ERR, 17014E);
 		free(ctx->buf);
 		free(ctx);
@@ -1930,7 +1946,7 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 
 	/* Create XML reader. */
 	reader = xmlNewTextReader(read_buf, NULL);
-	if (! reader) {
+	if (!reader) {
 		ltfsmsg(LTFS_ERR, 17015E);
 		xmlFreeParserInputBuffer(read_buf);
 		free(ctx->buf);
@@ -1969,8 +1985,9 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 			ltfsmsg(LTFS_WARN, 17274W, ret);
 			ret = -LTFS_INDEX_INVALID;
 		}
-	} else if (ret == 0) {
-		if(!ctx->saw_file_mark) {
+	}
+	else if (ret == 0) {
+		if (!ctx->saw_file_mark) {
 			/* Return positive value intentionally, for recovering later */
 			ret = LTFS_NO_TRAIL_FM;
 		}
@@ -1992,7 +2009,6 @@ int xml_schema_from_tape(uint64_t eod_pos, struct ltfs_volume *vol)
 
 	return ret;
 }
-
 /**
  * Parse an XML file for dcache and reconstruct dentry
  * @param filename file name for dentry.
