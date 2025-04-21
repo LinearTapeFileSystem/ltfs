@@ -732,22 +732,22 @@ static struct _timeout_tape timeout_lto9_hh[] = {
 };
 
 static struct _timeout_tape timeout_ltoA_hh[] = {
-	{ ERASE,                           166370 },
-	{ FORMAT_MEDIUM,                   3240   },
-	{ LOAD_UNLOAD,                     960    },
+	{ ERASE,                           196370 },
+	{ FORMAT_MEDIUM,                   4240   },
+	{ LOAD_UNLOAD,                     1960    },
 	{ LOCATE10,                        3940   },
 	{ LOCATE16,                        3940   },
-	{ READ,                            2340   },
-	{ READ_BUFFER,                     480    },
-	{ REWIND,                          600    },
-	{ SEND_DIAGNOSTIC,                 2040   },
-	{ SET_CAPACITY,                    960    },
+	{ READ,                            3340   },
+	{ READ_BUFFER,                     580    },
+	{ REWIND,                          700    },
+	{ SEND_DIAGNOSTIC,                 3040   },
+	{ SET_CAPACITY,                    1960    },
 	{ SPACE6,                          3940   },
 	{ SPACE16,                         3940   },
-	{ VERIFY,                          63300  },
-	{ WRITE,                           1560   },
-	{ WRITE_BUFFER,                    540    },
-	{ WRITE_FILEMARKS6,                1680   },
+	{ VERIFY,                          73300  },
+	{ WRITE,                           2560   },
+	{ WRITE_BUFFER,                    640    },
+	{ WRITE_FILEMARKS6,                2680   },
 	{-1, -1}
 };
 
