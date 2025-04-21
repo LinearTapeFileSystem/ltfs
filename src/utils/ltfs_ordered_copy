@@ -171,9 +171,9 @@ class CopyQueue:
             dst = dest + "/" + t
             dst = os.path.normpath(dst)
 
-            for d in dirs:
+            for d in sorted(dirs):
                 walk_dirs.append(os.path.join(dst, d))
-            for f in files:
+            for f in sorted(files):
                 self.logger.log(NOTSET + 1, 'Creating a copy item for file {}'.format(f))
                 c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX,
                              cp_attr, cp_xattr, logger)
