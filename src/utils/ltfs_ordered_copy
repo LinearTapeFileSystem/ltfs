@@ -397,7 +397,7 @@ if len(args.SOURCE) == 0:
     logger.log(NOTSET + 1, 'Source: {}'.format(args.SOURCE))
 
 # Create the list of copy item
-copyq = CopyQueue(logger, args.get('sort_files', False))
+copyq = CopyQueue(logger, args.sort_files)
 for s in args.SOURCE:
     dst = args.DEST
     if os.path.isfile(s):
