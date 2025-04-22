@@ -116,11 +116,12 @@ class CopyQueue:
     """"""
     HalfMegaByte = 512 * 1024
 
-    def __init__(self, logger): #initialization
+    def __init__(self, logger, sort_files = False): #initialization
         self.direct = deque([])
         self.tape_dict = {}
         self.items = 0
         self.logger = logger
+        self.sort_files = sort_files
 
     def add_copy_item(self, c):
         (u, p, s) = c.eval()
@@ -171,9 +172,9 @@ class CopyQueue:
             dst = dest + "/" + t
             dst = os.path.normpath(dst)
 
-            for d in dirs:
+            for d in sorted(dirs) if self.sort_files else dirs:
                 walk_dirs.append(os.path.join(dst, d))
-            for f in files:
+            for f in sorted(files) if self.sort_files else files:
                 self.logger.log(NOTSET + 1, 'Creating a copy item for file {}'.format(f))
                 c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX,
                              cp_attr, cp_xattr, logger)
@@ -284,6 +285,7 @@ parser.add_argument('-a','--all', help='achieve files recursively and preserve a
 parser.add_argument('-v', help='Verbose output. Set VERBOSE level 5', action='store_true')
 parser.add_argument('--verbose', help='Configure verbosity of logger. VERBOSE shall be 0-6. default is 4', default = str(logger_info))
 parser.add_argument('-q','--quiet', help='No message output', action='store_true')
+parser.add_argument('--sort-files', help='Sort the file list before copying', action='store_true')
 
 args=parser.parse_args()
 
@@ -395,7 +397,7 @@ if len(args.SOURCE) == 0:
     logger.log(NOTSET + 1, 'Source: {}'.format(args.SOURCE))
 
 # Create the list of copy item
-copyq = CopyQueue(logger)
+copyq = CopyQueue(logger, args.sort_files)
 for s in args.SOURCE:
     dst = args.DEST
     if os.path.isfile(s):
