@@ -98,7 +98,7 @@ static int encode_entry_name(char **new_name, const char *name)
 
 	len = strlen(name);
 
-	tmp_name = malloc(len * 3 * sizeof(COMPAT_UCHAR));
+	tmp_name = malloc(len * 3 * sizeof(UChar));
 	buf_encode[2] = '\0';
 
 	while (i < len) {
@@ -120,7 +120,7 @@ static int encode_entry_name(char **new_name, const char *name)
 		}
 
 		while (count < i - prev) {
-			SAFE_PRINTF(buf_encode, "%02X", name[prev+count] & 0xFF);
+			arch_vsprintf_auto(buf_encode, "%02X", name[prev+count] & 0xFF);
 			tmp_name[j] = '%';
 			tmp_name[j+1] = buf_encode[0];
 			tmp_name[j+2] = buf_encode[1];
@@ -131,7 +131,7 @@ static int encode_entry_name(char **new_name, const char *name)
 
 	tmp_name[j] = '\0';
 
-	*new_name = SAFE_STRDUP(tmp_name);
+	*new_name = arch_strdup(tmp_name);
 	free(tmp_name);
 
 	return 0;
@@ -730,12 +730,12 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 		if (ret > 0) {
 			ret = asprintf(&offset_name, "%s.%s", path, "offsetcache");
 			if (ret > 0) {
-				SAFE_UNLINK(offset_name);
+				arch_unlink(offset_name);
 				rename(offset_new, offset_name);
-				SAFE_OPEN(&fd, offset_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
+				arch_open(&fd, offset_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 				if (fd >= 0) {
 					fsync(fd);
-					SAFE_CLOSE(fd);
+					arch_close(fd);
 					fd = -1;
 				} else {
 					if (errno != ENOENT)
@@ -750,12 +750,12 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 		if (ret > 0) {
 			ret = asprintf(&sync_name, "%s.%s", path, "synclist");
 			if (ret > 0) {
-				SAFE_UNLINK(sync_name);
+				arch_unlink(sync_name);
 				rename(sync_new, sync_name);
-				SAFE_OPEN(&fd,sync_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW , PERMISSION_READWRITE);
+				arch_open(&fd,sync_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW , PERMISSION_READWRITE);
 				if (fd >= 0) {
 					fsync(fd);
-					SAFE_CLOSE(fd);
+					arch_close(fd);
 					fd = -1;
 				} else {
 					if (errno != ENOENT)
@@ -796,7 +796,7 @@ int xml_schema_to_file(const char *filename, const char *creator,
 	if (reason)
 		asprintf(&alt_creator, "%s - %s", creator , reason);
 	else
-		alt_creator = SAFE_STRDUP(creator);
+		alt_creator = arch_strdup(creator);
 
 	if (alt_creator) {
 		ret = _xml_write_schema(writer, alt_creator, idx);

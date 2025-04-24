@@ -203,10 +203,10 @@ int simple_parse_opts(void *opt_args)
 		*(priv.dk_list + original_dk_list_len) = '\0';
 
 		if (original_dk_list_len)
-			SAFE_STRCAT_S((char *) priv.dk_list, dk_list_len, "/");
-		SAFE_STRCAT_S((char *) priv.dk_list, dk_list_len,(char *) key[i].dk);
-		SAFE_STRCAT_S((char *) priv.dk_list, dk_list_len, ":");
-		SAFE_STRCAT_S((char *) priv.dk_list, dk_list_len,(char *) key[i].dki);
+			arch_strcat((char *) priv.dk_list, dk_list_len, "/");
+		arch_strcat((char *) priv.dk_list, dk_list_len,(char *) key[i].dk);
+		arch_strcat((char *) priv.dk_list, dk_list_len, ":");
+		arch_strcat((char *) priv.dk_list, dk_list_len,(char *) key[i].dki);
 	}
 
 	return 0;

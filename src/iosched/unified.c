@@ -2307,10 +2307,10 @@ int unified_set_profiler(char *work_dir, bool enable, void *iosched_handle)
 {
 	int rc = 0;
 	char *path;
-	FILE *p;
+	FILE * p = NULL;
 	struct timer_info timerinfo;
 	struct unified_data *priv = iosched_handle;
-
+	
 	if (enable) {
 		if (priv->profiler)
 			return 0;
@@ -2325,7 +2325,7 @@ int unified_set_profiler(char *work_dir, bool enable, void *iosched_handle)
 			return -LTFS_NO_MEMORY;
 		}
 
-		SAFE_FOPEN(path, PROFILER_FILE_MODE,p);
+		arch_fopen(path, PROFILER_FILE_MODE,p);
 
 		free(path);
 

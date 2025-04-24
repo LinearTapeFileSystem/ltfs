@@ -155,14 +155,14 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 	}
 	
 	for (i=0; options[i]; ++i) {
-		line = SAFE_STRDUP(options[i]);
+		line = arch_strdup(options[i]);
 		if (! line) {
 			ltfsmsg(LTFS_ERR, 10001E, "dcache_parse_options: line");
 			ret = -ENOMEM;
 			goto out_free;
 		}
 		char* contextVal = NULL;
-		SAFE_STRTOK(option,line, " \t", contextVal);
+		option = arch_strtok(line, " \t", contextVal);
 		if (! option) {
 			/* Failed to parse LTFS dcache configuration rules: invalid option '%s' */
 			ltfsmsg(LTFS_ERR, 17170E, options[i]);
@@ -182,7 +182,7 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 			continue;
 		}
 
-		SAFE_STRTOK(value,NULL, " \t", contextVal);
+		value = arch_strtok(NULL, " \t", contextVal);
 		if (! value) {
 			/* Failed to parse LTFS dcache configuration rules: invalid option '%s' */
 			ltfsmsg(LTFS_ERR, 17170E, options[i]);

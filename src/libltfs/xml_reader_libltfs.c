@@ -97,7 +97,7 @@ static int decode_entry_name(char **new_name, const char *name)
 
 	/* Always, length must be shorter than original but allocate null termination space */
 	len = strlen(name);
-	tmp_name = malloc((len * sizeof(COMPAT_UCHAR)) + 1);
+	tmp_name = malloc((len * sizeof(UChar)) + 1);
 	buf_decode[2] = '\0';
 
 	while (i < len) {
@@ -153,7 +153,7 @@ static int decode_entry_name(char **new_name, const char *name)
 	}
 	tmp_name[j] = '\0';
 
-	*new_name = SAFE_STRDUP(tmp_name);
+	*new_name = arch_strdup(tmp_name);
 	free(tmp_name);
 
 	return 0;
@@ -180,7 +180,7 @@ static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, boo
 
 	get_tag_text();
 
-	encoded_name = SAFE_STRDUP(value);
+	encoded_name = arch_strdup(value);
 	if (!encoded_name) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -234,7 +234,7 @@ static int _xml_parse_nametype_allow_zero_length(xmlTextReaderPtr reader, struct
 		return 0;
 	}
 
-	encoded_name = SAFE_STRDUP(value);
+	encoded_name = arch_strdup(value);
 	if (!encoded_name) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -359,11 +359,11 @@ static int _xml_parser_init(xmlTextReaderPtr reader, const char *top_name, int *
 	}
 	if (ver < min_version || ver > max_version) {
 		ltfsmsg(LTFS_ERR, 17021E, top_name, value);
-		SAFE_XMLFREE(value);
+		arch_xmlfree(value);
 		return -LTFS_UNSUPPORTED_INDEX_VERSION;
 	}
 	*idx_version = ver;
-	SAFE_XMLFREE(value);
+	arch_xmlfree(value);
 
 	return 0;
 }
@@ -459,7 +459,7 @@ static int _xml_parse_label(xmlTextReaderPtr reader, struct ltfs_label *label)
 			get_tag_text();
 			if (label->creator)
 				free(label->creator);
-			label->creator = SAFE_STRDUP(value);
+			label->creator = arch_strdup(value);
 			if (! label->creator) {
 				ltfsmsg(LTFS_ERR, 10001E, name);
 				return -LTFS_NO_MEMORY;
@@ -818,7 +818,7 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 					}
 
 					if (! xattr_type || ! strcmp(xattr_type, "text")) {
-						xattr->value = SAFE_STRDUP(value);
+						xattr->value = arch_strdup(value);
 						if (! xattr->value) {
 							ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 							free(xattr->key.name);
@@ -1537,7 +1537,7 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index* idx, st
 			get_tag_text();
 			if (idx->creator)
 				free(idx->creator);
-			idx->creator = SAFE_STRDUP(value);
+			idx->creator = arch_strdup(value);
 			if (!idx->creator) {
 				ltfsmsg(LTFS_ERR, 10001E, name);
 				return -LTFS_NO_MEMORY;
@@ -1621,7 +1621,7 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index* idx, st
 				ltfsmsg(LTFS_ERR, 17094E);
 				return -LTFS_XML_TOO_LONG_COMMENT;
 			}
-			idx->commit_message = SAFE_STRDUP(value);
+			idx->commit_message = arch_strdup(value);
 			if (!idx->commit_message) {
 				ltfsmsg(LTFS_ERR, 10001E, "_xml_parse_schema: index comment");
 				return -LTFS_NO_MEMORY;

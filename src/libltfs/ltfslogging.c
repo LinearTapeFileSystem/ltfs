@@ -379,7 +379,7 @@ void ltfsprintf_unload_plugin(void *handle)
 /* Print a formatted message in the current system locale. */
 int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, ...)
 {
-	const COMPAT_UCHAR *format_uc = NULL;
+	const UChar *format_uc = NULL;
 	int32_t prefix_len, format_len;
 	int32_t id_val;
 	char id[16];
@@ -397,10 +397,10 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		goto internal_error;
 
 	if (idlen > 1 && _id[0] == '"' && _id[idlen - 1] == '"') {
-		STRCPY_LIMITED(id, _id + 1, idlen - 2);
+		arch_strcpy_limited(id, _id + 1, idlen - 2);
 		id[idlen - 2] = '\0';
 	} else {
-		SAFE_STRCPY(id, _id);
+		arch_strcpy_auto(id, _id);
 	}
 
 	id_val = atol(id);
@@ -440,9 +440,9 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	/* Format and print the message string. */
 	ltfs_mutex_lock(&output_lock);
 	if (ltfs_print_thread_id)
-		prefix_len = print_id ? SAFE_PRINTF(output_buf, MSG_PREFIX_TID, (unsigned long)ltfs_get_thread_id(), id) : 0;
+		prefix_len = print_id ? arch_sprintf_auto(output_buf, MSG_PREFIX_TID, (unsigned long)ltfs_get_thread_id(), id) : 0;
 	else
-		prefix_len = print_id ? SAFE_PRINTF(output_buf, MSG_PREFIX, id) : 0;
+		prefix_len = print_id ? arch_sprintf_auto(output_buf, MSG_PREFIX, id) : 0;
 	ucnv_fromUChars(output_conv, output_buf + prefix_len, OUTPUT_BUF_SIZE - prefix_len - 1,
 		format_uc, format_len, &err);
 	if (err == U_BUFFER_OVERFLOW_ERROR) {
@@ -493,9 +493,9 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 
 	if (msg_out) {
 		va_start(argp, _id);
-		SAFE_VSPRINTF(msg_buf, output_buf, argp);
+		vsprintf_s(msg_buf,sizeof(msg_buf), output_buf, argp);
 		va_end(argp);
-		*msg_out = SAFE_STRDUP(msg_buf);
+		*msg_out = arch_strdup(msg_buf);
 	}
 
 #ifdef ENABLE_SNMP

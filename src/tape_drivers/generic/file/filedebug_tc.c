@@ -69,7 +69,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stddef.h>
-#include "crossbuild/commons.h"
+#include "libltfs/arch/ltfs_arch_ops.h"
 
 #ifdef _WIN32
 char* my_basename(char* path) {
@@ -79,13 +79,13 @@ char* my_basename(char* path) {
 
 char* my_dirname(char* path) {
 	static char buffer[256];
-	SAFE_STRCPY(buffer, path);
+	arch_strcpy_auto(buffer, path);
 	char* last_slash = strrchr(buffer, '\\');
 	if (last_slash) {
 		*last_slash = '\0';
 	}
 	else {
-		SAFE_STRCPY(buffer, ".");
+		arch_strcpy_auto(buffer, ".");
 	}
 	return buffer;
 }
@@ -463,7 +463,7 @@ int filedebug_open(const char *name, void **handle)
 	ret = stat(name, &d);
 	if (ret == 0 && S_ISDIR(d.st_mode)) {
 		ltfsmsg(LTFS_INFO, 30003I, name);
-		state->dirname = SAFE_STRDUP(name);
+		state->dirname = arch_strdup(name);
 		if (!state->dirname) {
 			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirname");
 			free(state);
@@ -483,7 +483,7 @@ int filedebug_open(const char *name, void **handle)
 
 		for (i = 0; i < info_devs; i++) {
 			if (! strncmp(buf[i].serial_number, name, TAPE_SERIAL_LEN_MAX) ) {
-				devname = SAFE_STRDUP(buf[i].name);
+				devname = arch_strdup(buf[i].name);
 				if (!devname) {
 					ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: devname");
 					if (buf) free(buf);
@@ -501,10 +501,10 @@ int filedebug_open(const char *name, void **handle)
 
 		/* Run on file mode */
 		if (devname == NULL)
-			devname = SAFE_STRDUP(name);
+			devname = arch_strdup(name);
 		ltfsmsg(LTFS_INFO, 30001I, devname);
 
-		SAFE_OPEN(state->fd, devname, _O_RDWR | _O_BINARY, _SH_DENYWR, PERMISSION_READWRITE);
+		arch_open(state->fd, devname, _O_RDWR | _O_BINARY, _SH_DENYWR, PERMISSION_READWRITE);
 		if (state->fd < 0) {
 			ltfsmsg(LTFS_ERR, 30002E, devname);
 			return -EDEV_INTERNAL_ERROR;
@@ -541,7 +541,7 @@ int filedebug_open(const char *name, void **handle)
 		}
 
 		/* Store directory base */
-		tmp = SAFE_STRDUP(devname);
+		tmp = arch_strdup(devname);
 		if (!tmp) {
 			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirbase tmp");
 			free(state);
@@ -559,7 +559,7 @@ int filedebug_open(const char *name, void **handle)
 			free(tmp);
 			return -EDEV_NO_MEMORY;
 		}
-		SAFE_STRCPY_S(state->dirbase, len,p);
+		arch_strcpy(state->dirbase, len,p);
 		free(tmp);
 		free(devname);
 		devname= NULL;
@@ -633,7 +633,7 @@ int filedebug_close(void *device)
 
 	if (state) {
 		if (state->fd > 0)
-			SAFE_CLOSE(state->fd);
+			arch_close(state->fd);
 		if (state->dirbase)
 			free(state->dirbase);
 		if (state->dirname)
@@ -778,7 +778,7 @@ int filedebug_read(void *device, char *buf, size_t count, struct tc_position *po
 			return ret;
 		}
 		if (ret > 0) {
-			SAFE_OPEN(&fd,fname, O_RDONLY | O_BINARY, _SH_DENYWR, PERMISSION_READWRITE);
+			arch_open(&fd,fname, O_RDONLY | O_BINARY, _SH_DENYWR, PERMISSION_READWRITE);
 			free(fname);
 			if (fd < 0) {
 				ltfsmsg(LTFS_ERR, 30011E, errno);
@@ -786,14 +786,14 @@ int filedebug_read(void *device, char *buf, size_t count, struct tc_position *po
 			}
 
 			/* TODO: return -EDEV_INVALID_ARG if buffer is too small to hold complete record? */
-			bytes_read = SAFE_READ(fd, buf, count);
+			bytes_read = arch_read(fd, buf, count);
 			if (bytes_read < 0) {
 				ltfsmsg(LTFS_ERR, 30012E, errno);
-				SAFE_CLOSE(fd);
+				arch_close(fd);
 				return -EDEV_RW_PERM;
 			}
 
-			ret = SAFE_CLOSE(fd);
+			ret = arch_close(fd);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 30013E, errno);
 				return -EDEV_RW_PERM;
@@ -927,7 +927,7 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 			ret = -EDEV_NO_MEMORY;
 			return ret;
 		}
-		SAFE_OPEN(&fd,fname,O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYWR, PERMISSION_READWRITE);
+		arch_open(&fd,fname,(O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH), _SH_DENYWR, PERMISSION_READWRITE);
 		if (fd < 0) {
 			ltfsmsg(LTFS_ERR, 30024E, fname, errno);
 			free(fname);
@@ -936,13 +936,13 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 		free(fname);
 
 		/* write and close the file */
-		written = SAFE_WRITE(fd, buf, count);
+		written = arch_write(fd, buf, count);
 		if (written < 0) {
 			ltfsmsg(LTFS_ERR, 30025E, errno);
-			SAFE_CLOSE(fd);
+			arch_close(fd);
 			return -EDEV_RW_PERM;
 		}
-		ret = SAFE_CLOSE(fd);
+		ret = arch_close(fd);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 30026E, errno);
 			return -EDEV_RW_PERM;
@@ -1042,9 +1042,9 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 				return ret;
 			}
 
-			SAFE_OPEN(&fd,fname,
+			arch_open(&fd,fname,
 					  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-					  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYWR, PERMISSION_READWRITE);
+					  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, PERMISSION_READWRITE);
 			if (fd < 0) {
 				ltfsmsg(LTFS_ERR, 30033E, fname, errno);
 				free(fname);
@@ -1052,7 +1052,7 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 			}
 			free(fname);
 
-			ret = SAFE_CLOSE(fd);
+			ret = arch_close(fd);
 			if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 30034E, errno);
 			return -EDEV_RW_PERM;
@@ -2109,7 +2109,7 @@ int filedebug_read_attribute(void *device, const tape_partition_t part, const ui
 	fname = _filedebug_make_attrname(state, part, id);
 	if (!fname)
 		return -EDEV_NO_MEMORY;
-	SAFE_OPEN(&fd,fname, O_RDONLY | O_BINARY, _SH_DENYNO, PERMISSION_READ);
+	arch_open(&fd,fname, O_RDONLY | O_BINARY, _SH_DENYNO, PERMISSION_READ);
 	free(fname);
 	if (fd < 0) {
 		if (errno == ENOENT) {
@@ -2124,10 +2124,10 @@ int filedebug_read_attribute(void *device, const tape_partition_t part, const ui
 	bytes_read = _read(fd, buf, size);
 	if(bytes_read == -1) {
 		ltfsmsg(LTFS_WARN, 30063W, errno);
-		SAFE_CLOSE(fd);
+		arch_close(fd);
 		return -EDEV_CM_PERM;
 	}
-	SAFE_CLOSE(fd);
+	arch_close(fd);
 
 	return DEVICE_GOOD;
 }
@@ -2155,9 +2155,9 @@ int filedebug_write_attribute(void *device, const tape_partition_t part
 			ltfsmsg(LTFS_ERR, 30064E);
 			return -EDEV_NO_MEMORY;
 		}
-		SAFE_OPEN(&fd,fname,
+		arch_open(&fd,fname,
 				  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-				  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYWR, PERMISSION_READWRITE);
+				  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, PERMISSION_READWRITE);
 
 
 		free(fname);
@@ -2167,13 +2167,13 @@ int filedebug_write_attribute(void *device, const tape_partition_t part
 		}
 
 		/* write and close the file */
-		written = SAFE_WRITE(fd, buf, size);
+		written = arch_write(fd, buf, size);
 		if (written < 0) {
 			ltfsmsg(LTFS_ERR, 30066E, errno);
-			SAFE_CLOSE(fd);
+			arch_close(fd);
 			return -EDEV_CM_PERM;
 		}
-		SAFE_CLOSE(fd);
+		arch_close(fd);
 
 		i += (attr_size + 5); /* Add header size of an attribute */
 	}
@@ -2372,13 +2372,13 @@ int _filedebug_write_eod(struct filedebug_data *state)
 		ltfsmsg(LTFS_ERR, 30072E);
 		return -EDEV_NO_MEMORY;
 	}
-	SAFE_OPEN(&fd,fname,
+	arch_open(&fd,fname,
 			  O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-			  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH, _SH_DENYWR
+			  S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH
 		, PERMISSION_READWRITE
 	);
 	free(fname);
-	if (fd < 0 || SAFE_CLOSE(fd) < 0) {
+	if (fd < 0 || arch_close(fd) < 0) {
 		ltfsmsg(LTFS_ERR, 30073E, errno);
 		return -EDEV_RW_PERM;
 	}
@@ -2430,7 +2430,7 @@ int _filedebug_remove_record(const struct filedebug_data *state,
 
 	for (i=0; i<3; ++i) {
 		fname[fname_len-1] = rec_suffixes[i];
-		ret = SAFE_UNLINK(fname);
+		ret = arch_unlink(fname);
 		if (ret < 0 && errno != ENOENT) {
 			ltfsmsg(LTFS_ERR, 30076E, errno);
 			free(fname);
@@ -2452,14 +2452,14 @@ int _filedebug_check_file(const char *fname)
 	int fd;
 	int ret;
 
-	SAFE_OPEN(&fd,fname, O_RDWR | O_BINARY, _SH_DENYNO, 0);
+	arch_open(&fd,fname, O_RDWR | O_BINARY, _SH_DENYNO, 0);
 	if (fd < 0) {
 		if (errno == ENOENT)
 			return 0;
 		else
 			return -EDEV_RW_PERM;
 	} else {
-		ret = SAFE_CLOSE(fd);
+		ret = arch_close(fd);
 		if (ret < 0)
 			return -EDEV_RW_PERM;
 		else
@@ -2697,7 +2697,7 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 		return -LTFS_NO_MEMORY;
 	}
 	ltfsmsg(LTFS_INFO, 30081I, filename);
-	SAFE_FOPEN(&infile,filename, "r");
+	arch_fopen(&infile,filename, "r");
 	if (infile == NULL) {
 		return 1;
 	}
@@ -2724,7 +2724,7 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 			continue;
 
 		if (buf && deventries < count) {
-			tmp = SAFE_STRDUP(entry->d_name);
+			tmp = arch_strdup(entry->d_name);
 			if (! *tmp) {
 				ltfsmsg(LTFS_ERR, 10001E, "filedebug_get_device_list");
 				return -ENOMEM;
@@ -2831,9 +2831,9 @@ int filedebug_get_serialnumber(void *device, char **result)
 	CHECK_ARG_NULL(result, -LTFS_NULL_ARG);
 
 	if (state->serial_number)
-		*result = SAFE_STRDUP((const char *) state->serial_number);
+		*result = arch_strdup((const char *) state->serial_number);
 	else
-		*result = SAFE_STRDUP("DUMMY");
+		*result = arch_strdup("DUMMY");
 
 	if (! *result)
 		return -EDEV_NO_MEMORY;

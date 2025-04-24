@@ -1197,7 +1197,7 @@ int ibm_tape_genkey(unsigned char *key)
 #ifdef mingw_PLATFORM
 	memset(key, 0x00, KEYLEN);
 	*key = KEY_PREFIX_HOST;
-	SAFE_STRNCPY(key + 1, "WINLTFS", KEYLEN - 1);
+	arch_strncpy_auto(key + 1, "WINLTFS", KEYLEN - 1);
 #else
 	unsigned char host[KEYLEN];
 

@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 	struct ltfs_volume *vol;
 	struct other_check_opts opt;
 	int ret, log_level, syslog_level, i, cmd_args_len;
-	char *lang, *cmd_args;
+	char *lang = NULL, *cmd_args;
 	const char *config_file = NULL;
 	void *message_handle;
 
@@ -239,7 +239,7 @@ int main(int argc, char **argv)
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 	for (i = 0; i < fuse_argc; ++i) {
-		fuse_argv[i] = SAFE_STRDUP(argv[i]);
+		fuse_argv[i] = arch_strdup(argv[i]);
 		if (! fuse_argv[i]) {
 			return LTFSCK_OPERATIONAL_ERROR;
 		}
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
 	struct fuse_args args = FUSE_ARGS_INIT(fuse_argc, fuse_argv);
 
 	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
-	SAFE_GETENV(lang,"LANG");
+	arch_getenv(lang,"LANG");
 	if (! lang) {
 		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting ltfsck.\n");
 		ret = setenv("LANG", "en_US.UTF-8", 1);
@@ -296,7 +296,7 @@ int main(int argc, char **argv)
 		if (c == -1)
 			break;
 		if (c == 'i') {
-			config_file = SAFE_STRDUP(optarg);
+			config_file = arch_strdup(optarg);
 			break;
 		}
 	}
@@ -328,13 +328,13 @@ int main(int argc, char **argv)
 			case 'i':
 				break;
 			case 'e':
-				opt.backend_path = SAFE_STRDUP(optarg);
+				opt.backend_path = arch_strdup(optarg);
 				break;
 			case 'g':
 				if(opt.op_mode == MODE_CHECK)
 					opt.op_mode = MODE_VERIFY;
 				opt.search_mode = SEARCH_BY_GEN;
-				opt.str_gen = SAFE_STRDUP(optarg);
+				opt.str_gen = arch_strdup(optarg);
 				break;
 			case 'v':
 				if ( strcmp(optarg, "forward") == 0)
@@ -345,7 +345,7 @@ int main(int argc, char **argv)
 					opt.traverse_mode = TRAVERSE_UNKNOWN;
 				break;
 			case '-':
-				opt.kmi_backend_name = SAFE_STRDUP(optarg);
+				opt.kmi_backend_name = arch_strdup(optarg);
 				break;
 			case '+':
 				opt.op_mode = MODE_LIST_POINT;
@@ -415,14 +415,14 @@ int main(int argc, char **argv)
 			ltfsmsg(LTFS_ERR, 10009E);
 			return LTFSCK_OPERATIONAL_ERROR;
 		}
-		opt.backend_path = SAFE_STRDUP(default_backend);
+		opt.backend_path = arch_strdup(default_backend);
 	}
 	if (! opt.kmi_backend_name) {
 		const char *default_backend = config_file_get_default_plugin("kmi", opt.config);
 		if (default_backend)
-			opt.kmi_backend_name = SAFE_STRDUP(default_backend);
+			opt.kmi_backend_name = arch_strdup(default_backend);
 		else
-			opt.kmi_backend_name = SAFE_STRDUP("none");
+			opt.kmi_backend_name = arch_strdup("none");
 	}
 	if (opt.kmi_backend_name && strcmp(opt.kmi_backend_name, "none") == 0)
 		opt.kmi_backend_name = NULL;
@@ -464,10 +464,10 @@ int main(int argc, char **argv)
 		ltfsmsg(LTFS_ERR, 10001E, "ltfsck (arguments)");
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
-	SAFE_STRCAT_S(cmd_args, cmd_args_len, argv[0]);
+	arch_strcat(cmd_args, cmd_args_len, argv[0]);
 	for (i = 1; i < argc; i++) {
-		SAFE_STRCAT_S(cmd_args, cmd_args_len, " ");
-		SAFE_STRCAT_S(cmd_args, cmd_args_len, argv[i]);
+		arch_strcat(cmd_args, cmd_args_len, " ");
+		arch_strcat(cmd_args, cmd_args_len, argv[i]);
 	}
 	ltfsmsg(LTFS_INFO, 16088I, cmd_args);
 	free(cmd_args);
@@ -487,9 +487,9 @@ int main(int argc, char **argv)
 	}
 
 	if(argv[optind + num_of_o])
-		opt.devname = SAFE_STRDUP(argv[optind + num_of_o]);
+		opt.devname = arch_strdup(argv[optind + num_of_o]);
 
-	opt.prg_name = SAFE_STRDUP(argv[0]);
+	opt.prg_name = arch_strdup(argv[0]);
 
 	if (_ltfsck_validate_options(&opt)) {
 		ltfsmsg(LTFS_ERR, 16002E);
@@ -503,10 +503,10 @@ int main(int argc, char **argv)
 
 	ret = ltfsck(vol, &opt, &args);
 
-	SAFE_FREE(opt.prg_name);
-	SAFE_FREE(opt.backend_path);
-	SAFE_FREE(opt.kmi_backend_name);
-	SAFE_FREE(opt.devname);
+	arch_safe_free(opt.prg_name);
+	arch_safe_free(opt.backend_path);
+	arch_safe_free(opt.kmi_backend_name);
+	arch_safe_free(opt.devname);
 	config_file_free(opt.config);
 	ltfsprintf_unload_plugin(message_handle);
 	ltfs_finish();
@@ -751,7 +751,7 @@ void _store_index(struct index_info *dst, struct ltfs_index *src)
 	dst->selfptr    = src->selfptr;
 	dst->backptr    = src->backptr;
 	if(src->commit_message)
-		dst->commit_message= SAFE_STRDUP(src->commit_message);
+		dst->commit_message= arch_strdup(src->commit_message);
 	dst->next       = NULL;
 }
 #endif

@@ -91,8 +91,8 @@ extern "C" {
 #include <string.h>
 #include <limits.h>
 #include <time.h>
-#include <crossbuild/compatibility.h>
-#include <crossbuild/commons.h>
+
+#include "libltfs/arch/ltfs_arch_ops.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -491,7 +491,7 @@ struct index_criteria {
 	bool             have_criteria;         /**< Does this struct actually specify criteria? */
 	uint64_t         max_filesize_criteria; /**< Maximum file size that goes into the index partition */
 	struct ltfs_name *glob_patterns;       /**< NULL-terminated list of file name criteria */
-	COMPAT_UCHAR            **glob_cache;          /**< Cache of glob patterns in comparison-ready form */
+	UChar            **glob_cache;          /**< Cache of glob patterns in comparison-ready form */
 };
 
 struct ltfs_index {

@@ -77,7 +77,7 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
 	int ret;
 
 	dentry->platform_safe_name = NULL;
-	SAFE_STRCPY(source_file_name, dentry->name.name);
+	arch_strcpy_auto(source_file_name, dentry->name.name);
 
 	if (_replace_invalid_chars(source_file_name, &dosdev)) {
 		if (! handle_invalid_char)
@@ -130,7 +130,7 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
 		}
 	}
 #else
-	dentry->platform_safe_name = SAFE_STRDUP(dentry->name.name);
+	dentry->platform_safe_name = arch_strdup(dentry->name.name);
 #endif
 }
 
@@ -208,7 +208,7 @@ char * _generate_target_file_name(const char *prefix, const char *extension, int
 	target = NULL;
 
 	if (suffix) {
-		SAFE_PRINTF( suffix_string, "~%d", suffix );
+		arch_vsprintf_auto( suffix_string, "~%d", suffix );
 
 		prefix_length    = prefix    ? _utf8_strlen(prefix)    : 0;
 		extension_length = extension ? _utf8_strlen(extension) : 0;
@@ -241,7 +241,7 @@ char * _generate_target_file_name(const char *prefix, const char *extension, int
 		if (extension)
 			ret = asprintf(&target, "%s.%s", prefix, extension);
 		else {
-			target = SAFE_STRDUP(prefix);
+			target = arch_strdup(prefix);
 			ret = target ? strlen(target) : -1;
 		}
 	}

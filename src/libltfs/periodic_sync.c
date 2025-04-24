@@ -49,6 +49,7 @@
 
 #include "ltfs.h"
 #include "ltfs_fsops.h"
+#include <WinSock2.h>
 
 #ifdef mingw_PLATFORM
 int gettimeofday(struct timeval* tv, struct timezone* tz) {

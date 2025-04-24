@@ -43,7 +43,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdbool.h>
 #include <inttypes.h>
-#include "crossbuild/compatibility.h"
+
 
 
 enum ltfs_log_levels {
