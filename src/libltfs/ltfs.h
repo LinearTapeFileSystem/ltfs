@@ -92,7 +92,6 @@ extern "C" {
 #include <limits.h>
 #include <time.h>
 
-#include "libltfs/arch/ltfs_arch_ops.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -108,6 +107,7 @@ extern "C" {
 #include "libltfs/queue.h"
 #include "libltfs/uthash.h"
 #include "libltfs/arch/time_internal.h"
+#include "libltfs/arch/ltfs_arch_ops.h"
 #include "tape_ops.h"
 
 /* forward declarations from tape.h, tape_ops.h */

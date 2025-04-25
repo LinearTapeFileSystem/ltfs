@@ -49,9 +49,9 @@
 
 #include "ltfs.h"
 #include "ltfs_fsops.h"
-#include <WinSock2.h>
 
 #ifdef mingw_PLATFORM
+#include <WinSock2.h>
 int gettimeofday(struct timeval* tv, struct timezone* tz) {
 	LARGE_INTEGER freq, count;
 	QueryPerformanceFrequency(&freq);

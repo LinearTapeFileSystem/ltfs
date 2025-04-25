@@ -63,10 +63,7 @@ extern "C" {
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <corecrt_io.h>
-#include <process.h>
 #include <time.h>
-#include <libxml/xmlmemory.h>
  
 #define arch_safe_free(memobject)                               \
         do {                                                    \
@@ -93,6 +90,9 @@ extern "C" {
 
 
 #ifdef _MSC_VER
+#include <libxml/xmlmemory.h>
+#include <corecrt_io.h>
+#include <process.h>
 #include <string.h>
 #include <unicode/umachine.h>
 
@@ -194,7 +194,8 @@ extern "C" {
 
 
 #else
-#define SHARE_FLAG_DENYNO   0													// No deny (shared access)
+#define SHARE_FLAG_DENYNO   0	
+#define SHARE_FLAG_DENYWR   (S_IWUSR | S_IWGRP)                                 // Deny write access
 #define SHARE_FLAG_DENYRD   (S_IRUSR | S_IRGRP | S_IROTH)						// Deny read access
 #define SHARE_FLAG_DENYRW   (S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP | S_IROTH)	// Deny both read and write access
 #define PERMISSION_READWRITE   0666
@@ -210,78 +211,37 @@ extern "C" {
 
     #define arch_open( pFileDescriptor, pFileName, openFlag, shareFlag, unused) do{ *pFileDescriptor = open(pFileName, openFlag, shareFlag); }while(0)
 
-    #define arch_fopen( file, mode, filePtr)  do {filePtr = fopen(file, mode);}while(0)
+    #define arch_fopen(file, mode, filePtr)  do {filePtr = fopen(file, mode);}while(0)
 
     #define arch_ctime(buffer,timeptr) do { buffer = ctime(timeptr); } while (0)
 
     #define arch_getenv(buffer,varname) do {  buffer = getenv(varname); } while (0)
 
+    #define arch_strcpy(dest, unused, src) strcpy(dest, src)
 
-    inline void arch_strcpy(char* dest, size_t unused, const char* src)
-    {
-        strcpy(dest, src);
-    }
+    #define arch_strncpy(dest, src, unused, count) strncpy(dest, src, count)
 
-    inline void arch_strncpy(char* dest, const char* src, size_t unused, size_t count)
-    {
-        strncpy(dest, src, count);
-    }
+    #define arch_strcat(dest, unused, src) strcat(dest, src)
 
-    inline void arch_strcat(char* dest, size_t unused, const char* src)
-    {
-        strcat(dest, src);
-    }
+    #define arch_strtok(string, delimiter, unused) strtok(string, delimiter)
 
-    inline char* arch_strtok(char* string, const char* delimiter, char** unused)
-    {
-        return strtok(string, delimiter);
-    }
+    #define arch_unlink(filename) unlink(filename)
 
-    inline int arch_unlink(const char* filename)
-    {
-        return unlink(filename);
-    }
+    #define arch_write(fileHandle, buf, maxCharCount) write(fileHandle, buf, maxCharCount)
 
-    inline int arch_write(int fileHandle, const void* buf, unsigned int maxCharCount)
-    {
-        return write(fileHandle, buf, maxCharCount);
-    }
+    #define arch_close(fileHandle) close(fileHandle)
 
-    inline int arch_close(int fileHandle)
-    {
-        return close(fileHandle);
-    }
+    #define arch_read(fileHandle, dstBuf, maxCharCount) read(fileHandle, dstBuf, maxCharCount)
 
-    inline int arch_read(int fileHandle, void* dstBuf, unsigned int maxCharCount)
-    {
-        return read(fileHandle, dstBuf, maxCharCount);
-    }
+    #define arch_strdup(source) strdup(source)
 
-    inline char* arch_strdup(const char* source)
-    {
-        return strdup(source);
-    }
+    #define arch_chmod(filename, mode) chmod(filename, mode)
 
-    inline int arch_chmod(const char* filename, int mode)
-    {
-        return chmod(filename, mode);
-    }
+    #define arch_getpid() getpid()
 
-    inline int arch_getpid(void)
-    {
-        return getpid();
-    }
-
-    inline int arch_access(const char* filename, int mode)
-    {
-        return access(filename, mode);
-    }
+    #define arch_access(filename, mode) access(filename, mode)
     
-
-    inline void arch_xmlfree(void* ptr)
-    {
-        arch_safe_free(ptr);
-    }
+    #define arch_xmlfree(ptr) arch_safe_free(ptr)
 
 #endif /* _MSC_VER */
 
