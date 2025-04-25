@@ -76,7 +76,7 @@ extern "C" {
 
     inline void arch_strcpy_limited(char* dest, const char* src, int count)
     {
-        size_t i;
+        int i;
         for (i = 0; i < (count) && (src)[i] != '\0'; i++) {
 
             (dest)[i] = (src)[i];
