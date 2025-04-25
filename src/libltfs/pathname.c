@@ -57,7 +57,7 @@
 #include <ICU/unicode/ustring.h>
 #include <ICU/unicode/utypes.h>
 #include <ICU/unicode/ucnv.h>
-#ifdef USE_UNORM2
+#ifdef ICU6x
 #include <ICU/unicode/unorm2.h>
 #else
 #include <ICU/unicode/unorm.h>
@@ -67,7 +67,7 @@
 #include <unicode/ustring.h>
 #include <unicode/utypes.h>
 #include <unicode/ucnv.h>
-#ifdef USE_UNORM2
+#ifdef ICU6x
 #include <unicode/unorm2.h>
 #else
 #include <unicode/unorm.h>
@@ -94,21 +94,6 @@ int _pathname_utf16_to_utf8_icu(const UChar *src, char **dest);
 int _pathname_system_to_utf16_icu(const char *src, UChar **dest);
 int _pathname_utf8_to_system_icu(const char *src, char **dest);
 int _pathname_normalize_utf8_nfd_icu(const char *src, char **dest);
-
-
-/*
- * On Visual Studio, free() gets stuck when you use it with an allocated pointer like all these methods above.
- * This method it is to reallocate the memory and then free it, it was easier than try to clean up this horrible code. 
- * Seriously, what was the purpose of having a pointer of pointers if you use it all the time like a single pointer? - GPV -
- * @param ptr, a useless allocated pointer.
- */
-static void freeUselessAllocatedPointer(UChar** ptr)
-{
-	if (*ptr == NULL) return;
-	*ptr = realloc(*ptr, 1);
-	free(*ptr);
-	*ptr = NULL;
-}
 
 
 /**
@@ -491,13 +476,13 @@ int _pathname_format_icu(const char *src, char **dest, bool validate, bool allow
 	/* normalize */
 	ret = _pathname_normalize_nfc_icu(utf16_name, &utf16_name_norm);
 	if (utf16_name != utf16_name_norm)
-		freeUselessAllocatedPointer(&utf16_name);
+		free(utf16_name);
 	if (ret < 0)
 		return ret;
 
 	/* convert to UTF-8 */
 	ret = _pathname_utf16_to_utf8_icu(utf16_name_norm, dest);
-	freeUselessAllocatedPointer(&utf16_name_norm);
+	free(utf16_name_norm);
 	if (ret < 0)
 		return ret;
 
