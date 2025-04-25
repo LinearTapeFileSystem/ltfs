@@ -69,7 +69,10 @@
 #include "libltfs/kmi.h"
 #include "libltfs/tape.h"
 
-static volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
+#ifdef mingw_PLATFORM
+static
+#endif
+volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
 #ifdef __APPLE__
@@ -143,7 +146,10 @@ static struct option long_options[] = {
 	{0, 0, 0, 0}
 };
 
-static void show_usage(char *appname, struct config_file *config, bool full)
+#ifdef mingw_PLATFORM
+static
+#endif
+void show_usage(char *appname, struct config_file *config, bool full)
 {
 	struct libltfs_plugin backend;
 	const char *default_backend;
