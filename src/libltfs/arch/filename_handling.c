@@ -208,7 +208,7 @@ char * _generate_target_file_name(const char *prefix, const char *extension, int
 	target = NULL;
 
 	if (suffix) {
-		arch_vsprintf_auto( suffix_string, "~%d", suffix );
+		arch_sprintf_auto( suffix_string, "~%d", suffix );
 
 		prefix_length    = prefix    ? _utf8_strlen(prefix)    : 0;
 		extension_length = extension ? _utf8_strlen(extension) : 0;

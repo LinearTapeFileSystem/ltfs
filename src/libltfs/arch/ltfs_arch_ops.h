@@ -67,6 +67,15 @@ extern "C" {
 #include <process.h>
 #include <time.h>
 #include <libxml/xmlmemory.h>
+ 
+#define arch_safe_free(memobject)                               \
+        do {                                                    \
+            if(memobject)                                       \
+            {                                                   \
+                free(memobject);                                \
+                memobject = NULL;                               \
+            }                                                   \
+        }while(0)
 
     inline void arch_strcpy_limited(char* dest, const char* src, int count)
     {
@@ -81,12 +90,6 @@ extern "C" {
         }
     }
 
-    inline void arch_safe_free(void* ptr)
-    {
-        if (!ptr) return;
-        free(ptr);
-        ptr = NULL;
-    }
 
 
 #ifdef _MSC_VER
@@ -105,53 +108,32 @@ extern "C" {
 #define INVALID_KEY UINT_MAX
 
 
-    inline int arch_vsprintf(char* buffer, size_t bufferCount, const char* fmt, ...)
-    {
-        va_list args;
-        va_start(args, fmt);
-        int res = vsprintf_s(buffer, bufferCount, fmt, args);
-        va_end(args);
-        return res;
-    }
+    #define arch_vsprintf(buffer,bufferCount, fmt, ...) vsprintf_s((buffer), (bufferCount), (fmt), __VA_ARGS__)
 
-    inline int arch_vsprintf_auto(char* buffer, const char* fmt, ...)
-    {
-        va_list args;
-        va_start(args, fmt);
-        int res = arch_vsprintf(buffer, sizeof(buffer), fmt, args);
-        va_end(args);
-        return res;
-    }
+    #define arch_sprintf(buffer, bufferCount, fmt, ...) sprintf_s((buffer), (bufferCount), (fmt), __VA_ARGS__)
 
+    #define arch_sscanf( buffer, fmt, ...) sscanf_s((buffer),(fmt), __VA_ARGS__)
 
-    inline int arch_sscanf(char* buffer, const char* fmt, ...)
-    {
-        va_list args;
-        va_start(args, fmt);
-        int res = sscanf_s(buffer, fmt, args);
-        va_end(args);
-        return res;
-    }
+    #define arch_open(pFileDescriptor,pFileName, openFlag,shareFlag, permission) _sopen_s(pFileDescriptor, pFileName, openFlag, shareFlag, permission);
+
+    #define arch_fopen(file, mode, file_ptr) fopen_s(&(file_ptr), file, mode)
+
+    #define arch_ctime(buffer, timeptr) ctime_s(buffer, sizeof(buffer), timeptr)
+
+    #define arch_getenv( buffer, varname) do { size_t len; _dupenv_s(&(buffer), &(len), varname);     } while (0)
+
 
     inline void arch_strcpy(char* dest, size_t bufferCount, const char* src)
     {
         strcpy_s(dest, bufferCount, src);
     }
 
-    inline void arch_strcpy_auto(char* dest, const char* src)
-    {
-        arch_strcpy(dest, sizeof(dest), src);
-    }
 
     inline void arch_strncpy(char* dest, const char* src, size_t sizeInBytes, size_t maxCount)
     {
         strncpy_s(dest, sizeInBytes, src, maxCount);
     }
 
-    inline void arch_strncpy_auto(char* dest, const char* src, size_t destSize)
-    {
-        arch_strncpy(dest, src, destSize, destSize);
-    }
 
     inline void arch_strcat(char* dest, size_t sizeInBytes, const char* src)
     {
@@ -159,43 +141,9 @@ extern "C" {
     }
 
 
-    inline void arch_strcat_auto(char* dest, const char* src)
-    {
-        arch_strcat(dest, sizeof(dest), src);
-    }
-
-
-    inline int arch_sprintf(char* buffer, size_t bufferCount, const char* fmt, ...)
-    {
-        va_list args;
-        va_start(args, fmt);
-        int res = sprintf_s(buffer, bufferCount, fmt, args);
-        va_end(args);
-        return res;
-    }
-
-    inline int arch_sprintf_auto(char* buffer, const char* fmt, ...)
-    {
-        va_list args;
-        va_start(args, fmt);
-        int res = arch_sprintf(buffer, sizeof(buffer), fmt, args);
-        va_end(args);
-        return res;
-    }
-
-    inline void arch_open(int* pFileDescriptor, char* pFileName, int openFlag, int shareFlag, int permission)
-    {
-        _sopen_s(pFileDescriptor, pFileName, openFlag, shareFlag, permission);
-    }
-
     inline char* arch_strtok(char* string, const char* delimiter, char** context)
     {
         return strtok_s(string, delimiter, context);
-    }
-
-    inline void arch_fopen(const char* file, const char* mode, FILE* filePtr)
-    {
-        fopen_s(&(filePtr), file, mode);
     }
 
     inline int arch_unlink(const char* filename)
@@ -233,21 +181,11 @@ extern "C" {
         return _getpid();
     }
 
-    inline void arch_getenv(char* buffer, const char* varname)
-    {
-        size_t len;
-        _dupenv_s(&(buffer), &(len), varname);
-    }
-
     inline int arch_access(const char* filename, int mode)
     {
         return _access(filename, mode);
     }
 
-    inline void arch_ctime(char* const buffer, const time_t* timeptr)
-    {
-        ctime_s(buffer, sizeof(buffer), timeptr);
-    }
 
     inline void arch_xmlfree(void* ptr)
     {
@@ -264,40 +202,24 @@ extern "C" {
 #define PERMISSION_WRITE  0222
 #define INVALID_KEY (-1U)
 
-    inline int arch_vsprintf(char* buffer, size_t unused, const char* fmt, ...)
-    {
-        va_list args;
-        va_start(args, fmt);
-        int res = vsprintf(buffer, fmt, args);
-        va_end(args);
-        return res;
-    }
+    #define arch_vsprintf(buffer,unused, fmt, ...) vsprintf((buffer), (fmt), __VA_ARGS__)
 
-    inline int arch_vsprintf_auto(char* buffer, const char* fmt, ...)
-    {
-        va_list args;
-        va_start(args, fmt);
-        int res = arch_sprintf(buffer, 0, fmt, args);
-        va_end(args);
-        return res;
-    }
+    #define arch_sprintf(buffer,unused, fmt, ...) sprintf((buffer), (fmt), __VA_ARGS__)
 
-    inline int arch_sscanf(char* buffer, const char* fmt, ...)
-    {
-        va_list args;
-        va_start(args, fmt);
-        int res = sscanf(buffer, fmt, args);
-        va_end(args);
-        return res;
-    }
+    #define arch_sscanf( buffer, fmt, ...) sscanf((buffer),(fmt), __VA_ARGS__)
+
+    #define arch_open( pFileDescriptor, pFileName, openFlag, shareFlag, unused) do{ *pFileDescriptor = open(pFileName, openFlag, shareFlag); }while(0)
+
+    #define arch_fopen( file, mode, filePtr)  do {filePtr = fopen(file, mode);}while(0)
+
+    #define arch_ctime(buffer,timeptr) do { buffer = ctime(timeptr); } while (0)
+
+    #define arch_getenv(buffer,varname) do {  buffer = getenv(varname); } while (0)
+
+
     inline void arch_strcpy(char* dest, size_t unused, const char* src)
     {
         strcpy(dest, src);
-    }
-
-    inline void arch_strcpy_auto(char* dest, const char* src)
-    {
-        arch_strcpy(dest, 0, src);
     }
 
     inline void arch_strncpy(char* dest, const char* src, size_t unused, size_t count)
@@ -305,44 +227,14 @@ extern "C" {
         strncpy(dest, src, count);
     }
 
-    inline void arch_strncpy_auto(char* dest, const char* src, size_t destSize)
-    {
-        arch_strncpy(dest, src, destSize, 0);
-    }
-
     inline void arch_strcat(char* dest, size_t unused, const char* src)
     {
         strcat(dest, src);
     }
 
-    inline void arch_strcat_auto(char* dest, const char* src)
-    {
-        arch_strcat(dest, 0, src);
-    }
-
-
-    inline int arch_sprintf(char* buffer, size_t unused, const char* fmt, ...)
-    {
-        va_list args;
-        va_start(args, fmt);
-        int res = sprintf(buffer, fmt, args);
-        va_end(args);
-        return res;
-    }
-
-    inline void arch_open(int* pFileDescriptor, char* pFileName, int openFlag, int shareFlag, int unused)
-    {
-        *pFileDescriptor = open(pFileName, openFlag, shareFlag);
-    }
-
     inline char* arch_strtok(char* string, const char* delimiter, char** unused)
     {
         return strtok(string, delimiter);
-    }
-
-    inline void arch_fopen(const char* file, const char* mode, FILE* filePtr)
-    {
-        filePtr = fopen(file, mode);
     }
 
     inline int arch_unlink(const char* filename)
@@ -380,21 +272,11 @@ extern "C" {
         return getpid();
     }
 
-
-    inline void arch_getenv(char* buffer, const char* varname)
-    {
-        buffer = getenv(varname);
-    }
-
     inline int arch_access(const char* filename, int mode)
     {
         return access(filename, mode);
     }
-
-    inline void arch_ctime(char* const buffer, const time_t* timeptr)
-    {
-        ctime_r(buffer, timeptr);
-    }
+    
 
     inline void arch_xmlfree(void* ptr)
     {
@@ -403,6 +285,16 @@ extern "C" {
 
 #endif /* _MSC_VER */
 
+    /* These needs to be declared at the end to avoid redefinition and to avoid code replication */
+    #define arch_vsprintf_auto( buffer,  fmt, ...) arch_vsprintf(buffer,sizeof(buffer),fmt,__VA_ARGS__)
+
+    #define arch_strcpy_auto(dest, src) arch_strcpy(dest, sizeof(dest), src);
+
+    #define arch_strncpy_auto(dest, src, destSize) arch_strncpy(dest, src, destSize, destSize);
+
+    #define arch_strcat_auto(dest,src) arch_strcat(dest, sizeof(dest), src);
+
+    #define arch_sprintf_auto(buffer, fmt, ...) arch_sprintf(buffer,sizeof(buffer),fmt, __VA_ARGS__)
 
 #ifdef __cplusplus
 }
