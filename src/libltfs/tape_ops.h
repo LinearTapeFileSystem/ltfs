@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2023 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -155,6 +155,8 @@ enum {
 	TC_DC_LTOM8   = 0x5D,
 	TC_DC_LTO8    = 0x5E,
 	TC_DC_LTO9    = 0x60,
+	TC_DC_LTOA    = 0x62,
+	TC_DC_LTOPA   = 0x63,
 };
 
 /* Density codes of TS11x0 */

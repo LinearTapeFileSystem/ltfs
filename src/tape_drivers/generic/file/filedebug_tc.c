@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -1401,7 +1401,20 @@ static inline int _sanitize_tape(struct filedebug_data *state)
 				ret = -EDEV_MEDIUM_FORMAT_ERROR;
 				break;
 		}
-	} else if (gen == DRIVE_GEN_JAG4) {
+	} else if (gen == DRIVE_GEN_LTOA) {
+		switch (state->conf.cart_type) {
+			case TC_MP_LTOPAD_CART:
+			case TC_MP_LTOAD_CART:
+				/* Do nothing */
+				break;
+			default:
+				ltfsmsg(LTFS_INFO, 30086I, "LTOA", state->conf.cart_type);
+				state->unsupported_tape = true;
+				ret = -EDEV_MEDIUM_FORMAT_ERROR;
+				break;
+		}
+	} 
+	else if (gen == DRIVE_GEN_JAG4) {
 		switch (state->conf.cart_type) {
 			case TC_MP_JB:
 			case TC_MP_JC:
