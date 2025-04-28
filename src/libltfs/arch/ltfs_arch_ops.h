@@ -122,75 +122,31 @@ extern "C" {
 
     #define arch_getenv( buffer, varname) do { size_t len; _dupenv_s(&(buffer), &(len), varname);     } while (0)
 
+    #define arch_strcpy(dest, bufferCount, src) strcpy_s((dest), (bufferCount), (src))
 
-    inline void arch_strcpy(char* dest, size_t bufferCount, const char* src)
-    {
-        strcpy_s(dest, bufferCount, src);
-    }
+    #define arch_strncpy(dest, src, sizeInBytes, maxCount) strncpy_s((dest), (sizeInBytes), (src), (maxCount))
 
+    #define arch_strcat(dest, sizeInBytes, src) strcat_s((dest), (sizeInBytes), (src))
 
-    inline void arch_strncpy(char* dest, const char* src, size_t sizeInBytes, size_t maxCount)
-    {
-        strncpy_s(dest, sizeInBytes, src, maxCount);
-    }
+    #define arch_strtok(string, delimiter, context) strtok_s((string), (delimiter), &(context))
 
+    #define arch_unlink(filename) _unlink((filename))
 
-    inline void arch_strcat(char* dest, size_t sizeInBytes, const char* src)
-    {
-        strcat_s(dest, sizeInBytes, src);
-    }
+    #define arch_write(fileHandle, buf, maxCharCount) _write((fileHandle), (buf), (maxCharCount))
 
+    #define arch_close(fileHandle) _close((fileHandle))
 
-    inline char* arch_strtok(char* string, const char* delimiter, char** context)
-    {
-        return strtok_s(string, delimiter, context);
-    }
+    #define arch_read(fileHandle, dstBuf, maxCharCount) _read((fileHandle), (dstBuf), (maxCharCount))
 
-    inline int arch_unlink(const char* filename)
-    {
-        return _unlink(filename);
-    }
+    #define arch_strdup(source) _strdup((source))
 
-    inline int arch_write(int fileHandle, const void* buf, unsigned int maxCharCount)
-    {
-        return _write(fileHandle, buf, maxCharCount);
-    }
+    #define arch_chmod(filename, mode) _chmod((filename), (mode))
 
-    inline int arch_close(int fileHandle)
-    {
-        return _close(fileHandle);
-    }
+    #define arch_getpid() _getpid()
 
-    inline int arch_read(int fileHandle, void* dstBuf, unsigned int maxCharCount)
-    {
-        return _read(fileHandle, dstBuf, maxCharCount);
-    }
+    #define arch_access(filename, mode) _access((filename), (mode))
 
-    inline char* arch_strdup(const char* source)
-    {
-        return _strdup(source);
-    }
-
-    inline int arch_chmod(const char* filename, int mode)
-    {
-        return _chmod(filename, mode);
-    }
-
-    inline int arch_getpid(void)
-    {
-        return _getpid();
-    }
-
-    inline int arch_access(const char* filename, int mode)
-    {
-        return _access(filename, mode);
-    }
-
-
-    inline void arch_xmlfree(void* ptr)
-    {
-        xmlFree(ptr);
-    }
+    #define arch_xmlfree(ptr) xmlFree((ptr))
 
 
 #else
