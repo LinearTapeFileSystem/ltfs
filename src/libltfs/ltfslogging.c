@@ -493,7 +493,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 
 	if (msg_out) {
 		va_start(argp, _id);
-		vsprintf_s(msg_buf,sizeof(msg_buf), output_buf, argp);
+		arch_vsprintf(msg_buf,sizeof(msg_buf), output_buf, argp);
 		va_end(argp);
 		*msg_out = arch_strdup(msg_buf);
 	}
@@ -504,7 +504,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 			/* Send a trap of Info (id and pos+1) */
 			char *pos;
 			va_start(argp, _id);
-			vsprintf(msg_buf, output_buf, argp);
+			arch_vsprintf(msg_buf,sizeof(msg_buf), output_buf, argp);
 			va_end(argp);
 			pos = strstr(msg_buf, " ");
 			send_ltfsInfoTrap(pos+1);

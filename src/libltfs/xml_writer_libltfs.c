@@ -82,7 +82,7 @@ struct ltfsee_cache
 static int encode_entry_name(char **new_name, const char *name)
 {
 	int len;
-	UChar32 c=NULL;
+	UChar32 c=0;
 
 	/* Printable ASCII characters
 	 * !\"#$&`'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";

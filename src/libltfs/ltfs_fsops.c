@@ -549,7 +549,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	int ret;
 	char *from_norm = NULL, *to_norm = NULL;
 	char *from_norm_copy = NULL, *to_norm_copy = NULL;
-	char *from_filename = NULL, *to_filename = NULL, *to_filename_incj = NULL;
+	char *from_filename = NULL, *to_filename = NULL;
 	char *to_filename_copy = NULL, *to_filename_copy2 = NULL;
 	struct dentry *fromdir = NULL, *todir = NULL;
 	struct dentry *fromdentry = NULL, *todentry = NULL;

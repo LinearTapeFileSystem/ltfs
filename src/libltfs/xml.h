@@ -142,7 +142,10 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 #define declare_tracking_arrays(num_req, num_opt) \
 	const int ntags_req = (num_req), ntags_opt = (num_opt); \
 	bool* have_required_tags = ntags_req > 0 ? (bool*)calloc(ntags_req, sizeof(bool)) : NULL; \
-	bool* have_optional_tags = ntags_opt > 0 ? (bool*)calloc(ntags_opt, sizeof(bool)) : NULL;
+	bool* have_optional_tags = ntags_opt > 0 ? (bool*)calloc(ntags_opt, sizeof(bool)) : NULL; \
+	if(! have_optional_tags) (void)(have_optional_tags); \
+	if(! have_required_tags) (void)(have_required_tags);
+
 
 /* grab the next tag inside the given tag. It breaks if the end of the given tag is detected.
  * NOTE: in order for break to work correctly, this macro is not wrapped in a do { ... } while (0)

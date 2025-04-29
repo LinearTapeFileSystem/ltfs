@@ -173,13 +173,13 @@ extern "C" {
 
     #define arch_getenv(buffer,varname) do {  buffer = getenv(varname); } while (0)
 
-    #define arch_strcpy(dest, unused, src) strcpy(dest, src)
+    #define arch_strcpy(dest, unused, src) ({if(unused || !unused) {strcpy(dest, src);}})
 
     #define arch_strncpy(dest, src, unused, count) strncpy(dest, src, count)
 
-    #define arch_strcat(dest, unused, src) strcat(dest, src)
+    #define arch_strcat(dest, unused, src)( {if(unused || !unused){ strcat(dest, src);}})
 
-    #define arch_strtok(string, delimiter, unused) strtok(string, delimiter)
+    #define arch_strtok(string, delimiter, unused) ((void)(unused), strtok(string, delimiter))
 
     #define arch_unlink(filename) unlink(filename)
 
@@ -198,6 +198,7 @@ extern "C" {
     #define arch_access(filename, mode) access(filename, mode)
     
     #define arch_xmlfree(ptr) arch_safe_free(ptr)
+
 
 #endif /* _MSC_VER */
 

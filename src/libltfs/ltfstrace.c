@@ -99,7 +99,7 @@
 #define LTFS_TRACE_SIGNATURE "LTFS_TRC"
 #pragma pack(push, 1)
 struct trace_header {
-	char signature[8];               /**< Signature for LTFS trace */
+	char signature[9];               /**< Signature for LTFS trace */
 	uint32_t header_size;            /**< Size of trace header */
 	uint32_t req_header_offset;      /**< Request trace header offset */
 	uint32_t fn_header_offset;       /**< Function trace header offset */
@@ -486,7 +486,7 @@ int ltfs_header_init(void)
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
-	arch_strncpy_auto(trc_header->signature, LTFS_TRACE_SIGNATURE, sizeof(LTFS_TRACE_SIGNATURE));
+	arch_strncpy_auto(trc_header->signature, LTFS_TRACE_SIGNATURE, sizeof(trc_header->signature));
 	trc_header->header_size = sizeof(struct trace_header);
 	trc_header->req_header_offset = sizeof(struct trace_header);
 	trc_header->fn_header_offset = sizeof(struct trace_header) + sizeof(struct request_header) + REQ_TRACE_SIZE;

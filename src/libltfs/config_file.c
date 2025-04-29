@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -67,6 +67,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "libltfs/arch/ltfs_arch_ops.h"
 #include "libltfs/ltfslogging.h"
 #include "libltfs/ltfs_error.h"
 #include "config_file.h"

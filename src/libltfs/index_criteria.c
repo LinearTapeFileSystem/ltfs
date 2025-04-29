@@ -105,7 +105,7 @@ bool index_criteria_contains_invalid_options(const char *str)
 
 	/* Check the beginning of the string */
 	for (valid_option = false, i=0; options[i]; ++i)
-		if (! _strnicmp(options[i], str, strlen(options[i]))) {
+		if (! strncmp(options[i], str, strlen(options[i]))) {
 			valid_option = true;
 			break;
 		}
@@ -120,7 +120,7 @@ bool index_criteria_contains_invalid_options(const char *str)
 		if (! ptr)
 			break;
 		for (valid_option = false, i=0; options[i]; ++i)
-			if (!_strnicmp(options[i], ptr+1, strlen(options[i]))) {
+			if (!strncmp(options[i], ptr+1, strlen(options[i]))) {
 				valid_option = true;
 				break;
 			}
@@ -152,7 +152,7 @@ bool index_criteria_find_option(const char *str, const char *substr,
 	if (strlen(str) < 5)
 		return false;
 
-	if (!_strnicmp(str, substr, substr_len)) {
+	if (!strncmp(str, substr, substr_len)) {
 		/* Match at the start of the string */
 		str_start = str;
 	} else {
