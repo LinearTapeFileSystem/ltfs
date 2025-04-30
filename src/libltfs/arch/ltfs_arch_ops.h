@@ -108,45 +108,45 @@ extern "C" {
 #define INVALID_KEY UINT_MAX
 
 
-    #define arch_vsprintf(buffer,bufferCount, fmt, ...) vsprintf_s((buffer), (bufferCount), (fmt), __VA_ARGS__)
+    #define arch_vsprintf   vsprintf_s
 
-    #define arch_sprintf(buffer, bufferCount, fmt, ...) sprintf_s((buffer), (bufferCount), (fmt), __VA_ARGS__)
+    #define arch_sprintf    sprintf_s
 
-    #define arch_sscanf( buffer, fmt, ...) sscanf_s((buffer),(fmt), __VA_ARGS__)
+    #define arch_sscanf     sscanf_s
 
-    #define arch_open(pFileDescriptor,pFileName, openFlag,shareFlag, permission) _sopen_s(pFileDescriptor, pFileName, openFlag, shareFlag, permission);
+    #define arch_open       _sopen_s
 
     #define arch_fopen(file, mode, file_ptr) fopen_s(&(file_ptr), file, mode)
 
-    #define arch_ctime(buffer, timeptr) ctime_s(buffer, sizeof(buffer), timeptr)
+    #define arch_ctime(buf, time_ptr) ctime_s(buf, sizeof(buf), time_ptr)
 
-    #define arch_getenv( buffer, varname) do { size_t len; _dupenv_s(&(buffer), &(len), varname);     } while (0)
+    #define arch_getenv(buf, name) do { size_t len; _dupenv_s(&(buf), &(len), name);     } while (0)
 
-    #define arch_strcpy(dest, bufferCount, src) strcpy_s((dest), (bufferCount), (src))
+    #define arch_strtok(str, delm, ctxt) strtok_s((str), (delm), &(ctxt))
 
-    #define arch_strncpy(dest, src, sizeInBytes, maxCount) strncpy_s((dest), (sizeInBytes), (src), (maxCount))
+    #define arch_strcpy(dest, size, src) strcpy_s((dest), (size), (src))
 
-    #define arch_strcat(dest, sizeInBytes, src) strcat_s((dest), (sizeInBytes), (src))
+    #define arch_strncpy(dest, src, size, count) strncpy_s((dest), (size), (src), (count))
 
-    #define arch_strtok(string, delimiter, context) strtok_s((string), (delimiter), &(context))
+    #define arch_strcat(dest, size, src) strcat_s((dest), (size), (src))
 
-    #define arch_unlink(filename) _unlink((filename))
+    #define arch_unlink     _unlink
 
-    #define arch_write(fileHandle, buf, maxCharCount) _write((fileHandle), (buf), (maxCharCount))
+    #define arch_write      _write
 
-    #define arch_close(fileHandle) _close((fileHandle))
+    #define arch_close      _close
 
-    #define arch_read(fileHandle, dstBuf, maxCharCount) _read((fileHandle), (dstBuf), (maxCharCount))
+    #define arch_read       _read
 
-    #define arch_strdup(source) _strdup((source))
+    #define arch_strdup     _strdup
 
-    #define arch_chmod(filename, mode) _chmod((filename), (mode))
+    #define arch_chmod      _chmod
 
-    #define arch_getpid() _getpid()
+    #define arch_getpid     _getpid
 
-    #define arch_access(filename, mode) _access((filename), (mode))
+    #define arch_access     _access
 
-    #define arch_xmlfree(ptr) xmlFree((ptr))
+    #define arch_xmlfree    xmlFree
 
 
 #else
@@ -159,19 +159,19 @@ extern "C" {
 #define PERMISSION_WRITE  0222
 #define INVALID_KEY (-1U)
 
-    #define arch_vsprintf(buffer,unused, fmt, ...) vsprintf((buffer), (fmt), __VA_ARGS__)
+    #define arch_vsprintf   vsprintf
 
-    #define arch_sprintf(buffer,unused, fmt, ...) sprintf((buffer), (fmt), __VA_ARGS__)
+    #define arch_sprintf    sprintf
 
-    #define arch_sscanf( buffer, fmt, ...) sscanf((buffer),(fmt), __VA_ARGS__)
+    #define arch_sscanf     sscanf
 
-    #define arch_open( pFileDescriptor, pFileName, openFlag, shareFlag, unused) do{ *pFileDescriptor = open(pFileName, openFlag, shareFlag); }while(0)
+    #define arch_open( descriptor_ptr, filename_ptr, open_flg, share_flg, unused) do{ *descriptor_ptr = open(filename_ptr, open_flg, share_flg); }while(0)
 
-    #define arch_fopen(file, mode, filePtr)  do {filePtr = fopen(file, mode);}while(0)
+    #define arch_fopen(file, mode, file_ptr)  do {file_ptr = fopen(file, mode);}while(0)
 
-    #define arch_ctime(buffer,timeptr) do { buffer = ctime(timeptr); } while (0)
+    #define arch_ctime(buf ,time_ptr) do { buf = ctime(time_ptr); } while (0)
 
-    #define arch_getenv(buffer,varname) do {  buffer = getenv(varname); } while (0)
+    #define arch_getenv(buf ,name) do {  buf = getenv(name); } while (0)
 
     #define arch_strcpy(dest, unused, src) ({if(unused || !unused) {strcpy(dest, src);}})
 
@@ -179,25 +179,25 @@ extern "C" {
 
     #define arch_strcat(dest, unused, src)( {if(unused || !unused){ strcat(dest, src);}})
 
-    #define arch_strtok(string, delimiter, unused) ((void)(unused), strtok(string, delimiter))
+    #define arch_strtok(str, delim, unused) ((void)(unused), strtok(str, delim))
 
-    #define arch_unlink(filename) unlink(filename)
+    #define arch_unlink     unlink
 
-    #define arch_write(fileHandle, buf, maxCharCount) write(fileHandle, buf, maxCharCount)
+    #define arch_write      write
 
-    #define arch_close(fileHandle) close(fileHandle)
+    #define arch_close      close
 
-    #define arch_read(fileHandle, dstBuf, maxCharCount) read(fileHandle, dstBuf, maxCharCount)
+    #define arch_read       read
 
-    #define arch_strdup(source) strdup(source)
+    #define arch_strdup     strdup
 
-    #define arch_chmod(filename, mode) chmod(filename, mode)
+    #define arch_chmod      chmod
 
-    #define arch_getpid() getpid()
+    #define arch_getpid     getpid
 
-    #define arch_access(filename, mode) access(filename, mode)
+    #define arch_access     access
     
-    #define arch_xmlfree(ptr) arch_safe_free(ptr)
+    #define arch_xmlfree    free
 
 
 #endif /* _MSC_VER */
