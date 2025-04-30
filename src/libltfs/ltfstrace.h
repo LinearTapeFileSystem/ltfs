@@ -142,7 +142,7 @@ void ltfs_admin_function_trace_completed(uint32_t);
 /*
  *  Definitions for LTFS trace file
  */
-int ltfs_dump_trace(char* name);
+int ltfs_dump_trace(char *name);
 
 /*
  *  Definitions for LTFS profiler

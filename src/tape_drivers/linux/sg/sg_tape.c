@@ -1240,7 +1240,7 @@ start:
 
 /** SCSI command handling of REPORT SUPPORTED OPERATION CODES
  */
-static int _cdb_rsoc(void* device, unsigned char *buf, uint32_t len)
+static int _cdb_rsoc(void *device, unsigned char *buf, uint32_t len)
 {
 	int ret = -EDEV_UNKNOWN;
 	int ret_ep = DEVICE_GOOD;
@@ -4559,7 +4559,7 @@ static int _cdb_spin(void *device, const uint16_t sps, unsigned char **buffer, s
 }
 
 int _cdb_spout(void *device, const uint16_t sps,
-			   unsigned char* const buffer, const size_t size)
+			   unsigned char *const buffer, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
 	int ret_ep = DEVICE_GOOD;

@@ -212,7 +212,7 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 		ltfsmsg(LTFS_ERR, 11143E, len);
 		return -LTFS_POLICY_INVALID;
 	}
-	const char* param = criteria + sizelen;
+	const char *param = criteria + sizelen;
 
 	snprintf(rule, len - sizelen, "%s", param);
 

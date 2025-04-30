@@ -400,14 +400,14 @@ struct ltfs_volume {
 	struct tc_coherency dp_coh;    /**< Data partition coherency info */
 	struct ltfs_label* label;      /**< Information from the partition labels */
 	struct ltfs_index* index;      /**< Current cartridge index */
-	char* index_cache_path;      /**< File name of on-disk index cache */
+	char *index_cache_path;      /**< File name of on-disk index cache */
 
 	/* Opaque handles to higher-level structures */
-	void* iosched_handle;          /**< Handle to the I/O scheduler state */
-	void* changer_handle;          /**< Handle to changer controller state */
-	void* dcache_handle;           /**< Handle to the Dentry cache manager state */
-	void* periodic_sync_handle;    /**< Handle to the periodic sync state */
-	void* kmi_handle;              /**< Handle to the key manager interface state */
+	void *iosched_handle;          /**< Handle to the I/O scheduler state */
+	void *changer_handle;          /**< Handle to changer controller state */
+	void *dcache_handle;           /**< Handle to the Dentry cache manager state */
+	void *periodic_sync_handle;    /**< Handle to the periodic sync state */
+	void *kmi_handle;              /**< Handle to the key manager interface state */
 
 	/* Internal state variables */
 	struct device_data* device;        /**< Device-specific data */
@@ -422,7 +422,7 @@ struct ltfs_volume {
 	 * You MUST hold the tape device lock before accessing this buffer. */
 	struct tape_offset last_pos;   /**< Position of last block read from the tape. */
 	unsigned long last_size;       /**< Size of last block read from the tape. */
-	char* last_block;              /**< Contents of last block read from the tape. */
+	char *last_block;              /**< Contents of last block read from the tape. */
 
 	/* Caches of cartridge health and capacity data. Take the device lock before using these. */
 	cartridge_health_info health_cache;
@@ -430,8 +430,8 @@ struct ltfs_volume {
 	struct device_capacity capacity_cache;
 
 	/* User-controlled parameters */
-	char* creator;                 /**< Creator string to use when writing labels, index files */
-	void* opt_args;                /**< FUSE command-line arguments */
+	char *creator;                 /**< Creator string to use when writing labels, index files */
+	void *opt_args;                /**< FUSE command-line arguments */
 	size_t cache_size_min;         /**< Starting scheduler cache size in MiB */
 	size_t cache_size_max;         /**< Maximum scheduler cache size in MiB */
 	bool reset_capacity;           /**< Force to reset tape capacity when formatting tape */
@@ -447,14 +447,14 @@ struct ltfs_volume {
 	bool set_pew;                  /**< Set PEW value */
 
 	bool livelink;                 /**< Live Link enabled? (SDE) */
-	char* mountpoint;              /**< Store mount point for Live Link (SDE) */
+	char *mountpoint;              /**< Store mount point for Live Link (SDE) */
 	size_t mountpoint_len;         /**< Store mount point path length (SDE) */
 	struct tape_attr* t_attr;      /**< Tape Attribute data */
 	mam_lockval lock_status;       /**< Total volume lock status from t_attr->vollock and index->vollock */
 	struct ltfs_timespec first_locate; /**< Time to first locate */
 	int file_open_count;            /**< Number of opened files */
 
-	const char* work_directory;
+	const char *work_directory;
 
 };
 
@@ -693,7 +693,7 @@ char ltfs_dp_id(struct ltfs_volume *vol);
 char ltfs_ip_id(struct ltfs_volume *vol);
 const char *ltfs_get_volume_uuid(struct ltfs_volume *vol);
 
-int ltfs_sync_index(char* reason, bool index_locking, struct ltfs_volume* vol);
+int ltfs_sync_index(char *reason, bool index_locking, struct ltfs_volume* vol);
 
 int ltfs_traverse_index_forward(struct ltfs_volume *vol, char partition, unsigned int gen,
 								f_index_found func, void **list, void *priv);

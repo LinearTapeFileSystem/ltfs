@@ -330,7 +330,7 @@ int iosched_update_data_placement(struct dentry *d, struct ltfs_volume *vol)
  * @param vol LTFS volume
  * @return 0 on succe	ss or a negative value on error
  */
-int iosched_set_profiler(char* work_dir, bool enable, struct ltfs_volume *vol)
+int iosched_set_profiler(char *work_dir, bool enable, struct ltfs_volume *vol)
 {
 	int ret = 0;
 	struct iosched_priv *priv = (struct iosched_priv *) vol ? vol->iosched_handle : NULL;

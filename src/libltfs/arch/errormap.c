@@ -500,7 +500,7 @@ int errormap_fuse_error(int val)
 	return -EIO;
 }
 
-char* errormap_msg_id(int val)
+char *errormap_msg_id(int val)
 {
 	struct error_map *out;
 

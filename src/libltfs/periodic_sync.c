@@ -86,7 +86,7 @@ struct periodic_sync_data {
 
 #define REQ_SYNC        fffe
 
-ltfs_thread_return periodic_sync_thread(void* data)
+ltfs_thread_return periodic_sync_thread(void *data)
 {
 	struct periodic_sync_data *priv = (struct periodic_sync_data *) data;
 	struct timeval now;

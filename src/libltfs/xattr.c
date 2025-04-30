@@ -1760,7 +1760,7 @@ const char *xattr_strip_name(const char *name)
  * @param vol LTFS volume
  * @return 0 on success or a negative value on error
  */
-int xattr_set_mountpoint_length(struct dentry *d, const char* value, size_t size )
+int xattr_set_mountpoint_length(struct dentry *d, const char *value, size_t size )
 {
 #ifdef POSIXLINK_ONLY
 	return 0;

@@ -113,7 +113,7 @@ const char *ltfs_format_version()
 	return LTFS_INDEX_VERSION_STR;
 }
 
-static inline char* _get_barcode(struct ltfs_volume *vol)
+static inline char *_get_barcode(struct ltfs_volume *vol)
 {
 	char *barcode = NULL;
 
@@ -2378,18 +2378,18 @@ size_t ltfs_max_cache_size(struct ltfs_volume *vol)
  * @param vol LTFS volume
  * @return 0 on success or a negative value on error
  */
-int ltfs_write_index(char partition, char* reason, struct ltfs_volume* vol)
+int ltfs_write_index(char partition, char *reason, struct ltfs_volume* vol)
 {
 	int ret, ret_mam;
 	struct tape_offset old_selfptr, old_backptr;
 	struct ltfs_timespec modtime_old = { .tv_sec = 0, .tv_nsec = 0 };
 	bool generation_inc = false;
 	struct tc_position physical_selfptr;
-	char* cache_path_save = NULL;
+	char *cache_path_save = NULL;
 	bool write_perm = (strcmp(reason, SYNC_WRITE_PERM) == 0);
 	bool update_vollock = false;
 	int volstat = -1, new_volstat = 0;
-	char* bc_print = NULL;
+	char *bc_print = NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
@@ -2635,9 +2635,9 @@ out_write_perm:
  * @param vol LTFS volume
  * @return 0 on success or a negative value on error
  */
-int ltfs_save_index_to_disk(const char* work_dir, char* reason, bool need_gen, struct ltfs_volume* vol)
+int ltfs_save_index_to_disk(const char *work_dir, char *reason, bool need_gen, struct ltfs_volume* vol)
 {
-	char* path;
+	char *path;
 	int ret;
 
 	CHECK_ARG_NULL(work_dir, -LTFS_NULL_ARG);
@@ -3492,13 +3492,13 @@ out:
  * @param vol LTFS volume
  * @return 0 on success or a negative value on error
  */
-int ltfs_sync_index(char* reason, bool index_locking, struct ltfs_volume* vol)
+int ltfs_sync_index(char *reason, bool index_locking, struct ltfs_volume* vol)
 {
 	int ret = 0, ret_r = 0;
 	bool dirty;
 	char partition;
 	bool dp_index_file_end, ip_index_file_end;
-	char* bc_print = NULL;
+	char *bc_print = NULL;
 
 start:
 	ret = ltfs_get_partition_readonly(ltfs_dp_id(vol), vol);
@@ -3615,7 +3615,7 @@ start:
  * @return 0 on success or a negative value on error
  */
 int ltfs_traverse_index_no_eod(struct ltfs_volume* vol, char partition, unsigned int gen,
-	f_index_found func, void** list, void* priv)
+	f_index_found func, void** list, void *priv)
 {
 	int ret, func_ret;
 
@@ -3691,7 +3691,7 @@ int ltfs_traverse_index_no_eod(struct ltfs_volume* vol, char partition, unsigned
  * @return 0 on success or a negative value on error
  */
 int ltfs_traverse_index_forward(struct ltfs_volume* vol, char partition, unsigned int gen,
-	f_index_found func, void** list, void* priv)
+	f_index_found func, void** list, void *priv)
 {
 	int ret, func_ret;
 	struct tape_offset last_index;
@@ -3777,7 +3777,7 @@ int ltfs_traverse_index_forward(struct ltfs_volume* vol, char partition, unsigne
  * @return 0 on success or a negative value on error
  */
 int ltfs_traverse_index_backward(struct ltfs_volume* vol, char partition, unsigned int gen,
-	f_index_found func, void** list, void* priv)
+	f_index_found func, void** list, void *priv)
 {
 	int ret, func_ret;
 

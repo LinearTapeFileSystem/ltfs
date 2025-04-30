@@ -161,7 +161,7 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 			ret = -ENOMEM;
 			goto out_free;
 		}
-		char* contextVal = NULL;
+		char *contextVal = NULL;
 		option = arch_strtok(line, " \t", contextVal);
 		if (! option) {
 			/* Failed to parse LTFS dcache configuration rules: invalid option '%s' */

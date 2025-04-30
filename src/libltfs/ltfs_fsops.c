@@ -1890,7 +1890,7 @@ int ltfs_fsops_flush(struct dentry *d, bool closeflag, struct ltfs_volume *vol)
 	return ret;
 }
 
-int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, struct ltfs_volume *vol)
+int ltfs_fsops_symlink_path(const char *to, const char *from, ltfs_file_id *id, struct ltfs_volume *vol)
 {
 	struct dentry *d;
 	bool use_iosche=false;
@@ -1940,7 +1940,7 @@ int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, 
 	return ret;
 }
 
-int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file_id *id, struct ltfs_volume *vol)
+int ltfs_fsops_readlink_path(const char *path, char *buf, size_t size, ltfs_file_id *id, struct ltfs_volume *vol)
 {
 	struct dentry *d;
 	bool use_iosche=false;
@@ -1996,7 +1996,7 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 	return 0; /* Shall be return 0, if success */
 }
 
-int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* buf, size_t size )
+int ltfs_fsops_target_absolute_path(const char *link, const char *target, char *buf, size_t size )
 {
 	char *work_buf, *target_buf, *temp_buf, *token, *next_token; /* work buffers for string */
 	int  len=0, len2=0;                                          /* work variables for string length */
@@ -2046,7 +2046,7 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 		temp_buf = strrchr(work_buf, '/'); /* get "/link.txt" from "/aaa/bbb/link.txt" */
 		len -= strlen(temp_buf);           /* length of "/aaa/bbb" */
 	}
-	char* contextVal = NULL;
+	char *contextVal = NULL;
 	/* Split target path directory then modify current directory with target path information */
 	token = arch_strtok(target_buf, "/", contextVal);     /*  get ".." from "../ccc/target.txt" */
 	while (token) {

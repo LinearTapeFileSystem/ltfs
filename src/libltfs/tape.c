@@ -2815,7 +2815,7 @@ int tape_takedump_drive(struct device_data *dev, bool nonforced_dump)
 #define CRYPTO_STATUS         (24)
 #define MEDIUM_SUPPORT_CRYPTO (0x01)
 
-char* tape_get_media_encrypted(struct device_data *dev)
+char *tape_get_media_encrypted(struct device_data *dev)
 {
 	unsigned char buf[TC_MP_READ_WRITE_CTRL_SIZE] = {0};
 	int ret = -EDEV_UNKNOWN;
@@ -3081,7 +3081,7 @@ int tape_set_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr, 
 		return -1;
 	}
 
-	unsigned char* attr_data = NULL;
+	unsigned char *attr_data = NULL;
 	attr_data = (unsigned char*)malloc(sizeof(unsigned char*)*(attr_size +TC_MAM_PAGE_HEADER_SIZE));
 	if (attr_data == NULL)	return -LTFS_NO_MEMORY;
 	ltfs_u16tobe(attr_data, type); 			/* set attribute type	*/
@@ -3234,7 +3234,7 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 		break;
 	}
 
-	unsigned char* attr_data = NULL;
+	unsigned char *attr_data = NULL;
 	attr_data = malloc(sizeof(char*) * (attr_len + TC_MAM_PAGE_HEADER_SIZE));
 	if (attr_data == NULL)	return -LTFS_NO_MEMORY;
 	ret = dev->backend->read_attribute(dev->backend_data,

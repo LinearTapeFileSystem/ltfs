@@ -1172,7 +1172,7 @@ void ltfs_fuse_umount(void *userdata)
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_UNMOUNT), 0, 0);
 }
 
-int ltfs_fuse_symlink(const char* to, const char* from)
+int ltfs_fuse_symlink(const char *to, const char *from)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	ltfs_file_id id;
@@ -1187,7 +1187,7 @@ int ltfs_fuse_symlink(const char* to, const char* from)
 	return errormap_fuse_error(ret);
 }
 
-int ltfs_fuse_readlink(const char* path, char* buf, size_t size)
+int ltfs_fuse_readlink(const char *path, char *buf, size_t size)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	ltfs_file_id id;

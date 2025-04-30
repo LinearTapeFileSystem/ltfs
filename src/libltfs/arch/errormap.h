@@ -75,7 +75,7 @@ int errormap_fuse_error(int val);
  * @param val Error code to look up in the table. This value must be less than or equal to zero.
  * @return pointer of the mapped message. if val is not found in the error table, NULL is returned.
  */
-char* errormap_msg_id(int val);
+char *errormap_msg_id(int val);
 
 #ifdef __cplusplus
 }

@@ -74,7 +74,7 @@ extern "C" {
             }                                                   \
         }while(0)
 
-    inline void arch_strcpy_limited(char* dest, const char* src, int count)
+    inline void arch_strcpy_limited(char *dest, const char *src, int count)
     {
         int i;
         for (i = 0; i < (count) && (src)[i] != '\0'; i++) {

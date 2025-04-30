@@ -72,15 +72,15 @@
 #include "libltfs/arch/ltfs_arch_ops.h"
 
 #ifdef _WIN32
-char* my_basename(char* path) {
-	char* base = strrchr(path, '\\');
+char *my_basename(char *path) {
+	char *base = strrchr(path, '\\');
 	return base ? base + 1 : path;
 }
 
-char* my_dirname(char* path) {
+char *my_dirname(char *path) {
 	static char buffer[256];
 	arch_strcpy_auto(buffer, path);
-	char* last_slash = strrchr(buffer, '\\');
+	char *last_slash = strrchr(buffer, '\\');
 	if (last_slash) {
 		*last_slash = '\0';
 	}
@@ -400,19 +400,19 @@ void filedebug_help_message(const char *progname)
 	ltfsresult(30199I, filedebug_default_device);
 }
 #ifdef mingw_PLATFORM
-char* dirname(char* path) {
+char *dirname(char *path) {
 	if (!path || !*path) {
 		return ".";
 	}
 
 	// Create a copy of the input path to avoid modifying the original
-	char* copy = _strdup(path);
+	char *copy = _strdup(path);
 	if (!copy) {
 		return NULL;
 	}
 
 	// Find the last directory separator
-	char* last_sep = strrchr(copy, '\\');
+	char *last_sep = strrchr(copy, '\\');
 	if (!last_sep) {
 		last_sep = strrchr(copy, '/'); // Handle forward slashes
 	}

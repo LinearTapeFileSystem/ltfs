@@ -171,7 +171,7 @@ int ltfs_get_days_of_year(int64_t nYear)
 	return nDays;
 }
 
-int ltfs_get_mday_from_yday(int64_t nYear, int nYday, int* pnMonth)
+int ltfs_get_mday_from_yday(int64_t nYear, int nYday, int *pnMonth)
 {
 	int i = 0;
 	int nMday = nYday;

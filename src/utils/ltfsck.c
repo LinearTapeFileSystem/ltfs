@@ -70,7 +70,7 @@
 #ifdef mingw_PLATFORM
 static 
 #endif
-volatile char* copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
+volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
 #ifdef __APPLE__
@@ -99,18 +99,18 @@ enum {
 
 struct other_check_opts {
 	struct config_file* config; /**< Configurate data read from the global LTFS config file. */
-	char* devname;              /**< Device to format */
-	char* backend_path;         /**< Path to tape backend shared library */
-	char* kmi_backend_name;     /**< Name or path to the key manager interface backend library */
+	char *devname;              /**< Device to format */
+	char *backend_path;         /**< Path to tape backend shared library */
+	char *kmi_backend_name;     /**< Name or path to the key manager interface backend library */
 	int  op_mode;               /**< Operation mode */
 	int  search_mode;           /**< Search mode for index */
-	char* str_gen;              /**< Rollback point specified by command line (generation)*/
+	char *str_gen;              /**< Rollback point specified by command line (generation)*/
 	unsigned int point_gen;     /**< Rollback point (generation) */
 	bool erase_history;         /**< overwrite existing data at rollback */
 	bool recover_blocks;        /**< Recover unreferenced blocks at the ends of the partitions? */
 	bool deep_recovery;         /**< Recover EOD missing cartridge? */
 	int verbosity;              /**< Print extra messages? */
-	char* prg_name;             /**< Program name */
+	char *prg_name;             /**< Program name */
 	bool quiet;                 /**< Suppress information messages */
 	bool trace;                 /**< Generate debug output */
 	bool syslogtrace;           /**< Generate debug output to stderr and syslog*/
@@ -897,7 +897,7 @@ void _print_index(struct ltfs_volume* vol, struct index_info* list, struct other
 #else
 	}
 	else if (strcmp(t_st->tm_zone, "UTC") != 0) {
-		const char* tz = getenv("TZ");
+		const char *tz = getenv("TZ");
 		setenv("TZ", "", 1);
 		tzset();
 		t_st = get_localtime(&list->mod_time.tv_sec);
@@ -1474,7 +1474,7 @@ int _ltfsck_validate_options(struct other_check_opts* opt)
 				return LTFSCK_USAGE_SYNTAX_ERROR;
 			}
 			else {
-				char* invalid_start;
+				char *invalid_start;
 				errno = 0;
 				opt->point_gen = strtoul(opt->str_gen, &invalid_start, 0);
 				if ((*invalid_start == '\0') && opt->str_gen)
@@ -1504,7 +1504,7 @@ int _ltfsck_validate_options(struct other_check_opts* opt)
 				return LTFSCK_USAGE_SYNTAX_ERROR;
 			}
 			else {
-				char* invalid_start;
+				char *invalid_start;
 				errno = 0;
 				opt->point_gen = strtoul(opt->str_gen, &invalid_start, 0);
 				if ((*invalid_start == '\0') && opt->str_gen)

@@ -1329,7 +1329,7 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 		ret = fs_dentry_lookup(d, &name);
 		if (ret<0) goto out_func;
 
-		char* contextVal = NULL;
+		char *contextVal = NULL;
 		tok = arch_strtok( name+1, "/", contextVal);
 		next_tok = arch_strtok( NULL, "/" , contextVal);
 

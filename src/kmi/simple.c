@@ -84,7 +84,7 @@ static struct fuse_opt kmi_simple_options[] = {
  */
 void *simple_init(struct ltfs_volume *vol)
 {
-	void* km;
+	void *km;
 
 	km = key_format_ltfs_init(vol);
 	if (km)

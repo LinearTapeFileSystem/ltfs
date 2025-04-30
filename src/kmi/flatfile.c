@@ -159,7 +159,7 @@ static int convert_option(const unsigned char * const path, unsigned char **dk_l
  */
 void *flatfile_init(struct ltfs_volume *vol)
 {
-	void* km;
+	void *km;
 
 	km = key_format_ltfs_init(vol);
 	if (km)

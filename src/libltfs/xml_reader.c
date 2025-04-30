@@ -502,11 +502,11 @@ int xml_parse_time(bool msg, const char *fmt_time, struct ltfs_timespec *rawtime
  * This function detects whether the Index being parsed ends in a file mark, and if so, it
  * positions the tape before the file mark.
  */
-int xml_input_tape_read_callback(void* context, char* buffer, int len)
+int xml_input_tape_read_callback(void *context, char *buffer, int len)
 {
 	struct xml_input_tape* ctx = context;
 	ssize_t nread, nr2;
-	char* buf2;
+	char *buf2;
 	int bytes_saved, bytes_remaining, ret_sp;
 
 	if (len == 0)

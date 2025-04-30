@@ -365,7 +365,7 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry* dir,
 	const struct ltfs_index* idx, struct ltfsee_cache* offset_c, struct ltfsee_cache* sync_list)
 {
 	size_t i;
-	char* offset_name, * sync_name;
+	char *offset_name, * sync_name;
 	struct ltfsee_cache* offset = offset_c, * sync = sync_list;
 	struct name_list* list_ptr, * list_tmp;
 	int ret;
@@ -718,7 +718,7 @@ xmlBufferPtr xml_make_schema(const char *creator, const struct ltfs_index *idx)
 	return buf;
 }
 
-static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
+static int _commit_offset_caches(const char *path, const struct ltfs_index *idx)
 {
 	int ret = 0, fd = -1;
 	char *offset_name = NULL, *sync_name = NULL;
@@ -822,13 +822,13 @@ int xml_schema_to_file(const char *filename, const char *creator,
  * @param vol LTFS volume.
  * @return 0 on success or a negative value on error.
  */
-int xml_schema_to_tape(char* reason, struct ltfs_volume* vol)
+int xml_schema_to_tape(char *reason, struct ltfs_volume* vol)
 {
 	int ret, bk = -1;
 	xmlOutputBufferPtr write_buf;
 	xmlTextWriterPtr writer;
 	struct xml_output_tape* out_ctx;
-	char* creator = NULL;
+	char *creator = NULL;
 	bool immed = false;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);

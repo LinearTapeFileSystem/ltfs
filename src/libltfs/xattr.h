@@ -88,7 +88,7 @@ int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t s
 	struct xattr_info *xattr);
 int xattr_do_remove(struct dentry *d, const char *name, bool force, struct ltfs_volume *vol);
 const char *xattr_strip_name(const char *name);
-int xattr_set_mountpoint_length(struct dentry *d, const char* value, size_t size);
+int xattr_set_mountpoint_length(struct dentry *d, const char *value, size_t size);
 
 #ifdef __cplusplus
 }

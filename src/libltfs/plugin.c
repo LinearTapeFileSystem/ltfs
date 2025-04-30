@@ -93,7 +93,7 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 	pl->lib_handle = dlopen(lib_path, RTLD_NOW);
 	if (! pl->lib_handle) {
 #ifdef _MSC_VER	
-		char* err = dlerror();
+		char *err = dlerror();
 		ltfsmsg(LTFS_ERR, 11261E,err);
 		free(err);
 #else
@@ -123,7 +123,7 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 
 	if (! get_ops) {
 #ifdef _MSC_VER	
-		char* err = dlerror();
+		char *err = dlerror();
 		ltfsmsg(LTFS_ERR, 11263E, err);
 		free(err);
 #else
@@ -152,7 +152,7 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 
 	if (! get_messages) {
 #ifdef _MSC_VER	
-		char* err = dlerror();
+		char *err = dlerror();
 		ltfsmsg(LTFS_ERR, 11284E, err);
 		free(err);
 #else
@@ -195,7 +195,7 @@ int plugin_unload(struct libltfs_plugin *pl)
 	/* Valgrind cannot resolve function name after closing shared library */
 	if (dlclose(pl->lib_handle)) {
 #ifdef _MSC_VER	
-		char* err = dlerror();
+		char *err = dlerror();
 		ltfsmsg(LTFS_ERR, 11262E, err);
 		free(err);
 #else
@@ -235,7 +235,7 @@ static void print_help_message(const char *progname, void *ops, const char * con
 		ltfsmsg(LTFS_ERR, 11317E, type);
 }
 
-void plugin_usage(const char* progname, const char *type, struct config_file *config)
+void plugin_usage(const char *progname, const char *type, struct config_file *config)
 {
 	struct libltfs_plugin pl = {0};
 	char **backends;
