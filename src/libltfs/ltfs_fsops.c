@@ -2023,12 +2023,14 @@ int ltfs_fsops_target_absolute_path(const char *link, const char *target, char *
 	int work_buf_len = len + len2 + 1;
 	work_buf = malloc(work_buf_len);
 	if (!work_buf)  {
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_target_absolute_path: work_buf");
 		return -LTFS_NO_MEMORY;
 	}
 	int target_buf_len = len2 + 1;
 	target_buf = malloc(target_buf_len);
 	if (!target_buf) {
 		free(work_buf);
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_target_absolute_path: target_buf");
 		return -LTFS_NO_MEMORY;
 	}
 

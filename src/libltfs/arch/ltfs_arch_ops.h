@@ -126,7 +126,7 @@ extern "C" {
 
     #define arch_strcpy(dest, size, src) strcpy_s((dest), (size), (src))
 
-    #define arch_strncpy(dest, src, size, count) strncpy_s((dest), (size), (src), (count))
+    #define arch_strncpy(dest, src, size, cnt) strncpy_s((dest), (size), (src), (cnt))
 
     #define arch_strcat(dest, size, src) strcat_s((dest), (size), (src))
 
@@ -175,7 +175,7 @@ extern "C" {
 
     #define arch_strcpy(dest, unused, src) ({if(unused || !unused) {strcpy(dest, src);}})
 
-    #define arch_strncpy(dest, src, unused, count) strncpy(dest, src, count)
+    #define arch_strncpy(dest, src, unused, cnt) strncpy(dest, src, cnt)
 
     #define arch_strcat(dest, unused, src)( {if(unused || !unused){ strcat(dest, src);}})
 

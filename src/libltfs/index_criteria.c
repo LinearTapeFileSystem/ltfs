@@ -202,9 +202,10 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 	int ret = 0, multiplier = 1;
 	size_t sizelen = 0;
 	char *rule = NULL, last, *ptr;
-	int ruleLen = (sizeof(char) * (int)(len + 1));
-	rule = (char*)calloc(ruleLen,sizeof(char));
+	int lenrule = (sizeof(char) * (int)(len + 1));
+	rule = (char*)calloc(lenrule,sizeof(char));
 	if (rule == NULL) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 	sizelen = strlen("size=");
@@ -266,6 +267,7 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 	rulebuf = (char*)malloc(sizeof(char) * (len + 1));
 	if (rulebuf == NULL)
 	{
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 	struct ltfs_name *rule_ptr;
