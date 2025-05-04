@@ -193,9 +193,9 @@ int simple_parse_opts(void *opt_args)
 			+ strlen((char *) key[i].dk) + strlen(":") + strlen((char *) key[i].dki) + 1;
 
 		if (priv.dk_list)
-			priv.dk_list = (char*)realloc(priv.dk_list, dk_list_len);
+			priv.dk_list = (unsigned char*)realloc(priv.dk_list, dk_list_len);
 		else
-			priv.dk_list = (char*)calloc(dk_list_len, sizeof(unsigned char));
+			priv.dk_list = (unsigned char*)calloc(dk_list_len, sizeof(unsigned char));
 		if (priv.dk_list == NULL) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
