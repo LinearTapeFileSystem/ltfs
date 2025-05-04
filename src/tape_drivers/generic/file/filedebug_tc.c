@@ -109,10 +109,10 @@ char* my_dirname(char* path) {
 #include "filedebug_conf_tc.h"
 
 #ifndef _MSC_VER
-static
-#endif // !_MSC_VER
-volatile char* copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
+static volatile char* copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
+#endif // !_MSC_VER
+
 
 /* Default directory where the emulated tape contents go to */
 #ifdef mingw_PLATFORM
