@@ -49,12 +49,10 @@
 #include "arch/win/win_util.h"
 #include <windows.h>
 #endif
-
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
-
 #ifndef mingw_PLATFORM
 #include <syslog.h>
 #endif
@@ -77,12 +75,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include "arch/win/winlog.h"
 #else
 #include <dlfcn.h>
 #include <sys/types.h>
 #endif
-#include <unistd.h>
+
 #include "libltfs/ltfslogging.h"
 #include "libltfs/ltfs_thread.h"
 #include "libltfs/ltfs_locking.h"
@@ -90,7 +89,7 @@
 #include "queue.h"
 #include "ltfssnmp.h"
 
-/* Some hard-coded message bits. */
+ /* Some hard-coded message bits. */
 #define MSG_PREFIX_POSIX_TID   "%016llx LTFS%s "
 #define MSG_PREFIX_TID         "%lx LTFS%s "
 #define MSG_PREFIX             "LTFS%s "
@@ -102,8 +101,8 @@ struct plugin_bundle {
 	TAILQ_ENTRY(plugin_bundle) list;
 	int32_t start_id;                  /**< First message ID allocated to this plugin */
 	int32_t end_id;                    /**< Last message ID allocated to this plugin */
-	UResourceBundle *bundle_root;      /**< Root resource bundle for this plugin */
-	UResourceBundle *bundle_messages;  /**< Resource bundle containing this plugin's messages */
+	UResourceBundle* bundle_root;      /**< Root resource bundle for this plugin */
+	UResourceBundle* bundle_messages;  /**< Resource bundle containing this plugin's messages */
 };
 
 /* Syslog levels corresponding to the LTFS logging levels defined in libltfs/ltfslogging.h. */
@@ -119,9 +118,9 @@ static int syslog_levels[] = {
 };
 
 #ifdef mingw_PLATFORM
-char *libltfs_dat;
-char *internal_error_dat;
-char *tape_common_dat;
+char* libltfs_dat;
+char* internal_error_dat;
+char* tape_common_dat;
 #else
 U_CFUNC char libltfs_dat[]; /* U_CFUNC is an ICU synonym for extern. */
 U_CFUNC char internal_error_dat[]; /* U_CFUNC is an ICU synonym for extern. */
@@ -135,23 +134,23 @@ bool ltfs_print_thread_id = false;
 static bool ltfs_use_syslog = false;
 
 /* Resource bundles, used for quick indexing into message arrays. */
-static UResourceBundle *bundle_fallback;
+static UResourceBundle* bundle_fallback;
 static TAILQ_HEAD(message_struct, plugin_bundle) plugin_bundles;
 
 /* Static output buffer: needed to avoid allocating memory on error. */
 static ltfs_mutex_t output_lock;
 static char output_buf[OUTPUT_BUF_SIZE];
 static char msg_buf[OUTPUT_BUF_SIZE * 2];
-static UConverter *output_conv = NULL;
+static UConverter* output_conv = NULL;
 
 #ifdef mingw_PLATFORM
-static int _open_message_file(char *bundle_name, void **bundle_data);
+static int _open_message_file(char* bundle_name, void** bundle_data);
 #endif
 int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 {
 	int ret;
 	UErrorCode err = U_ZERO_ERROR;
-	struct plugin_bundle *pl;
+	struct plugin_bundle* pl;
 
 	/* Open converter for generating output in the system locale. */
 	ret = ltfs_mutex_init(&output_lock);
@@ -174,7 +173,7 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 #endif
 
 	/* Load the libltfs message bundle and the primary message set */
-	ret = ltfsprintf_load_plugin("libltfs", libltfs_dat, (void **)&pl);
+	ret = ltfsprintf_load_plugin("libltfs", libltfs_dat, (void**)&pl);
 	if (ret < 0) {
 		fprintf(stderr, "LTFS11293E Cannot load messages for libltfs (%d)\n", ret);
 		ltfsprintf_finish();
@@ -191,7 +190,7 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 	}
 
 	/* Load the libltfs message bundle and the primary message set */
-	ret = ltfsprintf_load_plugin("internal_error", internal_error_dat, (void **)&pl);
+	ret = ltfsprintf_load_plugin("internal_error", internal_error_dat, (void**)&pl);
 	if (ret < 0) {
 		fprintf(stderr, "LTFS11293E Cannot load messages for internal error (%d)\n", ret);
 		ltfsprintf_finish();
@@ -199,7 +198,7 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 	}
 
 	/* Load the libltfs message bundle and the primary message set */
-	ret = ltfsprintf_load_plugin("tape_common", tape_common_dat, (void **)&pl);
+	ret = ltfsprintf_load_plugin("tape_common", tape_common_dat, (void**)&pl);
 	if (ret < 0) {
 		fprintf(stderr, "LTFS11293E Cannot load messages for tape backend common messages (%d)\n", ret);
 		ltfsprintf_finish();
@@ -225,7 +224,7 @@ void ltfsprintf_finish()
 		bundle_fallback = NULL;
 	}
 	while (1) {
-		if (! TAILQ_EMPTY(&plugin_bundles))
+		if (!TAILQ_EMPTY(&plugin_bundles))
 			ltfsprintf_unload_plugin(TAILQ_LAST(&plugin_bundles, message_struct));
 		else
 			break;
@@ -263,11 +262,11 @@ int ltfsprintf_set_log_level(int log_level)
 }
 
 
-int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **messages)
+int ltfsprintf_load_plugin(const char* bundle_name, void* bundle_data, void** messages)
 {
 	UErrorCode err = U_ZERO_ERROR;
-	UResourceBundle *bundle;
-	struct plugin_bundle *pl;
+	UResourceBundle* bundle;
+	struct plugin_bundle* pl;
 
 	CHECK_ARG_NULL(bundle_name, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(messages, -LTFS_NULL_ARG);
@@ -284,7 +283,7 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 #endif
 
 	pl = calloc(1, sizeof(struct plugin_bundle));
-	if (! pl) {
+	if (!pl) {
 		if (libltfs_dat_init)
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		else
@@ -352,7 +351,8 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 			pl->end_id = pl->start_id + 999;
 		}
 		ures_close(bundle);
-	} else
+	}
+	else
 		pl->end_id = pl->start_id + 999;
 
 	*messages = pl;
@@ -362,9 +362,9 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 	return 0;
 }
 
-void ltfsprintf_unload_plugin(void *handle)
+void ltfsprintf_unload_plugin(void* handle)
 {
-	struct plugin_bundle *pl = handle;
+	struct plugin_bundle* pl = handle;
 
 	if (pl) {
 		ltfs_mutex_lock(&output_lock);
@@ -377,16 +377,16 @@ void ltfsprintf_unload_plugin(void *handle)
 }
 
 /* Print a formatted message in the current system locale. */
-int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, ...)
+int ltfsmsg_internal(bool print_id, int level, char** msg_out, const char* _id, ...)
 {
-	const UChar *format_uc = NULL;
+	const UChar* format_uc = NULL;
 	int32_t prefix_len, format_len;
 	int32_t id_val;
 	char id[16];
 	size_t idlen;
 	UErrorCode err = U_ZERO_ERROR;
 	va_list argp;
-	struct plugin_bundle *entry;
+	struct plugin_bundle* entry;
 
 	/*
 	 * We accept quoted id used in HPE backend source,
@@ -399,14 +399,15 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	if (idlen > 1 && _id[0] == '"' && _id[idlen - 1] == '"') {
 		arch_strcpy_limited(id, _id + 1, idlen - 2);
 		id[idlen - 2] = '\0';
-	} else {
+	}
+	else {
 		arch_strcpy_auto(id, _id);
 	}
 
 	id_val = atol(id);
 
 	/* Check loaded plugins for the message, most recently loaded first */
-	if (! TAILQ_EMPTY(&plugin_bundles)) {
+	if (!TAILQ_EMPTY(&plugin_bundles)) {
 		ltfs_mutex_lock(&output_lock);
 		TAILQ_FOREACH(entry, &plugin_bundles, list) {
 			if (entry->start_id <= id_val && id_val <= entry->end_id) {
@@ -415,10 +416,12 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 				if (U_FAILURE(err) && err != U_MISSING_RESOURCE_ERROR) {
 					ltfs_mutex_unlock(&output_lock);
 					goto internal_error;
-				} else if (U_SUCCESS(err))
+				}
+				else if (U_SUCCESS(err))
 					break;
 				format_uc = NULL;
-			} else if (id[0] == 'I' || id[0] == 'D') {
+			}
+			else if (id[0] == 'I' || id[0] == 'D') {
 				err = U_ZERO_ERROR;
 				format_uc = ures_getStringByKey(entry->bundle_messages, id, &format_len, &err);
 				if (U_SUCCESS(err))
@@ -431,7 +434,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	}
 
 	/* Try to get a fallback message if we didn't find the real message */
-	if (! format_uc) {
+	if (!format_uc) {
 		format_uc = ures_getStringByKey(bundle_fallback, "notfound", &format_len, &err);
 		if (U_FAILURE(err))
 			goto internal_error;
@@ -459,7 +462,8 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 			ltfs_mutex_unlock(&output_lock);
 			goto internal_error;
 		}
-	} else if (U_FAILURE(err)) {
+	}
+	else if (U_FAILURE(err)) {
 		ltfs_mutex_unlock(&output_lock);
 		goto internal_error;
 	}
@@ -469,9 +473,10 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		va_start(argp, _id);
 		vsyslog(level, output_buf, argp);
 		va_end(argp);
-	}__except (EXCEPTION_EXECUTE_HANDLER) {
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER) {
 		EXCEPTION_POINTERS* exceptionInfo = GetExceptionInformation();
-		fprintf(stderr,"An exception occurred when logging! Exception code: 0x%X\n", exceptionInfo->ExceptionRecord->ExceptionCode);
+		fprintf(stderr, "An exception occurred when logging! Exception code: 0x%X\n", exceptionInfo->ExceptionRecord->ExceptionCode);
 	}
 #else
 	va_start(argp, _id);
@@ -493,7 +498,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 
 	if (msg_out) {
 		va_start(argp, _id);
-		arch_vsprintf(msg_buf,sizeof(msg_buf), output_buf, argp);
+		arch_vsprintf(msg_buf, sizeof(msg_buf), output_buf, argp);
 		va_end(argp);
 		*msg_out = arch_strdup(msg_buf);
 	}
@@ -502,12 +507,12 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	if (is_snmp_enabled()) {
 		if (is_snmp_trapid(id) == true) {
 			/* Send a trap of Info (id and pos+1) */
-			char *pos;
+			char* pos;
 			va_start(argp, _id);
-			arch_vsprintf(msg_buf,sizeof(msg_buf), output_buf, argp);
+			arch_vsprintf(msg_buf, sizeof(msg_buf), output_buf, argp);
 			va_end(argp);
 			pos = strstr(msg_buf, " ");
-			send_ltfsInfoTrap(pos+1);
+			send_ltfsInfoTrap(pos + 1);
 		}
 	}
 #endif
@@ -530,7 +535,8 @@ internal_error:
 				syslog(syslog_levels[LTFS_TRACE], MSG_PREFIX_TID MSG_FALLBACK, (unsigned long)ltfs_get_thread_id(), id);
 			else
 				syslog(syslog_levels[level], MSG_PREFIX_TID MSG_FALLBACK, (unsigned long)ltfs_get_thread_id(), id);
-		} else {
+		}
+		else {
 			if (level <= LTFS_ERR)
 				syslog(syslog_levels[LTFS_ERR], MSG_PREFIX MSG_FALLBACK, id);
 			else if (level >= LTFS_TRACE)
