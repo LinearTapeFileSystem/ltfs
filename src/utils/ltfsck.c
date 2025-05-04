@@ -55,9 +55,10 @@
 #include <sys/param.h>
 #endif /* mingw_PLATFORM */
 
-#include <fuse.h>
 #include <getopt.h>
+
 #include "libltfs/ltfs_fuse_version.h"
+#include <fuse.h>
 
 #include "libltfs/ltfs_internal.h"
 #include "libltfs/ltfs.h"
