@@ -869,7 +869,7 @@ struct read_cartridge_location {
 struct read_keys {
     uint  generation;                          /* counter for PR-out requests */
     uint  length;                              /* bytes in the Res. Key list  */
-    char *reserve_key_list;                    /* list of reservation keys    */
+    char* reserve_key_list;                    /* list of reservation keys    */
 };
 
 struct reserve_descriptor {
@@ -1213,14 +1213,14 @@ struct verify_data {
 
 struct sioc_pass_through {
 	unsigned char cmd_length;     /* Input: Length of SCSI command        */
-	unsigned char *cdb;           /* Input: SCSI command descriptor block */
+	unsigned char* cdb;           /* Input: SCSI command descriptor block */
 	uint buffer_length;           /* Input: Length of data buffer         */
                                       /* Output: bytes actually transferred   */
 	unsigned char *buffer;        /* Input/Output: data transfer or NULL  */
 	unsigned int data_direction;  /* Input: Data transfer direction       */
 	uint timeout;                 /* Input: Timeout in seconds            */
 	unsigned char sense_length;   /* Input/Output: sense data bytes       */
-	unsigned char *sense;         /* Output: Sense when sense length > 0  */
+	unsigned char* sense;         /* Output: Sense when sense length > 0  */
 	int resid;                    /* Output: resid bytes after transfer   */
 	int32_t result;               /* Output: result from lower driver     */
 	unsigned char msg_status;     /* Output: from SCSI transport layer    */

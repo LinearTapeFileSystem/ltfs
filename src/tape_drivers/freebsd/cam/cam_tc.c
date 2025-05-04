@@ -90,7 +90,7 @@
 */
 int open_sa_pass(struct camtape_data *softc, const char *saDeviceName);
 
-int open_sa_device(struct camtape_data *softc, const char *saDeviceName);
+int open_sa_device(struct camtape_data *softc, const char* saDeviceName);
 void close_sa_device(struct camtape_data *softc);
 
 void close_cd_pass_device(struct camtape_data *softc);
@@ -4228,7 +4228,7 @@ int open_sa_pass(struct camtape_data *softc, const char *saDeviceName)
 	return 0;
 }
 
-int open_sa_device(struct camtape_data *softc, const char *saDeviceName)
+int open_sa_device(struct camtape_data *softc, const char* saDeviceName)
 {
 	int ret = 0;
 

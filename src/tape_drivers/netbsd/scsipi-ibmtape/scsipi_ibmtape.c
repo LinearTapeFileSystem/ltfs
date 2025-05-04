@@ -4052,7 +4052,7 @@ static int _cdb_spin(void *device, const uint16_t sps, unsigned char **buffer, s
 }
 
 int _cdb_spout(void *device, const uint16_t sps,
-			   unsigned char *const buffer, const size_t size)
+			   unsigned char* const buffer, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
 	int ret_ep = DEVICE_GOOD;

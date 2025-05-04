@@ -736,7 +736,7 @@ start:
 
 /** SCSI command handling of REPORT SUPPORTED OPERATION CODES
  */
-static int _cdb_rsoc(void *device, unsigned char *buf, uint32_t len)
+static int _cdb_rsoc(void* device, unsigned char *buf, uint32_t len)
 {
 	int ret = -EDEV_UNKNOWN;
 	struct iokit_data *priv = (struct iokit_data*)device;
@@ -3766,7 +3766,7 @@ static int _cdb_spin(void *device, const uint16_t sps, unsigned char **buffer, s
 }
 
 int _cdb_spout(void *device, const uint16_t sps,
-			   unsigned char *const buffer, const size_t size)
+			   unsigned char* const buffer, const size_t size)
 {
 	int ret = -EDEV_UNKNOWN;
 	struct iokit_data *priv = (struct iokit_data*)device;
