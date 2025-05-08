@@ -281,7 +281,7 @@ struct error_table standard_tape_errors[] = {
 	{0xFFFFFF, -EDEV_UNKNOWN,                   "Unknown Error code"},
 };
 
-int get_vendor_id(char* vendor)
+int get_vendor_id(char *vendor)
 {
 	if (!strncmp(vendor, IBM_VENDOR_ID, strlen(IBM_VENDOR_ID)))
 		return VENDOR_IBM;

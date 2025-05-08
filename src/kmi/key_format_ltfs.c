@@ -48,7 +48,7 @@
 */
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
+#include "arch/win/win_util.h"
 #endif
 #include "libltfs/ltfs.h"
 #include "libltfs/base64.h"

@@ -70,7 +70,7 @@ int iosched_flush(struct dentry *d, bool closeflag, struct ltfs_volume *vol);
 int iosched_truncate(struct dentry *d, off_t length, struct ltfs_volume *vol);
 uint64_t iosched_get_filesize(struct dentry *d, struct ltfs_volume *vol);
 int iosched_update_data_placement(struct dentry *d, struct ltfs_volume *vol);
-int iosched_set_profiler(char* work_dir, bool enable, struct ltfs_volume *vol);
+int iosched_set_profiler(char *work_dir, bool enable, struct ltfs_volume *vol);
 
 #ifdef __cplusplus
 }

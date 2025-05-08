@@ -59,7 +59,7 @@ extern "C" {
 #endif
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
+#include "arch/win/win_util.h"
 #endif
 
 #include "libltfs/ltfs_fuse_version.h"

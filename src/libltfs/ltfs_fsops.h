@@ -506,7 +506,7 @@ int ltfs_fsops_flush(struct dentry *d, bool closeflag, struct ltfs_volume *vol);
  *    - -LTFS_NULL_ARG if 'vol' is NULL
  *    - Another negative value if an internal error or device write error occurred.
  */
-int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, struct ltfs_volume *vol);
+int ltfs_fsops_symlink_path(const char *to, const char *from, ltfs_file_id *id, struct ltfs_volume *vol);
 
 /**
  * Read a target of the symbolic link node
@@ -520,7 +520,7 @@ int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, 
  *    - -LTFS_NULL_ARG if 'vol' is NULL
  *    - Another negative value if an internal error or device write error occurred.
  */
-int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file_id *id, struct ltfs_volume *vol);
+int ltfs_fsops_readlink_path(const char *path, char *buf, size_t size, ltfs_file_id *id, struct ltfs_volume *vol);
 
 /**
  * Change target path from relative to absolute (Use for Windows)
@@ -535,7 +535,7 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
  *    - -LTFS_SMALL_BUFFER if input buffer is smaller than the resolved string
  *    - Another negative value if an internal error or device write error occurred.
  */
-int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* buf, size_t size );
+int ltfs_fsops_target_absolute_path(const char *link, const char *target, char *buf, size_t size );
 
 /**
  * Flush all cached data to the medium and write index.

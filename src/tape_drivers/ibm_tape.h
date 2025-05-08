@@ -172,8 +172,8 @@ int  ibm_tape_init_timeout(struct timeout_tape **table, int type);
 #define ibm_tape_destroy_timeout destroy_timeout
 #define ibm_tape_get_timeout get_timeout
 
-unsigned char ibm_tape_assume_cart_type(const char* type_name);
-char* ibm_tape_assume_cart_name(unsigned char type);
+unsigned char ibm_tape_assume_cart_type(const char *type_name);
+char *ibm_tape_assume_cart_name(unsigned char type);
 
 int ibm_tape_is_mountable(const int drive_type,
 						 const char *barcode,

@@ -1085,7 +1085,7 @@ static inline unsigned char _assume_cartridge_type(char product, char btype)
 	return ctype;
 }
 
-unsigned char ibm_tape_assume_cart_type(const char* type_name)
+unsigned char ibm_tape_assume_cart_type(const char *type_name)
 {
 	unsigned char c_type = 0;
 
@@ -1099,7 +1099,7 @@ unsigned char ibm_tape_assume_cart_type(const char* type_name)
 	return c_type;
 }
 
-char* ibm_tape_assume_cart_name(unsigned char type)
+char *ibm_tape_assume_cart_name(unsigned char type)
 {
 	char *name = NULL;
 
@@ -1283,7 +1283,7 @@ int ibm_tape_genkey(unsigned char *key)
 #ifdef mingw_PLATFORM
 	memset(key, 0x00, KEYLEN);
 	*key = KEY_PREFIX_HOST;
-	strncpy(key + 1, "WINLTFS", KEYLEN - 1);
+	arch_strncpy_auto(key + 1, "WINLTFS", KEYLEN - 1);
 #else
 	unsigned char host[KEYLEN];
 
