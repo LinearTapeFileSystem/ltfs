@@ -471,7 +471,7 @@ int ltfsmsg_internal(bool print_id, int level, char** msg_out, const char* _id, 
 #ifdef mingw_PLATFORM
 	__try {
 		va_start(argp, _id);
-		vsyslog(level, output_buf, argp);
+		vsyslog2(level, output_buf, argp);
 		va_end(argp);
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER) {
