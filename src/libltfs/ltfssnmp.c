@@ -81,14 +81,15 @@ int read_trap_def_file(char *deffile)
 	char *trapfile=DEFAULT_DEFFILE;
 	char *strip_pos, *tok, *saveptr;
 	struct trap_entry *entry;
-	FILE *fp;
+	FILE *fp = NULL;
 
 	TAILQ_INIT(&trap_entries);
 
 	if (deffile != NULL)
 		trapfile = deffile;
 
-	fp = fopen(trapfile, TABLE_FILE_MODE);
+
+	arch_fopen(trapfile, TABLE_FILE_MODE, fp);
 	if (! fp) {
 		ret = -errno;
 		ltfsmsg(LTFS_ERR, 11268E, trapfile, ret);
@@ -121,7 +122,7 @@ int read_trap_def_file(char *deffile)
 					ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 					return -LTFS_NO_MEMORY;
 				}
-				entry->id = strdup(tok);
+				entry->id = arch_strdup(tok);
 				TAILQ_INSERT_TAIL(&trap_entries, entry, list);
 			}
 		}

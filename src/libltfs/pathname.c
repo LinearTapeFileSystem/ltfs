@@ -466,7 +466,7 @@ int _chars_valid_in_xml(UChar32 c)
 int _pathname_format_icu(const char *src, char **dest, bool validate, bool allow_slash)
 {
 	int ret;
-	UChar *utf16_name, *utf16_name_norm;
+	UChar *utf16_name = NULL, *utf16_name_norm = NULL;
 
 	/* convert to UTF-16 for normalization with ICU */
 	ret = _pathname_system_to_utf16_icu(src, &utf16_name);
@@ -923,7 +923,7 @@ int _pathname_system_to_utf16_icu(const char *src, UChar **dest)
 		return -LTFS_NO_MEMORY;
 	}
 
-	ucnv_toUChars(syslocale, *dest, destlen + 1, src, -1, &err);
+	ucnv_toUChars(syslocale, *dest, destlen + 1, src, strlen(src), &err);
 	if (U_FAILURE(err)) {
 		ltfsmsg(LTFS_ERR, 11249E, err, src);
 		ucnv_close(syslocale);
@@ -952,7 +952,7 @@ int _pathname_utf8_to_system_icu(const char *src, char **dest)
 	/* If current locale is UTF-8, no conversion needed */
 	syslocale = ucnv_getDefaultName();
 	if (! strcmp(syslocale, "UTF-8")) {
-		*dest = strdup(src);
+		*dest = arch_strdup(src);
 		if (! *dest)
 			return -LTFS_NO_MEMORY;
 		return 0;

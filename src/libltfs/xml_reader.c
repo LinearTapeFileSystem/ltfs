@@ -275,7 +275,7 @@ int xml_parse_uuid(char *out_val, const char *val)
 		ltfsmsg(LTFS_ERR, 17029E, val);
 		return -1;
 	}
-	strcpy(out_val, val);
+	arch_strcpy(out_val,(strlen(val) + 1), val);
 
 	for (i=0; i<36; ++i) {
 		if (i == 8 || i == 13 || i == 18 || i == 23) {
@@ -473,7 +473,7 @@ int xml_parse_time(bool msg, const char *fmt_time, struct ltfs_timespec *rawtime
 	CHECK_ARG_NULL(fmt_time, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(rawtime, -LTFS_NULL_ARG);
 
-	ret = sscanf(fmt_time, "%d-%2d-%2dT%2d:%2d:%2d.%9ldZ",
+	ret = arch_sscanf(fmt_time, "%d-%2d-%2dT%2d:%2d:%2d.%9ldZ",
 				 &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 				 &tm.tm_hour, &tm.tm_min, &tm.tm_sec,
 				 &rawtime->tv_nsec);
