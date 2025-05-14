@@ -77,14 +77,10 @@ extern "C" {
 static inline void arch_strcpy_limited(char *dest, const char *src, int count)
     {
         int i;
-        for (i = 0; i < (count) && (src)[i] != '\0'; i++) {
-
+        for (i = 0; i < (count) && (src)[i] != '\0'; i++) 
             (dest)[i] = (src)[i];
-        }
-        if (i < (count)) {
-
+        if (i < (count)) 
             (dest)[i] = '\0';
-        }
     }
 
 
