@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -216,9 +216,9 @@ int ltfs_read_labels(bool trial, struct ltfs_volume *vol)
 	/* Store label data in the supplied volume */
 	vol->label->creator = label0->creator;
 	label0->creator = NULL;
-	strncpy(vol->label->barcode, label0->barcode, 6);
+	arch_strcpy_auto(vol->label->barcode, label0->barcode);
 	vol->label->barcode[6] = '\0';
-	strncpy(vol->label->vol_uuid, label0->vol_uuid, 36);
+	arch_strcpy_auto(vol->label->vol_uuid, label0->vol_uuid);
 	vol->label->vol_uuid[36] = '\0';
 	vol->label->format_time = label0->format_time;
 	vol->label->blocksize = label0->blocksize;
@@ -592,7 +592,7 @@ int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_e
 		coh = &vol->ip_coh;
 	else
 		coh = &vol->dp_coh;
-	strcpy(coh->uuid, vol->label->vol_uuid);
+	arch_strcpy_auto(coh->uuid, vol->label->vol_uuid);
 	coh->count = vol->index->generation;
 	coh->set_id = vol->index->selfptr.block;
 
@@ -1083,7 +1083,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 		ltfs_index_free(&dp_index);
 		ltfs_index_free(&ip_index);
 		check_err(ltfs_index_alloc(&vol->index, vol), 11225E, out_unlock);
-		strcpy(vol->index->vol_uuid, vol->label->vol_uuid);
+		arch_strcpy_auto(vol->index->vol_uuid, vol->label->vol_uuid);
 		vol->index->mod_time = vol->label->format_time;
 		vol->index->root->creation_time = vol->index->mod_time;
 		vol->index->root->change_time = vol->index->mod_time;
@@ -1238,7 +1238,7 @@ int ltfs_update_cart_coherency(struct ltfs_volume *vol)
 		vol->ip_coh.version = 1; /* From PGA2 */
 		vol->ip_coh.volume_change_ref = current_vcr;
 		if (vol->ip_coh.uuid[0] == '\0')
-			strcpy(vol->ip_coh.uuid, vol->label->vol_uuid);
+			arch_strcpy_auto(vol->ip_coh.uuid, vol->label->vol_uuid);
 		tape_set_cart_coherency(vol->device, ltfs_part_id2num(ltfs_ip_id(vol), vol),
 			&vol->ip_coh);
 	}
@@ -1251,7 +1251,7 @@ int ltfs_update_cart_coherency(struct ltfs_volume *vol)
 		vol->dp_coh.version = 1; /* From PGA2 */
 		vol->dp_coh.volume_change_ref = current_vcr;
 		if (vol->dp_coh.uuid[0] == '\0')
-			strcpy(vol->dp_coh.uuid, vol->label->vol_uuid);
+			arch_strcpy_auto(vol->dp_coh.uuid, vol->label->vol_uuid);
 		tape_set_cart_coherency(vol->device, ltfs_part_id2num(ltfs_dp_id(vol), vol),
 			&vol->dp_coh);
 	}
@@ -1284,7 +1284,7 @@ int ltfs_write_index_conditional(char partition, struct ltfs_volume *vol)
 	return ret;
 }
 
-int ltfs_split_symlink( struct ltfs_volume *vol )
+int ltfs_split_symlink(struct ltfs_volume *vol)
 {
 	size_t i, size;
 	struct dentry *d, *workd;
@@ -1297,7 +1297,7 @@ int ltfs_split_symlink( struct ltfs_volume *vol )
 	if ( iosched_initialized(vol) ) use_iosche=true;
 
 	/* check lost_and_found directory and make if it doesn't exist */
-	asprintf( &lfdir, "/%s", LTFS_LOSTANDFOUND_DIR );
+	int pathsize = asprintf( &lfdir, "/%s", LTFS_LOSTANDFOUND_DIR );
 	ret = fs_path_lookup(lfdir, 0, &workd, vol->index);
 	if ( ret==-LTFS_NO_DENTRY  ) {
 		ret = ltfs_fsops_create( lfdir, true, false, false, &workd, vol);
@@ -1312,7 +1312,7 @@ int ltfs_split_symlink( struct ltfs_volume *vol )
 		return ret;
 	}
 	ret = ltfs_fsops_close( workd, true, true, use_iosche, vol);
-	path=strdup(lfdir);
+	path=arch_strdup(lfdir);
 
 	/* loop for conflicted files */
 	for( i=0; i<(vol->index->symerr_count); i++ ){
@@ -1321,8 +1321,9 @@ int ltfs_split_symlink( struct ltfs_volume *vol )
 		ret = fs_dentry_lookup(d, &name);
 		if (ret<0) goto out_func;
 
-		tok=strtok( name+1, "/" );
-		next_tok=strtok( NULL, "/" );
+		char *contextVal = NULL;
+		tok = arch_strtok( name+1, "/", contextVal);
+		next_tok = arch_strtok( NULL, "/" , contextVal);
 
 		/* check directory path and make if it doesn't exist */
 		while( next_tok ){
@@ -1343,9 +1344,8 @@ int ltfs_split_symlink( struct ltfs_volume *vol )
 			}
 			ret = ltfs_fsops_close( workd, true, true, use_iosche, vol);
 			tok = next_tok;
-			next_tok=strtok( NULL, "/" );
+			next_tok = arch_strtok( NULL, "/", contextVal);
 		}
-
 		/* Make filename with path in lost_and_found */
 		asprintf( &path, "%s/%s", path, tok);
 		ret = fs_path_lookup(path, 0, &workd, vol->index);
@@ -1383,7 +1383,7 @@ int ltfs_split_symlink( struct ltfs_volume *vol )
 		d->isslink = false;
 		free(d->target.name);
 		free(name);
-		strcpy(path,lfdir);
+		arch_strcpy(path, pathsize,lfdir);
 		basedir=true;
 	}
 	goto out_func;

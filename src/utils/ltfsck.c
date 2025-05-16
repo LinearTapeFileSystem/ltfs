@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -48,10 +48,11 @@
 */
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
+#include "arch/win/win_util.h"
 #else
 #include <uuid/uuid.h>
 #include <syslog.h>
+#include <sys/param.h>
 #endif /* mingw_PLATFORM */
 
 #include <getopt.h>
@@ -59,7 +60,6 @@
 #include "libltfs/ltfs_fuse_version.h"
 #include <fuse.h>
 
-#include <sys/param.h>
 #include "libltfs/ltfs_internal.h"
 #include "libltfs/ltfs.h"
 #include "ltfs_copyright.h"
@@ -68,8 +68,11 @@
 #include "libltfs/arch/time_internal.h"
 #include "libltfs/kmi.h"
 
+#ifdef mingw_PLATFORM
+static 
+#endif
 volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
-	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
+LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
 #ifdef __APPLE__
 #include "libltfs/arch/osx/osx_string.h"
@@ -187,6 +190,9 @@ static struct option long_options[] = {
 	{0, 0, 0, 0}
 };
 
+#ifdef mingw_PLATFORM
+static
+#endif
 void show_usage(char *appname, struct config_file *config, bool full)
 {
 	ltfsresult(16400I, appname); /* Usage: %s [options] filesys */
@@ -230,7 +236,7 @@ int main(int argc, char **argv)
 	struct ltfs_volume *vol;
 	struct other_check_opts opt;
 	int ret, log_level, syslog_level, i, cmd_args_len;
-	char *lang, *cmd_args;
+	char *lang = NULL, *cmd_args;
 	const char *config_file = NULL;
 	void *message_handle;
 
@@ -240,7 +246,7 @@ int main(int argc, char **argv)
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 	for (i = 0; i < fuse_argc; ++i) {
-		fuse_argv[i] = strdup(argv[i]);
+		fuse_argv[i] = arch_strdup(argv[i]);
 		if (! fuse_argv[i]) {
 			return LTFSCK_OPERATIONAL_ERROR;
 		}
@@ -248,7 +254,7 @@ int main(int argc, char **argv)
 	struct fuse_args args = FUSE_ARGS_INIT(fuse_argc, fuse_argv);
 
 	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
-	lang = getenv("LANG");
+	arch_getenv(lang,"LANG");
 	if (! lang) {
 		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting ltfsck.\n");
 		ret = setenv("LANG", "en_US.UTF-8", 1);
@@ -297,7 +303,7 @@ int main(int argc, char **argv)
 		if (c == -1)
 			break;
 		if (c == 'i') {
-			config_file = strdup(optarg);
+			config_file = arch_strdup(optarg);
 			break;
 		}
 	}
@@ -329,13 +335,13 @@ int main(int argc, char **argv)
 			case 'i':
 				break;
 			case 'e':
-				opt.backend_path = strdup(optarg);
+				opt.backend_path = arch_strdup(optarg);
 				break;
 			case 'g':
 				if(opt.op_mode == MODE_CHECK)
 					opt.op_mode = MODE_VERIFY;
 				opt.search_mode = SEARCH_BY_GEN;
-				opt.str_gen = strdup(optarg);
+				opt.str_gen = arch_strdup(optarg);
 				break;
 			case 'v':
 				if ( strcmp(optarg, "forward") == 0)
@@ -346,7 +352,7 @@ int main(int argc, char **argv)
 					opt.traverse_mode = TRAVERSE_UNKNOWN;
 				break;
 			case '-':
-				opt.kmi_backend_name = strdup(optarg);
+				opt.kmi_backend_name = arch_strdup(optarg);
 				break;
 			case '+':
 				opt.op_mode = MODE_LIST_POINT;
@@ -416,14 +422,14 @@ int main(int argc, char **argv)
 			ltfsmsg(LTFS_ERR, 10009E);
 			return LTFSCK_OPERATIONAL_ERROR;
 		}
-		opt.backend_path = strdup(default_backend);
+		opt.backend_path = arch_strdup(default_backend);
 	}
 	if (! opt.kmi_backend_name) {
 		const char *default_backend = config_file_get_default_plugin("kmi", opt.config);
 		if (default_backend)
-			opt.kmi_backend_name = strdup(default_backend);
+			opt.kmi_backend_name = arch_strdup(default_backend);
 		else
-			opt.kmi_backend_name = strdup("none");
+			opt.kmi_backend_name = arch_strdup("none");
 	}
 	if (opt.kmi_backend_name && strcmp(opt.kmi_backend_name, "none") == 0)
 		opt.kmi_backend_name = NULL;
@@ -465,10 +471,10 @@ int main(int argc, char **argv)
 		ltfsmsg(LTFS_ERR, 10001E, "ltfsck (arguments)");
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
-	strcat(cmd_args, argv[0]);
+	arch_strcat(cmd_args, cmd_args_len, argv[0]);
 	for (i = 1; i < argc; i++) {
-		strcat(cmd_args, " ");
-		strcat(cmd_args, argv[i]);
+		arch_strcat(cmd_args, cmd_args_len, " ");
+		arch_strcat(cmd_args, cmd_args_len, argv[i]);
 	}
 	ltfsmsg(LTFS_INFO, 16088I, cmd_args);
 	free(cmd_args);
@@ -488,9 +494,9 @@ int main(int argc, char **argv)
 	}
 
 	if(argv[optind + num_of_o])
-		opt.devname = strdup(argv[optind + num_of_o]);
+		opt.devname = arch_strdup(argv[optind + num_of_o]);
 
-	opt.prg_name = strdup(argv[0]);
+	opt.prg_name = arch_strdup(argv[0]);
 
 	if (_ltfsck_validate_options(&opt)) {
 		ltfsmsg(LTFS_ERR, 16002E);
@@ -751,7 +757,7 @@ void _store_index(struct index_info *dst, struct ltfs_index *src)
 	dst->selfptr    = src->selfptr;
 	dst->backptr    = src->backptr;
 	if(src->commit_message)
-		dst->commit_message= strdup(src->commit_message);
+		dst->commit_message= arch_strdup(src->commit_message);
 	dst->next       = NULL;
 }
 #endif

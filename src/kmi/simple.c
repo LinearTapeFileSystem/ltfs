@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -49,11 +49,11 @@
 
 #include "libltfs/kmi_ops.h"
 #include "libltfs/ltfs_fuse_version.h"
-#include <fuse.h>
 #include "key_format_ltfs.h"
-
+#include <fuse.h>
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
+#include "arch/win/win_util.h"
+
 #endif
 
 struct kmi_simple_options_data {
@@ -193,9 +193,9 @@ int simple_parse_opts(void *opt_args)
 			+ strlen((char *) key[i].dk) + strlen(":") + strlen((char *) key[i].dki) + 1;
 
 		if (priv.dk_list)
-			priv.dk_list = realloc(priv.dk_list, dk_list_len);
+			priv.dk_list = (unsigned char*)realloc(priv.dk_list, dk_list_len);
 		else
-			priv.dk_list = calloc(dk_list_len, sizeof(unsigned char));
+			priv.dk_list = (unsigned char*)calloc(dk_list_len, sizeof(unsigned char));
 		if (priv.dk_list == NULL) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
@@ -203,10 +203,10 @@ int simple_parse_opts(void *opt_args)
 		*(priv.dk_list + original_dk_list_len) = '\0';
 
 		if (original_dk_list_len)
-			strcat((char *) priv.dk_list, "/");
-		strcat((char *) priv.dk_list, (char *) key[i].dk);
-		strcat((char *) priv.dk_list, ":");
-		strcat((char *) priv.dk_list, (char *) key[i].dki);
+			arch_strcat((char *) priv.dk_list, dk_list_len, "/");
+		arch_strcat((char *) priv.dk_list, dk_list_len,(char *) key[i].dk);
+		arch_strcat((char *) priv.dk_list, dk_list_len, ":");
+		arch_strcat((char *) priv.dk_list, dk_list_len,(char *) key[i].dki);
 	}
 
 	return 0;

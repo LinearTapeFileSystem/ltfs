@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -52,15 +52,15 @@
 */
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
+#include "arch/win/win_util.h"
 #else
 #include <syslog.h>
 #endif /* mingw_PLATFORM */
 
-#include <getopt.h>
+
 #include "libltfs/ltfs_fuse_version.h"
 #include <fuse.h>
-
+#include <getopt.h>
 #include "libltfs/ltfs.h"
 #include "ltfs_copyright.h"
 #include "libltfs/index_criteria.h"
@@ -69,6 +69,9 @@
 #include "libltfs/kmi.h"
 #include "libltfs/tape.h"
 
+#ifdef mingw_PLATFORM
+static
+#endif
 volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
@@ -143,6 +146,9 @@ static struct option long_options[] = {
 	{0, 0, 0, 0}
 };
 
+#ifdef mingw_PLATFORM
+static
+#endif
 void show_usage(char *appname, struct config_file *config, bool full)
 {
 	struct libltfs_plugin backend;
@@ -151,12 +157,12 @@ void show_usage(char *appname, struct config_file *config, bool full)
 
 	default_backend = config_file_get_default_plugin("tape", config);
 	if (default_backend && plugin_load(&backend, "tape", default_backend, config) == 0) {
-		devname = strdup(ltfs_default_device_name(backend.ops));
+		devname = arch_strdup(ltfs_default_device_name(backend.ops));
 		plugin_unload(&backend);
 	}
 
 	if (! devname)
-		devname = strdup("<devname>");
+		devname = arch_strdup("<devname>");
 
 	fprintf(stderr, "\n");
 	ltfsresult(15400I, appname);  /* Usage: %s <options> */
@@ -207,17 +213,16 @@ int main(int argc, char **argv)
 	struct ltfs_volume *newvol;
 	struct other_format_opts opt;
 	int ret, log_level, syslog_level, i, cmd_args_len;
-	char *lang, *cmd_args;
+	char *lang = NULL, *cmd_args;
 	const char *config_file = NULL;
 	void *message_handle;
-
 	int fuse_argc = argc;
 	char **fuse_argv = calloc(fuse_argc, sizeof(char *));
 	if (! fuse_argv) {
 		return MKLTFS_OPERATIONAL_ERROR;
 	}
 	for (i = 0; i < fuse_argc; ++i) {
-		fuse_argv[i] = strdup(argv[i]);
+		fuse_argv[i] = arch_strdup(argv[i]);
 		if (! fuse_argv[i]) {
 			return MKLTFS_OPERATIONAL_ERROR;
 		}
@@ -225,7 +230,7 @@ int main(int argc, char **argv)
 	struct fuse_args args = FUSE_ARGS_INIT(fuse_argc, fuse_argv);
 
 	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
-	lang = getenv("LANG");
+	arch_getenv(lang,"LANG");
 	if (! lang) {
 		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting mkltfs.\n");
 		ret = setenv("LANG", "en_US.UTF-8", 1);
@@ -277,7 +282,7 @@ int main(int argc, char **argv)
 		if (c == -1)
 			break;
 		if (c == 'i') {
-			config_file = strdup(optarg);
+			config_file = arch_strdup(optarg);
 			break;
 		}
 	}
@@ -303,25 +308,25 @@ int main(int argc, char **argv)
 				break;
 			case 'e':
 				free(opt.backend_path);
-				opt.backend_path = strdup(optarg);
+				opt.backend_path = arch_strdup(optarg);
 				break;
 			case 'd':
-				opt.devname = strdup(optarg);
+				opt.devname = arch_strdup(optarg);
 				break;
 			case 'b':
 				opt.blocksize = atoi(optarg);
 				break;
 			case 's':
-				opt.barcode = strdup(optarg);
+				opt.barcode = arch_strdup(optarg);
 				break;
 			case 'n':
-				opt.volume_name = strdup(optarg);
+				opt.volume_name = arch_strdup(optarg);
 				break;
 			case 'r':
-				opt.filterrules = strdup(optarg);
+				opt.filterrules = arch_strdup(optarg);
 				break;
 			case '-':
-				opt.kmi_backend_name = strdup(optarg);
+				opt.kmi_backend_name = arch_strdup(optarg);
 				break;
 			case 'c':
 				opt.enable_compression = false;
@@ -390,14 +395,14 @@ int main(int argc, char **argv)
 			ltfsmsg(LTFS_ERR, 10009E);
 			return MKLTFS_OPERATIONAL_ERROR;
 		}
-		opt.backend_path = strdup(default_backend);
+		opt.backend_path = arch_strdup(default_backend);
 	}
 	if (! opt.kmi_backend_name) {
 		const char *default_backend = config_file_get_default_plugin("kmi", opt.config);
 		if (default_backend)
-			opt.kmi_backend_name = strdup(default_backend);
+			opt.kmi_backend_name = arch_strdup(default_backend);
 		else
-			opt.kmi_backend_name = strdup("none");
+			opt.kmi_backend_name = arch_strdup("none");
 	}
 	if (opt.kmi_backend_name && strcmp(opt.kmi_backend_name, "none") == 0)
 		opt.kmi_backend_name = NULL;
@@ -439,10 +444,10 @@ int main(int argc, char **argv)
 		ltfsmsg(LTFS_ERR, 10001E, "mkltfs (arguments)");
 		return MKLTFS_OPERATIONAL_ERROR;
 	}
-	strcat(cmd_args, argv[0]);
+	arch_strcat(cmd_args, cmd_args_len,argv[0]);
 	for (i = 1; i < argc; i++) {
-		strcat(cmd_args, " ");
-		strcat(cmd_args, argv[i]);
+		arch_strcat(cmd_args, cmd_args_len," ");
+		arch_strcat(cmd_args, cmd_args_len, argv[i]);
 	}
 	ltfsmsg(LTFS_INFO, 15041I, cmd_args);
 	free(cmd_args);
@@ -500,9 +505,10 @@ int main(int argc, char **argv)
 	else
 		ret = format_tape(newvol, &opt, &args);
 
-	free(opt.backend_path);
-	free(opt.kmi_backend_name);
-	free(opt.devname);
+
+	arch_safe_free(opt.backend_path);
+	arch_safe_free(opt.kmi_backend_name);
+	arch_safe_free(opt.devname);
 	config_file_free(opt.config);
 	ltfsprintf_unload_plugin(message_handle);
 	ltfs_finish();

@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -54,16 +54,18 @@ extern "C" {
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
+#include <fcntl.h>
 #define PROFILER_FILE_MODE "wb+"
 #else
 #define PROFILER_FILE_MODE "w+"
 #include <sys/wait.h>
+#include <sys/fcntl.h>
 #endif
 
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/fcntl.h>
+
 #include <errno.h>
 #include <stdint.h>
 
@@ -215,6 +217,9 @@ extern _time_stamp_t        start_offset;
 
 static inline void ltfs_request_trace(uint32_t req_num, uint64_t info1, uint64_t info2)
 {
+#ifdef mingw_PLATFORM
+	return;
+#endif
 	if (!trace_enable)
 		return;
 

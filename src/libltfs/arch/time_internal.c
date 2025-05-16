@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -67,8 +67,10 @@
 #include "config.h"
 #endif
 
+#ifndef mingw_PLATFORM
 #if ! ((SIZEOF_TIME_T == 4) || (SIZEOF_TIME_T == 8))
-#error time_t width is not 4 or 8
+	#error time_t width is not 4 or 8
+#endif
 #endif
 
 ltfs_time_t ltfs_timegm(struct tm *t)

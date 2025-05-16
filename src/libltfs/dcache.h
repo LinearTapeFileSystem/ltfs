@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -60,14 +60,18 @@ extern "C" {
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
+#include <time.h>
+#include <sys/utime.h>
 #endif
 
 #ifndef mingw_PLATFORM
 #include <ftw.h>
-#endif
-#include <sys/types.h>
 #include <sys/time.h>
 #include <utime.h>
+#endif
+#include <sys/types.h>
+
+
 
 #include "plugin.h"
 #include "dcache_ops.h"

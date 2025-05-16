@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -47,6 +47,7 @@
 
 #ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
+#include <windows.h>
 #endif
 #include <stdlib.h>
 #include <stdarg.h>
@@ -189,7 +190,7 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 	}
 
 	/* Load the libltfs message bundle and the primary message set */
-	ret = ltfsprintf_load_plugin("internal_error", internal_error_dat, (void **)&pl);
+	ret = ltfsprintf_load_plugin("internal_error", internal_error_dat, (void**)&pl);
 	if (ret < 0) {
 		fprintf(stderr, "LTFS11293E Cannot load messages for internal error (%d)\n", ret);
 		ltfsprintf_finish();
@@ -395,10 +396,11 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		goto internal_error;
 
 	if (idlen > 1 && _id[0] == '"' && _id[idlen - 1] == '"') {
-		strncpy(id, _id + 1, idlen - 2);
+		arch_strcpy_limited(id, _id + 1, idlen - 2);
 		id[idlen - 2] = '\0';
-	} else {
-		strcpy(id, _id);
+	}
+	else {
+		arch_strcpy_auto(id, _id);
 	}
 
 	id_val = atol(id);
@@ -438,9 +440,9 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	/* Format and print the message string. */
 	ltfs_mutex_lock(&output_lock);
 	if (ltfs_print_thread_id)
-		prefix_len = print_id ? sprintf(output_buf, MSG_PREFIX_TID, (unsigned long)ltfs_get_thread_id(), id) : 0;
+		prefix_len = print_id ? arch_sprintf_auto(output_buf, MSG_PREFIX_TID, (unsigned long)ltfs_get_thread_id(), id) : 0;
 	else
-		prefix_len = print_id ? sprintf(output_buf, MSG_PREFIX, id) : 0;
+		prefix_len = print_id ? arch_sprintf_auto(output_buf, MSG_PREFIX, id) : 0;
 	ucnv_fromUChars(output_conv, output_buf + prefix_len, OUTPUT_BUF_SIZE - prefix_len - 1,
 		format_uc, format_len, &err);
 	if (err == U_BUFFER_OVERFLOW_ERROR) {
@@ -457,14 +459,15 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 			ltfs_mutex_unlock(&output_lock);
 			goto internal_error;
 		}
-	} else if (U_FAILURE(err)) {
+	}
+	else if (U_FAILURE(err)) {
 		ltfs_mutex_unlock(&output_lock);
 		goto internal_error;
 	}
 
 #ifdef mingw_PLATFORM
 	va_start(argp, _id);
-	vsyslog(level, output_buf, argp);
+	vsyslog2(level, output_buf, argp);
 	va_end(argp);
 #else
 	va_start(argp, _id);
@@ -486,9 +489,9 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 
 	if (msg_out) {
 		va_start(argp, _id);
-		vsprintf(msg_buf, output_buf, argp);
+		arch_vsprintf(msg_buf, sizeof(msg_buf), output_buf, argp);
 		va_end(argp);
-		*msg_out = strdup(msg_buf);
+		*msg_out = arch_strdup(msg_buf);
 	}
 
 #ifdef ENABLE_SNMP
@@ -497,7 +500,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 			/* Send a trap of Info (id and pos+1) */
 			char *pos;
 			va_start(argp, _id);
-			vsprintf(msg_buf, output_buf, argp);
+			arch_vsprintf(msg_buf, sizeof(msg_buf), output_buf, argp);
 			va_end(argp);
 			pos = strstr(msg_buf, " ");
 			send_ltfsInfoTrap(pos+1);

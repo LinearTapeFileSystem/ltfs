@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -62,7 +62,7 @@ extern bool ltfs_print_thread_id;
 
 /* Wrapper for ltfsmsg_internal. It only invokes the message print function if the requested
  * log level is not too verbose. */
-#ifdef MSG_CHECK
+#if 0
 #include "ltfsmsg.h"
 #define ltfsmsg(level, id, ...)					\
 	do {										\
@@ -73,6 +73,12 @@ extern bool ltfs_print_thread_id;
 	do { \
 		if (level <= ltfs_log_level) \
 			ltfsmsg_internal(true, level, NULL, #id, ##__VA_ARGS__);	\
+	} while (0)
+
+#define ltfsmsgplain(level, id, ...) \
+	do { \
+		if (level <= ltfs_log_level) \
+			ltfsmsg_internal(true, level, NULL, id, ##__VA_ARGS__);	\
 	} while (0)
 #endif
 
@@ -88,7 +94,7 @@ extern bool ltfs_print_thread_id;
 
 /* Wrapper for ltfsmsg_internal that prints a message without the LTFSnnnnn prefix. It
  * always invokes the message print function, regardless of the message level. */
-#ifdef MSG_CHECK
+#if 0
 #define ltfsresult(id, ...)						\
 	do {										\
 		printf(LTFS ## id, ##__VA_ARGS__);		\
