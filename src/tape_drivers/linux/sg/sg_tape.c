@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -4960,7 +4960,7 @@ int sg_get_serialnumber(void *device, char **result)
 	ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_ENTER(REQ_TC_GETSER));
 
 	*result = strdup((const char *) priv->drive_serial);
-	if (! *result) {
+	if (! (*result)) {
 		ltfsmsg(LTFS_ERR, 10001E, "sg_get_serialnumber: result");
 		ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_EXIT(REQ_TC_GETSER));
 		return -EDEV_NO_MEMORY;

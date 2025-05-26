@@ -3,7 +3,7 @@
 **  OS_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2018 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **  Copyright (c) 2013-2018 Spectra Logic Corporation. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
@@ -1298,11 +1298,19 @@ static int camtape_load_attr(struct mt_status_data *mtinfo, xmlDocPtr doc, xmlAt
 				nv = malloc(sizeof(*nv));
 				if (nv == NULL) {
 					*msg = strdup("Unable to allocate memory");
+					if (! (*msg)) {
+						ltfsmsg(LTFS_ERR, 10001E, "camtape_load_attr: msg assign");
+						// TODO: Check if error return is needed
+					}
 					retval = -EDEV_NO_MEMORY;
 					goto bailout;
 				}
 				memset(nv, 0, sizeof(*nv));
 				nv->name = strdup((char *)xattr->name);
+				if (! nv->name) {
+					ltfsmsg(LTFS_ERR, 10001E, "camtape_load_attr: nv name assign");
+					// TODO: Check if error return is needed
+				}
 				nv->value = str;
 				STAILQ_INSERT_TAIL(&entry->nv_list, nv, links);
 				need_free = 0;
@@ -1331,6 +1339,10 @@ static int camtape_load_elements(struct mt_status_data *mtinfo, xmlDocPtr doc, x
 			if ((u_int)mtinfo->level > sizeof(mtinfo->cur_entry) /
 			    sizeof(mtinfo->cur_entry[0])) {
 				*msg = strdup("Too many nesting levels");
+				if (! (*msg)) {
+					ltfsmsg(LTFS_ERR, 10001E, "camtape_load_elements: msg assign");
+					// TODO: Check if error return is needed
+				}
 				retval = -EDEV_INVALID_ARG;
 				goto bailout;
 			}
@@ -1338,6 +1350,10 @@ static int camtape_load_elements(struct mt_status_data *mtinfo, xmlDocPtr doc, x
 			entry = malloc(sizeof(*entry));
 			if (entry == NULL) {
 				*msg = strdup("Unable to allocate memory");
+				if (! (*msg)) {
+					ltfsmsg(LTFS_ERR, 10001E, "camtape_load_elements: msg assign");
+					// TODO: Check if error return is needed
+				}
 				retval = -EDEV_NO_MEMORY;
 				goto bailout;
 			}
@@ -1345,6 +1361,10 @@ static int camtape_load_elements(struct mt_status_data *mtinfo, xmlDocPtr doc, x
 			STAILQ_INIT(&entry->nv_list);
 			STAILQ_INIT(&entry->child_entries);
 			entry->entry_name = strdup((char *)xnode->name);
+			if (! entry->entry_name) {
+				ltfsmsg(LTFS_ERR, 10001E, "camtape_load_elements: entry name assign");
+				// TODO: Check if error return is needed
+			}
 			mtinfo->cur_entry[mtinfo->level] = entry;
 			if (mtinfo->cur_entry[mtinfo->level - 1] == NULL) {
 				STAILQ_INSERT_TAIL(&mtinfo->entries, entry, links);
@@ -1413,6 +1433,10 @@ extget_retry:
 	xml_str = malloc(alloc_size);
 	if (xml_str == NULL) {
 		*msg = strdup("Unable to allocate memory");
+		if (! (*msg)) {
+			ltfsmsg(LTFS_ERR, 10001E, "camtape_get_mtinfo: msg assign");
+			// TODO: Check if error return is needed
+		}
 		retval = -EDEV_NO_MEMORY;
 		goto bailout;
 	}
@@ -1425,6 +1449,10 @@ extget_retry:
 		snprintf(tmpstr, sizeof(tmpstr), "ioctl error from sa(4) driver: %s",
 		    strerror(errno));
 		*msg = strdup(tmpstr);
+		if (! (*msg)) {
+			ltfsmsg(LTFS_ERR, 10001E, "camtape_get_mtinfo: msg assign");
+			// TODO: Check if error return is needed
+		}
 		retval = -errno;
 		goto bailout;
 	}
@@ -1445,6 +1473,10 @@ extget_retry:
 		snprintf(tmpstr, sizeof(tmpstr), "Error getting status data from sa(4) driver: status = %d",
 			extget.status);
 		*msg = strdup(tmpstr);
+		if (! (*msg)) {
+			ltfsmsg(LTFS_ERR, 10001E, "camtape_get_mtinfo: msg assign");
+			// TODO: Check if error return is needed
+		}
 		goto bailout;
 	}
 
@@ -1453,6 +1485,10 @@ extget_retry:
 	ctx = xmlNewParserCtxt();
 	if (ctx == NULL) {
 		*msg = strdup("Unable to create new XML parser context");
+		if (! (*msg)) {
+			ltfsmsg(LTFS_ERR, 10001E, "camtape_get_mtinfo: msg assign");
+			// TODO: Check if error return is needed
+		}
 		retval = -EDEV_NO_MEMORY;
 		goto bailout;
 	}
@@ -1460,11 +1496,19 @@ extget_retry:
 	doc = xmlCtxtReadMemory(ctx, xml_str, strlen(xml_str), NULL, NULL, 0);
 	if (doc == NULL) {
 		*msg = strdup("Unable to parse XML");
+		if (! (*msg)) {
+			ltfsmsg(LTFS_ERR, 10001E, "camtape_get_mtinfo: msg assign");
+			// TODO: Check if error return is needed
+		}
 		retval = -EDEV_DRIVER_ERROR;
 		goto bailout;
 	} else {
 		if (ctx->valid == 0) {
 			*msg = strdup("XML parsing result is: not valid");
+			if (! (*msg)) {
+				ltfsmsg(LTFS_ERR, 10001E, "camtape_get_mtinfo: msg assign");
+				// TODO: Check if error return is needed
+			}
 			retval = -EDEV_INVALID_ARG;
 			goto bailout;
 		}
@@ -1537,6 +1581,10 @@ int camtape_getstatus(struct camtape_data *softc, struct mt_status_data *mtinfo,
 
 			snprintf(tmpstr, sizeof(tmpstr), "Unable to fetch sa(4) status item %s", name);
 			*msg = strdup(tmpstr);
+			if (! (*msg)) {
+				ltfsmsg(LTFS_ERR, 10001E, "camtape_getstatus: msg assign");
+				// TODO: Check if error return is needed
+			}
 			retval = -EDEV_INVALID_ARG;
 			goto bailout;
 		}
@@ -2403,6 +2451,10 @@ int camtape_set_default(void *device)
 	 */
 	if (ioctl(softc->fd_sa, MTIOCPARAMSET, &sili_param) == -1) {
 		msg = strdup("Error returned from MTIOCPARAMSET ioctl to set the SILI bit");
+		if (! (*msg)) {
+			ltfsmsg(LTFS_ERR, 10001E, "camtape_set_default: msg assign");
+			// TODO: Check if error return is needed
+		}
 		rc = -EDEV_DRIVER_ERROR;
 		camtape_process_errors(device, rc, msg, "set default parameter", true);
 		goto bailout;
@@ -2437,6 +2489,10 @@ int camtape_set_default(void *device)
 	eot_model = 1;
 	if (ioctl(softc->fd_sa, MTIOCSETEOTMODEL, &eot_model) == -1) {
 		msg = strdup("Error returned from MTIOCSETEOTMODEL ioctl to set the EOT model to 1FM");
+		if (! (*msg)) {
+			ltfsmsg(LTFS_ERR, 10001E, "camtape_set_default: msg assign");
+			// TODO: Check if error return is needed
+		}
 		rc = -EDEV_DRIVER_ERROR;
 		camtape_process_errors(device, rc, msg, "set default parameter", true);
 		goto bailout;
@@ -3946,6 +4002,10 @@ int camtape_set_lbp(void *device, bool enable)
 	entry = mt_status_entry_find(&mtinfo, tmpname);
 	if (entry == NULL) {
 		msg = strdup("Cannot find sa(4) protection.protection_supported parameter");
+		if (! (*msg)) {
+			ltfsmsg(LTFS_ERR, 10001E, "camtape_set_lbp: msg assign");
+			// TODO: Check if error return is needed
+		}
 		rc = -EDEV_INVALID_ARG;
 		camtape_process_errors(device, rc, msg, "get lbp", true);
 		goto bailout;
@@ -3965,6 +4025,10 @@ int camtape_set_lbp(void *device, bool enable)
 	prot_entry = mt_status_entry_find(&mtinfo, MT_PROTECTION_NAME);
 	if (prot_entry == NULL) {
 		msg = strdup("Cannot find sa(4) protection node!");
+		if (! (*msg)) {
+			ltfsmsg(LTFS_ERR, 10001E, "camtape_set_lbp: msg assign");
+			// TODO: Check if error return is needed
+		}
 		rc = -EDEV_INVALID_ARG;
 		camtape_process_errors(device, rc, msg, "get lbp", true);
 		goto bailout;
@@ -3998,6 +4062,10 @@ int camtape_set_lbp(void *device, bool enable)
 		entry = mt_entry_find(prot_entry, __DECONST(char *, protect_list[i].name));
 		if (entry == NULL) {
 			msg = strdup("Cannot find all protection information entries");
+			if (! (*msg)) {
+				ltfsmsg(LTFS_ERR, 10001E, "camtape_set_lbp: msg assign");
+				// TODO: Check if error return is needed
+			}
 			rc = -EDEV_INVALID_ARG;
 			camtape_process_errors(device, rc, msg, "get lbp", true);
 			goto bailout;
@@ -4020,6 +4088,10 @@ int camtape_set_lbp(void *device, bool enable)
 		snprintf(tmpstr, sizeof(tmpstr), "Error returned from MTIOCSETLIST ioctl to set "
 			"protection parameters: %s", strerror(errno));
 		msg = strdup(tmpstr);
+		if (! (*msg)) {
+			ltfsmsg(LTFS_ERR, 10001E, "camtape_set_lbp: msg assign");
+			// TODO: Check if error return is needed
+		}
 		rc = -errno;
 		camtape_process_errors(device, rc, msg, "get lbp", true);
 		goto bailout;

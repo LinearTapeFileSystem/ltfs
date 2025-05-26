@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -89,6 +89,7 @@ static char* generate_hash_key_name(const char *src_str, int *rc)
 	} else
 		free(uchar_name);
 #else
+	// Chek not needed here for strdup because the error is handled where the function is called
 	key_name = strdup(src_str);
 	*rc = 0;
 #endif

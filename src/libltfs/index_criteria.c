@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -288,6 +288,29 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 	/* Assign rules to the glob_patterns[] array */
 	rule = rule+5;
 	for (delim = rule; *delim; delim++) {
+		bool doDelimAssign = false;
+		bool doRuleAdd = false;
+		if (*delim == ':') {
+			doDelimAssign = true;
+			doRuleAdd = true;
+		}
+		else if (*delim == '/') {
+			doDelimAssign = true;
+		}
+		else if (! (*(delim+1) == '\0')) {
+			continue;
+		}
+		if (doDelimAssign) *delim = '\0';
+		rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
+		rule_ptr->name = strdup(rule);
+		if (! rule_ptr->name) {
+				ltfsmsg(LTFS_ERR, 10001E, "index_criteria_parse_name: rule assign");
+				free(rule_ptr->name);
+				return -EDEV_NO_MEMORY;
+		}
+		rule_ptr++;
+		if (doRuleAdd) rule = delim+1;
+		/*
 		if (*delim == ':') {
 			*delim = '\0';
 			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
@@ -303,12 +326,17 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
 			rule_ptr->name = strdup(rule);
 			rule_ptr++;
-		}
+		}*/
 	}
 
 	if (ic->glob_patterns == rule_ptr) {
 		rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
 		rule_ptr->name = strdup(rule);
+		if (! rule_ptr->name) {
+			ltfsmsg(LTFS_ERR, 10001E, "index_criteria_parse_name: glob_patterns assign");
+			free(rule_ptr->name);
+			return -EDEV_NO_MEMORY;
+		}
 	}
 
 	/* Validate rules */
