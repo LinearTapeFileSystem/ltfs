@@ -1,4 +1,3 @@
-# Define the project targets
 add_executable(ltfs main.c ltfs_fuse.c)
 target_link_libraries(ltfs
   Threads::Threads
@@ -17,8 +16,30 @@ target_compile_definitions(ltfs PRIVATE
 )
 
 add_subdirectory(libltfs)
+add_subdirectory(iosched)
+add_subdirectory(kmi)
+add_subdirectory(tape_drivers)
+add_subdirectory(tape_drivers/generic/file)
+add_subdirectory(tape_drivers/generic/itdtimg)
+add_subdirectory(utils)
 
-# NOTE: Is this needed? cmake can add this feature using -DUSE_UNORM2
+option(ENABLE_LINTAPE "Support IBM's lin_tape driver or not" OFF)
+if(ENABLE_LINTAPE)
+  add_subdirectory(tape_drivers/linux/lin_tape)
+endif()
+
+if(LINUX)
+  add_subdirectory(tape_drivers/linux/sg)
+elseif(APPLE)
+  add_subdirectory(tape_drivers/osx/iokit)
+elseif(BSD)
+  if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    add_subdirectory(tape_drivers/freebsd/cam)
+  elseif(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
+    add_subdirectory(tape_drivers/netbsd/scsipi-ibmtape)
+  endif()
+endif()
+
 option(ICU_6X "Force to use ICU6x (unorm2) functions" OFF)
 string(REPLACE "." ";" ICU_VERSION_ARRAY ${ICU_VERSION})
 list(GET ICU_VERSION_ARRAY 0 ICU_VERSION_MAJOR)

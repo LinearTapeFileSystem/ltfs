@@ -49,16 +49,7 @@ if(ENABLE_SNMP)
 endif()
 
 
-# check_type_size(mode_t MODE_T)
-# check_type_size(off_t OFF_T)
-# check_type_size(size_t SIZE_T)
-# check_type_size(ssize_t SSIZE_T)
 check_type_size(time_t SIZEOF_TIME_T)
 add_compile_definitions(
   SIZEOF_TIME_T=${SIZEOF_TIME_T}
 )
-# check_type_size(uint8_t UINT8_T)
-# check_type_size(uint16_t UINT16_T)
-# check_type_size(uint32_t UINT32_T)
-# check_type_size(uint64_t UINT64_T)
-# check_type_size(uint64_t UINT64_T)

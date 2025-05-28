@@ -38,6 +38,6 @@ foreach(NAME IN LISTS MESSAGES_LIBS)
     BYPRODUCTS lib${NAME}.a
   )
 
-  add_library("lib${NAME}" STATIC IMPORTED GLOBAL)
-  set_target_properties("lib${NAME}" PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/lib${NAME}.a")
+  add_library("lib${NAME}_messages" STATIC IMPORTED GLOBAL)
+  set_target_properties("lib${NAME}_messages" PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/lib${NAME}.a")
 endforeach()
