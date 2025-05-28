@@ -10,13 +10,17 @@ target_include_directories(libltfs BEFORE PUBLIC ".." )
 target_link_libraries(libltfs
   Threads::Threads
   PkgConfig::FUSE
-  PkgConfig::XML2
+  LibXml2::LibXml2
   PkgConfig::UUID
   libbin_ltfs
   liblibltfs
   libinternal_error
   libtape_common
 )
+
+if(ENABLE_SNMP)
+  target_link_libraries(libltfs PkgConfig::SNMP)
+endif()
 
 target_compile_definitions(libltfs PRIVATE
   _GNU_SOURCE
