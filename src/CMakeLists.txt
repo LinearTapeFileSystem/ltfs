@@ -8,7 +8,7 @@ target_link_libraries(ltfs
   libltfs
 )
 target_include_directories(ltfs BEFORE PUBLIC "." )
-target_compile_definitions(ltfs PRIVATE
+add_compile_definitions(
   LTFS_CONFIG_FILE="${SYSCONFDIR}/ltfs.conf"
   LTFS_BASE_DIR="${CMAKE_INSTALL_PREFIX}"
   PACKAGE_VERSION="${PROJECT_VERSION}"

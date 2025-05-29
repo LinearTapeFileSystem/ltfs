@@ -2,7 +2,8 @@ set(LIBTAPE_SG_IBMTAPE_SRCS
   scsipi_scsi_tape.c
   scsipi_ibmtape.c
   ../../vendor_compat.c
-  ../../ibm_tape.c hp_tape.c
+  ../../ibm_tape.c
+  ../../hp_tape.c
   ../../quantum_tape.c
 )
 add_library(libtape_sg_ibmtape SHARED ${LIBTAPE_SG_IBMTAPE_SRCS})

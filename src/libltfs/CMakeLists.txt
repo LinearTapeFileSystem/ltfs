@@ -17,11 +17,3 @@ target_link_libraries(libltfs
 if(ENABLE_SNMP)
   target_link_libraries(libltfs PkgConfig::SNMP)
 endif()
-
-target_compile_definitions(libltfs PRIVATE
-  _GNU_SOURCE
-  LTFS_CONFIG_FILE="${SYSCONFDIR}/ltfs.conf"
-  LTFS_BASE_DIR="${CMAKE_INSTALL_PREFIX}"
-  PACKAGE_VERSION="${PROJECT_VERSION}"
-  PACKAGE_NAME="${PROJECT_NAME}"
-)

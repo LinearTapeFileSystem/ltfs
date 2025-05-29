@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(ltfs,
-  VERSION 2.5.0.0
+  VERSION "2.5.0.0"
 )
 include(CheckSymbolExists REQUIRED)
 include(CheckTypeSize REQUIRED)
