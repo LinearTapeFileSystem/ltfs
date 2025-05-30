@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(ltfs,
-  VERSION "2.5.0.0"
+  # TODO: Find a better solution to mark this version as different from the official build
+  VERSION "2.5.0.9999"
 )
 include(CheckSymbolExists REQUIRED)
 include(CheckTypeSize REQUIRED)
@@ -29,7 +30,8 @@ endif()
 add_subdirectory(messages)
 add_subdirectory(src)
 
-
+# TODO: Improve the use of SNMP, right now this flags are not added to the build.
+# TODO: Test the use of SNMP
 option(ENABLE_SNMP "Force to use ICU6x (unorm2) functions" OFF)
 if(ENABLE_SNMP)
   pkg_check_modules(SNMP REQUIRED "net-snmp>=5.3" IMPORTED_TARGET)

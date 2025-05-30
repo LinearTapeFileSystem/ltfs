@@ -3,6 +3,8 @@ add_library(libltfs SHARED ${LIBLTFS_SRCS})
 set_property(TARGET libltfs PROPERTY OUTPUT_NAME ltfs)
 target_include_directories(libltfs BEFORE PUBLIC "..")
 
+# TODO: Fix bundle errors.
+#   ICU cannot find the message bundles for some weird reason
 target_link_libraries(libltfs
   Threads::Threads
   PkgConfig::FUSE
