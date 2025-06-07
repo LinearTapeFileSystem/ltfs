@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.26)
 project(ltfs
   LANGUAGES C)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.cmake")
+set(VERSION "2.5.0.0 (Prelim cmake)")
 
 include(CheckSymbolExists REQUIRED)
 include(CheckTypeSize REQUIRED)
@@ -31,3 +32,10 @@ endif()
 
 add_subdirectory(messages)
 add_subdirectory(src)
+
+set(prefix ${CMAKE_INSTALL_PREFIX} CACHE INTERNAL "Base installation directory (equivalent to Autotools' prefix)")
+set(exec_prefix ${CMAKE_INSTALL_FULL_BINDIR} CACHE INTERNAL "Directory for architecture-dependent executables (like Autotools' exec_prefix)")
+set(libdir ${CMAKE_INSTALL_FULL_LIBDIR} CACHE INTERNAL "Directory for installing libraries (like Autotools' libdir)")
+set(includedir ${CMAKE_INSTALL_FULL_INCLUDEDIR} CACHE INTERNAL "Directory for installing header files (like Autotools' includedir)")
+set(PACKAGE ${PROJECT_NAME} CACHE INTERNAL "Package name (equivalent to Autotools' PACKAGE)")
+configure_file(ltfs.pc.in ltfs.pc)

@@ -1,12 +1,11 @@
-set(LIBTAPE_FILE_SRCS
+add_library(tape_file SHARED
   filedebug_tc.c
   filedebug_conf_tc.c
   ../../ibm_tape.c
 )
-add_library(libtape_file SHARED ${LIBTAPE_FILE_SRCS})
-target_link_libraries(libtape_file
+target_link_libraries(tape_file
   PkgConfig::FUSE
-  libltfs
-  libtape_generic_file_messages
+  ltfs
+  libtape_generic_file
 )
-target_include_directories(libtape_file BEFORE PUBLIC "../..")
+target_include_directories(tape_file BEFORE PUBLIC "../..")

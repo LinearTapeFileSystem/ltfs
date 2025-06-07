@@ -1,4 +1,4 @@
-set(LIBTAPE_IOKIT_SRCS
+add_library(tape_iokit SHARED
   scsipi_scsi_tape.c
   scsipi_ibmtape.c
   ../../vendor_compat.c
@@ -6,12 +6,11 @@ set(LIBTAPE_IOKIT_SRCS
   ../../hp_tape.c
   ../../quantum_tape.c
 )
-add_library(libtape_iokit SHARED ${LIBTAPE_IOKIT_SRCS})
-target_link_libraries(libtape_iokit
+target_link_libraries(tape_iokit
   PkgConfig::FUSE
-  libltfs
-  libtape_iokit_messages
-  libtape_reed_solomon_crc
-  libtape_crc32c_crc
+  ltfs
+  libtape_iokit
+  tape_reed_solomon_crc
+  tape_crc32c_crc
 )
-target_include_directories(libtape_iokit BEFORE PUBLIC "../..")
+target_include_directories(tape_iokit BEFORE PUBLIC "../..")

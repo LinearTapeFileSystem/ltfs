@@ -1,20 +1,18 @@
-set(LIBIOSCHED_FCFS_SRCS fcfs.c)
-add_library(libiosched_fcfs SHARED ${LIBIOSCHED_FCFS_SRCS})
-target_link_libraries(libiosched_fcfs
+add_library(iosched_fcfs SHARED fcfs.c)
+target_link_libraries(iosched_fcfs
   PkgConfig::FUSE
-  libltfs
-  libiosched_fcfs_messages
+  ltfs
+  libiosched_fcfs
 )
-target_include_directories(libiosched_fcfs BEFORE PUBLIC "..")
+target_include_directories(iosched_fcfs BEFORE PUBLIC "..")
 
-set(LIBIOSCHED_UNIFIED_SRCS
+add_library(iosched_unified SHARED
   unified.c
   cache_manager.c
 )
-add_library(libiosched_unified SHARED ${LIBIOSCHED_UNIFIED_SRCS})
-target_link_libraries(libiosched_unified
+target_link_libraries(iosched_unified
   PkgConfig::FUSE
-  libltfs
-  libiosched_unified_messages
+  ltfs
+  libiosched_unified
 )
-target_include_directories(libiosched_unified BEFORE PUBLIC "..")
+target_include_directories(iosched_unified BEFORE PUBLIC "..")

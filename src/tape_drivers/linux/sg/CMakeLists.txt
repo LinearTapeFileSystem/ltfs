@@ -1,4 +1,4 @@
-set(LIBTAPE_SG_SRCS
+add_library(tape_sg SHARED
   sg_scsi_tape.c
   sg_tape.c
   ../../vendor_compat.c
@@ -7,12 +7,11 @@ set(LIBTAPE_SG_SRCS
   ../../quantum_tape.c
   ../../open_factor.c
 )
-add_library(libtape_sg SHARED ${LIBTAPE_SG_SRCS})
-target_link_libraries(libtape_sg
+target_link_libraries(tape_sg
   PkgConfig::FUSE
-  libltfs
-  libtape_linux_sg_messages
-  libtape_reed_solomon_crc
-  libtape_crc32c_crc
+  ltfs
+  libtape_linux_sg
+  tape_reed_solomon_crc
+  tape_crc32c_crc
 )
-target_include_directories(libtape_sg BEFORE PUBLIC "../..")
+target_include_directories(tape_sg BEFORE PUBLIC "../..")

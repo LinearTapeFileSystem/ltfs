@@ -1,21 +1,18 @@
 file(GLOB_RECURSE LIBLTFS_SRCS LIST_DIRECTORIES false "*.c")
-add_library(libltfs SHARED ${LIBLTFS_SRCS})
-set_property(TARGET libltfs PROPERTY OUTPUT_NAME ltfs)
-target_include_directories(libltfs BEFORE PUBLIC "..")
+add_library(ltfs SHARED ${LIBLTFS_SRCS})
+target_include_directories(ltfs BEFORE PUBLIC "..")
 
-# TODO: Fix bundle errors.
-#   ICU cannot find the message bundles for some weird reason
-target_link_libraries(libltfs
+target_link_libraries(ltfs
   Threads::Threads
   PkgConfig::FUSE
   LibXml2::LibXml2
   PkgConfig::UUID
-  libbin_ltfs_messages
-  liblibltfs_messages
-  libinternal_error_messages
-  libtape_common_messages
+  libbin_ltfs
+  liblibltfs
+  libinternal_error
+  libtape_common
 )
 
 if(ENABLE_SNMP)
-  target_link_libraries(libltfs PkgConfig::SNMP)
+  target_link_libraries(ltfs PkgConfig::SNMP)
 endif()

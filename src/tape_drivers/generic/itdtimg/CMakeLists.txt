@@ -1,13 +1,12 @@
-set(LIBTAPE_ITDTIMG_SRCS
+add_library(tape_itdtimg SHARED
   itdtimg_tc.c
   ../../ibm_tape.c
 )
-add_library(libtape_itdtimg SHARED ${LIBTAPE_ITDTIMG_SRCS})
-target_link_libraries(libtape_itdtimg
+target_link_libraries(tape_itdtimg
   PkgConfig::FUSE
-  libltfs
-  libtape_generic_itdtimg_messages
-  libtape_reed_solomon_crc
-  libtape_crc32c_crc
+  ltfs
+  libtape_generic_itdtimg
+  tape_reed_solomon_crc
+  tape_crc32c_crc
 )
-target_include_directories(libtape_itdtimg BEFORE PUBLIC "../..")
+target_include_directories(tape_itdtimg BEFORE PUBLIC "../..")

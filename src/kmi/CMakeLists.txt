@@ -1,23 +1,21 @@
-set(LIBKMI_SIMPLE_SRCS
+add_library(kmi_simple SHARED
   simple.c
   key_format_ltfs.c
 )
-add_library(libkmi_simple SHARED ${LIBKMI_SIMPLE_SRCS})
-target_link_libraries(libkmi_simple
+target_link_libraries(kmi_simple
   PkgConfig::FUSE
-  libltfs
-  libkmi_simple_messages
+  ltfs
+  libkmi_simple
 )
-target_include_directories(libkmi_simple BEFORE PUBLIC "..")
+target_include_directories(kmi_simple BEFORE PUBLIC "..")
 
-set(LIBKMI_FLATFILE_SRCS
+add_library(kmi_flatfile SHARED
   flatfile.c
   key_format_ltfs.c
 )
-add_library(libkmi_flatfile SHARED ${LIBKMI_FLATFILE_SRCS})
-target_link_libraries(libkmi_flatfile
+target_link_libraries(kmi_flatfile
   PkgConfig::FUSE
-  libltfs
-  libkmi_flatfile_messages
+  ltfs
+  libkmi_flatfile
 )
-target_include_directories(libkmi_flatfile BEFORE PUBLIC "..")
+target_include_directories(kmi_flatfile BEFORE PUBLIC "..")

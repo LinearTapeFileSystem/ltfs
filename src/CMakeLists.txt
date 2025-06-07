@@ -1,17 +1,18 @@
-add_executable(ltfs main.c ltfs_fuse.c)
-target_link_libraries(ltfs
+add_executable(ltfs_bin main.c ltfs_fuse.c)
+target_link_libraries(ltfs_bin
   Threads::Threads
   PkgConfig::FUSE
   LibXml2::LibXml2
   PkgConfig::UUID
   ICU::uc
-  libltfs
+  ltfs
 )
-target_include_directories(ltfs BEFORE PUBLIC "." )
+set_property(TARGET ltfs_bin PROPERTY OUTPUT_NAME ltfs)
+target_include_directories(ltfs_bin BEFORE PUBLIC "." )
 add_compile_definitions(
-  LTFS_CONFIG_FILE="${SYSCONFDIR}/ltfs.conf"
+  LTFS_CONFIG_FILE="${CMAKE_INSTALL_FULL_SYSCONFDIR}/ltfs.conf"
   LTFS_BASE_DIR="${CMAKE_INSTALL_PREFIX}"
-  PACKAGE_VERSION="${PROJECT_VERSION}"
+  PACKAGE_VERSION="${VERSION}"
   PACKAGE_NAME="${PROJECT_NAME}"
 )
 
