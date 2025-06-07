@@ -21,20 +21,13 @@ set(MESSAGES_LIBS
 foreach(NAME IN LISTS MESSAGES_LIBS)
   file(GLOB SRCS "${NAME}/*.txt")
 
-  # Compile the message resources using genrb and pkgdata see make_message_src.sh
-  add_custom_command(
-    OUTPUT "res_${NAME}/lib${NAME}.a"
-    COMMAND mkdir -p res_${NAME}
-    COMMAND ${ICU_GENRB_EXECUTABLE} -q ${SRCS} -d res_${NAME} 1> /dev/null
-    COMMAND find res_${NAME} -name *.res > res_${NAME}/paths.txt
-    COMMAND ${ICU_PKGDATA_EXECUTABLE} -d res_${NAME}/ -m static -p ${NAME} -q res_${NAME}/paths.txt 1> /dev/null
-    BYPRODUCTS "res_${NAME}"
-  )
   # Add the command as a target to be build when all is invoked
   add_custom_target("${NAME}.a" ALL
-    cp res_${NAME}/lib${NAME}.a lib${NAME}.a
-    DEPENDS "res_${NAME}/lib${NAME}.a"
-    BYPRODUCTS lib${NAME}.a
+    ${ICU_GENRB_EXECUTABLE} -q ${SRCS} 1> /dev/null
+    COMMAND ls *.res > paths.txt
+    COMMAND ${ICU_PKGDATA_EXECUTABLE} -m static -p ${NAME} -q paths.txt 1> /dev/null
+    COMMAND cp lib${NAME}.a ..
+    WORKING_DIRECTORY res_${NAME}
   )
 
   # Define the library as an imported CMake lib
