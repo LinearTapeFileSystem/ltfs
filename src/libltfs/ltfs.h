@@ -184,7 +184,7 @@ enum ltfs_index_type {
 
 #define LTFS_NO_BARCODE               "NO_BARCODE"
 
-#ifndef __APPLE_MAKEFILE__
+#if !defined(__APPLE_MAKEFILE__) && !defined(__CMAKE_BUILD)
 #include "config.h"
 #endif
 
