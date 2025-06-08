@@ -17,23 +17,27 @@ set(MESSAGES_LIBS
   tape_linux_lin_tape
   tape_linux_sg
 )
-
+set(LIBS)
 foreach(NAME IN LISTS MESSAGES_LIBS)
   file(GLOB SRCS "${NAME}/*.txt")
-  make_directory("${CMAKE_CURRENT_BINARY_DIR}/res_${NAME}")
+  set(OUT "lib${NAME}.a")
+  list(APPEND LIBS ${OUT})
 
-  # Add the command as a target to be build when all is invoked
-  add_custom_target("${NAME}_bundle"
+  make_directory("${CMAKE_CURRENT_BINARY_DIR}/res_${NAME}")
+  add_custom_command(OUTPUT ${OUT}
     COMMAND ${ICU_GENRB_EXECUTABLE} -q ${SRCS} 1> /dev/null
     COMMAND ls *.res > paths.txt
     COMMAND ${ICU_PKGDATA_EXECUTABLE} -m static -p ${NAME} -q paths.txt 1> /dev/null
-    COMMAND cp lib${NAME}.a ..
-    BYPRODUCTS res_${NAME} lib${NAME}.a
+    COMMAND cp ${OUT} ..
+    DEPENDS ${SRCS}
+    BYPRODUCTS res_${NAME}
     WORKING_DIRECTORY res_${NAME}
   )
 
   # Define the library as an imported CMake lib
   add_library("lib${NAME}" STATIC IMPORTED GLOBAL)
   set_target_properties("lib${NAME}" PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/lib${NAME}.a")
-  add_dependencies("lib${NAME}" "${NAME}_bundle")
+  add_dependencies("lib${NAME}" "messages")
 endforeach()
+# Do this to not rebuild the entire message libraries every run
+add_custom_target(messages ALL DEPENDS ${LIBS})
