@@ -346,7 +346,7 @@ static struct _timeout_tape timeout_lto9_hh[] = {
 	{-1, -1}
 };
 
-static struct _timeout_tape timeout_10_hh[] = {
+static struct _timeout_tape timeout_lto10_hh[] = {
 	{ ERASE,                           166370 },
 	{ FORMAT_MEDIUM,                   3240   },
 	{ LOAD_UNLOAD,                     960    },
