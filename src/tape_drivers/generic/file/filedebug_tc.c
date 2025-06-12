@@ -1424,19 +1424,6 @@ static inline int _sanitize_tape(struct filedebug_data *state)
 	} 
 	else if (gen == DRIVE_GEN_JAG4) {
 		switch (state->conf.cart_type) {
-		case TC_MP_LTOP10D_CART:
-		case TC_MP_LTO10D_CART:
-			/* Do nothing */
-			break;
-		default:
-			ltfsmsg(LTFS_INFO, 30086I, "LTO10", state->conf.cart_type);
-			state->unsupported_tape = true;
-			ret = -EDEV_MEDIUM_FORMAT_ERROR;
-			break;
-		}
-	}
-	else if (gen == DRIVE_GEN_JAG4) {
-		switch (state->conf.cart_type) {
 		case TC_MP_JB:
 		case TC_MP_JC:
 		case TC_MP_JK:

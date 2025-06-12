@@ -1122,7 +1122,7 @@ char* ibm_tape_assume_cart_name(unsigned char type)
 		case TC_MP_LTO10D_CART:
 			name = "LA";
 			break;
-		case TC_MP_10D_CART:
+		case TC_MP_LTOP10D_CART:
 			name = "PA";
 			break;
 		case TC_MP_JB:
