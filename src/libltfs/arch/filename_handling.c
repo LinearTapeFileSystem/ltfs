@@ -130,7 +130,7 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
 		}
 	}
 #else
-	// Checkup not needed here, memory error handling happens after function calls.
+	/* Checkup not needed here, memory error handling happens after function call. */
 	dentry->platform_safe_name = strdup(dentry->name.name);
 #endif
 }
