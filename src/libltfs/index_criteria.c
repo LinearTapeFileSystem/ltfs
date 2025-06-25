@@ -288,19 +288,19 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 	/* Assign rules to the glob_patterns[] array */
 	rule = rule+5;
 	for (delim = rule; *delim; delim++) {
-		bool doDelimAssign = false;
-		bool doRuleAdd = false;
+		bool do_delim_assign = false;
+		bool do_rule_add = false;
 		if (*delim == ':') {
-			doDelimAssign = true;
-			doRuleAdd = true;
+			do_delim_assign = true;
+			do_rule_add = true;
 		}
 		else if (*delim == '/') {
-			doDelimAssign = true;
+			do_delim_assign = true;
 		}
 		else if (! (*(delim+1) == '\0')) {
 			continue;
 		}
-		if (doDelimAssign) *delim = '\0';
+		if (do_delim_assign) *delim = '\0';
 		rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
 		rule_ptr->name = strdup(rule);
 		if (! rule_ptr->name) {
@@ -309,24 +309,7 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 				return -EDEV_NO_MEMORY;
 		}
 		rule_ptr++;
-		if (doRuleAdd) rule = delim+1;
-		/*
-		if (*delim == ':') {
-			*delim = '\0';
-			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
-			rule_ptr->name = strdup(rule);
-			rule_ptr++;
-			rule = delim+1;
-		} else if (*delim == '/') {
-			*delim = '\0';
-			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
-			rule_ptr->name = strdup(rule);
-			rule_ptr++;
-		} else if (*(delim+1) == '\0') {
-			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
-			rule_ptr->name = strdup(rule);
-			rule_ptr++;
-		}*/
+		if (do_rule_add) rule = delim+1;
 	}
 
 	if (ic->glob_patterns == rule_ptr) {
