@@ -246,8 +246,9 @@ char * _generate_target_file_name(const char *prefix, const char *extension, int
 			if (!target) {
 				ltfsmsg(LTFS_ERR, 10001E, "_generate_target_file_name: target assign");
 				ret = -1;
+			} else {
+				ret = strlen(target);
 			}
-			ret = target ? strlen(target) : -1;
 		}
 	}
 
