@@ -1669,8 +1669,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 				seekpos.block = vol->dp_coh.set_id;
 			}
 		} else {
-			if (vollock != PWE_MAM_DP && vollock != PWE_MAM) {
-				/*
+			if (vol->ip_coh.count > vol->dp_coh.count && vollock != PWE_MAM_DP && vollock != PWE_MAM) {				/*
 				 * The index on IP is newer but MAM shows write perm doesn't happen in DP.
 				 * LTFS already have written an index on DP when it is writing an index on IP,
 				 * so this condition wouldn't happen logically.
