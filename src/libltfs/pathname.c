@@ -954,7 +954,7 @@ int _pathname_utf8_to_system_icu(const char *src, char **dest)
 	if (! strcmp(syslocale, "UTF-8")) {
 		*dest = strdup(src);
 		if (! (*dest)) {
-			ltfsmsg(LTFS_ERR, 10001E, "_pathname_utf8_to_system_icu: dest assign");
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 		return 0;
