@@ -155,7 +155,7 @@ static int decode_entry_name(char **new_name, const char *name)
 
 	*new_name = strdup(tmp_name);
 	if (! (*new_name)) {
-		ltfsmsg(LTFS_ERR, 10001E, "decode_entry_name: new name assign");
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 	free(tmp_name);
