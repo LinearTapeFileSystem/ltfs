@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -730,7 +730,7 @@ int lin_tape_ibmtape_get_serialnumber(void *device, char **result)
 	ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_ENTER(REQ_TC_GETSER));
 
 	*result = strdup((const char *) priv->drive_serial);
-	if (! *result) {
+	if (! (*result)) {
 		ltfsmsg(LTFS_ERR, 10001E, "lin_tape_ibmtape_get_serialnumber: result");
 		ltfs_profiler_add_entry(priv->profiler, NULL, CHANGER_REQ_EXIT(REQ_TC_GETSER));
 		return -EDEV_NO_MEMORY;
@@ -1018,6 +1018,10 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 	if (!ret) {
 		/* Specified file is existed. Use it as a device file name */
 		devfile = strdup(devname);
+		if (! devfile) {
+			ltfsmsg(LTFS_ERR, 10001E, "lin_tape_ibmtape_open: devfile");
+			return -EDEV_NO_MEMORY;
+		}
 	} else {
 		/* Search device by serial number (Assume devname has a drive serial) */
 		devs = lin_tape_ibmtape_get_device_list(NULL, 0);
@@ -1143,6 +1147,10 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 
 	priv->loaded = false; /* Assume tape is not loaded until a successful load call. */
 	priv->devname = strdup(devname);
+	if (! priv->devname) {
+		ltfsmsg(LTFS_ERR, 10001E, "lin_tape_ibmtape_open: devname");
+		return -EDEV_NO_MEMORY;
+	}
 
 	priv->clear_by_pc     = false;
 	priv->force_writeperm = DEFAULT_WRITEPERM;

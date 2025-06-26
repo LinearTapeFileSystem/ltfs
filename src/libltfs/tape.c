@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -1895,6 +1895,10 @@ int tape_get_media_pool_info(struct ltfs_volume *vol, char **media_name, char **
 			name = strndup(vol->t_attr->media_pool, add_start);
 		}
 		info = strdup(&(vol->t_attr->media_pool[add_start+1]));
+		if (!info) {
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+			return -LTFS_NO_MEMORY;
+		}
 		len = strlen(info);
 		info[len-1] = '\0';
 	}
@@ -3508,7 +3512,7 @@ int read_tape_attribute(struct ltfs_volume *vol, char **val, const char *name)
 		*val = strdup(vol->t_attr->media_pool);
 	}
 
-	if (!*val) {
+	if (!(*val)) {
 		ltfsmsg(LTFS_ERR, 10001E, "read_tape_attribute: *val");
 		return -LTFS_UNEXPECTED_VALUE;
 	}

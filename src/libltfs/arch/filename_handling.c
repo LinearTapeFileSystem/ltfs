@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -130,6 +130,7 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
 		}
 	}
 #else
+	/* Checkup not needed here, memory error handling happens after function call. */
 	dentry->platform_safe_name = strdup(dentry->name.name);
 #endif
 }
@@ -242,7 +243,12 @@ char * _generate_target_file_name(const char *prefix, const char *extension, int
 			ret = asprintf(&target, "%s.%s", prefix, extension);
 		else {
 			target = strdup(prefix);
-			ret = target ? strlen(target) : -1;
+			if (!target) {
+				ltfsmsg(LTFS_ERR, 10001E, "_generate_target_file_name: target assign");
+				ret = -1;
+			} else {
+				ret = strlen(target);
+			}
 		}
 	}
 

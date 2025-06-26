@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -1313,6 +1313,10 @@ int ltfs_split_symlink( struct ltfs_volume *vol )
 	}
 	ret = ltfs_fsops_close( workd, true, true, use_iosche, vol);
 	path=strdup(lfdir);
+	if (! path) {
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs_split_symlink: path assign");
+		return -LTFS_NO_MEMORY;
+	}
 
 	/* loop for conflicted files */
 	for( i=0; i<(vol->index->symerr_count); i++ ){

@@ -3,7 +3,7 @@
 **  OS_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2018 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **  Copyright (c) 2013-2018 Spectra Logic Corporation. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
@@ -189,6 +189,10 @@ int camtape_ioctlrc2err(void *device, int fd, struct scsi_sense_data *sense_data
 
 			if (msg) {
 				*msg = strdup("No Sense Information");
+				if (! (*msg)) {
+					ltfsmsg(LTFS_ERR, 10001E, "camtape_ioctlrc2err: msg assign");
+					// TODO: Check if error return is needed
+				}
 			}
 			rc = -EDEV_NO_SENSE;
 		} else {
@@ -217,6 +221,10 @@ int camtape_ioctlrc2err(void *device, int fd, struct scsi_sense_data *sense_data
 		ltfsmsg(LTFS_INFO, 31212I, rc_sense);
 		if (msg)
 			*msg = strdup("Cannot get sense information");
+			if (! (*msg)) {
+				ltfsmsg(LTFS_ERR, 10001E, "camtape_ioctlrc2err: msg assign");
+				// TODO: Check if error return is needed
+			}
 
 		rc = -EDEV_CANNOT_GET_SENSE;
 	}

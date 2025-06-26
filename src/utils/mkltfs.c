@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -155,8 +155,12 @@ void show_usage(char *appname, struct config_file *config, bool full)
 		plugin_unload(&backend);
 	}
 
-	if (! devname)
+	if (! devname) {
 		devname = strdup("<devname>");
+		if (! devname) {	
+			ltfsmsg(LTFS_ERR, 10001E, "show_usage: devname assign");
+		}
+	}
 
 	fprintf(stderr, "\n");
 	ltfsresult(15400I, appname);  /* Usage: %s <options> */
@@ -219,6 +223,7 @@ int main(int argc, char **argv)
 	for (i = 0; i < fuse_argc; ++i) {
 		fuse_argv[i] = strdup(argv[i]);
 		if (! fuse_argv[i]) {
+			ltfsmsg(LTFS_ERR, 10001E, "main: fuse argv assign");
 			return MKLTFS_OPERATIONAL_ERROR;
 		}
 	}
@@ -278,6 +283,10 @@ int main(int argc, char **argv)
 			break;
 		if (c == 'i') {
 			config_file = strdup(optarg);
+			if (! config_file) {
+				ltfsmsg(LTFS_ERR, 10001E, "main: config file assign");
+				return MKLTFS_OPERATIONAL_ERROR;
+			}
 			break;
 		}
 	}
@@ -307,18 +316,34 @@ int main(int argc, char **argv)
 				break;
 			case 'd':
 				opt.devname = strdup(optarg);
+				if (! opt.devname) {
+					ltfsmsg(LTFS_ERR, 10001E, "main mkltfs: opt devname assign");
+					return MKLTFS_OPERATIONAL_ERROR;
+				}
 				break;
 			case 'b':
 				opt.blocksize = atoi(optarg);
 				break;
 			case 's':
 				opt.barcode = strdup(optarg);
+				if (! opt.barcode) {
+					ltfsmsg(LTFS_ERR, 10001E, "main mkltfs: opt barcode assign");
+					return MKLTFS_OPERATIONAL_ERROR;
+				}
 				break;
 			case 'n':
 				opt.volume_name = strdup(optarg);
+				if (! opt.volume_name) {
+					ltfsmsg(LTFS_ERR, 10001E, "main mkltfs: opt volume name assign");
+					return MKLTFS_OPERATIONAL_ERROR;
+				}
 				break;
 			case 'r':
 				opt.filterrules = strdup(optarg);
+				if (! opt.filterrules) {
+					ltfsmsg(LTFS_ERR, 10001E, "main mkltfs: opt filterrules assign");
+					return MKLTFS_OPERATIONAL_ERROR;
+				}
 				break;
 			case '-':
 				opt.kmi_backend_name = strdup(optarg);
@@ -391,6 +416,10 @@ int main(int argc, char **argv)
 			return MKLTFS_OPERATIONAL_ERROR;
 		}
 		opt.backend_path = strdup(default_backend);
+		if (! opt.backend_path) {
+			ltfsmsg(LTFS_ERR, 10001E, "main mkltfs: opt backend path assign");
+			return MKLTFS_OPERATIONAL_ERROR;
+		}
 	}
 	if (! opt.kmi_backend_name) {
 		const char *default_backend = config_file_get_default_plugin("kmi", opt.config);
@@ -398,6 +427,10 @@ int main(int argc, char **argv)
 			opt.kmi_backend_name = strdup(default_backend);
 		else
 			opt.kmi_backend_name = strdup("none");
+		if (! opt.kmi_backend_name) {
+			ltfsmsg(LTFS_ERR, 10001E, "main mkltfs: opt kmi backend name assign");
+			return MKLTFS_OPERATIONAL_ERROR;
+		}
 	}
 	if (opt.kmi_backend_name && strcmp(opt.kmi_backend_name, "none") == 0)
 		opt.kmi_backend_name = NULL;

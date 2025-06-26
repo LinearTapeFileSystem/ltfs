@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -953,8 +953,10 @@ int _pathname_utf8_to_system_icu(const char *src, char **dest)
 	syslocale = ucnv_getDefaultName();
 	if (! strcmp(syslocale, "UTF-8")) {
 		*dest = strdup(src);
-		if (! *dest)
+		if (! (*dest)) {
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
+		}
 		return 0;
 	}
 

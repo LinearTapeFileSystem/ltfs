@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -122,6 +122,10 @@ int read_trap_def_file(char *deffile)
 					return -LTFS_NO_MEMORY;
 				}
 				entry->id = strdup(tok);
+				if (!entry->id) {
+					ltfsmsg(LTFS_ERR, 10001E, "read_trap_def_file: entry id assign");
+					return -LTFS_NO_MEMORY;
+				}
 				TAILQ_INSERT_TAIL(&trap_entries, entry, list);
 			}
 		}

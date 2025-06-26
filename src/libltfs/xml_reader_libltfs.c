@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -154,6 +154,10 @@ static int decode_entry_name(char **new_name, const char *name)
 	tmp_name[j] = '\0';
 
 	*new_name = strdup(tmp_name);
+	if (! (*new_name)) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -LTFS_NO_MEMORY;
+	}
 	free(tmp_name);
 
 	return 0;

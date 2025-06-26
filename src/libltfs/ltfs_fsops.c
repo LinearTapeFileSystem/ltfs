@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2021 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -1912,7 +1912,12 @@ int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, 
 
 	id->uid = d->uid;
 	id->ino = d->ino;
+	// TODO: Check if the return error is needed or can be skipped.
 	d->target.name = strdup(to);
+	if (! d->target.name) {
+		ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsops_symlink_path: d target name");
+		return -LTFS_NO_MEMORY;
+	}
 	d->target.percent_encode = fs_is_percent_encode_required(to);
 	d->isslink = true;
 
