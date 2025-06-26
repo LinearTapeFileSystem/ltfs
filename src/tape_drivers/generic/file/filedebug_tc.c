@@ -2664,7 +2664,7 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 			tmp = strdup(entry->d_name);
 			if (! tmp) {
 				ltfsmsg(LTFS_ERR, 10001E, "filedebug_get_device_list");
-				return -LTFS_NO_MEMORY;
+				return -EDEV_NO_MEMORY;
 			}
 
 			for (i = strlen(tmp) - 1; i > 0; --i) {
