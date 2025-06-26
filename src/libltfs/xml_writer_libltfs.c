@@ -98,6 +98,10 @@ static int encode_entry_name(char **new_name, const char *name)
 	len = strlen(name);
 
 	tmp_name = malloc(len * 3 * sizeof(UChar));
+	if (! tmp_name) {
+		ltfsmsg(LTFS_ERR, 10001E, "encode_entry_name: tmp name assign");
+		return -LTFS_NO_MEMORY;
+	}
 	buf_encode[2] = '\0';
 
 	while (i < len) {
