@@ -304,9 +304,9 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 		rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
 		rule_ptr->name = strdup(rule);
 		if (! rule_ptr->name) {
-				ltfsmsg(LTFS_ERR, 10001E, "index_criteria_parse_name: rule assign");
-				free(rule_ptr->name);
-				return -EDEV_NO_MEMORY;
+			ltfsmsg(LTFS_ERR, 10001E, "index_criteria_parse_name: rule assign");
+			free(rule_ptr->name);
+			return -LTFS_NO_MEMORY;
 		}
 		rule_ptr++;
 		if (do_rule_add) rule = delim+1;
