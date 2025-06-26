@@ -1896,7 +1896,7 @@ int tape_get_media_pool_info(struct ltfs_volume *vol, char **media_name, char **
 		}
 		info = strdup(&(vol->t_attr->media_pool[add_start+1]));
 		if (!info) {
-			ltfsmsg(LTFS_ERR, 10001E, __FILE__);
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 		len = strlen(info);
