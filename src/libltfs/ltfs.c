@@ -1658,6 +1658,7 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 						(unsigned long long)vol->dp_coh.volume_change_ref,
 						(unsigned long long)volume_change_ref);
 
+				/* Index of IP could be corrupted. So set skip flag to true */
 				ret = _ltfs_search_index_wp(recover_symlink, false, &seekpos, vol);
 				if (ret < 0)
 					goto out_unlock;
