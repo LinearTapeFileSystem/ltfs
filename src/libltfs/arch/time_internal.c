@@ -56,14 +56,15 @@
 #include "libltfs/ltfslogging.h"
 #include "libltfs/arch/time_internal.h"
 
-#ifdef __APPLE__
+// TODO: Fix definition of SIZEOF_TIME_T in cmake
+#if defined(__APPLE__) || defined(__CMAKE_BUILD)
 /*
  * In OSX environment time_t is always 64-bit width.
  * It is specified by compile option of Makefile.osx because autoconf architecture is
  * not used under OSX.
  */
 #define SIZEOF_TIME_T (8)
-#else
+#elif !defined(__CMAKE_BUILD)
 #include "config.h"
 #endif
 
