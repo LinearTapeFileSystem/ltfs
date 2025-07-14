@@ -87,7 +87,7 @@ struct _timeout_tape{
 	int  timeout;     /**< SCSI timeout */
 };
 
-/* Base timeout value for LTO  */
+/* Base timeout value for LTO */
 static struct _timeout_tape timeout_lto[] = {
 	{ CHANGE_DEFINITION,               -1    },
 	{ XCOPY,                           -1    },
