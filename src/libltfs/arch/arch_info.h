@@ -87,7 +87,7 @@
 #elif defined(mingw_PLATFORM)
 
 #define BUILD_SYS_FOR "This binary is built for Windows"
-#define BUILD_SYS_GCC __VERSION__
+#define BUILD_SYS_GCC "NA"
 
 #else
 
