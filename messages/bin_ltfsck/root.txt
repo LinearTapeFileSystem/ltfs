@@ -129,7 +129,7 @@ root:table {
 		16087E:string { "Volume is inconsistent. Try to recover consistency with ltfsck first." }
 		16088I:string { "Launched by \"%s\"." }
 		16089I:string { "%s." }
-		16090I:string { "GCC version is %s." }
+		16090I:string { "%s version is %s." }
 		16091E:string { "Cannot recover missing EOD (%d)." }
 		16092E:string { "Cannot set up tape drive (%s)." }
 		16093E:string { "Cannot recover the cartridge with ltfsck." }
