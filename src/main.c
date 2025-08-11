@@ -695,7 +695,7 @@ int main(int argc, char **argv)
 
 	/* Show build time information */
 	ltfsmsg(LTFS_INFO, 14105I, BUILD_SYS_FOR);
-	ltfsmsg(LTFS_INFO, 14106I, BUILD_SYS_GCC);
+	ltfsmsg(LTFS_INFO, 14106I, BUILD_SYS_COMPILER_VER);
 
 	/* Show run time information */
 	show_runtime_system_info();

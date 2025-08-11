@@ -50,49 +50,58 @@
 #ifndef arch_info_h_
 #define arch_info_h_
 
+#if defined(_MSC_VER)
+#define BUILD_SYS_COMPILER "MSVC"
+#else
+#define BUILD_SYS_COMPILER "GCC"
+#endif
+
 #if defined(__linux__)
 
 #if defined(__i386__)
 #define BUILD_SYS_FOR "This binary is built for Linux (i386)"
-#define BUILD_SYS_GCC __VERSION__
+#define BUILD_SYS_COMPILER_VER __VERSION__
 #elif defined(__x86_64__)
 #define BUILD_SYS_FOR "This binary is built for Linux (x86_64)"
-#define BUILD_SYS_GCC __VERSION__
+#define BUILD_SYS_COMPILER_VER __VERSION__
 #elif defined(__ppc__)
 #define BUILD_SYS_FOR "This binary is built for Linux (ppc)"
-#define BUILD_SYS_GCC __VERSION__
+#define BUILD_SYS_COMPILER_VER __VERSION__
 #elif defined(__ppc64__)
 #define BUILD_SYS_FOR "This binary is built for Linux (ppc64)"
-#define BUILD_SYS_GCC __VERSION__
+#define BUILD_SYS_COMPILER_VER __VERSION__
 #else
 #define BUILD_SYS_FOR "This binary is built for Linux (unknown)"
-#define BUILD_SYS_GCC __VERSION__
+#define BUILD_SYS_COMPILER_VER __VERSION__
 #endif
 
 #elif defined(__APPLE__)
 
 #define BUILD_SYS_FOR "This binary is built for Mac OS X "
-#define BUILD_SYS_GCC __VERSION__
+#define BUILD_SYS_COMPILER_VER __VERSION__
 
 #elif defined(__FreeBSD__)
 
 #define BUILD_SYS_FOR "This binary is built for FreeBSD"
-#define BUILD_SYS_GCC __VERSION__
+#define BUILD_SYS_COMPILER_VER __VERSION__
 
 #elif defined(__NetBSD__)
 
 #define BUILD_SYS_FOR "This binary is built for NetBSD"
-#define BUILD_SYS_GCC __VERSION__
+#define BUILD_SYS_COMPILER_VER __VERSION__
 
 #elif defined(mingw_PLATFORM)
 
+#define STR_HELPER(x) #x
+#define STR_MACRO(x) STR_HELPER(x)
+
 #define BUILD_SYS_FOR "This binary is built for Windows"
-#define BUILD_SYS_GCC __VERSION__
+#define BUILD_SYS_COMPILER_VER STR_MACRO(_MSC_VER)
 
 #else
 
 #define BUILD_SYS_FOR "This binary is built on an unknown OS"
-#define BUILD_SYS_GCC __VERSION__
+#define BUILD_SYS_COMPILER_VER __VERSION__
 
 #endif
 
