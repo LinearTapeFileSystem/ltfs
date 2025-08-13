@@ -193,11 +193,11 @@ DRIVE_DENSITY_SUPPORT_MAP jaguar_drive_density_strict[] = {
 };
 
 DRIVE_DENSITY_SUPPORT_MAP lto_drive_density[] = {
-	/* LTOA */
-	{ DRIVE_GEN_LTOA, TC_MP_LTOPAD_CART, TC_DC_LTOPA,  MEDIUM_PERFECT_MATCH},
-	{ DRIVE_GEN_LTOA, TC_MP_LTOAD_CART, TC_DC_LTOA,    MEDIUM_PERFECT_MATCH},
-	{ DRIVE_GEN_LTOA, TC_MP_LTOAD_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
-	{ DRIVE_GEN_LTOA, TC_MP_LTOPAD_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
+	/* LTO10 */
+	{ DRIVE_GEN_LTO10, TC_MP_LTO10D_CART, TC_DC_LTO10,    MEDIUM_PERFECT_MATCH},
+	{ DRIVE_GEN_LTO10, TC_MP_LTOP10D_CART, TC_DC_LTOP10,  MEDIUM_PERFECT_MATCH},
+	{ DRIVE_GEN_LTO10, TC_MP_LTO10D_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
+	{ DRIVE_GEN_LTO10, TC_MP_LTOP10D_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
 	/* LTO9 */
 	{ DRIVE_GEN_LTO9, TC_MP_LTO9D_CART, TC_DC_LTO9,    MEDIUM_PERFECT_MATCH},
 	{ DRIVE_GEN_LTO9, TC_MP_LTO9D_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
@@ -231,11 +231,11 @@ DRIVE_DENSITY_SUPPORT_MAP lto_drive_density[] = {
 };
 
 DRIVE_DENSITY_SUPPORT_MAP lto_drive_density_strict[] = {
-	/* LTOA */
-	{ DRIVE_GEN_LTOA, TC_MP_LTOPAD_CART, TC_DC_LTOPA,  MEDIUM_PERFECT_MATCH},
-	{ DRIVE_GEN_LTOA, TC_MP_LTOAD_CART, TC_DC_LTOA,    MEDIUM_PERFECT_MATCH},
-	{ DRIVE_GEN_LTOA, TC_MP_LTOAD_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
-	{ DRIVE_GEN_LTOA, TC_MP_LTOPAD_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
+	/* LTO10 */
+	{ DRIVE_GEN_LTO10, TC_MP_LTO10D_CART, TC_DC_LTO10,   MEDIUM_PERFECT_MATCH},
+	{ DRIVE_GEN_LTO10, TC_MP_LTOP10D_CART, TC_DC_LTOP10,  MEDIUM_PERFECT_MATCH},
+	{ DRIVE_GEN_LTO10, TC_MP_LTO10D_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
+	{ DRIVE_GEN_LTO10, TC_MP_LTOP10D_CART, TC_DC_UNKNOWN, MEDIUM_PERFECT_MATCH},
 
 	/* LTO9 */
 	{ DRIVE_GEN_LTO9, TC_MP_LTO9D_CART, TC_DC_LTO9,    MEDIUM_PERFECT_MATCH},
@@ -260,8 +260,8 @@ DRIVE_DENSITY_SUPPORT_MAP lto_drive_density_strict[] = {
 };
 
 const unsigned char supported_cart[] = {
-	TC_MP_LTOPAD_CART,
-	TC_MP_LTOAD_CART,
+	TC_MP_LTOP10D_CART,
+	TC_MP_LTO10D_CART,
 	TC_MP_LTO9D_CART,
 	TC_MP_LTO8D_CART,
 	TC_MP_LTO7D_CART,
@@ -291,8 +291,8 @@ const unsigned char supported_density[] = {
 	TC_DC_JAG5A,
 	TC_DC_JAG5,
 	TC_DC_JAG4,
-	TC_DC_LTOPA,
-	TC_DC_LTOA,
+	TC_DC_LTOP10,
+	TC_DC_LTO10,
 	TC_DC_LTO9,
 	TC_DC_LTO8,
 	TC_DC_LTOM8,
@@ -334,10 +334,10 @@ struct supported_device *ibm_supported_drives[] = {
 		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH9",  DRIVE_LTO9_HH, "[ULTRIUM-HH9]" ),  /* IBM Ultrium Gen 9 Half-High */
 		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH9",  DRIVE_LTO9_HH, "[ULT3580-HH9]" ),  /* IBM Ultrium Gen 9 Half-High */
 		TAPEDRIVE( IBM_VENDOR_ID, "HH LTO Gen 9", DRIVE_LTO9_HH, "[HH LTO Gen 9]" ), /* IBM Ultrium Gen 9 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-TDA",  DRIVE_LTOA,    "[ULTRIUM-TDA]" ),  /* IBM Ultrium Gen A */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TDA",  DRIVE_LTOA,    "[ULT3580-TDA]"),   /* IBM Ultrium Gen A */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HHA",  DRIVE_LTOA_HH, "[ULTRIUM-HHA]"),   /* IBM Ultrium Gen A Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HHA",  DRIVE_LTOA_HH, "[ULT3580-HHA]"),   /* IBM Ultrium Gen A Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-TDA",  DRIVE_LTO10,   "[ULTRIUM-TDA]" ),  /* IBM Ultrium Gen A */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TDA",  DRIVE_LTO10,   "[ULT3580-TDA]"),   /* IBM Ultrium Gen A */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HHA",  DRIVE_LTO10_HH,"[ULTRIUM-HHA]"),   /* IBM Ultrium Gen A Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HHA",  DRIVE_LTO10_HH,"[ULT3580-HHA]"),   /* IBM Ultrium Gen A Half-High */
 		TAPEDRIVE( IBM_VENDOR_ID, "03592E07",     DRIVE_TS1140,  "[03592E07]" ),     /* IBM TS1140 */
 		TAPEDRIVE( IBM_VENDOR_ID, "03592E08",     DRIVE_TS1150,  "[03592E08]" ),     /* IBM TS1150 */
 		TAPEDRIVE( IBM_VENDOR_ID, "0359255F",     DRIVE_TS1155,  "[0359255F]" ),     /* IBM TS1155 */
@@ -367,9 +367,9 @@ struct supported_device *usb_supported_drives[] = {
 		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TD9",  DRIVE_LTO9,    "[ULT3580-TD9]" ), /* IBM Ultrium Gen 9 */
 		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HH9",  DRIVE_LTO9_HH, "[ULTRIUM-HH9]" ), /* IBM Ultrium Gen 9 Half-High */
 		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HH9",  DRIVE_LTO9_HH, "[ULT3580-HH9]" ), /* IBM Ultrium Gen 9 Half-High */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TDA",  DRIVE_LTOA,    "[ULT3580-TDA]"),  /* IBM Ultrium Gen A */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HHA",  DRIVE_LTOA_HH, "[ULTRIUM-HHA]" ), /* IBM Ultrium Gen A */
-		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HHA",  DRIVE_LTOA_HH, "[ULT3580-HHA]" ), /* IBM Ultrium Gen A Half-High */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-TDA",  DRIVE_LTO10,   "[ULT3580-TDA]"),  /* IBM Ultrium Gen A */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULTRIUM-HHA",  DRIVE_LTO10_HH,"[ULTRIUM-HHA]" ), /* IBM Ultrium Gen A */
+		TAPEDRIVE( IBM_VENDOR_ID, "ULT3580-HHA",  DRIVE_LTO10_HH,"[ULT3580-HHA]" ), /* IBM Ultrium Gen A Half-High */
 		/* End of supported_devices */
 		NULL
 };
@@ -611,7 +611,7 @@ static struct _timeout_tape timeout_lto9[] = {
 	{-1, -1}
 };
 
-static struct _timeout_tape timeout_ltoA[] = {
+static struct _timeout_tape timeout_lto10[] = {
 	{ ERASE,                           16320  },
 	{ FORMAT_MEDIUM,                   3180   },
 	{ LOAD_UNLOAD,                     780    },
@@ -731,7 +731,7 @@ static struct _timeout_tape timeout_lto9_hh[] = {
 	{-1, -1}
 };
 
-static struct _timeout_tape timeout_ltoA_hh[] = {
+static struct _timeout_tape timeout_lto10_hh[] = {
 	{ ERASE,                           166370 },
 	{ FORMAT_MEDIUM,                   3240   },
 	{ LOAD_UNLOAD,                     960    },
@@ -965,11 +965,11 @@ int ibm_tape_init_timeout(struct timeout_tape** table, int type)
 		case DRIVE_LTO9_HH:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto9_hh);
 			break;
-		case DRIVE_LTOA:
-			ret = _create_table_tape(table, timeout_lto, timeout_ltoA);
+		case DRIVE_LTO10:
+			ret = _create_table_tape(table, timeout_lto, timeout_lto10);
 			break;
-		case DRIVE_LTOA_HH:
-			ret = _create_table_tape(table, timeout_lto, timeout_ltoA_hh);
+		case DRIVE_LTO10_HH:
+			ret = _create_table_tape(table, timeout_lto, timeout_lto10_hh);
 			break;
 		case DRIVE_TS1140:
 			ret = _create_table_tape(table, timeout_11x0, timeout_1140);
@@ -1058,7 +1058,7 @@ static inline unsigned char _assume_cartridge_type(char product, char btype)
 				ctype = TC_MP_LTO9D_CART;
 				break;
 			case 'A':
-				ctype = TC_MP_LTOAD_CART;
+				ctype = TC_MP_LTO10D_CART;
 				break;
 			default:
 				break;
@@ -1075,7 +1075,7 @@ static inline unsigned char _assume_cartridge_type(char product, char btype)
 	else if (product == 'P') {
 		switch (btype) {
 			case 'A':
-				ctype = TC_MP_LTOPAD_CART;
+				ctype = TC_MP_LTOP10D_CART;
 				break;
 			default:
 				break;
@@ -1119,10 +1119,10 @@ char* ibm_tape_assume_cart_name(unsigned char type)
 		case TC_MP_LTO9D_CART:
 			name = "L9";
 			break;
-		case TC_MP_LTOAD_CART:
+		case TC_MP_LTO10D_CART:
 			name = "LA";
 			break;
-		case TC_MP_LTOPAD_CART:
+		case TC_MP_LTOP10D_CART:
 			name = "PA";
 			break;
 		case TC_MP_JB:
