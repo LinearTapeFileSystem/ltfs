@@ -108,9 +108,9 @@ You can use following command when you want to unmount the tape. The ltfs comman
 
 One thing you need to pay attention to here is, that the unmount command continues to work in the background after it returns. It just initiates a trigger to notify the the ltfs command of the unmount request. Actual unmount is completed when the ltfs command is finished.
 
-## The `ltfsee_ordered_copy` utility
+## The `ltfs_ordered_copy` utility
 
-The [`ltfsee_ordered_copy`](https://github.com/LinearTapeFileSystem/ltfs/wiki/ltfs_ordered_copy) is a program to copy files from source to destination with LTFS  order  optimization.
+The [`ltfs_ordered_copy`](https://github.com/LinearTapeFileSystem/ltfs/wiki/ltfs_ordered_copy) is a program to copy files from source to destination with LTFS  order  optimization.
 
 It is written in python and it can work with both python2 and python3 (Python 2.7 or later is strongly recommended). You need to install the `pyxattr` module for both python2 and python3.
 
