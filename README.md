@@ -141,16 +141,16 @@ In some systems, you might need `sudo ldconfig -v` after `make install` to load 
   |:----------------------------------:|:-------:|:--------------------------------------------------------------------------------------------------------------------------------:|
   | RHEL 8                             | x86\_64 | OK - Not checked automatically                                                                                                   |
   | RHEL 8                             | ppc64le | OK - Not checked automatically                                                                                                   |
-  | CentOS 8 (Rocky Linux)             | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS8%20Build%20Job/badge.svg?branch=master)        |
+  | CentOS 8 (Rocky Linux)             | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-centos8.yml/badge.svg)        |
   | CentOS 8 (Rocky Linux)             | ppc64le | OK - Not checked automatically                                                                                                   |
-  | Fedora 28                          | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)       |
-  | Ubuntu 16.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master) |
+  | Fedora 28                          | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-fedora28.yml/badge.svg)       |
+  | Ubuntu 16.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-ubuntu-xeneal.yml/badge.svg) |
   | Ubuntu 16.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                   |
-  | Ubuntu 18.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master) |
+  | Ubuntu 18.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-ubuntu-bionic.yml/badge.svg) |
   | Ubuntu 18.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                   |
-  | Ubuntu 20.04 LTS (Need icu-config) | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2020.04%20Build%20Job/badge.svg?branch=master) |
-  | Debian 9                           | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)        |
-  | Debian 10 (Need icu-config)        | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian10%20Build%20Job/badge.svg?branch=master)       |
+  | Ubuntu 20.04 LTS (Need icu-config) | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-ubuntu-focal.yml/badge.svg) |
+  | Debian 9                           | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-debian9.yml/badge.svg)        |
+  | Debian 10 (Need icu-config)        | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-debian10.yml/badge.svg)       |
   | ArchLinux 2018.08.01               | x86\_64 | OK - Not checked automatically                                                                                                   |
   | ArchLinux 2018.12.31 (rolling)     | x86\_64 | OK - Not checked automatically                                                                                                   |
 
