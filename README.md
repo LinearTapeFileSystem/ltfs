@@ -1,5 +1,5 @@
 ![](https://img.shields.io/github/issues/lineartapefilesystem/ltfs.svg)
-![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)
+![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-centos8.yml/badge.svg)
 [![BSD License](http://img.shields.io/badge/license-BSD-blue.svg?style=flat)](LICENSE)
 
 # About this branch
