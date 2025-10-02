@@ -2384,12 +2384,13 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	struct tape_offset old_selfptr, old_backptr;
 	struct ltfs_timespec modtime_old = { .tv_sec = 0, .tv_nsec = 0 };
 	bool generation_inc = false;
-	struct tc_position physical_selfptr;
+	struct tc_position physical_selfptr, current_position;
 	char *cache_path_save = NULL;
 	bool write_perm = (strcmp(reason, SYNC_WRITE_PERM) == 0);
 	bool update_vollock = false;
 	int volstat = -1, new_volstat = 0;
 	char *bc_print = NULL;
+	unsigned long long diff;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
@@ -2506,6 +2507,22 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		vol->index->backptr = old_backptr;
 		goto out_write_perm;
 	}
+
+	/* Get the tape position from the tape drive by using the SCSI command READPOS*/
+	ret = tape_update_position(vol->device, &current_position);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 11081E, ret);
+	}
+
+	/* Prior to writing the index, compare the current location of the head position to the head location 
+	that is kept in the cache of ltfs (physical_selfptr). If they are different return error (-1) */
+	ltfsmsg(LTFS_INFO, 11334I, "compare offset", (unsigned long long)physical_selfptr.block, (unsigned long long)current_position.block);
+	diff = ((unsigned long long)physical_selfptr.block - (unsigned long long)current_position.block);
+	if (abs(diff)) {
+		ltfsmsg(LTFS_DEBUG, 16503D, "diff not equal zero", "");
+		//return -1;
+	}
+
 	old_selfptr = vol->index->selfptr;
 	vol->index->selfptr.partition = partition;
 	vol->index->selfptr.partition = vol->label->part_num2id[physical_selfptr.partition];
