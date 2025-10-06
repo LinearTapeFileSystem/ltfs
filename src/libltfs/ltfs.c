@@ -210,7 +210,7 @@ bool ltfs_is_interrupted(void)
 bool caught_sigcont = false;
 void _ltfs_sigcont(int signal)
 {
-	ltfsmsg(LTFS_DEBUG, 16503D, "_ltfs_sigcont", "");
+	ltfsmsg(LTFS_INFO, 17294I, signal);
 	caught_sigcont = true;
 }
 
