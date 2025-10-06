@@ -207,6 +207,18 @@ bool ltfs_is_interrupted(void)
 	return interrupted;
 }
 
+bool caught_sigcont = false;
+void _ltfs_sigcont(int signal)
+{
+	ltfsmsg(LTFS_DEBUG, 16503D, "_ltfs_sigcont", "");
+	caught_sigcont = true;
+}
+
+bool ltfs_caught_sigcont(void)
+{
+	return caught_sigcont;
+}
+
 /**
  * This function can be used to enable libltfs signal handler
  * to kill ltfs, mkltfs, ltfsck cleanly
@@ -251,6 +263,15 @@ int ltfs_set_signal_handlers(void)
 		return -LTFS_SIG_HANDLER_ERR;
 	}
 
+	ret = signal(SIGCONT, _ltfs_sigcont);
+	if (ret == SIG_ERR) {
+		signal(SIGINT, SIG_DFL);
+		signal(SIGHUP, SIG_DFL);
+		signal(SIGQUIT, SIG_DFL);
+		signal(SIGTERM, SIG_DFL);
+		return -LTFS_SIG_HANDLER_ERR;
+	}
+
 	return 0;
 }
 #endif
@@ -282,6 +303,10 @@ int ltfs_unset_signal_handlers(void)
 		ret = -LTFS_SIG_HANDLER_ERR;
 
 	rc = signal(SIGTERM, SIG_DFL);
+	if (rc == SIG_ERR)
+		ret = -LTFS_SIG_HANDLER_ERR;
+
+	rc = signal(SIGCONT, SIG_DFL);
 	if (rc == SIG_ERR)
 		ret = -LTFS_SIG_HANDLER_ERR;
 

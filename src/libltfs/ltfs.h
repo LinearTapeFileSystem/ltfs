@@ -586,6 +586,7 @@ int ltfs_fs_init(void);
 void ltfs_set_log_level(int log_level);
 void ltfs_set_syslog_level(int syslog_level);
 bool ltfs_is_interrupted(void);
+bool ltfs_caught_sigcont(void);
 int ltfs_set_signal_handlers(void);
 int ltfs_unset_signal_handlers(void);
 int ltfs_finish();

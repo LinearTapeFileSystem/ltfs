@@ -1187,6 +1187,9 @@ int tape_spacefm(struct device_data *dev, int count)
 ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool ignore_less, bool ignore_nospc)
 {
 	ssize_t ret;
+	struct tc_position current_position;
+	int ret_for_update_position = 0;
+	unsigned long long diff = 0;
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(buf, -LTFS_NULL_ARG);
@@ -1239,6 +1242,19 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 		ltfs_mutex_unlock(&dev->read_only_flag_mutex);
 		if (! ignore_less)
 			count = -LTFS_LESS_SPACE;
+	}
+
+	if (ltfs_caught_sigcont()) {
+		ltfsmsg(LTFS_DEBUG, 16503D, "ltfs_caught_sigcont", "tape_write");
+		ret_for_update_position = tape_update_position(dev, &current_position);
+		if (ret_for_update_position) {
+			// Implement the error handling
+		}
+		ltfsmsg(LTFS_INFO, 11334I, "compare offset in tape_write", (unsigned long long)dev->position.block, (unsigned long long)current_position.block);
+		diff = ((unsigned long long)dev->position.block - (unsigned long long)current_position.block);
+		if (diff) {
+			return -LTFS_WRITE_ERROR;
+		}
 	}
 
 	ltfs_mutex_lock(&dev->append_pos_mutex);
