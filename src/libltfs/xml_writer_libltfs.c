@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -61,12 +61,10 @@
 #include "tape.h"
 #include "pathname.h"
 #include "arch/time_internal.h"
-
-/* O_BINARY is defined only in MinGW */
-#ifndef O_BINARY
-#define O_BINARY 0
+#ifdef mingw_PLATFORM
+#include "unicode/umachine.h"
+#include "unicode/utf8.h"
 #endif
-
 /* Structure to control EE's file offset cache and sync file list */
 struct ltfsee_cache
 {
@@ -81,7 +79,7 @@ struct ltfsee_cache
 static int encode_entry_name(char **new_name, const char *name)
 {
 	int len;
-	UChar32 c;
+	UChar32 c=0;
 
 	/* Printable ASCII characters
 	 * !\"#$&`'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
@@ -119,7 +117,7 @@ static int encode_entry_name(char **new_name, const char *name)
 		}
 
 		while (count < i - prev) {
-			sprintf(buf_encode, "%02X", name[prev+count] & 0xFF);
+			arch_sprintf_auto(buf_encode, "%02X", name[prev+count] & 0xFF);
 			tmp_name[j] = '%';
 			tmp_name[j+1] = buf_encode[0];
 			tmp_name[j+2] = buf_encode[1];
@@ -130,7 +128,7 @@ static int encode_entry_name(char **new_name, const char *name)
 
 	tmp_name[j] = '\0';
 
-	*new_name = strdup(tmp_name);
+	*new_name = arch_strdup(tmp_name);
 	free(tmp_name);
 
 	return 0;
@@ -403,7 +401,7 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 			if (list_ptr->d->vol->index_cache_path && !strcmp(list_ptr->d->name.name, ".LTFSEE_DATA")) {
 				ret = asprintf(&offset_name, "%s.%s", list_ptr->d->vol->index_cache_path, "offsetcache.new");
 				if (ret > 0) {
-					offset->fp = fopen(offset_name, "w");
+					arch_fopen(offset_name, "w", offset->fp);
 					free(offset_name);
 					if (!offset->fp)
 						ltfsmsg(LTFS_WARN, 17248W, "offset cache", list_ptr->d->vol->index_cache_path);
@@ -412,7 +410,7 @@ static int _xml_write_dirtree(xmlTextWriterPtr writer, struct dentry *dir,
 
 				ret = asprintf(&sync_name, "%s.%s", list_ptr->d->vol->index_cache_path, "synclist.new");
 				if (ret > 0) {
-					sync->fp = fopen(sync_name, "w");
+					arch_fopen(sync_name, "w", sync->fp);
 					free(sync_name);
 					if (!sync->fp)
 						ltfsmsg(LTFS_WARN, 17248W, "sync list", list_ptr->d->vol->index_cache_path);
@@ -723,13 +721,12 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 		if (ret > 0) {
 			ret = asprintf(&offset_name, "%s.%s", path, "offsetcache");
 			if (ret > 0) {
-				unlink(offset_name);
+				arch_unlink(offset_name);
 				rename(offset_new, offset_name);
-				fd = open(offset_name, O_RDWR | O_BINARY,
-						  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+				arch_open(&fd, offset_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 				if (fd >= 0) {
 					fsync(fd);
-					close(fd);
+					arch_close(fd);
 					fd = -1;
 				} else {
 					if (errno != ENOENT)
@@ -744,13 +741,12 @@ static int _commit_offset_caches(const char* path, const struct ltfs_index *idx)
 		if (ret > 0) {
 			ret = asprintf(&sync_name, "%s.%s", path, "synclist");
 			if (ret > 0) {
-				unlink(sync_name);
+				arch_unlink(sync_name);
 				rename(sync_new, sync_name);
-				fd = open(sync_name, O_RDWR | O_BINARY,
-						  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+				arch_open(&fd,sync_name, O_RDWR | O_BINARY, SHARE_FLAG_DENYRW , PERMISSION_READWRITE);
 				if (fd >= 0) {
 					fsync(fd);
-					close(fd);
+					arch_close(fd);
 					fd = -1;
 				} else {
 					if (errno != ENOENT)
@@ -791,7 +787,7 @@ int xml_schema_to_file(const char *filename, const char *creator,
 	if (reason)
 		asprintf(&alt_creator, "%s - %s", creator , reason);
 	else
-		alt_creator = strdup(creator);
+		alt_creator = arch_strdup(creator);
 
 	if (alt_creator) {
 		ret = _xml_write_schema(writer, alt_creator, idx);
@@ -917,7 +913,7 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 		if (! vol->index->creator || strcmp(vol->creator, vol->index->creator)) {
 			if (vol->index->creator)
 				free(vol->index->creator);
-			vol->index->creator = strdup(vol->creator);
+			vol->index->creator = arch_strdup(vol->creator);
 			if (! vol->index->creator) {
 				ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_tape: new creator string");
 				ret = -LTFS_NO_MEMORY;

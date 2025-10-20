@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -58,9 +58,26 @@ extern "C" {
 #endif
 
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
+	#include "arch/win/win_util.h"
+	#include <time.h>
+#else
+	#include <sys/time.h>
+	#include <sys/ipc.h>
+	#include <sys/shm.h>
+	#ifndef __FreeBSD__
+		#include <sys/xattr.h>
+	#endif
+	#ifdef __APPLE_MAKEFILE__
+		#include <ICU/unicode/utypes.h>
+	#else
+		#include <unicode/utypes.h>
+	#endif
 #endif
 
+/* O_BINARY is defined only in MinGW */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -73,26 +90,10 @@ extern "C" {
 #include <string.h>
 #include <limits.h>
 #include <time.h>
-#include <sys/time.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifndef mingw_PLATFORM
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#endif
-
-#ifdef __APPLE_MAKEFILE__
-#include <ICU/unicode/utypes.h>
-#else
-#include <unicode/utypes.h>
-#endif
-
-#ifndef mingw_PLATFORM
-  #ifndef __FreeBSD__
-    #include <sys/xattr.h>
-  #endif
-#endif
 
 #include "libltfs/arch/signal_internal.h"
 #include "libltfs/arch/arch_info.h"
@@ -105,6 +106,7 @@ extern "C" {
 #include "libltfs/queue.h"
 #include "libltfs/uthash.h"
 #include "libltfs/arch/time_internal.h"
+#include "libltfs/arch/ltfs_arch_ops.h"
 #include "tape_ops.h"
 
 /* forward declarations from tape.h, tape_ops.h */
@@ -114,6 +116,7 @@ struct device_data;
 #ifndef LTFS_DEFAULT_WORK_DIR
 #ifdef mingw_PLATFORM
 #define LTFS_DEFAULT_WORK_DIR         "c:/tmp/ltfs"
+#include <io.h>
 #else
 #define LTFS_DEFAULT_WORK_DIR         "/tmp/ltfs"
 #endif
@@ -199,6 +202,9 @@ struct device_data;
 		kill(getpid(), SIGABRT);				\
 		do {sleep(1);}while(1);					\
 	}while(0)
+
+#define NO_BARCODE "      "
+#define HAVE_BARCODE(v) strcmp(v->label->barcode, NO_BARCODE)
 
 /* Callback prototype used to list directories. The function must return 0 on success
  * or a negative value on error. */

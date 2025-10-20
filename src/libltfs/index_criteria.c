@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -105,7 +105,7 @@ bool index_criteria_contains_invalid_options(const char *str)
 
 	/* Check the beginning of the string */
 	for (valid_option = false, i=0; options[i]; ++i)
-		if (! strncasecmp(options[i], str, strlen(options[i]))) {
+		if (! strncmp(options[i], str, strlen(options[i]))) {
 			valid_option = true;
 			break;
 		}
@@ -120,7 +120,7 @@ bool index_criteria_contains_invalid_options(const char *str)
 		if (! ptr)
 			break;
 		for (valid_option = false, i=0; options[i]; ++i)
-			if (! strncasecmp(options[i], ptr+1, strlen(options[i]))) {
+			if (!strncmp(options[i], ptr+1, strlen(options[i]))) {
 				valid_option = true;
 				break;
 			}
@@ -152,7 +152,7 @@ bool index_criteria_find_option(const char *str, const char *substr,
 	if (strlen(str) < 5)
 		return false;
 
-	if (! strncasecmp(str, substr, substr_len)) {
+	if (!strncmp(str, substr, substr_len)) {
 		/* Match at the start of the string */
 		str_start = str;
 	} else {
@@ -201,16 +201,21 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 {
 	int ret = 0, multiplier = 1;
 	size_t sizelen = 0;
-	char rule[len+1], last, *ptr;
-
+	char *rule = NULL, last, *ptr;
+	int lenrule = (sizeof(char) * (int)(len + 1));
+	rule = (char*)calloc(lenrule,sizeof(char));
+	if (rule == NULL) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -LTFS_NO_MEMORY;
+	}
 	sizelen = strlen("size=");
 	if (len <= sizelen) {
 		ltfsmsg(LTFS_ERR, 11143E, len);
 		return -LTFS_POLICY_INVALID;
 	}
+	const char *param = criteria + sizelen;
 
-	memset(rule, 0, sizeof(rule));
-	snprintf(rule, len - sizelen, "%s", criteria + sizelen);
+	snprintf(rule, len - sizelen, "%s", param);
 
 	for (ptr=&rule[0]; *ptr; ptr++) {
 		if (isalpha(*ptr) && *(ptr+1) && isalpha(*(ptr+1))) {
@@ -229,6 +234,7 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 			multiplier = 1024 * 1024 * 1024;
 		else {
 			ltfsmsg(LTFS_ERR, 11149E, last);
+			arch_safe_free(rule);
 			return -LTFS_POLICY_INVALID;
 		}
 		rule[strlen(rule)-1] = '\0';
@@ -236,13 +242,15 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 
 	if (strlen(rule) == 0) {
 		ltfsmsg(LTFS_ERR, 11150E);
+		arch_safe_free(rule);
 		return -LTFS_POLICY_INVALID;
 	} else if (!isdigit(rule[0])) {
 		ltfsmsg(LTFS_ERR, 11151E);
+		arch_safe_free(rule);
 		return -LTFS_POLICY_INVALID;
 	}
 	ic->max_filesize_criteria = strtoull(rule, NULL, 10) * multiplier;
-
+	arch_safe_free(rule);
 	return ret;
 }
 
@@ -255,7 +263,13 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
  */
 int index_criteria_parse_name(const char *criteria, size_t len, struct index_criteria *ic)
 {
-	char *delim, *rule, rulebuf[len+1];
+	char *delim, *rule, *rulebuf = NULL;
+	rulebuf = (char*)malloc(sizeof(char) * (len + 1));
+	if (rulebuf == NULL)
+	{
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -LTFS_NO_MEMORY;
+	}
 	struct ltfs_name *rule_ptr;
 	int ret = 0, num_names = 0;
 
@@ -266,12 +280,14 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 	/* Count the rules and check for empty ones */
 	if (rule[5] == ':') {
 		ltfsmsg(LTFS_ERR, 11305E, rule);
+		arch_safe_free(rulebuf);
 		return -LTFS_POLICY_EMPTY_RULE;
 	}
 	for (delim=rule+6; *delim; delim++) {
 		if (*delim == ':') {
 			if (*(delim-1) == ':' || *(delim+1) == '\0') {
 				ltfsmsg(LTFS_ERR, 11305E, rule);
+				arch_safe_free(rulebuf);
 				return -LTFS_POLICY_EMPTY_RULE;
 			}
 			++num_names;
@@ -281,6 +297,7 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 	ic->glob_patterns = calloc(num_names+1, sizeof(struct ltfs_name));
 	if (! ic->glob_patterns) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		arch_safe_free(rulebuf);
 		return -LTFS_NO_MEMORY;
 	}
 	rule_ptr = ic->glob_patterns;
@@ -291,24 +308,24 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 		if (*delim == ':') {
 			*delim = '\0';
 			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
-			rule_ptr->name = strdup(rule);
+			rule_ptr->name = arch_strdup(rule);
 			rule_ptr++;
 			rule = delim+1;
 		} else if (*delim == '/') {
 			*delim = '\0';
 			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
-			rule_ptr->name = strdup(rule);
+			rule_ptr->name = arch_strdup(rule);
 			rule_ptr++;
 		} else if (*(delim+1) == '\0') {
 			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
-			rule_ptr->name = strdup(rule);
+			rule_ptr->name = arch_strdup(rule);
 			rule_ptr++;
 		}
 	}
 
 	if (ic->glob_patterns == rule_ptr) {
 		rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
-		rule_ptr->name = strdup(rule);
+		rule_ptr->name = arch_strdup(rule);
 	}
 
 	/* Validate rules */
@@ -325,7 +342,7 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 			++rule_ptr;
 		}
 	}
-
+	arch_safe_free(rulebuf);
 	return ret;
 }
 
@@ -439,7 +456,7 @@ int index_criteria_dup_rules(struct index_criteria *dest_ic, struct index_criter
 
 		for (i = 0; i < counter; ++i) {
 			dst_gp->percent_encode = src_gp->percent_encode;
-			dst_gp->name = strdup(src_gp->name);
+			dst_gp->name = arch_strdup(src_gp->name);
 			if (! dst_gp->name) {
 				ltfsmsg(LTFS_ERR, 10001E, "index_criteria_dup_rules: glob pattern");
 				while (--i >= 0) {

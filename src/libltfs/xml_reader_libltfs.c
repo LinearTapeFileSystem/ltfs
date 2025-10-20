@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -153,7 +153,7 @@ static int decode_entry_name(char **new_name, const char *name)
 	}
 	tmp_name[j] = '\0';
 
-	*new_name = strdup(tmp_name);
+	*new_name = arch_strdup(tmp_name);
 	free(tmp_name);
 
 	return 0;
@@ -180,7 +180,7 @@ static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, boo
 
 	get_tag_text();
 
-	encoded_name = strdup(value);
+	encoded_name = arch_strdup(value);
 	if (!encoded_name) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -234,7 +234,7 @@ static int _xml_parse_nametype_allow_zero_length(xmlTextReaderPtr reader, struct
 		return 0;
 	}
 
-	encoded_name = strdup(value);
+	encoded_name = arch_strdup(value);
 	if (!encoded_name) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -359,11 +359,11 @@ static int _xml_parser_init(xmlTextReaderPtr reader, const char *top_name, int *
 	}
 	if (ver < min_version || ver > max_version) {
 		ltfsmsg(LTFS_ERR, 17021E, top_name, value);
-		free(value);
+		arch_xmlfree(value);
 		return -LTFS_UNSUPPORTED_INDEX_VERSION;
 	}
 	*idx_version = ver;
-	free(value);
+	arch_xmlfree(value);
 
 	return 0;
 }
@@ -460,7 +460,7 @@ static int _xml_parse_label(xmlTextReaderPtr reader, struct ltfs_label *label)
 			get_tag_text();
 			if (label->creator)
 				free(label->creator);
-			label->creator = strdup(value);
+			label->creator = arch_strdup(value);
 			if (! label->creator) {
 				ltfsmsg(LTFS_ERR, 10001E, name);
 				return -LTFS_NO_MEMORY;
@@ -819,7 +819,7 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 					}
 
 					if (! xattr_type || ! strcmp(xattr_type, "text")) {
-						xattr->value = strdup(value);
+						xattr->value = arch_strdup(value);
 						if (! xattr->value) {
 							ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 							free(xattr->key.name);
@@ -1538,8 +1538,8 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 			get_tag_text();
 			if (idx->creator)
 				free(idx->creator);
-			idx->creator = strdup(value);
-			if (! idx->creator) {
+			idx->creator = arch_strdup(value);
+			if (!idx->creator) {
 				ltfsmsg(LTFS_ERR, 10001E, name);
 				return -LTFS_NO_MEMORY;
 			}
@@ -1593,7 +1593,8 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 			if (ret < 0)
 				return ret;
 
-		} else if (! strcmp(name, "previousgenerationlocation")) {
+		}
+		else if (!strcmp(name, "previousgenerationlocation")) {
 			check_optional_tag(0);
 			assert_not_empty();
 			if (_xml_parse_tapepos(reader, "previousgenerationlocation", &idx->backptr) < 0)
@@ -1613,8 +1614,8 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 				ltfsmsg(LTFS_ERR, 17094E);
 				return -LTFS_XML_TOO_LONG_COMMENT;
 			}
-			idx->commit_message = strdup(value);
-			if (! idx->commit_message) {
+			idx->commit_message = arch_strdup(value);
+			if (!idx->commit_message) {
 				ltfsmsg(LTFS_ERR, 10001E, "_xml_parse_schema: index comment");
 				return -LTFS_NO_MEMORY;
 			}
@@ -1844,7 +1845,7 @@ int xml_schema_from_file(const char *filename, struct ltfs_index *idx, struct lt
 	reader = xmlReaderForFile(filename, NULL, XML_PARSE_NOERROR | XML_PARSE_NOWARNING | XML_PARSE_HUGE);
 	if (! reader) {
 		ltfsmsg(LTFS_ERR, 17011E, filename);
-		return -1;
+		return -LTFS_FILE_ERR;
 	}
 
 	/* Workaround for old libxml2 version on OS X 10.5: the method used to preserve

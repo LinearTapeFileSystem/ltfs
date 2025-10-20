@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2021 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -172,7 +172,7 @@ static int _xattr_get_version(int version, char **outval, const char *msg)
 {
 	int ret;
 	if (version == 10000) {
-		*outval = strdup("1.0");
+		*outval = arch_strdup("1.0");
 		if (! (*outval)) {
 			ltfsmsg(LTFS_ERR, 10001E, msg);
 			return -LTFS_NO_MEMORY;
@@ -1276,7 +1276,7 @@ int xattr_get_string(const char *val, char **outval, const char *msg)
 {
 	if (! val)
 		return 0;
-	*outval = strdup(val);
+	*outval = arch_strdup(val);
 	if (! (*outval)) {
 		ltfsmsg(LTFS_ERR, 10001E, msg);
 		return -LTFS_NO_MEMORY;
@@ -1312,7 +1312,7 @@ int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t s
 			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr");
 			return -LTFS_NO_MEMORY;
 		}
-		xattr->key.name = strdup(name);
+		xattr->key.name = arch_strdup(name);
 		if (! xattr->key.name) {
 			ltfsmsg(LTFS_ERR, 10001E, "xattr_do_set: xattr key");
 			ret = -LTFS_NO_MEMORY;

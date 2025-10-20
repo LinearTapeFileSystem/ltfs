@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2023 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -193,6 +193,8 @@ enum {
 	DRIVE_LTO8_HH     = 0x2208, /* Ultrium Gen 8 Half-High */
 	DRIVE_LTO9        = 0x2109, /* Ultrium Gen 9 */
 	DRIVE_LTO9_HH     = 0x2209, /* Ultrium Gen 9 Half-High */
+	DRIVE_LTO10       = 0x210A, /* Ultrium Gen 10 */
+	DRIVE_LTO10_HH    = 0x220A, /* Ultrium Gen 10 Half-High */
 	DRIVE_TS1140      = 0x1104, /* TS1140 */
 	DRIVE_TS1150      = 0x1105, /* TS1150 */
 	DRIVE_TS1155      = 0x5105, /* TS1155 */
@@ -207,6 +209,7 @@ enum {
 	DRIVE_GEN_LTO7    = 0x2007,
 	DRIVE_GEN_LTO8    = 0x2008,
 	DRIVE_GEN_LTO9    = 0x2009,
+	DRIVE_GEN_LTO10   = 0x200A,
 	DRIVE_GEN_JAG4    = 0x1004,
 	DRIVE_GEN_JAG5    = 0x1005,
 	DRIVE_GEN_JAG5A   = 0x5005,
@@ -216,22 +219,25 @@ enum {
 
 /* LTO cartridge type in mode page header */
 enum {
-	TC_MP_LTO1D_CART  = 0x18,   /* LTO1 Data cartridge */
-	TC_MP_LTO2D_CART  = 0x28,   /* LTO2 Data cartridge */
-	TC_MP_LTO3D_CART  = 0x38,   /* LTO3 Data cartridge */
-	TC_MP_LTO4D_CART  = 0x48,   /* LTO4 Data cartridge */
-	TC_MP_LTO5D_CART  = 0x58,   /* LTO5 Data cartridge */
-	TC_MP_LTO6D_CART  = 0x68,   /* LTO6 Data cartridge */
-	TC_MP_LTO7D_CART  = 0x78,   /* LTO7 Data cartridge */
-	TC_MP_LTO8D_CART  = 0x88,   /* LTO8 Data cartridge */
-	TC_MP_LTO9D_CART  = 0x98,   /* LTO9 Data cartridge */
-	TC_MP_LTO3W_CART  = 0x3C,   /* LTO3 WORM cartridge */
-	TC_MP_LTO4W_CART  = 0x4C,   /* LTO4 WORM cartridge */
-	TC_MP_LTO5W_CART  = 0x5C,   /* LTO5 WORM cartridge */
-	TC_MP_LTO6W_CART  = 0x6C,   /* LTO6 WORM cartridge */
-	TC_MP_LTO7W_CART  = 0x7C,   /* LTO7 WORM cartridge */
-	TC_MP_LTO8W_CART  = 0x8C,   /* LTO8 WORM cartridge */
-	TC_MP_LTO9W_CART  = 0x9C,   /* LTO9 WORM cartridge */
+	TC_MP_LTO1D_CART   = 0x18,   /* LTO1 Data cartridge */
+	TC_MP_LTO2D_CART   = 0x28,   /* LTO2 Data cartridge */
+	TC_MP_LTO3D_CART   = 0x38,   /* LTO3 Data cartridge */
+	TC_MP_LTO4D_CART   = 0x48,   /* LTO4 Data cartridge */
+	TC_MP_LTO5D_CART   = 0x58,   /* LTO5 Data cartridge */
+	TC_MP_LTO6D_CART   = 0x68,   /* LTO6 Data cartridge */
+	TC_MP_LTO7D_CART   = 0x78,   /* LTO7 Data cartridge */
+	TC_MP_LTO8D_CART   = 0x88,   /* LTO8 Data cartridge */
+	TC_MP_LTO9D_CART   = 0x98,   /* LTO9 Data cartridge */
+	TC_MP_LTO10D_CART  = 0xA8,   /* LTO10 Data cartridge */
+	TC_MP_LTOP10D_CART = 0xA9,   /* LTOP10 Data cartridge */
+	TC_MP_LTO3W_CART   = 0x3C,   /* LTO3 WORM cartridge */
+	TC_MP_LTO4W_CART   = 0x4C,   /* LTO4 WORM cartridge */
+	TC_MP_LTO5W_CART   = 0x5C,   /* LTO5 WORM cartridge */
+	TC_MP_LTO6W_CART   = 0x6C,   /* LTO6 WORM cartridge */
+	TC_MP_LTO7W_CART   = 0x7C,   /* LTO7 WORM cartridge */
+	TC_MP_LTO8W_CART   = 0x8C,   /* LTO8 WORM cartridge */
+	TC_MP_LTO9W_CART   = 0x9C,   /* LTO9 WORM cartridge */
+	TC_MP_LTO10W_CART  = 0xAC,   /* LTO10 WORM cartridge */
 };
 
 /* Enterprise cartridge type in mode page header */

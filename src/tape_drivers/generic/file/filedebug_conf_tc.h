@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -49,8 +49,11 @@
 #ifndef __filedebug_conf_tc_h
 #define __filedebug_conf_tc_h
 
+#ifdef mingw_PLATFORM
+#include "xml.h"
+#else
 #include <libltfs/xml.h>
-
+#endif
 #define DEFAULT_CAPACITY_MB (3 * (GB / MB))
 
 /* emulation of delays due to tape seeks */

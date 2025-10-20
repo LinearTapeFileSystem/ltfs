@@ -3,7 +3,7 @@
  **  OO_Copyright_BEGIN
  **
  **
- **  Copyright 2010, 2020 IBM Corp. All rights reserved.
+ **  Copyright 2010, 2025 IBM Corp. All rights reserved.
  **
  **  Redistribution and use in source and binary forms, with or without
  **   modification, are permitted provided that the following conditions
@@ -1742,7 +1742,7 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
 {
 	int ret;
 	struct dentry_priv *dpr = d->iosched_priv;
-	struct write_request *new_req;
+	struct write_request *new_req = NULL;
 	size_t copy_count;
 
 	if (! (*cache)) {
@@ -1764,7 +1764,7 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
 	memcpy(cache_manager_get_object_data(*cache), buf, copy_count);
 
 	/* Store new write request */
-	new_req = calloc(1, sizeof(struct write_request));
+	new_req = (struct write_request*)calloc(1, sizeof(struct write_request));
 	if (! new_req) {
 		ltfsmsg(LTFS_ERR, 13018E);
 		_unified_cache_free(*cache, 0, priv);
@@ -2307,7 +2307,7 @@ int unified_set_profiler(char *work_dir, bool enable, void *iosched_handle)
 {
 	int rc = 0;
 	char *path;
-	FILE *p;
+	FILE * p = NULL;
 	struct timer_info timerinfo;
 	struct unified_data *priv = iosched_handle;
 
@@ -2325,7 +2325,7 @@ int unified_set_profiler(char *work_dir, bool enable, void *iosched_handle)
 			return -LTFS_NO_MEMORY;
 		}
 
-		p = fopen(path, PROFILER_FILE_MODE);
+		arch_fopen(path, PROFILER_FILE_MODE,p);
 
 		free(path);
 

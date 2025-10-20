@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2023 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -62,12 +62,12 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "ltfs_types.h"
+#include <libltfs/ltfs_types.h>
 
 #define VENDOR_ID_LENGTH           (8)
 #define PRODUCT_ID_LENGTH          (16)
 #define PRODUCT_REV_LENGTH         (4)
-#define PRODUCT_NAME_LENGTH        (PRODUCT_ID_LENGTH + 3) /* " [PRODUCT_ID]" */
+#define PRODUCT_NAME_LENGTH        (PRODUCT_ID_LENGTH + 5) /* " [PRODUCT_ID]" */
 #define PRODUCT_NAME_REPORT_LENGTH (15)
 
 #define UNIT_SERIAL_LENGTH         (255)
@@ -155,6 +155,8 @@ enum {
 	TC_DC_LTOM8   = 0x5D,
 	TC_DC_LTO8    = 0x5E,
 	TC_DC_LTO9    = 0x60,
+	TC_DC_LTO10    = 0x62,
+	TC_DC_LTOP10   = 0x63,
 };
 
 /* Density codes of TS11x0 */

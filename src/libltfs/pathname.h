@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -58,14 +58,21 @@
 extern "C" {
 #endif
 
+
+#ifdef mingw_PLATFORM
+	#include <uchar.h>
+#include <minwindef.h>
+#else
+	#ifdef __APPLE_MAKEFILE__
+		#include <ICU/unicode/utypes.h>
+	#else
+		#include <unicode/utypes.h>
+	#endif
+#endif
 #include <stdlib.h>
 #include <stdbool.h>
 
-#ifdef __APPLE_MAKEFILE__
-#include <ICU/unicode/utypes.h>
-#else
-#include <unicode/utypes.h>
-#endif
+#include <unicode/ustring.h>
 
 int pathname_format(const char *name, char **new_name, bool validate, bool path);
 int pathname_unformat(const char *name, char **new_name);
