@@ -2536,16 +2536,18 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	/* Get the tape position from the tape drive by using the SCSI command READPOS*/
 	ret = tape_update_position(vol->device, &current_position);
 	if (ret < 0) {
+		/* Return error since the current tape position was unable to be determined, so there could be an undetected position mismatch */
 		ltfsmsg(LTFS_ERR, 11081E, ret);
+		return -1;
 	}
 
 	/* Prior to writing the index, compare the current location of the head position to the head location 
 	that is kept in the cache of ltfs (physical_selfptr). If they are different return error (-1) */
-	ltfsmsg(LTFS_INFO, 11334I, "compare offset", (unsigned long long)physical_selfptr.block, (unsigned long long)current_position.block);
 	diff = ((unsigned long long)physical_selfptr.block - (unsigned long long)current_position.block);
-	if (abs(diff)) {
-		ltfsmsg(LTFS_DEBUG, 16503D, "diff not equal zero", "");
-		//return -1;
+	if (diff) {
+		/* Position mismatch, diff not equal zero */
+		ltfsmsg(LTFS_INFO, 17293I, (unsigned long long)physical_selfptr.block, (unsigned long long)current_position.block);
+		return -1;
 	}
 
 	old_selfptr = vol->index->selfptr;
