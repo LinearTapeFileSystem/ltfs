@@ -2543,6 +2543,8 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	/* Prior to writing the index, compare the current location of the head position to the head location 
 	that is kept in the cache of ltfs (physical_selfptr). If they are different return error (-1) */
 	diff = ((unsigned long long)physical_selfptr.block - (unsigned long long)current_position.block);
+	ltfsmsg(LTFS_INFO, 11334I, "compare offset", (unsigned long long)physical_selfptr.block, (unsigned long long)current_position.block);
+	ltfsmsg(LTFS_INFO, 11334I, "diff=", diff, "");
 	if (diff) {
 		/* Position mismatch, diff not equal zero */
 		ltfsmsg(LTFS_INFO, 17293I, (unsigned long long)physical_selfptr.block, (unsigned long long)current_position.block);
