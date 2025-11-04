@@ -209,7 +209,12 @@ bool caught_sigcont = false;
 void _ltfs_sigcont(int signal)
 {
 	ltfsmsg(LTFS_INFO, 17294I, signal);
-	caught_sigcont = true;
+	ltfs_sigcont_set(true);
+}
+
+void ltfs_sigcont_set(bool sig_val)
+{
+	caught_sigcont = sig_val;
 }
 
 bool ltfs_caught_sigcont(void)
@@ -2533,7 +2538,7 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	}
 
 	/* Get the tape position from the tape drive by using the SCSI command READPOS*/
-	ret = tape_update_position(vol->device, &current_position);
+	ret = tape_get_position_from_drive(vol->device, &current_position);
 	if (ret < 0) {
 		/* Return error since the current tape position was unable to be determined, so there could be an undetected position mismatch */
 		ltfsmsg(LTFS_ERR, 11081E, ret);

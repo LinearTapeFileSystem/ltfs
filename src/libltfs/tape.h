@@ -160,7 +160,7 @@ int tape_force_read_only(struct device_data *dev);
 
 int tape_rewind(struct device_data *dev);
 int tape_get_position(struct device_data *dev, struct tc_position *pos);
-int tape_update_position(struct device_data *dev, struct tc_position *pos);
+int tape_get_position_from_drive(struct device_data *dev, struct tc_position *pos);
 
 int tape_seek(struct device_data *dev, struct tc_position *pos);
 int tape_seek_eod(struct device_data *dev, tape_partition_t partition);
