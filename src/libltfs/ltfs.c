@@ -222,6 +222,29 @@ bool ltfs_caught_sigcont(void)
 	return caught_sigcont;
 }
 
+int ltfs_extra_signal_handlers(void)
+{
+	ltfs_sighandler_t ret;
+	ret = signal(SIGCONT, _ltfs_sigcont);
+	if (ret == SIG_ERR) {
+		return -LTFS_SIG_HANDLER_ERR;
+	}
+
+	return 0;
+}
+
+int ltfs_unset_extra_signal_handler(void)
+{
+	ltfs_sighandler_t rc;
+	int ret = 0;
+
+	rc = signal(SIGCONT, SIG_DFL);
+	if (rc == SIG_ERR)
+		ret = -LTFS_SIG_HANDLER_ERR;
+
+	return ret;
+}
+
 /**
  * This function can be used to enable libltfs signal handler
  * to kill ltfs, mkltfs, ltfsck cleanly
@@ -266,15 +289,6 @@ int ltfs_set_signal_handlers(void)
 		return -LTFS_SIG_HANDLER_ERR;
 	}
 
-	ret = signal(SIGCONT, _ltfs_sigcont);
-	if (ret == SIG_ERR) {
-		signal(SIGINT, SIG_DFL);
-		signal(SIGHUP, SIG_DFL);
-		signal(SIGQUIT, SIG_DFL);
-		signal(SIGTERM, SIG_DFL);
-		return -LTFS_SIG_HANDLER_ERR;
-	}
-
 	return 0;
 }
 #endif
@@ -306,10 +320,6 @@ int ltfs_unset_signal_handlers(void)
 		ret = -LTFS_SIG_HANDLER_ERR;
 
 	rc = signal(SIGTERM, SIG_DFL);
-	if (rc == SIG_ERR)
-		ret = -LTFS_SIG_HANDLER_ERR;
-
-	rc = signal(SIGCONT, SIG_DFL);
 	if (rc == SIG_ERR)
 		ret = -LTFS_SIG_HANDLER_ERR;
 

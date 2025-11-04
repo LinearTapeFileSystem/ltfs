@@ -1245,7 +1245,6 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 	}
 
 	if (ltfs_caught_sigcont()) {
-		ltfsmsg(LTFS_DEBUG, 16503D, "ltfs_caught_sigcont", "tape_write");
 		ret_for_update_position = tape_get_position_from_drive(dev, &current_position);
 		if (ret_for_update_position) {
 			/* Return error since the current tape position was unable to be determined, so there could be an undetected position mismatch */
@@ -1253,7 +1252,6 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 			return -LTFS_WRITE_ERROR;
 		}
 
-		ltfsmsg(LTFS_INFO, 11334I, "compare offset in tape_write", (unsigned long long)dev->position.block, (unsigned long long)current_position.block);
 		diff = ((unsigned long long)dev->position.block - (unsigned long long)current_position.block);
 		if (diff) {
 			/* Position mismatch, diff not equal zero */
