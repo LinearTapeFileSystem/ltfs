@@ -1245,6 +1245,9 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 	}
 
 	if (ltfs_caught_sigcont()) {
+		// Unset flag to avoid checking it again if it is not needed 
+		ltfs_sigcont_set(false);
+
 		ret_for_current_position = tape_get_position_from_drive(dev, &current_position);
 		if (ret_for_current_position) {
 			/* Return error since the current tape position was unable to be determined, so there could be an undetected position mismatch */
@@ -1259,10 +1262,6 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 			return -LTFS_WRITE_ERROR;
 		}
 	}
-
-	// Unset flag to avoid checking it again if it is not needed 
-	ltfs_sigcont_set(false);
-
 
 	ltfs_mutex_lock(&dev->append_pos_mutex);
 	dev->append_pos[dev->position.partition] = dev->position.block;
