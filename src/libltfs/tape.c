@@ -1188,7 +1188,7 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 {
 	ssize_t ret;
 	struct tc_position current_position;
-	int ret_for_update_position = 0;
+	int ret_for_current_position = 0;
 	unsigned long long diff = 0;
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
@@ -1245,8 +1245,8 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 	}
 
 	if (ltfs_caught_sigcont()) {
-		ret_for_update_position = tape_get_position_from_drive(dev, &current_position);
-		if (ret_for_update_position) {
+		ret_for_current_position = tape_get_position_from_drive(dev, &current_position);
+		if (ret_for_current_position) {
 			/* Return error since the current tape position was unable to be determined, so there could be an undetected position mismatch */
 			ltfsmsg(LTFS_ERR, 11081E, ret);
 			return -LTFS_WRITE_ERROR;
