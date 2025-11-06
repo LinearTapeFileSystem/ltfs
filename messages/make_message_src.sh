@@ -10,7 +10,9 @@ if [ "$KERNEL_NAME" = "Darwin" ]; then
 		export PATH=${PATH}:${ICU_FRAMEWORK}/bin
                 export DYLD_LIBRARY_PATH=${ICU_FRAMEWORK}/lib
 		export PKG_CONFIG_PATH="${ICU_FRAMEWORK}/lib/pkgconfig:$PKG_CONFIG_PATH"
-                GENRB=${ICU_FRAMEWORK}/bin/genrb
+                export MACOSX_DEPLOYMENT_TARGET=14.8.1
+
+		GENRB=${ICU_FRAMEWORK}/bin/genrb
                 PKGDATA=${ICU_FRAMEWORK}/bin/pkgdata
 		ICUBREW_INSTALLED=true
 	else
