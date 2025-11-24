@@ -7,12 +7,8 @@ if [ "$KERNEL_NAME" = "Darwin" ]; then
 	# Compilation with brew help
 	ICU_FRAMEWORK="$(brew --prefix icu4c)"	
 	if [ -n "$ICU_FRAMEWORK" ]; then
-		export PATH=${PATH}:${ICU_FRAMEWORK}/bin
-        export DYLD_LIBRARY_PATH=${ICU_FRAMEWORK}/lib
-		export PKG_CONFIG_PATH="${ICU_FRAMEWORK}/lib/pkgconfig:$PKG_CONFIG_PATH"
-
 		GENRB=${ICU_FRAMEWORK}/bin/genrb
-        PKGDATA=${ICU_FRAMEWORK}/bin/pkgdata
+		PKGDATA=${ICU_FRAMEWORK}/bin/pkgdata
 		ICUBREW_INSTALLED=true
 	else
 		ICUBREW_INSTALLED=false

@@ -218,21 +218,16 @@ Currently, automatic build checking is working on GitHub Actions and Travis CI.
 
 For Ubuntu20.04 and Debian10, dummy `icu-config` is needed in the build machine. See Issue [#153](https://github.com/LinearTapeFileSystem/ltfs/issues/153).
 
-### Build and install on OSX (macOS)
+### Build and install on macOS
 
 #### New Homebrew system setup
 
 Before build on macOS, you need to configure the environment like below.
 ```
-export MACOSX_DEPLOYMENT_TARGET={{MACOS_VERSION}}
-```
-You can use as an example
-```
-export MACOSX_DEPLOYMENT_TARGET=26.0  
-# or  
-export MACOSX_DEPLOYMENT_TARGET=15.0  
-# or  
-export MACOSX_DEPLOYMENT_TARGET=14.0  
+ICU_FRAMEWORK="$(brew --prefix icu4c)"
+export PATH=${PATH}:${ICU_FRAMEWORK}/bin
+export DYLD_LIBRARY_PATH=${ICU_FRAMEWORK}/lib
+export PKG_CONFIG_PATH="${ICU_FRAMEWORK}/lib/pkgconfig:$PKG_CONFIG_PATH"
 ```
 
 #### Old Homebrew system setup
@@ -252,9 +247,7 @@ On macOS, snmp cannot be supported, you need to disable it on configure script. 
 
 ```
 ./autogen.sh
-CFLAGS="-D__APPLE_MAKEFILE__ -D__APPLE_CONFIG__" \
-  LDFLAGS="-framework CoreFoundation -framework IOKit" \
-    ./configure --disable-snmp
+LDFLAGS="-framework CoreFoundation -framework IOKit" ./configure --disable-snmp
 make
 make install
 ```
