@@ -46,12 +46,13 @@ These instructions will get you a copy of the project up and running on your loc
 
 - OSX (macOS)
 
+
   Following packages on homebrew
 
   * automake
   * autoconf
   * libtool
-  * osxfuse (brew cask install osxfuse)
+  * macfuse (brew install --cask macfuse)
   * ossp-uuid
   * libxml2
   * icu4c
@@ -219,7 +220,22 @@ For Ubuntu20.04 and Debian10, dummy `icu-config` is needed in the build machine.
 
 ### Build and install on OSX (macOS)
 
-#### Recent Homedrew system setup
+#### New Homebrew system setup
+
+Before build on macOS, you need to configure the environment like below.
+```
+export MACOSX_DEPLOYMENT_TARGET={{MACOS_VERSION}}
+```
+You can use as an example
+```
+export MACOSX_DEPLOYMENT_TARGET=26.0  
+# or  
+export MACOSX_DEPLOYMENT_TARGET=15.0  
+# or  
+export MACOSX_DEPLOYMENT_TARGET=14.0  
+```
+
+#### Old Homebrew system setup
 
 Before build on macOS, you need to configure the environment like below.
 
@@ -230,20 +246,15 @@ export PKG_CONFIG_PATH="/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libxml
 export PATH="$PATH:$ICU_PATH:$LIBXML2_PATH"
 ```
 
-#### Old Homedrew system setup
-Before build on OSX (macOS), some include path adjustment is required.
-
-```
-brew link --force icu4c
-brew link --force libxml2
-```
 
 #### Building LTFS
-On OSX (macOS), snmp cannot be supported, you need to disable it on configure script. And may be, you need to specify LDFLAGS while running configure script to link some required frameworks, CoreFundation and IOKit.
+On macOS, snmp cannot be supported, you need to disable it on configure script. And may be, you need to specify LDFLAGS while running configure script to link some required frameworks, CoreFundation and IOKit.
 
 ```
 ./autogen.sh
-LDFLAGS="-framework CoreFoundation -framework IOKit" ./configure --disable-snmp
+CFLAGS="-D__APPLE_MAKEFILE__ -D__APPLE_CONFIG__" \
+  LDFLAGS="-framework CoreFoundation -framework IOKit" \
+    ./configure --disable-snmp
 make
 make install
 ```
@@ -252,9 +263,12 @@ make install
 
 #### Buildable systems
 
-  | OS            | Xcode  | Package system | Status      |
-  |:-:            |:-:     |:-:             |:-:          |
-  | macOS 10.14.6 | 11.3   | Homebrew       | Probably OK |
+| OS            | Xcode | Package system | Status      |
+|:-:            |:-:    |:-:             |:-:          |
+| macOS 14      | 15.x  | Homebrew       | OK - Not checked automatically   |
+| macOS 15      | 16.x  | Homebrew       | OK - Not checked automatically   |
+| macOS 26      | 26.x  | Homebrew       | OK - Not checked automatically   |
+
 
 ### Build and install on FreeBSD
 
