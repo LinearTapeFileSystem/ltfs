@@ -1258,7 +1258,7 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 		diff = ((unsigned long long)dev->position.block - (unsigned long long)current_position.block);
 		if (diff) {
 			/* Position mismatch, diff not equal zero */
-			ltfsmsg(LTFS_INFO, 17293I, (unsigned long long)dev->position.block, (unsigned long long)current_position.block);
+			ltfsmsg(LTFS_INFO, 17293E, (unsigned long long)dev->position.block, (unsigned long long)current_position.block);
 			return -LTFS_WRITE_ERROR;
 		}
 	}

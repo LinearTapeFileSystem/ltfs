@@ -2560,7 +2560,7 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	diff = ((unsigned long long)physical_selfptr.block - (unsigned long long)current_position.block);
 	if (diff) {
 		/* Position mismatch, diff not equal zero */
-		ltfsmsg(LTFS_INFO, 17293I, (unsigned long long)physical_selfptr.block, (unsigned long long)current_position.block);
+		ltfsmsg(LTFS_INFO, 17293E, (unsigned long long)physical_selfptr.block, (unsigned long long)current_position.block);
 		return -1;
 	}
 
