@@ -592,8 +592,12 @@ int ltfs_fs_init(void);
 void ltfs_set_log_level(int log_level);
 void ltfs_set_syslog_level(int syslog_level);
 bool ltfs_is_interrupted(void);
+bool ltfs_caught_sigcont(void);
+void ltfs_sigcont_set(bool sig_val);
 int ltfs_set_signal_handlers(void);
 int ltfs_unset_signal_handlers(void);
+int ltfs_extra_signal_handlers(void);
+int ltfs_unset_extra_signal_handler(void);
 int ltfs_finish();
 
 /* Public wrappers for tape_* functions */

@@ -1105,7 +1105,7 @@ int tape_get_position(struct device_data *dev, struct tc_position *pos)
 /**
  * Get current tape position by querying the device.
  */
-int tape_update_position(struct device_data *dev, struct tc_position *pos)
+int tape_get_position_from_drive(struct device_data *dev, struct tc_position *pos)
 {
 	int ret;
 
@@ -1187,6 +1187,9 @@ int tape_spacefm(struct device_data *dev, int count)
 ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool ignore_less, bool ignore_nospc)
 {
 	ssize_t ret;
+	struct tc_position current_position;
+	int ret_for_current_position = 0;
+	unsigned long long diff = 0;
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(buf, -LTFS_NULL_ARG);
@@ -1239,6 +1242,25 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 		ltfs_mutex_unlock(&dev->read_only_flag_mutex);
 		if (! ignore_less)
 			count = -LTFS_LESS_SPACE;
+	}
+
+	if (ltfs_caught_sigcont()) {
+		// Unset flag to avoid checking it again if it is not needed 
+		ltfs_sigcont_set(false);
+
+		ret_for_current_position = tape_get_position_from_drive(dev, &current_position);
+		if (ret_for_current_position) {
+			/* Return error since the current tape position was unable to be determined, so there could be an undetected position mismatch */
+			ltfsmsg(LTFS_ERR, 11081E, ret);
+			return -LTFS_WRITE_ERROR;
+		}
+
+		diff = ((unsigned long long)dev->position.block - (unsigned long long)current_position.block);
+		if (diff) {
+			/* Position mismatch, diff not equal zero */
+			ltfsmsg(LTFS_INFO, 17293E, (unsigned long long)dev->position.block, (unsigned long long)current_position.block);
+			return -LTFS_WRITE_ERROR;
+		}
 	}
 
 	ltfs_mutex_lock(&dev->append_pos_mutex);
