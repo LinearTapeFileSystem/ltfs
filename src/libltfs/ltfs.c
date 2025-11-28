@@ -223,6 +223,11 @@ bool ltfs_caught_sigcont(void)
 }
 
 int ltfs_extra_signal_handlers(void)
+#ifdef mingw_PLATFORM
+{
+	return 0;
+}
+#else
 {
 	ltfs_sighandler_t ret;
 	ret = signal(SIGCONT, _ltfs_sigcont);
@@ -232,8 +237,14 @@ int ltfs_extra_signal_handlers(void)
 
 	return 0;
 }
+#endif
 
 int ltfs_unset_extra_signal_handler(void)
+#ifdef mingw_PLATFORM
+{
+	return 0;
+}
+#else
 {
 	ltfs_sighandler_t rc;
 	int ret = 0;
@@ -244,6 +255,7 @@ int ltfs_unset_extra_signal_handler(void)
 
 	return ret;
 }
+#endif
 
 /**
  * This function can be used to enable libltfs signal handler
