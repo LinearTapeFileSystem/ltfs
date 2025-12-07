@@ -416,8 +416,8 @@ root:table {
 		11319E:string { "Cannot add the key to hash table at %s (%d)." }
 		11320E:string { "Cannot search the key from hash table at %s (%d)." }
 		11321E:string { "Symbolic link might be replaced by data file. Use ltfsck for recovery." }
-		11322D:string { "Makeing a symlink '%s' target '%s'." }
-		11323D:string { "Symlink EA prefix valuse is (%s)." }
+		11322D:string { "Making a symlink '%s' target '%s'." }
+		11323D:string { "Symlink EA prefix value is (%s)." }
 		11324D:string { "Path changed from '%s' to '%s'." }
 		11325E:string { "Cannot set extended attribute: failed to flush (%d)." }
 		11326E:string { "Cannot write index: failed to flush buffered data (%d)." }
@@ -546,7 +546,7 @@ v
 		// Message IDs 16000-16499 are reserved for the ltfsck executable.
 		// DO NOT add messages with those IDs to this file.
 
-		// Message IDs 16500-16999 are reserved for the cartrige repository plugins.
+		// Message IDs 16500-16999 are reserved for the cartridge repository plugins.
 		// DO NOT add messages with those IDs to this file.
 
 		17000E:string { "XML parser: not all required tags found in \'%s\'." }
@@ -664,7 +664,7 @@ v
 		17111I:string { "The MAM was written by PGA2 or later." }
 		17112I:string { "Starting EOD recovery (GA/PGA1)." }
 		17113I:string { "Starting EOD recovery: reading an index from (%llu, %llu)." }
-		17114I:string { "Seaching the final index in IP." }
+		17114I:string { "Searching the final index in IP." }
 		17115E:string { "Failed to search the final index in IP." }
 		17116I:string { "Detecting the final record in DP." }
 		17117E:string { "Failed to search the final index in DP." }
@@ -673,7 +673,7 @@ v
 		17120I:string { "Reading the final index in %s (%llu, %llu)." }
 		17121E:string { "Failed to read the final index in %s (%d)." }
 		//unused 17122I:string { "Search one more index after current index (%llu, %llu)." }
-		17123E:string { "Unexpected genaration value (Gen = %d, MAM IP = %d, MAM DP = %d)." }
+		17123E:string { "Unexpected generation value (Gen = %d, MAM IP = %d, MAM DP = %d)." }
 		17124I:string { "Seeking to the final record in %s (%llu, %llu)." }
 		17125E:string { "Failed to seek to the final record in %s (%d)." }
 		17126E:string { "Unexpected EOD status (%d, %d)." }
@@ -709,7 +709,7 @@ v
 		17156E:string { "Cannot get WRITE MODE: Mode Sense for Device Configuration Extension failed (%d)." }
 		17157I:string { "Changing the drive setting %s." }
 		//unused 17158E:string { "Cannot set up tape drive." }
-		17159I:string { "Process was interruped by user." }
+		17159I:string { "Process was interrupted by user." }
 		17160I:string { "Maximum device block size is %d." }
 		17161I:string { "EOD information (%s) is corrupted." }
 		17162I:string { "Trying a simple recovery that requires several minutes to complete." }
@@ -754,7 +754,7 @@ v
 		17201I:string { "Starting a long wipe operation. This can take over 3 hours." }
 		17202E:string { "Failed to wipe the medium (%d)." }
 		17203W:string { "Truncate the tape attribute: %s (%s) to %d bytes." }
-		17204W:string { "Cannot set: unkown tape attribute type(0x%04x): %s." }
+		17204W:string { "Cannot set: unknown tape attribute type(0x%04x): %s." }
 		17205E:string { "Cannot set the tape attribute (type: 0x%04x): %s ." }
 		17206E:string { "Cannot write XML data to file descriptor (%s, %d, %lu)." }
 		17207E:string { "Use the ltfsck command with the --salvage-rollback-points option and select the latest index from the list\n           Then use the ltfs command with the -o rollback-mount-no-eod option by specifying the generation." }
@@ -825,7 +825,7 @@ v
 		17281I:string { "Failed to read from RAO input file: %s (%d)." }
 		17282I:string { "Read length from RAO input file is unexpected: %s (Actual %ld, Expected %ld)." }
 		17283I:string { "Detected unmatched VCR value between MAM and VCR (%llu, %llu)." }
-		17284I:string { "Seaching the final index in %s." }
+		17284I:string { "Searching the final index in %s." }
 		17285E:string { "Failed to search the final index in %s (%d)." }
 		17286I:string { "VCR value is matched between %s-MAM and VCR (%llu)." }
 		17287I:string { "Making R/O mount from the location (%c, %llu)." }
