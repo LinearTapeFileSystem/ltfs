@@ -68,12 +68,12 @@ root:table {
 		19527D:string { "Command line options are valid." }
 		19528W:string { "Cannot unload key manager interface backend." }
 		19529I:string { "Reading an index from (%u, %llu)." }
-		19530I:string { "Block in (%u, %llu) does not look an index, seek to next position (%d)." }
+		19530I:string { "Block in (%u, %llu) does not look like an index, seek to next position (%d)." }
 		19531E:string { "Cannot seek to the next position (%u, %llu, %d)." }
 		19532E:string { "Cannot allocate the file name." }
 		19533E:string { "Cannot open the file %s (%d)." }
-		19534I:string { "Reached to EOD (%u, %llu)." }
-		19535I:string { "Reached to EOD but cannot get the position (%d)." }
+		19534I:string { "Reached EOD (%u, %llu)." }
+		19535I:string { "Reached EOD but cannot get the position (%d)." }
 		19536E:string { "Cannot write a block (%ld, %d)." }
 		19537I:string { "Detected the end of the index (%u, %llu)." }
 		19538E:string { "Detected the EOD in the middle of index (%u, %llu)." }

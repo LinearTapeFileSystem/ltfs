@@ -86,8 +86,8 @@ root:table {
 		30440W:string { "Detect ENOMEM in write() call. Wait 3 secs and retry (%d)." }
 		30441I:string { "Retrying write() call at (%u, %llu)." }
 		30442I:string { "Skip retrying write() call at (%u, %llu), because the record was already written (%u, %llu)." }
-		30443W:string { "Enexpected current position (%d). (%u, %llu), (%u, %llu) ." }
-		30444W:string { "Position confirmation for write() call retry is failed (%d). (%u, %llu), (%u, %llu)." }
+		30443W:string { "Unexpected current position (%d). (%u, %llu), (%u, %llu) ." }
+		30444W:string { "Position confirmation for write() call retry has failed (%d). (%u, %llu), (%u, %llu)." }
 		30445W:string { "Received low space warning (early warning) in %s." }
 		30446W:string { "Received low space warning (programmable early warning) in %s." }
 		30447E:string { "Logical block protection Error on write." }

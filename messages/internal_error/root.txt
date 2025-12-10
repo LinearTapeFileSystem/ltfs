@@ -178,7 +178,7 @@ root:table {
 		I1125E:string{ "Volume is in physical and/or logical write protect mode." }
 		I1126E:string{ "Write error has previously occurred on the current mount." }
 		I1127E:string{ "Unexpected length of barcode label is set on the cartridge." }
-		I1128E:string{ "Conversion from string to value is failed, may be invalid string." }
+		I1128E:string{ "Conversion from string to value has failed, may be an invalid string." }
 		I1129E:string{ "Failed to initialize admin session." }
 		I1130E:string{ "Invalid message on admin_channel." }
 		I1131E:string{ "Invalid password to log in via admin_channel." }
@@ -262,10 +262,10 @@ root:table {
 		I5001E:string{ "Error happens in reading XML const value." }
 		I5002E:string{ "Unexpected node type is detected." }
 		I5003E:string{ "Unexpected XML document end is detected." }
-		I5004E:string{ "Cannot detect a tags is empty or not." }
+		I5004E:string{ "Cannot detect if a tag is empty or not." }
 		I5005E:string{ "The tag is empty." }
 		I5006E:string{ "Error skipping unrecognized tag." }
-		I5007E:string{ "Do not find required tag." }
+		I5007E:string{ "Could not find required tag." }
 		I5008E:string{ "Duplicated tag is detected." }
 		I5009E:string{ "XML tag is not closed correctly." }
 		I5010E:string{ "Cannot save the tag." }

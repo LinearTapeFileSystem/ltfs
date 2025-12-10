@@ -100,7 +100,7 @@ root:table {
 		30258W:string { "Cannot retrieve drive dump: failed to read buffer (%d)." }
 		30259W:string { "Cannot retrieve drive dump: failed to write to dump file (%d)." }
 		30260W:string { "Cannot retrieve drive dump: wrote %d bytes out, expected %d." }
-		30261W:string { "Cannot retrieve drive dump: failed to write to communicate with drive. Tried (%d) times." }
+		30261W:string { "Cannot retrieve drive dump: failed to communicate with drive. Tried (%d) times." }
 		30261I:string { "Taking drive dump in buffer." }
 		30262I:string { "Forcing drive dump." }
 		30263I:string { "%s returns %s (%d) %s." }
@@ -121,9 +121,9 @@ root:table {
 		30278I:string { "Retrying the %s operation at (%u, %llu)." }
 		30279I:string { "Retrying the %s operation at (%u, %llu) with skip back, because the command was already run (%u, %llu)." }
 		30280W:string { "Unexpected current position for %s operation (%d). (%u, %llu), (%u, %llu) ." }
-		30281W:string { "Position confirmation for %s operation retry is failed (%d). (%u, %llu), (%u, %llu)." }
+		30281W:string { "Position confirmation for %s operation retry has failed (%d). (%u, %llu), (%u, %llu)." }
 		30282W:string { "Unexpected position after skip back for a %s operation. (%u, %llu), (%u, %llu)." }
-		30283W:string { "Skip back for %s operation is failed (%d). (%u, %llu), (%u, %llu)." }
+		30283W:string { "Skip back for %s operation has failed (%d). (%u, %llu), (%u, %llu)." }
 		30284I:string { "Cannot get the reserved buffer size of %s." }
 		30285I:string { "The reserved buffer size of %s is %d." }
 		30286I:string { "Failed to get the cartridge status. The cartridge is not loaded." }

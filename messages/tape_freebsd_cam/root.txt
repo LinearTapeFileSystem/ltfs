@@ -68,10 +68,10 @@ root:table {
 		31236D:string { "Read block: file mark detected" }
 		31237I:string { "Read block: overlength condition is detected. residual = %d, actual = %d" }
 		31238D:string { "Read block: underlength condition is detected. shortage = %d, actual = %d" }
-		31239E:string { "Logical block protection Error on read" }
+		31239E:string { "Logical block protection error on read." }
 		31245W:string { "Received low space warning (early warning) in %s" }
 		31246W:string { "Received low space warning (programmable early warning) in %s" }
-		31247E:string { "Logical block protection Error on write" }
+		31247E:string { "Logical block protection error on write." }
 		31248D:string { "EOD detected (%s): ignore sense" }
 		31249I:string { "Unrecognized space type" }
 		31250I:string { "Cannot space: count value %d of the space command is too large" }

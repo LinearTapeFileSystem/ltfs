@@ -156,7 +156,7 @@ root:table {
 		14117I:string { "Metadata only rollback mount is specified. Mounting as meta read-only from %s." }
 		14118E:string { "Unexpected option is specified for read only mount (%d)." }
 		14119I:string { "Rollback mount from index file is specified. Mounting as read-only from %s." }
-		14120W:string { "Cannot access to directory %s, disabled index capture mode (%d)." }
+		14120W:string { "Cannot access directory %s, disabled index capture mode (%d)." }
 		14121I:string { "Index will be captured at %s at update" }
 		14122I:string { "Index will not be captured." }
 		14123W:string { "The main function of FUSE returned error (%d)." }
@@ -228,7 +228,7 @@ root:table {
 		// Reserved 14445I
 		// Reserved 14446I
 		// Reserved 14447I
-		14448I:string { "    -o release_device         Clear device reservation (should be specified with -o devname" }
+		14448I:string { "    -o release_device         Clear device reservation (should be specified with -o devname)" }
 		// Reserved 14449I
 		// Reserved 14450I
 		// Reserved 14451I

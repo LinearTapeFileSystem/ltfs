@@ -101,7 +101,7 @@ root:table {
 		16059E:string { "Cannot roll back the index partition: failed to erase history (%d)." }
 		16060E:string { "Cannot roll back the index partition: failed to write an index (%d)." }
 		16061E:string { "Cannot roll back: invalid partition ID %c." }
-		16062I:string { "Roll back from the data partition." }
+		16062I:string { "Rolling back from the data partition." }
 		16063I:string { "Specified rollback point is the current index. The volume is consistent. No operation is required." }
 		//unused 16064I:string { "Specified rollback point is the current index, but there are extra blocks on the medium." }
 		//unused 16065I:string { "Restoring volume consistency based on the following index." }
@@ -140,7 +140,7 @@ root:table {
 		16098E:string { "Cannot roll back the cartridge: found unsupported index version." }
 		16099E:string { "Use the latest version of LTFS software." }
 		16100E:string { "Cannot recover the cartridge: found unsupported index version." }
-		16101E:string { "Please use the latest version os LTFS software or --deep-recovery option." }
+		16101E:string { "Please use the latest version of LTFS software or --deep-recovery option." }
 		16102E:string { "Cannot open key manager interface backend \'%s\'." }
 		16103W:string { "Cannot unload key manager interface backend." }
 		16104E:string { "Could not initialize the key manager interface plug-in. \'%s\' (%d)." }
@@ -152,7 +152,7 @@ root:table {
 		16110E:string { "The --salvage-rollback-points option was specified against a normal cartridge." }
 		16111I:string { "The recovery process is skipped because of a locked cartridge (%d)." }
 		16112W:string { "Cannot rename %s to %s (%d)." }
-		16113W:string { "Cannot access to directory %s, disabled index capture mode (%d)." }
+		16113W:string { "Cannot access directory %s, disabled index capture mode (%d)." }
 		16114I:string { "Index will be captured in %s." }
 		16115I:string { "Index will not be captured." }
 
