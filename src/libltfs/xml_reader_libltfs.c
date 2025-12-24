@@ -1228,6 +1228,7 @@ static int _xml_parse_dir_contents(xmlTextReaderPtr reader, struct dentry *dir, 
 		} else {
 			ignore_unrecognized_tag();
 			entry_name = NULL;
+			continue;
 		}
 
 		if (!strcmp(name, "file") || (!strcmp(name, "directory") && !(!dir && idx->root))) {

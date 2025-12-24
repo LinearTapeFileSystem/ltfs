@@ -509,7 +509,7 @@ int xml_input_tape_read_callback(void *context, char *buffer, int len)
 	char *buf2;
 	int bytes_saved, bytes_remaining, ret_sp;
 
-	if (len == 0)
+	if (len <= 0)
 		return 0;
 
 	/* Try to fill the whole buffer from cache. If that fails, try to read from tape. */
