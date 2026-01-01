@@ -1,0 +1,21 @@
+{
+    "name": "LTFS Development (Ubuntu 24.04)",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "../.."
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/github-cli:1": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "ms-vscode.makefile-tools"
+            ]
+        }
+    },
+    "postCreateCommand": "./autogen.sh && ./configure --prefix=/workspaces/ltfs-oss",
+    "remoteUser": "vscode"
+}

@@ -23,6 +23,8 @@ ltfs.pc
 .libs/
 messages/.lib
 .dirstamp
+# local settings for claude code
+.claude
 # Files created by OS
 .DS_Store
 # Files for development

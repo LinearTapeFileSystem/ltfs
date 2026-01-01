@@ -1,0 +1,18 @@
+{
+    "name": "LTFS Development (Rocky Linux 9)",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "../.."
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "ms-vscode.makefile-tools"
+            ]
+        }
+    },
+    "postCreateCommand": "./autogen.sh && ./configure --prefix=/workspaces/ltfs-oss",
+    "remoteUser": "vscode"
+}
