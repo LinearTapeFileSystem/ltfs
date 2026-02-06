@@ -466,9 +466,12 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	}
 
 #ifdef mingw_PLATFORM
-	va_start(argp, _id);
-	vsyslog2(level, output_buf, argp);
-	va_end(argp);
+	if (level <= ltfs_syslog_level || level <= ltfs_log_level)
+	{
+		va_start(argp, _id);
+		vsyslog2(level, output_buf, argp);
+		va_end(argp);
+	}
 #else
 	va_start(argp, _id);
 	vfprintf(stderr, output_buf, argp);
