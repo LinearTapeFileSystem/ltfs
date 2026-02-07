@@ -81,10 +81,7 @@ void label_free(struct ltfs_label **label)
 {
 	if (label && *label) {
 		if ((*label)->creator)
-		{
 			free((*label)->creator);
-			(*label)->creator = NULL;
-		}
 		free(*label);
 		*label = NULL;
 	}

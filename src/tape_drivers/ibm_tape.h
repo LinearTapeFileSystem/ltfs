@@ -188,10 +188,6 @@ int ibm_tape_is_mountable(const int drive_type,
 #define KEY_PREFIX_IPV4 (0x40)
 #define KEY_PREFIX_IPV6 (0x60)
 
-#if KEYLEN != 8
-#error "KEYLEN must be exactly 8 bytes"
-#endif
-
 struct reservation_info {
 	unsigned char key_type;
 	char hint[64];             /* The longest length is last 7-bytes of IPv6 */
