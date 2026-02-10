@@ -466,7 +466,9 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	}
 
 #ifdef mingw_PLATFORM
-	if (level <= ltfs_syslog_level || level <= ltfs_log_level)
+	if (level <= ltfs_syslog_level 
+		|| level <= ltfs_log_level
+		|| level == (LTFS_TRACE + 1)) // For "Help" messages
 	{
 		va_start(argp, _id);
 		vsyslog2(level, output_buf, argp);
