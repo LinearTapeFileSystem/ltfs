@@ -100,7 +100,7 @@ do {                                                                            
 #endif
 
 #ifndef HASH_NONFATAL_OOM
-#define HASH_NONFATAL_OOM 0
+#define HASH_NONFATAL_OOM 1
 #endif
 
 #if HASH_NONFATAL_OOM
@@ -110,7 +110,7 @@ do {                                                                            
 #define uthash_nonfatal_oom(obj) do {} while (0)    /* non-fatal OOM error */
 #endif
 
-#define HASH_RECORD_OOM(oomed) do { (oomed) = 1; } while (0)
+#define HASH_RECORD_OOM(oomed) do { (oomed) = 1; errno=ENOMEM; } while (0)
 #define IF_HASH_NONFATAL_OOM(x) x
 
 #else
