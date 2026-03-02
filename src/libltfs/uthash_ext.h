@@ -46,7 +46,6 @@
 #ifndef __uthash_ext_h
 #define __uthash_ext_h
 
-#include "uthash.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,6 +62,10 @@ do {																	\
 		}																\
 	}																	\
 } while (0)
+
+
+#undef HASH_RECORD_OOM
+#define HASH_RECORD_OOM(oomed) do { (oomed) = 1; errno=ENOMEM; } while (0)
 
 #ifdef __cplusplus
 }
