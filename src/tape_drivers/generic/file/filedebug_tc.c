@@ -502,8 +502,13 @@ int filedebug_open(const char *name, void **handle)
 		}
 
 		/* Run on file mode */
-		if (devname == NULL)
+		if (devname == NULL) {
 			devname = arch_strdup(name);
+			if (!devname) {
+				ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+				return -EDEV_NO_MEMORY;
+			}
+		}
 		ltfsmsg(LTFS_INFO, 30001I, devname);
 
 		arch_open(&(state->fd), devname, O_RDWR | O_BINARY, SHARE_FLAG_DENYWR, PERMISSION_READWRITE);
@@ -2744,8 +2749,9 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 
 		if (buf && deventries < count) {
 			tmp = arch_strdup(entry->d_name);
-			if (! *tmp) {
+			if (! tmp) {
 				ltfsmsg(LTFS_ERR, 10001E, "filedebug_get_device_list");
+				closedir(dp);
 				return -ENOMEM;
 			}
 

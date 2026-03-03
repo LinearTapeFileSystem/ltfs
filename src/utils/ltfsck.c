@@ -304,6 +304,10 @@ int main(int argc, char **argv)
 			break;
 		if (c == 'i') {
 			config_file = arch_strdup(optarg);
+			if (!config_file) {
+				ltfsmsg(LTFS_ERR, 10001E, "ltfsck: config_file");
+				return LTFSCK_OPERATIONAL_ERROR;
+			}
 			break;
 		}
 	}

@@ -159,10 +159,19 @@ void show_usage(char *appname, struct config_file *config, bool full)
 	if (default_backend && plugin_load(&backend, "tape", default_backend, config) == 0) {
 		devname = arch_strdup(ltfs_default_device_name(backend.ops));
 		plugin_unload(&backend);
+		if (!devname) {
+			ltfsmsg(LTFS_ERR, 10001E, "show_usage: devname");
+			devname = strdup("<devname>");  /* Fallback for help text */
+		}
 	}
 
-	if (! devname)
+	if (! devname) {
 		devname = arch_strdup("<devname>");
+		if (!devname) {
+			ltfsmsg(LTFS_ERR, 10001E, "show_usage: devname fallback");
+			devname = strdup("<devname>");  /* Last resort for help text */
+		}
+	}
 
 	fprintf(stderr, "\n");
 	ltfsresult(15400I, appname);  /* Usage: %s <options> */
@@ -283,6 +292,10 @@ int main(int argc, char **argv)
 			break;
 		if (c == 'i') {
 			config_file = arch_strdup(optarg);
+			if (!config_file) {
+				ltfsmsg(LTFS_ERR, 10001E, "mkltfs: config_file");
+				return MKLTFS_OPERATIONAL_ERROR;
+			}
 			break;
 		}
 	}
