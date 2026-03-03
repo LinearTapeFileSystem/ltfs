@@ -784,20 +784,30 @@ int xml_schema_to_file(const char *filename, const char *creator,
 		return -1;
 	}
 
-	if (reason)
-		asprintf(&alt_creator, "%s - %s", creator , reason);
-	else
+	if (reason) {
+		ret = asprintf(&alt_creator, "%s - %s", creator , reason);
+		if (ret < 0) {
+			ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_file: alt_creator");
+			xmlFreeTextWriter(writer);
+			return -LTFS_NO_MEMORY;
+		}
+	} else {
 		alt_creator = arch_strdup(creator);
+		if (!alt_creator) {
+			ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_file: alt_creator");
+			xmlFreeTextWriter(writer);
+			return -LTFS_NO_MEMORY;
+		}
+	}
 
-	if (alt_creator) {
-		ret = _xml_write_schema(writer, alt_creator, idx);
-		if (ret < 0)
-			ltfsmsg(LTFS_ERR, 17052E, ret, filename);
-		else
-			_commit_offset_caches(filename, idx);
+	ret = _xml_write_schema(writer, alt_creator, idx);
+	if (ret < 0)
+		ltfsmsg(LTFS_ERR, 17052E, ret, filename);
+	else
+		_commit_offset_caches(filename, idx);
 
-		xmlFreeTextWriter(writer);
-		free(alt_creator);
+	xmlFreeTextWriter(writer);
+	free(alt_creator);
 	} else {
 		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_file: alt creator string");
 		xmlFreeTextWriter(writer);

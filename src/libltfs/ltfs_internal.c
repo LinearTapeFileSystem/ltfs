@@ -1298,6 +1298,11 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 
 	/* check lost_and_found directory and make if it doesn't exist */
 	int pathsize = asprintf( &lfdir, "/%s", LTFS_LOSTANDFOUND_DIR );
+	if (pathsize < 0) {
+		ltfsmsg(LTFS_ERR, 10001E, "_ltfs_recover_symlink: lfdir");
+		return -LTFS_NO_MEMORY;
+	}
+	
 	ret = fs_path_lookup(lfdir, 0, &workd, vol->index);
 	if ( ret==-LTFS_NO_DENTRY  ) {
 		ret = ltfs_fsops_create( lfdir, true, false, false, &workd, vol);
@@ -1313,6 +1318,11 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 	}
 	ret = ltfs_fsops_close( workd, true, true, use_iosche, vol);
 	path=arch_strdup(lfdir);
+	if (!path) {
+		ltfsmsg(LTFS_ERR, 10001E, "_ltfs_recover_symlink: path");
+		free(lfdir);
+		return -LTFS_NO_MEMORY;
+	}
 
 	/* loop for conflicted files */
 	for( i=0; i<(vol->index->symerr_count); i++ ){

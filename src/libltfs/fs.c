@@ -93,7 +93,11 @@ static char* generate_hash_key_name(const char *src_str, int *rc)
 		free(uchar_name);
 #else
 	key_name = arch_strdup(src_str);
-	*rc = 0;
+	if (!key_name) {
+		*rc = -LTFS_NO_MEMORY;
+	} else {
+		*rc = 0;
+	}
 #endif
 
 	return key_name;

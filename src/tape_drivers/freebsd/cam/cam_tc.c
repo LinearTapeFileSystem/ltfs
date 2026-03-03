@@ -2403,6 +2403,7 @@ int camtape_set_default(void *device)
 	 */
 	if (ioctl(softc->fd_sa, MTIOCPARAMSET, &sili_param) == -1) {
 		msg = strdup("Error returned from MTIOCPARAMSET ioctl to set the SILI bit");
+		/* If strdup fails, msg is NULL; camtape_process_errors handles NULL gracefully */
 		rc = -EDEV_DRIVER_ERROR;
 		camtape_process_errors(device, rc, msg, "set default parameter", true);
 		goto bailout;
@@ -2437,6 +2438,7 @@ int camtape_set_default(void *device)
 	eot_model = 1;
 	if (ioctl(softc->fd_sa, MTIOCSETEOTMODEL, &eot_model) == -1) {
 		msg = strdup("Error returned from MTIOCSETEOTMODEL ioctl to set the EOT model to 1FM");
+		/* If strdup fails, msg is NULL; camtape_process_errors handles NULL gracefully */
 		rc = -EDEV_DRIVER_ERROR;
 		camtape_process_errors(device, rc, msg, "set default parameter", true);
 		goto bailout;
@@ -3946,6 +3948,7 @@ int camtape_set_lbp(void *device, bool enable)
 	entry = mt_status_entry_find(&mtinfo, tmpname);
 	if (entry == NULL) {
 		msg = strdup("Cannot find sa(4) protection.protection_supported parameter");
+		/* If strdup fails, msg is NULL; camtape_process_errors handles NULL gracefully */
 		rc = -EDEV_INVALID_ARG;
 		camtape_process_errors(device, rc, msg, "get lbp", true);
 		goto bailout;
@@ -3965,6 +3968,7 @@ int camtape_set_lbp(void *device, bool enable)
 	prot_entry = mt_status_entry_find(&mtinfo, MT_PROTECTION_NAME);
 	if (prot_entry == NULL) {
 		msg = strdup("Cannot find sa(4) protection node!");
+		/* If strdup fails, msg is NULL; camtape_process_errors handles NULL gracefully */
 		rc = -EDEV_INVALID_ARG;
 		camtape_process_errors(device, rc, msg, "get lbp", true);
 		goto bailout;
@@ -3998,6 +4002,7 @@ int camtape_set_lbp(void *device, bool enable)
 		entry = mt_entry_find(prot_entry, __DECONST(char *, protect_list[i].name));
 		if (entry == NULL) {
 			msg = strdup("Cannot find all protection information entries");
+			/* If strdup fails, msg is NULL; camtape_process_errors handles NULL gracefully */
 			rc = -EDEV_INVALID_ARG;
 			camtape_process_errors(device, rc, msg, "get lbp", true);
 			goto bailout;
@@ -4020,6 +4025,7 @@ int camtape_set_lbp(void *device, bool enable)
 		snprintf(tmpstr, sizeof(tmpstr), "Error returned from MTIOCSETLIST ioctl to set "
 			"protection parameters: %s", strerror(errno));
 		msg = strdup(tmpstr);
+		/* If strdup fails, msg is NULL; camtape_process_errors handles NULL gracefully */
 		rc = -errno;
 		camtape_process_errors(device, rc, msg, "get lbp", true);
 		goto bailout;

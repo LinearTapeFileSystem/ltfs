@@ -1915,13 +1915,27 @@ int tape_get_media_pool_info(struct ltfs_volume *vol, char **media_name, char **
 	if (is_add_info) {
 		if (add_start !=0) {
 			name = strndup(vol->t_attr->media_pool, add_start);
+			if (!name) {
+				ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+				return -LTFS_NO_MEMORY;
+			}
 		}
 		info = arch_strdup(&(vol->t_attr->media_pool[add_start+1]));
+		if (!info) {
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+			if (name)
+				free(name);
+			return -LTFS_NO_MEMORY;
+		}
 		len = strlen(info);
 		info[len-1] = '\0';
 	}
 	else {
 		name = arch_strdup(vol->t_attr->media_pool);
+		if (!name) {
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+			return -LTFS_NO_MEMORY;
+		}
 	}
 
 	if (name)
