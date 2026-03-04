@@ -396,7 +396,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		goto internal_error;
 
 	if (idlen > 1 && _id[0] == '"' && _id[idlen - 1] == '"') {
-		arch_strcpy_limited(id, _id + 1, idlen - 2);
+		arch_strncpy_auto(id, _id + 1, idlen - 2);
 		id[idlen - 2] = '\0';
 	}
 	else {
