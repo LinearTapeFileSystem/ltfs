@@ -794,12 +794,11 @@ int xml_schema_to_file(const char *filename, const char *creator,
 	} else {
 		alt_creator = arch_strdup(creator);
 		if (!alt_creator) {
-			ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_file: alt_creator");
+			ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_file: alt_creator string");
 			xmlFreeTextWriter(writer);
 			return -LTFS_NO_MEMORY;
 		}
 	}
-
 	ret = _xml_write_schema(writer, alt_creator, idx);
 	if (ret < 0)
 		ltfsmsg(LTFS_ERR, 17052E, ret, filename);
@@ -808,12 +807,6 @@ int xml_schema_to_file(const char *filename, const char *creator,
 
 	xmlFreeTextWriter(writer);
 	free(alt_creator);
-	} else {
-		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_file: alt creator string");
-		xmlFreeTextWriter(writer);
-		return -1;
-	}
-
 	return ret;
 }
 

@@ -161,7 +161,7 @@ void show_usage(char *appname, struct config_file *config, bool full)
 		plugin_unload(&backend);
 		if (!devname) {
 			ltfsmsg(LTFS_ERR, 10001E, "show_usage: devname");
-			devname = strdup("<devname>");  /* Fallback for help text */
+			devname = arch_strdup("<devname>");  /* Fallback for help text */
 		}
 	}
 
@@ -169,7 +169,7 @@ void show_usage(char *appname, struct config_file *config, bool full)
 		devname = arch_strdup("<devname>");
 		if (!devname) {
 			ltfsmsg(LTFS_ERR, 10001E, "show_usage: devname fallback");
-			devname = strdup("<devname>");  /* Last resort for help text */
+			devname = arch_strdup("<devname>");  /* Last resort for help text */
 		}
 	}
 

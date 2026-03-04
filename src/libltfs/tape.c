@@ -3076,7 +3076,9 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
  * @param set attribute type
  * @return 0 positive : success, negative : cannot set value to Cartridge Memory
  */
-int tape_set_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr, int type)
+int tape_set_attribute_to_cm(struct device_data* dev,
+	struct tape_attr* t_attr,
+	int type)
 {
 	int ret;
 	int attr_size;
