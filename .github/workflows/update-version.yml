@@ -1,4 +1,4 @@
-name: Update Version on configure from Upstream
+name: Sync LTFS Version with Upstream
 
 on:
   pull_request:
@@ -74,7 +74,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           
           git add configure.ac
-          git commit -m "Update version to ${{ steps.get_tag.outputs.version }} from upstream tag ${{ steps.get_tag.outputs.tag }}"
+          git commit -m "chore: sync configure.ac version to ${{ steps.get_tag.outputs.version }} (upstream: ${{ steps.get_tag.outputs.tag }})"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
       
       - name: Summary
@@ -88,9 +88,9 @@ jobs:
           
           if [ "${{ steps.check_version.outputs.needs_update }}" == "true" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Version updated and committed** from ${{ steps.check_version.outputs.current_version }} to ${{ steps.get_tag.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "**configure.ac synced** - Version updated from ${{ steps.check_version.outputs.current_version }} to ${{ steps.get_tag.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           else
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**No action needed** - version is already up to date" >> $GITHUB_STEP_SUMMARY
+            echo "**No sync needed** - configure.ac version already matches upstream (${{ steps.get_tag.outputs.version }})" >> $GITHUB_STEP_SUMMARY
           fi
 
