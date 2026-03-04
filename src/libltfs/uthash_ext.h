@@ -55,7 +55,7 @@ extern "C" {
 #define HASH_NONFATAL_OOM 1
 
 #undef uthash_nonfatal_oom
-#define uthash_nonfatal_oom(obj) do { free(obj); errno=ENOMEM; } while (0)
+#define uthash_nonfatal_oom(obj) do { errno=ENOMEM; } while (0)
 
 #define HASH_FIND_PARTIAL(structure,start,length,table,search,result)	\
 do {																	\
