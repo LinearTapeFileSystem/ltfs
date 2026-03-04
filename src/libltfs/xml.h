@@ -143,18 +143,21 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 	const int ntags_req = (num_req), ntags_opt = (num_opt);			\
 	bool have_required_tags[num_req], have_optional_tags[num_opt];	\
 	memset(have_required_tags, 0, sizeof(have_required_tags));		\
-	memset(have_optional_tags, 0, sizeof(have_optional_tags));
+	memset(have_optional_tags, 0, sizeof(have_optional_tags));		\
+	(void)ntags_opt
 
 #define declare_tracking_arrays_no_opt(num_req)						\
 	const int ntags_req = (num_req), ntags_opt = (0);				\
 	bool have_required_tags[num_req];								\
 	bool *have_optional_tags = NULL;								\
-	memset(have_required_tags, 0, sizeof(have_required_tags));			
+	memset(have_required_tags, 0, sizeof(have_required_tags));		\
+	(void)ntags_req; (void)ntags_opt; (void)have_optional_tags
 
 #define declare_tracking_arrays_no_tags()							\
 	const int ntags_req = (0), ntags_opt = (0);						\
 	bool *have_required_tags = NULL;								\
-	bool *have_optional_tags = NULL;									
+	bool *have_optional_tags = NULL;								\
+	(void)ntags_req; (void)ntags_opt; (void)have_required_tags; (void)have_optional_tags
 
 
 /* grab the next tag inside the given tag. It breaks if the end of the given tag is detected.

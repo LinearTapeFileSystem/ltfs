@@ -106,13 +106,15 @@ extern "C" {
 
     #define arch_getenv(buf, name) do { size_t len; _dupenv_s(&(buf), &(len), name);     } while (0)
 
-    #define arch_strtok(str, delm, ctxt) strtok_s((str), (delm), &(ctxt))
-
     #define arch_strcpy(dest, size, src) strcpy_s((dest), (size), (src))
 
     #define arch_strncpy(dest, src, size, cnt) strncpy_s((dest), (size), (src), (cnt))
 
     #define arch_strcat(dest, size, src) strcat_s((dest), (size), (src))
+
+    #define arch_strtok(str, delm, ctxt) strtok_s((str), (delm), &(ctxt))
+
+    #define arch_ctime(buf, time_ptr) ctime_s(buf, sizeof(buf), time_ptr)
 
     #define arch_unlink     _unlink
 
@@ -162,6 +164,8 @@ extern "C" {
     #define arch_strcat(dest, unused, src) ((void)(unused), strcat(dest, src))
 
     #define arch_strtok(str, delim, unused) ((void)(unused), strtok(str, delim))
+
+    #define arch_ctime(buf ,time_ptr) do { buf = ctime(time_ptr); } while (0)
 
     #define arch_unlink     unlink
 
