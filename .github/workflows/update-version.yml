@@ -13,6 +13,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       
@@ -73,7 +75,7 @@ jobs:
           
           git add configure.ac
           git commit -m "Update version to ${{ steps.get_tag.outputs.version }} from upstream tag ${{ steps.get_tag.outputs.tag }}"
-          git push
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
       
       - name: Summary
         run: |
