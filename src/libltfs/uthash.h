@@ -46,17 +46,11 @@
 #ifndef LTFS_UTHASH_H
 #define LTFS_UTHASH_H
 
-
-#ifndef HASH_NONFATAL_OOM
-#define HASH_NONFATAL_OOM 1
-#endif
-
-/* Include official uthash.h from submodule */
-#include "uthash_submodule/src/uthash.h"
-/* The modifications for LTFS */
+ /* The modifications for LTFS first */
 #include "uthash_ext.h"
+ /* Include official uthash.h from submodule */
+#include "uthash_submodule/src/uthash.h"
 
 
 #endif /* LTFS_UTHASH_H */
 
-// Made with Bob
