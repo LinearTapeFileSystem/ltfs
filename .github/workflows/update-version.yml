@@ -1,0 +1,99 @@
+name: Update Version from Upstream
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (show changes without committing)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Fetch latest tag from upstream
+        id: get_tag
+        run: |
+          # Fetch the latest tag from the upstream repository
+          LATEST_TAG=$(curl -s https://api.github.com/repos/LinearTapeFileSystem/ltfs/tags | jq -r '.[0].name')
+          echo "Latest tag from upstream: $LATEST_TAG"
+          
+          # Extract version numbers (e.g., v.2.4.8.2-10520 -> 2.4.8.2)
+          VERSION=$(echo "$LATEST_TAG" | sed -E 's/^v\.?([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          echo "Extracted version: $VERSION"
+          
+          # Store in output
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Update configure.ac
+        id: update_file
+        run: |
+          VERSION="${{ steps.get_tag.outputs.version }}"
+          
+          # Backup original file
+          cp configure.ac configure.ac.bak
+          
+          # Update line 39 with the new version
+          # This replaces the version number between the brackets on line 39
+          sed -i "39s/\[LTFS\], \[[^]]*\]/[LTFS], [$VERSION]/" configure.ac
+          
+          # Check if file was modified
+          if diff -q configure.ac configure.ac.bak > /dev/null; then
+            echo "No changes needed - version is already up to date"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "File updated successfully"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            
+            # Show the diff
+            echo "Changes made:"
+            diff -u configure.ac.bak configure.ac || true
+          fi
+          
+          # Clean up backup
+          rm configure.ac.bak
+      
+      - name: Show changes (dry run)
+        if: ${{ inputs.dry_run == true }}
+        run: |
+          echo "DRY RUN MODE - No changes will be committed"
+          echo "Upstream tag: ${{ steps.get_tag.outputs.tag }}"
+          echo "Extracted version: ${{ steps.get_tag.outputs.version }}"
+          git diff configure.ac
+      
+      - name: Commit and push changes
+        if: ${{ inputs.dry_run == false && steps.update_file.outputs.changed == 'true' }}
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add configure.ac
+          git commit -m "Update version to ${{ steps.get_tag.outputs.version }} from upstream tag ${{ steps.get_tag.outputs.tag }}"
+          git push
+      
+      - name: Summary
+        run: |
+          echo "## Version Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Upstream Tag**: ${{ steps.get_tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Extracted Version**: ${{ steps.get_tag.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **File Changed**: ${{ steps.update_file.outputs.changed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry Run**: ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.update_file.outputs.changed }}" == "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Updated Line 39" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            sed -n '39p' configure.ac >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
