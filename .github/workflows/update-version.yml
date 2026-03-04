@@ -1,9 +1,8 @@
 name: Update Version on configure from Upstream
 
 on:
-  push:
-    branches:
-      - '**'
+  pull_request:
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 jobs:
