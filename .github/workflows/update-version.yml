@@ -5,6 +5,10 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   update-version:
     runs-on: ubuntu-latest
@@ -50,8 +54,9 @@ jobs:
           echo "Current version in configure.ac: $CURRENT_VERSION"
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           
-          # Compare with upstream version
+          # Get upstream version (already includes build number)
           UPSTREAM_VERSION="${{ steps.get_tag.outputs.version }}"
+          echo "Upstream version: $UPSTREAM_VERSION"
           
           if [ "$CURRENT_VERSION" == "$UPSTREAM_VERSION" ]; then
             echo "Version is up to date - no action needed"
