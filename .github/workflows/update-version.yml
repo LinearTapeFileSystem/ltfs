@@ -1,4 +1,4 @@
-name: Update Version from Upstream
+name: Update Version on configure from Upstream
 
 on:
   push:
