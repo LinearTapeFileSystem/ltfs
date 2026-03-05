@@ -2,9 +2,8 @@ name: Version Bump - Prelim
 
 on:
   push:
-    tags:
-      - 'v.*'
-      - 'v[0-9]+.[0-9]+.[0-9]+.[0-9]+-[0-9]+'
+    branches:
+      - v2.4.8-windows-support
 
 permissions:
   contents: write
@@ -18,16 +17,35 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: v2.4.8-windows-support
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Check current version and process
+      - name: Check commit message
+        id: check_commit
+        run: |
+          # Get the commit message that triggered this workflow
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          echo "Commit message: $COMMIT_MSG"
+          
+          # Check if commit message contains "release-tag"
+          if [[ "$COMMIT_MSG" == *"release-tag"* ]]; then
+            echo "Commit contains 'release-tag' - skipping workflow"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "should_run=true" >> $GITHUB_OUTPUT
+      
+      - name: Fetch latest tag and process version
+        if: steps.check_commit.outputs.should_run == 'true'
         id: process_version
         run: |
-          # Get the tag that triggered this workflow
-          TAG_NAME="${GITHUB_REF#refs/tags/}"
-          echo "Tag created: $TAG_NAME"
+          # Fetch all tags
+          git fetch --tags
+          
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v.2.4.8.0-0")
+          echo "Latest tag: $LATEST_TAG"
           
           # Extract current version from configure.ac line 39
           CURRENT_VERSION=$(sed -n '39p' configure.ac | sed -E 's/.*\[LTFS\], \[([^]]+)\].*/\1/')
@@ -40,11 +58,8 @@ jobs:
             exit 0
           fi
           
-          # If we reach here, we need to update
-          echo "needs_update=true" >> $GITHUB_OUTPUT
-          
           # Extract version numbers from tag (e.g., v.2.4.8.2-10520 -> 2.4.8.2)
-          VERSION_NUM=$(echo "$TAG_NAME" | sed -E 's/^v\.?([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          VERSION_NUM=$(echo "$LATEST_TAG" | sed -E 's/^v\.?([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
           echo "Extracted version from tag: $VERSION_NUM"
           
           # Split version into parts
@@ -65,14 +80,14 @@ jobs:
           echo "Final version string: $FINAL_VERSION"
           
           # Store in output
-          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "needs_update=true" >> $GITHUB_OUTPUT
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "version=$FINAL_VERSION" >> $GITHUB_OUTPUT
           echo "version_num=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
       
       - name: Update configure.ac
-        if: steps.process_version.outputs.needs_update == 'true'
-        id: update_file
+        if: steps.check_commit.outputs.should_run == 'true' && steps.process_version.outputs.needs_update == 'true'
         run: |
           VERSION="${{ steps.process_version.outputs.version }}"
           
@@ -83,44 +98,32 @@ jobs:
           echo "Updated line 39:"
           sed -n '39p' configure.ac
       
-      - name: Create Pull Request
-        if: steps.process_version.outputs.needs_update == 'true'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: bump version to ${{ steps.process_version.outputs.version }}"
-          branch: version-bump-prelim-${{ steps.process_version.outputs.version_num }}
-          base: v2.4.8-windows-support
-          title: "Version Bump: ${{ steps.process_version.outputs.version }}"
-          body: |
-            ## Version Bump - Prelim
-            
-            This PR was automatically created after tag creation to update the version for the next development cycle.
-            
-            - **Created Tag**: ${{ steps.process_version.outputs.tag }}
-            - **Previous Version**: ${{ steps.process_version.outputs.current_version }}
-            - **New Version**: ${{ steps.process_version.outputs.version }}
-            
-            ### Changes
-            - Updated configure.ac line 39 with new version
-            - Version label: Prelim (preliminary/development)
-            
-            This PR prepares the repository for the next development iteration.
-          labels: prelim, version-bump, automated
+      - name: Commit and push changes
+        if: steps.check_commit.outputs.should_run == 'true' && steps.process_version.outputs.needs_update == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add configure.ac
+          git commit -m "chore: bump version to ${{ steps.process_version.outputs.version }}"
+          git push
       
       - name: Summary
+        if: steps.check_commit.outputs.should_run == 'true'
         run: |
           echo "## Version Bump Summary - Prelim" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Triggered by Tag**: ${{ steps.process_version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Current Version**: ${{ steps.process_version.outputs.current_version }}" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ steps.process_version.outputs.needs_update }}" == "true" ]; then
+            echo "- **Latest Tag**: ${{ steps.process_version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Previous Version**: ${{ steps.process_version.outputs.current_version }}" >> $GITHUB_STEP_SUMMARY
             echo "- **New Version**: ${{ steps.process_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Target Branch**: v2.4.8-windows-support" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Pull Request Created** - Automatically created for next development cycle." >> $GITHUB_STEP_SUMMARY
+            echo "**Version Updated** - Committed to v2.4.8-windows-support branch." >> $GITHUB_STEP_SUMMARY
           else
+            echo "- **Current Version**: ${{ steps.process_version.outputs.current_version }}" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**No Action Taken** - Version already has (Prelim) label." >> $GITHUB_STEP_SUMMARY
           fi
+
+# Made with Bob
