@@ -1,0 +1,126 @@
+name: Version Bump - Prelim
+
+on:
+  push:
+    tags:
+      - 'v.*'
+      - 'v[0-9]+.[0-9]+.[0-9]+.[0-9]+-[0-9]+'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-version-prelim:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: v2.4.8-windows-support
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Check current version and process
+        id: process_version
+        run: |
+          # Get the tag that triggered this workflow
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          echo "Tag created: $TAG_NAME"
+          
+          # Extract current version from configure.ac line 39
+          CURRENT_VERSION=$(sed -n '39p' configure.ac | sed -E 's/.*\[LTFS\], \[([^]]+)\].*/\1/')
+          echo "Current version in configure.ac: $CURRENT_VERSION"
+          
+          # Check if current version already contains "(Prelim)"
+          if [[ "$CURRENT_VERSION" == *"(Prelim)"* ]]; then
+            echo "Current version already has (Prelim) - no action needed"
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # If we reach here, we need to update
+          echo "needs_update=true" >> $GITHUB_OUTPUT
+          
+          # Extract version numbers from tag (e.g., v.2.4.8.2-10520 -> 2.4.8.2)
+          VERSION_NUM=$(echo "$TAG_NAME" | sed -E 's/^v\.?([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          echo "Extracted version from tag: $VERSION_NUM"
+          
+          # Split version into parts
+          IFS='.' read -r -a VERSION_PARTS <<< "$VERSION_NUM"
+          MAJOR="${VERSION_PARTS[0]}"
+          MINOR="${VERSION_PARTS[1]}"
+          PATCH="${VERSION_PARTS[2]}"
+          BUILD="${VERSION_PARTS[3]}"
+          
+          # Increment the last number (build)
+          NEW_BUILD=$((BUILD + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH.$NEW_BUILD"
+          
+          echo "New version: $NEW_VERSION"
+          
+          # Create version with Prelim label
+          FINAL_VERSION="$NEW_VERSION (Prelim)"
+          echo "Final version string: $FINAL_VERSION"
+          
+          # Store in output
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version=$FINAL_VERSION" >> $GITHUB_OUTPUT
+          echo "version_num=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Update configure.ac
+        if: steps.process_version.outputs.needs_update == 'true'
+        id: update_file
+        run: |
+          VERSION="${{ steps.process_version.outputs.version }}"
+          
+          # Update line 39 with the new version
+          sed -i "39s/\[LTFS\], \[[^]]*\]/[LTFS], [$VERSION]/" configure.ac
+          
+          echo "File updated successfully"
+          echo "Updated line 39:"
+          sed -n '39p' configure.ac
+      
+      - name: Create Pull Request
+        if: steps.process_version.outputs.needs_update == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: bump version to ${{ steps.process_version.outputs.version }}"
+          branch: version-bump-prelim-${{ steps.process_version.outputs.version_num }}
+          base: v2.4.8-windows-support
+          title: "Version Bump: ${{ steps.process_version.outputs.version }}"
+          body: |
+            ## Version Bump - Prelim
+            
+            This PR was automatically created after tag creation to update the version for the next development cycle.
+            
+            - **Created Tag**: ${{ steps.process_version.outputs.tag }}
+            - **Previous Version**: ${{ steps.process_version.outputs.current_version }}
+            - **New Version**: ${{ steps.process_version.outputs.version }}
+            
+            ### Changes
+            - Updated configure.ac line 39 with new version
+            - Version label: Prelim (preliminary/development)
+            
+            This PR prepares the repository for the next development iteration.
+          labels: prelim, version-bump, automated
+      
+      - name: Summary
+        run: |
+          echo "## Version Bump Summary - Prelim" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by Tag**: ${{ steps.process_version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Current Version**: ${{ steps.process_version.outputs.current_version }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.process_version.outputs.needs_update }}" == "true" ]; then
+            echo "- **New Version**: ${{ steps.process_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Target Branch**: v2.4.8-windows-support" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Pull Request Created** - Automatically created for next development cycle." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**No Action Taken** - Version already has (Prelim) label." >> $GITHUB_STEP_SUMMARY
+          fi
