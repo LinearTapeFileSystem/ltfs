@@ -74,16 +74,6 @@ extern "C" {
             }                                                   \
         }while(0)
 
-static inline void arch_strcpy_limited(char *dest, const char *src, int count)
-    {
-        int i;
-        for (i = 0; i < (count) && (src)[i] != '\0'; i++) 
-            (dest)[i] = (src)[i];
-        if (i < (count)) 
-            (dest)[i] = '\0';
-    }
-
-
 
 #ifdef _MSC_VER
 #include <libxml/xmlmemory.h>
@@ -114,17 +104,17 @@ static inline void arch_strcpy_limited(char *dest, const char *src, int count)
 
     #define arch_fopen(file, mode, file_ptr) fopen_s(&(file_ptr), file, mode)
 
-    #define arch_ctime(buf, time_ptr) ctime_s(buf, sizeof(buf), time_ptr)
-
     #define arch_getenv(buf, name) do { size_t len; _dupenv_s(&(buf), &(len), name);     } while (0)
-
-    #define arch_strtok(str, delm, ctxt) strtok_s((str), (delm), &(ctxt))
 
     #define arch_strcpy(dest, size, src) strcpy_s((dest), (size), (src))
 
     #define arch_strncpy(dest, src, size, cnt) strncpy_s((dest), (size), (src), (cnt))
 
     #define arch_strcat(dest, size, src) strcat_s((dest), (size), (src))
+
+    #define arch_strtok(str, delm, ctxt) strtok_s((str), (delm), &(ctxt))
+
+    #define arch_ctime(buf, time_ptr) ctime_s(buf, sizeof(buf), time_ptr)
 
     #define arch_unlink     _unlink
 
@@ -165,17 +155,17 @@ static inline void arch_strcpy_limited(char *dest, const char *src, int count)
 
     #define arch_fopen(file, mode, file_ptr)  do {file_ptr = fopen(file, mode);}while(0)
 
-    #define arch_ctime(buf ,time_ptr) do { buf = ctime(time_ptr); } while (0)
-
     #define arch_getenv(buf ,name) do {  buf = getenv(name); } while (0)
 
-    #define arch_strcpy(dest, unused, src) ({if(unused || !unused) {strcpy(dest, src);}})
+    #define arch_strcpy(dest, unused, src)  ((void)(unused), strcpy(dest, src))
 
-    #define arch_strncpy(dest, src, unused, cnt) strncpy(dest, src, cnt)
+    #define arch_strncpy(dest, src, destSize, cnt) strncpy(dest, src, (cnt))
 
-    #define arch_strcat(dest, unused, src)( {if(unused || !unused){ strcat(dest, src);}})
+    #define arch_strcat(dest, unused, src) ((void)(unused), strcat(dest, src))
 
     #define arch_strtok(str, delim, unused) ((void)(unused), strtok(str, delim))
+
+    #define arch_ctime(buf ,time_ptr) do { buf = ctime(time_ptr); } while (0)
 
     #define arch_unlink     unlink
 
@@ -198,14 +188,15 @@ static inline void arch_strcpy_limited(char *dest, const char *src, int count)
 
 #endif /* _MSC_VER */
 
-    /* These needs to be declared at the end to avoid redefinition and to avoid code replication */
-    #define arch_vsprintf_auto( buffer,  fmt, ...) arch_vsprintf(buffer,sizeof(buffer),fmt,__VA_ARGS__)
-
+    /* 
+        These needs to be declared at the end to avoid redefinition and to avoid code replication 
+        When using them, dest or buffer needs to be a fixed size array since it will calculate it
+        with the sizeof.
+    */
+    
     #define arch_strcpy_auto(dest, src) arch_strcpy(dest, sizeof(dest), src);
 
-    #define arch_strncpy_auto(dest, src, destSize) arch_strncpy(dest, src, destSize, destSize);
-
-    #define arch_strcat_auto(dest,src) arch_strcat(dest, sizeof(dest), src);
+    #define arch_strncpy_auto(dest, src, count) arch_strncpy(dest, src, sizeof(dest), count);
 
     #define arch_sprintf_auto(buffer, fmt, ...) arch_sprintf(buffer,sizeof(buffer),fmt, __VA_ARGS__)
 

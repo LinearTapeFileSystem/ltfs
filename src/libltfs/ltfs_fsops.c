@@ -2063,13 +2063,14 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 			len -= strlen(temp_buf); /* length of "/aaa" */
 		} else if (strcmp(token, "." )) {                    /* have directory name */
 			work_buf[len] = '/';                             /* put '/ 'as "/aaa/" */
-			arch_strncpy(work_buf+len+1, token, work_buf_len, strlen(token) + 1); /* "/aaa/ccc\0" */
+			arch_strncpy(work_buf+len+1, token, work_buf_len, strlen(token) ); /* "/aaa/ccc\0" */
 			len = strlen(work_buf);
 		}
 		token = next_token;
 	}
 	work_buf[len] = '/';                             /* put '/ 'as "/aaa/ccc/" */
-	arch_strncpy(work_buf+len+1, token, work_buf_len, strlen(token)+1); /* "/aaa/ccc/target.txt\0" */
+	if(token)
+		arch_strncpy(work_buf+len+1, token, work_buf_len, strlen(token)); /* "/aaa/ccc/target.txt\0" */
 
 	if (size < strlen(work_buf) + 1) {
 		free(work_buf);
