@@ -213,7 +213,7 @@ static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, boo
 static int _xml_parse_nametype_allow_zero_length(xmlTextReaderPtr reader, struct ltfs_name *n, bool target)
 {
 	const char name[] = "nametype", *value;
-	char *decoded_name=NULL, *encoded_name=NULL, *encode=NULL;
+	char *decoded_name = NULL, *encoded_name = NULL, *encode = NULL;
 	int empty, ret = -1;
 
 	encode = (char *)xmlTextReaderGetAttribute(reader, BAD_CAST "percentencoded");
