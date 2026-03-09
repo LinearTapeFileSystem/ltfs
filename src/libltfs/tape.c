@@ -1782,7 +1782,7 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	/* APPLICATION CLIENT SPECIFIC INFORMATION LENGTH */
 	coh_data[30] = 0;  /* Size of APPLICATION CLIENT SPECIFIC INFORMATION (Byte 1) */
 	coh_data[31] = 43; /* Size of APPLICATION CLIENT SPECIFIC INFORMATION (Byte 0) */
-	arch_strcpy((char *)coh_data + 32,5, "LTFS");
+	arch_strncpy((char *)coh_data + 32,"LTFS", 5, 4);
 	memcpy(coh_data + 37, coh->uuid, 37);
 	/*
 	   Version field
