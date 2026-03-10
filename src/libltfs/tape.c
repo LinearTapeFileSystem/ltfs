@@ -3125,6 +3125,7 @@ int tape_set_attribute_to_cm(struct device_data* dev,
 	attr_data[2] = format;					/* set data format type */
 	ltfs_u16tobe(attr_data + 3, attr_size);	/* set data size		*/
 
+	/* data becomes the available space after TC_MAM_PAGE_HEADER_SIZE to start writing in , that is the reason why we add it here*/
 	data = attr_data + TC_MAM_PAGE_HEADER_SIZE;
 
 	/* set attribute data */
