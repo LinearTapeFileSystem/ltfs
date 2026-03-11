@@ -3305,7 +3305,9 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 
 	int attr_size = sizeof(char) * (attr_len + TC_MAM_PAGE_HEADER_SIZE);
 	attr_data = (unsigned char*)malloc(attr_size);
-	if (!attr_data)	return -LTFS_NO_MEMORY;
+	if (!attr_data){
+		return -LTFS_NO_MEMORY;
+	}
 	ret = dev->backend->read_attribute(dev->backend_data,
 		0,					/* partition	*/
 		type,
