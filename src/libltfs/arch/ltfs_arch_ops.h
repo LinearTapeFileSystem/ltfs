@@ -2,7 +2,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2025 IBM Corp. All rights reserved.
+**  Copyright 2026 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -189,7 +189,7 @@ extern "C" {
 #endif /* _MSC_VER */
 
     /* 
-        These needs to be declared at the end to avoid redefinition and to avoid code replication 
+        These macros need to be declared at the end to avoid redefinition and to avoid code replication 
         When using them, dest or buffer needs to be a fixed size array since it will calculate it
         with the sizeof.
     */
