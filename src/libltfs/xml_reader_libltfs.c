@@ -165,7 +165,7 @@ static int decode_entry_name(char **new_name, const char *name)
 static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, bool target)
 {
 	const char name[] = "nametype", *value;
-	char* decoded_name = NULL, * encoded_name = NULL, * encode = NULL;
+	char *decoded_name = NULL, *encoded_name = NULL, *encode = NULL;
 	int empty, ret = -1;
 
 	encode = (char *)xmlTextReaderGetAttribute(reader, BAD_CAST "percentencoded");
