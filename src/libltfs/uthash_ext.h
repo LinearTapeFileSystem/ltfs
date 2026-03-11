@@ -46,11 +46,16 @@
 #ifndef __uthash_ext_h
 #define __uthash_ext_h
 
-#include "uthash.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Define OOM handling macros before including uthash */
+#undef HASH_NONFATAL_OOM
+#define HASH_NONFATAL_OOM 1
+
+#undef uthash_nonfatal_oom
+#define uthash_nonfatal_oom(obj) do { (void)(obj); errno = ENOMEM; } while (0)
 
 #define HASH_FIND_PARTIAL(structure,start,length,table,search,result)	\
 do {																	\

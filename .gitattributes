@@ -1,0 +1,2 @@
+# Ensure .gitmodules always uses LF line endings
+.gitmodules text eol=lf

@@ -1,0 +1,3 @@
+[submodule "src/libltfs/uthash_repo"]
+	path = src/libltfs/uthash_submodule
+	url = https://github.com/troydhanson/uthash.git
