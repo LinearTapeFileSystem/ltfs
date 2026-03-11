@@ -2069,9 +2069,9 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 		token = next_token;
 	}
 	work_buf[len] = '/';                             /* put '/ 'as "/aaa/ccc/" */
-	if(token)
+	if(token){
 		arch_strncpy(work_buf+len+1, token, work_buf_len, strlen(token)); /* "/aaa/ccc/target.txt\0" */
-
+	}
 	if (size < strlen(work_buf) + 1) {
 		free(work_buf);
 		free(target_buf);
