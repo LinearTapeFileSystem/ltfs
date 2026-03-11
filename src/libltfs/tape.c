@@ -3118,15 +3118,17 @@ int tape_set_attribute_to_cm(struct device_data* dev,
 		return -1;
 	}
 
+	/* we reserve the size of the attribute + the MAM header size since the buffer will contain both */
 	attr_data = calloc(1, attr_size + TC_MAM_PAGE_HEADER_SIZE);
 	if (!attr_data)
 		return -LTFS_NO_MEMORY;
 
+	/* fill the MAM header information */
 	ltfs_u16tobe(attr_data, type);			/* set attribute type	*/
 	attr_data[2] = format;					/* set data format type */
 	ltfs_u16tobe(attr_data + 3, attr_size);	/* set data size		*/
 
-	/* data becomes the available space after TC_MAM_PAGE_HEADER_SIZE to start writing in , that is the reason why we add it here*/
+	/* data becomes the remaining space after TC_MAM_PAGE_HEADER_SIZE to start writing in, that is the reason why we add it here to the buffer address */
 	data = attr_data + TC_MAM_PAGE_HEADER_SIZE;
 
 	/* set attribute data */
