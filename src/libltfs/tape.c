@@ -3062,15 +3062,13 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
  * @param set attribute type
  * @return 0 positive : success, negative : cannot set value to Cartridge Memory
  */
-int tape_set_attribute_to_cm(struct device_data* dev,
-	struct tape_attr* t_attr,
-	int type)
+int tape_set_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr, int type)
 {
 	int ret;
 	int attr_size;
 	uint8_t format;
-	unsigned char* attr_data = NULL;
-	unsigned char* data;
+	unsigned char *attr_data = NULL;
+	unsigned char *data;
 	size_t len;
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
@@ -3120,9 +3118,10 @@ int tape_set_attribute_to_cm(struct device_data* dev,
 
 	/* we reserve the size of the attribute + the MAM header size since the buffer will contain both */
 	attr_data = calloc(1, attr_size + TC_MAM_PAGE_HEADER_SIZE);
-	if (!attr_data)
+	if (!attr_data) {
 		return -LTFS_NO_MEMORY;
-
+	}
+	
 	/* fill the MAM header information */
 	ltfs_u16tobe(attr_data, type);			/* set attribute type	*/
 	attr_data[2] = format;					/* set data format type */
@@ -3178,13 +3177,13 @@ int tape_set_attribute_to_cm(struct device_data* dev,
 	}
 
 	ret = dev->backend->write_attribute(dev->backend_data,
-		0,
+		0,					/* partition */
 		attr_data,
 		attr_size + TC_MAM_PAGE_HEADER_SIZE);
 
-	if (ret < 0)
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17205E, type, "tape_set_attribute_to_cm");
-
+	}
 	free(attr_data);
 	return ret;
 }
@@ -3264,7 +3263,7 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 {
 	int ret;
 	int attr_len;
-	unsigned char* attr_data = NULL;
+	unsigned char *attr_data = NULL;
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(t_attr, -LTFS_NULL_ARG);
@@ -3305,7 +3304,7 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 
 	int attr_size = sizeof(char) * (attr_len + TC_MAM_PAGE_HEADER_SIZE);
 	attr_data = (unsigned char*)malloc(attr_size);
-	if (!attr_data){
+	if (!attr_data) {
 		return -LTFS_NO_MEMORY;
 	}
 	ret = dev->backend->read_attribute(dev->backend_data,
@@ -3353,8 +3352,9 @@ int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr
 			memcpy(t_attr->media_pool, attr_data + 5, attr_len);
 			t_attr->media_pool[attr_len] = '\0';
 		}
-	} else
+	} else {
 		ltfsmsg(LTFS_DEBUG, 17198D, type, "tape_get_attribute_from_cm");
+	}
 	free(attr_data);
 	return ret;
 }
