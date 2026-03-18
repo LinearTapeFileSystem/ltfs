@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import os
 import re
@@ -27,37 +27,37 @@ def check_line(path, linenum, x):
 		if re.search(r'/\* ltfsresult', line):
 			return None
 		if re.search(r'[^EWID],$', mid):
-			print 'Bad output level in message ID at %s:%d' % (path, linenum)
-			print line.rstrip()
+			print('Bad output level in message ID at %s:%d' % (path, linenum))
+			print(line.rstrip())
 			return None
 		if re.search(r'ltfsmsg\(', line):
 			if mid[0] == '0':
-				print 'Leading zero(s) in message ID at %s:%d' % (path, linenum)
-				print line.rstrip()
+				print('Leading zero(s) in message ID at %s:%d' % (path, linenum))
+				print(line.rstrip())
 				return None
 			if re.search(r'LTFS_ERR', line):
 				if mid[-1] != 'E':
-					print 'Output level mismatch at %s:%d' % (path, linenum)
-					print line.rstrip()
+					print('Output level mismatch at %s:%d' % (path, linenum))
+					print(line.rstrip())
 					return None
 			elif re.search(r'LTFS_WARN', line):
 				if mid[-1] != 'W':
-					print 'Output level mismatch at %s:%d' % (path, linenum)
-					print line.rstrip()
+					print('Output level mismatch at %s:%d' % (path, linenum))
+					print(line.rstrip())
 					return None
 			elif re.search(r'LTFS_INFO', line):
 				if mid[-1] != 'I':
-					print 'Output level mismatch at %s:%d' % (path, linenum)
-					print line.rstrip()
+					print('Output level mismatch at %s:%d' % (path, linenum))
+					print(line.rstrip())
 					return None
 			elif re.search(r'LTFS_DEBUG', line):
 				if mid[-1] != 'D':
-					print 'Output level mismatch at %s:%d' % (path, linenum)
-					print line.rstrip()
+					print('Output level mismatch at %s:%d' % (path, linenum))
+					print(line.rstrip())
 					return None
 			else:
-				print 'Unknown output level at %s:%d' % (path, linenum)
-				print line.rstrip()
+				print('Unknown output level at %s:%d' % (path, linenum))
+				print(line.rstrip())
 				return None
 			return mid
 		elif re.search(r'ltfsresult\(', line):
@@ -79,7 +79,7 @@ def check_line(path, linenum, x):
 for d, dirs, files in os.walk('src'):
 	for f in files:
 		if re.search(r'\.[ch]$', f) or re.search(r'\.cpp$', f):
-			with file(os.path.join(d, f), 'r') as fd:
+			with open(os.path.join(d, f), 'r') as fd:
 				linenum = 1
 				for line in fd:
 					msgid = check_line(os.path.join(d, f), linenum, line)
@@ -101,7 +101,7 @@ for d, dirs, files in os.walk('messages'):
 		start_id = 0
 		end_id = 1000000
 		if re.search(r'\.txt$', f):
-			with file(os.path.join(d, f), 'r') as fd:
+			with open(os.path.join(d, f), 'r') as fd:
 				linenum = 1
 				for line in fd:
 					m = re.search(r'start_id:int\s*{\s*(?P<val>[0-9]+)\s*}', line)
@@ -111,8 +111,8 @@ for d, dirs, files in os.walk('messages'):
 					if m is not None:
 						end_id = int(m.group('val'))
 						if end_id < start_id:
-							print 'Warning: strange message ID range (%d-%d) in %s' % (
-								start_id, end_id, os.path.join(d, f))
+							print('Warning: strange message ID range (%d-%d) in %s' % (
+								start_id, end_id, os.path.join(d, f)))
 
 					m = re.search(r'^(?P<val>.*)//', line)
 					if m is not None:
@@ -122,8 +122,8 @@ for d, dirs, files in os.walk('messages'):
 					if m is not None:
 						val = int(m.group('val'))
 						if val < start_id or val > end_id:
-							print 'Message ID %s out of range (%d-%d) at %s:%d' % (
-								m.group('id'), start_id, end_id, os.path.join(d, f), linenum)
+							print('Message ID %s out of range (%d-%d) at %s:%d' % (
+								m.group('id'), start_id, end_id, os.path.join(d, f), linenum))
 						else:
 							msg_list.add(m.group('id'))
 					linenum += 1
@@ -135,14 +135,14 @@ for module in msg_ids:
 	msg_unref = msg_unref - msg_ids[module]
 	diff = msg_ids[module] - msg_used
 	if len(diff) > 0:
-		print "Found %d unused message IDs in message bundle '%s':" % (len(diff), module)
+		print("Found %d unused message IDs in message bundle '%s':" % (len(diff), module))
 		diff_list = [i for i in diff]
 		diff_list.sort()
 		for i in diff_list:
-			print '\t%s' % (i,)
+			print('\t%s' % (i,))
 if len(msg_unref) > 0:
-	print "Found %d undefined message IDs in the source:" % (len(msg_unref),)
+	print("Found %d undefined message IDs in the source:" % (len(msg_unref),))
 	unref_list = [i for i in msg_unref]
 	unref_list.sort()
 	for i in unref_list:
-		print '\t%s' % (i,)
+		print('\t%s' % (i,))

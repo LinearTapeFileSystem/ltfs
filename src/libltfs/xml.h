@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2022 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -115,7 +115,7 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 /* standard parser variables */
 #define declare_parser(toptag) \
 	const char *name, *parent_tag = (toptag); \
-	int i, type, empty, ret;
+	int i, type, empty, ret = 0;
 
 #define declare_parser_vars_noloop(toptag) \
 	const char *name, *value, *parent_tag = (toptag); \
@@ -139,11 +139,26 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 	int type;
 
 /* generate required/optional tag tracking arrays for the parser */
-#define declare_tracking_arrays(num_req, num_opt) \
-	const int ntags_req = (num_req), ntags_opt = (num_opt); \
-	bool have_required_tags[ntags_req], have_optional_tags[ntags_opt]; \
-	if (ntags_req > 0) memset(have_required_tags, 0, sizeof(have_required_tags)); \
-	if (ntags_opt > 0) memset(have_optional_tags, 0, sizeof(have_optional_tags));
+#define declare_tracking_arrays(num_req, num_opt)					\
+	const int ntags_req = (num_req), ntags_opt = (num_opt);			\
+	bool have_required_tags[num_req], have_optional_tags[num_opt];	\
+	memset(have_required_tags, 0, sizeof(have_required_tags));		\
+	memset(have_optional_tags, 0, sizeof(have_optional_tags));		\
+	(void)ntags_opt
+
+#define declare_tracking_arrays_no_opt(num_req)						\
+	const int ntags_req = (num_req), ntags_opt = (0);				\
+	bool have_required_tags[num_req];								\
+	bool *have_optional_tags = NULL;								\
+	memset(have_required_tags, 0, sizeof(have_required_tags));		\
+	(void)ntags_req; (void)ntags_opt; (void)have_optional_tags
+
+#define declare_tracking_arrays_no_tags()							\
+	const int ntags_req = (0), ntags_opt = (0);						\
+	bool *have_required_tags = NULL;								\
+	bool *have_optional_tags = NULL;								\
+	(void)ntags_req; (void)ntags_opt; (void)have_required_tags; (void)have_optional_tags
+
 
 /* grab the next tag inside the given tag. It breaks if the end of the given tag is detected.
  * NOTE: in order for break to work correctly, this macro is not wrapped in a do { ... } while (0)
@@ -280,8 +295,6 @@ struct xml_input_tape {
 	uint64_t           eod_pos;         /**< EOD position of the current partition. */
 	bool               saw_small_block; /**< Have we seen a small block yet? */
 	bool               saw_file_mark;   /**< If we saw a small blilock, was it a file mark? */
-	int                fd;              /**< File Descriptor for index cache if fd > 0 */
-	int                errno_fd;        /**< errno from the index cache */
 	char               *buf;            /**< 1-block input buffer. */
 	uint32_t           buf_size;        /**< Input buffer size. */
 	uint32_t           buf_start;       /**< Offset of first valid byte in input buffer. */
@@ -311,5 +324,9 @@ int xml_parse_time(bool msg, const char *fmt_time, struct ltfs_timespec *rawtime
 /* Call these to initialize or tear down the XML library. See xml_common.c */
 void xml_init();
 void xml_finish();
+
+#ifdef _WIN32
+int ftruncate(int fd, off_t length);
+#endif
 
 #endif /* __xml_h */

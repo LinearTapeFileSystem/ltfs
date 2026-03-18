@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2022 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -62,7 +62,20 @@ extern "C" {
 #endif
 
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
+	#include "arch/win/win_util.h"
+	#include <time.h>
+#else
+	#include <sys/time.h>
+	#include <sys/ipc.h>
+	#include <sys/shm.h>
+	#ifndef __FreeBSD__
+		#include <sys/xattr.h>
+	#endif
+	#ifdef __APPLE_MAKEFILE__
+		#include <ICU/unicode/utypes.h>
+	#else
+		#include <unicode/utypes.h>
+	#endif
 #endif
 
 /* O_BINARY is defined only in MinGW */
@@ -81,26 +94,10 @@ extern "C" {
 #include <string.h>
 #include <limits.h>
 #include <time.h>
-#include <sys/time.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifndef mingw_PLATFORM
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#endif
-
-#ifdef __APPLE_MAKEFILE__
-#include <ICU/unicode/utypes.h>
-#else
-#include <unicode/utypes.h>
-#endif
-
-#ifndef mingw_PLATFORM
-  #ifndef __FreeBSD__
-    #include <sys/xattr.h>
-  #endif
-#endif
 
 #include "libltfs/arch/signal_internal.h"
 #include "libltfs/arch/arch_info.h"
@@ -113,6 +110,7 @@ extern "C" {
 #include "libltfs/queue.h"
 #include "libltfs/uthash.h"
 #include "libltfs/arch/time_internal.h"
+#include "libltfs/arch/ltfs_arch_ops.h"
 #include "tape_ops.h"
 
 /* forward declarations from tape.h, tape_ops.h */
@@ -122,6 +120,7 @@ struct device_data;
 #ifndef LTFS_DEFAULT_WORK_DIR
 #ifdef mingw_PLATFORM
 #define LTFS_DEFAULT_WORK_DIR         "c:/tmp/ltfs"
+#include <io.h>
 #else
 #define LTFS_DEFAULT_WORK_DIR         "/tmp/ltfs"
 #endif
@@ -478,13 +477,8 @@ struct ltfs_volume {
 	struct ltfs_timespec first_locate; /**< Time to first locate */
 	int file_open_count;           /**< Number of opened files */
 
-	/* Journal structure for incremental index */
-	struct jentry       *journal;      /**< Journal for incremental index */
-	TAILQ_HEAD(jcreated_struct, jcreated_entry) created_dirs;
-	bool                journal_err;   /**< Journal error flag, write a full index next time forcibly */
+	const char *work_directory;
 
-	/* Misc */
-	const char *work_directory;    /**< work directory for profiler data, dump etc.*/
 };
 
 struct ltfs_label {
@@ -628,8 +622,12 @@ int ltfs_fs_init(void);
 void ltfs_set_log_level(int log_level);
 void ltfs_set_syslog_level(int syslog_level);
 bool ltfs_is_interrupted(void);
+bool ltfs_caught_sigcont(void);
+void ltfs_sigcont_set(bool sig_val);
 int ltfs_set_signal_handlers(void);
 int ltfs_unset_signal_handlers(void);
+int ltfs_extra_signal_handlers(void);
+int ltfs_unset_extra_signal_handler(void);
 int ltfs_finish();
 
 /* Public wrappers for tape_* functions */
@@ -721,8 +719,8 @@ int ltfs_parse_library_backend_opts(void *opt_args, void *opts);
 
 void ltfs_set_index_dirty(bool locking, bool atime, struct ltfs_index *idx);
 void ltfs_unset_index_dirty(bool update_version, struct ltfs_index *idx);
-int ltfs_write_index(char partition, char *reason, enum ltfs_index_type type, struct ltfs_volume *vol);
-int ltfs_save_index_to_disk(const char *work_dir, char *reason, char id, struct ltfs_volume *vol);
+int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol);
+int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, struct ltfs_volume *vol);
 
 char ltfs_dp_id(struct ltfs_volume *vol);
 char ltfs_ip_id(struct ltfs_volume *vol);
@@ -752,10 +750,6 @@ void ltfs_enable_livelink_mode(struct ltfs_volume *vol);
 int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol);
 
 int ltfs_get_rao_list(char *path, struct ltfs_volume *vol);
-int ltfs_build_fullpath(char **dest, struct dentry *d);
-
-void ltfs_set_commit_message_reason(char *reason, struct ltfs_volume *vol);
-void ltfs_set_commit_message_reason_unlocked(char *reason, struct ltfs_volume *vol);
 
 #ifdef __cplusplus
 }

@@ -16,7 +16,7 @@ on:
     branches: [ master, v2* ]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ master ]
+    branches: [ master, v2* ]
   schedule:
     - cron: '26 12 * * 0'
 
@@ -39,7 +39,9 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL

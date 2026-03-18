@@ -80,7 +80,7 @@ root:table {
 		15040I:string { "Medium unformatted successfully." }
 		15041I:string { "Launched by \"%s\"." }
 		15042I:string { "%s." }
-		15043I:string { "GCC version is %s." }
+		15043I:string { "%s version is %s." }
 		15044E:string { "Cannot set up tape device." }
 		15045E:string { "Formatting was canceled by the user." }
 		15046E:string { "Unformatting was canceled by the user." }

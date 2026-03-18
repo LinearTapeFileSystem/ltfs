@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2022 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -153,7 +153,7 @@ static int decode_entry_name(char **new_name, const char *name)
 	}
 	tmp_name[j] = '\0';
 
-	*new_name = strdup(tmp_name);
+	*new_name = arch_strdup(tmp_name);
 	free(tmp_name);
 
 	return 0;
@@ -165,7 +165,7 @@ static int decode_entry_name(char **new_name, const char *name)
 static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, bool target)
 {
 	const char name[] = "nametype", *value;
-	char *decoded_name, *encoded_name, *encode;
+	char *decoded_name = NULL, *encoded_name = NULL, *encode = NULL;
 	int empty, ret = -1;
 
 	encode = (char *)xmlTextReaderGetAttribute(reader, BAD_CAST "percentencoded");
@@ -180,7 +180,7 @@ static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, boo
 
 	get_tag_text();
 
-	encoded_name = strdup(value);
+	encoded_name = arch_strdup(value);
 	if (!encoded_name) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -213,7 +213,7 @@ static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, boo
 static int _xml_parse_nametype_allow_zero_length(xmlTextReaderPtr reader, struct ltfs_name *n, bool target)
 {
 	const char name[] = "nametype", *value;
-	char *decoded_name, *encoded_name, *encode;
+	char *decoded_name = NULL, *encoded_name = NULL, *encode = NULL;
 	int empty, ret = -1;
 
 	encode = (char *)xmlTextReaderGetAttribute(reader, BAD_CAST "percentencoded");
@@ -234,7 +234,7 @@ static int _xml_parse_nametype_allow_zero_length(xmlTextReaderPtr reader, struct
 		return 0;
 	}
 
-	encoded_name = strdup(value);
+	encoded_name = arch_strdup(value);
 	if (!encoded_name) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -359,11 +359,11 @@ static int _xml_parser_init(xmlTextReaderPtr reader, const char *top_name, int *
 	}
 	if (ver < min_version || ver > max_version) {
 		ltfsmsg(LTFS_ERR, 17021E, top_name, value);
-		free(value);
+		arch_xmlfree(value);
 		return -LTFS_UNSUPPORTED_INDEX_VERSION;
 	}
 	*idx_version = ver;
-	free(value);
+	arch_xmlfree(value);
 
 	return 0;
 }
@@ -378,7 +378,7 @@ static int _xml_parser_init(xmlTextReaderPtr reader, const char *top_name, int *
 static int _xml_parse_label_location(xmlTextReaderPtr reader, struct ltfs_label *label)
 {
 	declare_parser_vars("location");
-	declare_tracking_arrays(1, 0);
+	declare_tracking_arrays_no_opt(1);
 
 	while (true) {
 		get_next_tag();
@@ -407,7 +407,7 @@ static int _xml_parse_label_location(xmlTextReaderPtr reader, struct ltfs_label 
 static int _xml_parse_partition_map(xmlTextReaderPtr reader, struct ltfs_label *label)
 {
 	declare_parser_vars("partitions");
-	declare_tracking_arrays(2, 0);
+	declare_tracking_arrays_no_opt(2);
 
 	while (true) {
 		get_next_tag();
@@ -443,7 +443,7 @@ static int _xml_parse_label(xmlTextReaderPtr reader, struct ltfs_label *label)
 {
 	unsigned long long value_int;
 	declare_parser_vars("ltfslabel");
-	declare_tracking_arrays(7, 0);
+	declare_tracking_arrays_no_opt(7);
 
 	/* start the parser: find top-level "label" tag, check version and encoding */
 	ret = _xml_parser_init(reader, parent_tag, &label->version,
@@ -460,7 +460,7 @@ static int _xml_parse_label(xmlTextReaderPtr reader, struct ltfs_label *label)
 			get_tag_text();
 			if (label->creator)
 				free(label->creator);
-			label->creator = strdup(value);
+			label->creator = arch_strdup(value);
 			if (! label->creator) {
 				ltfsmsg(LTFS_ERR, 10001E, name);
 				return -LTFS_NO_MEMORY;
@@ -540,7 +540,7 @@ static int _xml_parse_ip_criteria(xmlTextReaderPtr reader, struct ltfs_index *id
 	unsigned long long value_int;
 	int num_patterns = 0;
 	declare_parser_vars("indexpartitioncriteria");
-	declare_tracking_arrays(1, 0);
+	declare_tracking_arrays_no_opt(1);
 
 	/* clear the glob pattern list first */
 	index_criteria_free(&idx->original_criteria);
@@ -601,7 +601,7 @@ static int _xml_parse_ip_criteria(xmlTextReaderPtr reader, struct ltfs_index *id
 static int _xml_parse_policy(xmlTextReaderPtr reader, struct ltfs_index *idx)
 {
 	declare_parser("dataplacementpolicy");
-	declare_tracking_arrays(1, 0);
+	declare_tracking_arrays_no_opt(1);
 
 	/* parse the contents of the policy tag */
 	while (true) {
@@ -630,7 +630,7 @@ static int _xml_parse_one_extent(xmlTextReaderPtr reader, int idx_version, struc
 	unsigned long long value_int;
 	struct extent_info *xt, *xt_last;
 	declare_parser_vars("extent");
-	declare_tracking_arrays(5, 0);
+	declare_tracking_arrays_no_opt(5);
 
 	xt = calloc(1, sizeof(struct extent_info));
 	if (!xt) {
@@ -747,7 +747,7 @@ static int _xml_parse_one_extent(xmlTextReaderPtr reader, int idx_version, struc
 static int _xml_parse_extents(xmlTextReaderPtr reader, int idx_version, struct dentry *d)
 {
 	declare_parser("extentinfo");
-	declare_tracking_arrays(0, 0);
+	declare_tracking_arrays_no_tags();
 
 	while (true) {
 		get_next_tag();
@@ -774,7 +774,7 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 	char *xattr_type;
 	struct xattr_info *xattr = NULL;
 	declare_parser_vars("xattr");
-	declare_tracking_arrays(2, 0);
+	declare_tracking_arrays_no_opt(2);
 
 	xattr = calloc(1, sizeof(struct xattr_info));
 	if (! xattr) {
@@ -819,7 +819,7 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 					}
 
 					if (! xattr_type || ! strcmp(xattr_type, "text")) {
-						xattr->value = strdup(value);
+						xattr->value = arch_strdup(value);
 						if (! xattr->value) {
 							ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 							free(xattr->key.name);
@@ -871,7 +871,7 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 static int _xml_parse_xattrs(xmlTextReaderPtr reader, struct dentry *d)
 {
 	declare_parser("extendedattributes");
-	declare_tracking_arrays(0, 0);
+	declare_tracking_arrays_no_tags();
 
 	while (true) {
 		get_next_tag();
@@ -904,7 +904,7 @@ static int _xml_parse_tapepos(xmlTextReaderPtr reader, const char *tag, struct t
 {
 	unsigned long long value_int;
 	declare_parser_vars(tag);
-	declare_tracking_arrays(2, 0);
+	declare_tracking_arrays_no_opt(2);
 
 	while (true) {
 		get_next_tag();
@@ -1192,7 +1192,7 @@ static int _xml_parse_dir_contents(xmlTextReaderPtr reader, struct dentry *dir, 
 	struct name_list *list = NULL, *entry_name = NULL;
 	CHECK_ARG_NULL(dir, -LTFS_NULL_ARG);
 	declare_parser("contents");
-	declare_tracking_arrays(0, 0);
+	declare_tracking_arrays_no_tags();
 
 	errno = 0;
 
@@ -1540,8 +1540,8 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, bool skip_dir,
 			get_tag_text();
 			if (idx->creator)
 				free(idx->creator);
-			idx->creator = strdup(value);
-			if (! idx->creator) {
+			idx->creator = arch_strdup(value);
+			if (!idx->creator) {
 				ltfsmsg(LTFS_ERR, 10001E, name);
 				return -LTFS_NO_MEMORY;
 			}
@@ -1599,7 +1599,8 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, bool skip_dir,
 					return ret;
 			}
 
-		} else if (! strcmp(name, "previousgenerationlocation")) {
+		}
+		else if (!strcmp(name, "previousgenerationlocation")) {
 			check_optional_tag(0);
 			assert_not_empty();
 			if (_xml_parse_tapepos(reader, "previousgenerationlocation", &idx->backptr) < 0)
@@ -1619,8 +1620,8 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, bool skip_dir,
 				ltfsmsg(LTFS_ERR, 17094E);
 				return -LTFS_XML_TOO_LONG_COMMENT;
 			}
-			idx->commit_message = strdup(value);
-			if (! idx->commit_message) {
+			idx->commit_message = arch_strdup(value);
+			if (!idx->commit_message) {
 				ltfsmsg(LTFS_ERR, 10001E, "_xml_parse_schema: index comment");
 				return -LTFS_NO_MEMORY;
 			}
@@ -1674,7 +1675,7 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, bool skip_dir,
 static int _xml_parse_symlink_target(xmlTextReaderPtr reader, int idx_version, struct dentry *d)
 {
 	declare_parser_vars_symlinknode("symlink");
-	declare_tracking_arrays(1, 0);
+	declare_tracking_arrays_no_opt(1);
 
 	while (true) {
 		get_next_tag();
@@ -1914,16 +1915,10 @@ int xml_schema_from_tape(uint64_t eod_pos, bool skip_dir, struct ltfs_volume *vo
 		free(ctx);
 		return -LTFS_NO_MEMORY;
 	}
-
-	ctx->fd              = -1;
-	ctx->errno_fd        = 0;
-	if (vol->index_cache_path_r)
-		xml_acquire_file_lock(vol->index_cache_path_r, &ctx->fd, &bk, true);
-
-	ctx->vol             = vol;
-	ctx->err_code        = 0;
-	ctx->current_pos     = current_pos.block;
-	ctx->eod_pos         = eod_pos;
+	ctx->vol = vol;
+	ctx->err_code = 0;
+	ctx->current_pos = current_pos.block;
+	ctx->eod_pos = eod_pos;
 	ctx->saw_small_block = false;
 	ctx->saw_file_mark   = false;
 	ctx->buf_size        = vol->label->blocksize;
@@ -1948,8 +1943,6 @@ int xml_schema_from_tape(uint64_t eod_pos, bool skip_dir, struct ltfs_volume *vo
 	if (! reader) {
 		ltfsmsg(LTFS_ERR, 17015E);
 		xmlFreeParserInputBuffer(read_buf);
-		if (ctx->fd >= 0)
-			xml_release_file_lock(vol->index_cache_path_r, ctx->fd, bk, false);
 		free(ctx->buf);
 		free(ctx);
 		return -LTFS_LIBXML2_FAILURE;
@@ -1962,8 +1955,6 @@ int xml_schema_from_tape(uint64_t eod_pos, bool skip_dir, struct ltfs_volume *vo
 		ltfsmsg(LTFS_ERR, 17015E);
 		xmlFreeTextReader(reader);
 		xmlFreeParserInputBuffer(read_buf);
-		if (ctx->fd >= 0)
-			xml_release_file_lock(vol->index_cache_path_r, ctx->fd, bk, false);
 		free(ctx->buf);
 		free(ctx);
 		return -LTFS_LIBXML2_FAILURE;
@@ -1975,7 +1966,7 @@ int xml_schema_from_tape(uint64_t eod_pos, bool skip_dir, struct ltfs_volume *vo
 	doc = xmlTextReaderCurrentDoc(reader);
 
 	/* Generate the Index. */
-	ret = _xml_parse_schema(reader, skip_dir, vol->index, vol);
+	ret = _xml_parse_schema(reader, vol->index, vol);
 	if (ctx->err_code < 0) {
 		/* Error happens while reading tape */
 		ltfsmsg(LTFS_ERR, 17273E, ctx->err_code);
@@ -1999,9 +1990,6 @@ int xml_schema_from_tape(uint64_t eod_pos, bool skip_dir, struct ltfs_volume *vo
 		xmlFreeDoc(doc);
 	xmlFreeTextReader(reader);
 	xmlFreeParserInputBuffer(read_buf);
-
-	if (ctx->fd >= 0)
-		xml_release_file_lock(vol->index_cache_path_r, ctx->fd, bk, false);
 
 	free(ctx->buf);
 	free(ctx);

@@ -100,7 +100,7 @@ class CopyItem:
                     # Set EAs of the destination file
                     (_, filename) = os.path.split(self.src)
                     for key in src_attributes:
-                        xattr.setxattr(self.dst, key, src_attributes[key])
+                        xattr.set(self.dst, key, src_attributes[key])
             else: #Only copy data
                 shutil.copy(self.src, self.dst)
         except Exception as e:
@@ -376,10 +376,10 @@ try:
     else:
         logger.info("Destination {0} is not LTFS\n".format(args.DEST))
 except IOError as e:
-    if not is_errno(e.errno, ['ENODATA', 'ENOATTR', 'ENOTSUP', 'EOPNOTSUPP']):
+    if e.errno != 61 and e.errno != 93 and e.errno != 95: # Not ENODATA, ENOATTR, EOPNOTSUPP
         logger.error('Check destination (I/O):' + str(e))
         exit(2)
-    if is_errno(e.errno, ['ENOTSUP', 'EOPNOTSUPP']) and args.p:
+    if e.errno == 95 and args.p:
         logger.warning("{0} does not support xattr. Cannot use -p. Attributes will not be preserved during copy.".format(args.DEST))
         args.p = False
     logger.warning("Destination {0} is not LTFS".format(args.DEST))

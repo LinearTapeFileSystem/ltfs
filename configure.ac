@@ -36,7 +36,7 @@
 dnl
 dnl LTFS configure.ac.
 dnl
-AC_INIT([LTFS], [2.5.0.0 (Prelim)], IBM corporation.)
+AC_INIT([LTFS], [2.4.5.1 (Prelim)], IBM corporation.)
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4])
@@ -503,7 +503,7 @@ fi
 
 if test "x$warning_as_error" = "xyes"
 then
-    AM_CFLAGS="${AM_CFLAGS} -Werror"
+    AM_CFLAGS="${AM_CFLAGS} -Werror -Wno-deprecated-declarations"
 fi
 
 if test "x$use_new_locking" = "xyes"

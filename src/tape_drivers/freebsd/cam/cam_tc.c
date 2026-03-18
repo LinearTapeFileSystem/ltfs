@@ -279,7 +279,8 @@ int camtape_open(const char *devname, void **handle)
 	ltfsmsg(LTFS_INFO, 31229I, vendor);
 
 	/* Check the drive is supportable */
-	struct supported_device **cur = get_supported_devs((char *)softc->cd->inq_data.vendor);
+	softc->vendor = get_vendor_id(vendor);
+	struct supported_device **cur = get_supported_devs(softc->vendor);
 	while(*cur) {
 		if ((! strncmp((char*)softc->cd->inq_data.vendor, (*cur)->vendor_id, strlen((*cur)->vendor_id)) ) &&
 			(! strncmp((char*)softc->cd->inq_data.product, (*cur)->product_id, strlen((*cur)->product_id)) ) ) {
@@ -1133,17 +1134,11 @@ int camtape_load(void *device, struct tc_position *pos)
 	softc->read_counter = 0;
 	softc->density_code = buf[8];
 
-	if (buf[2] == 0x00 || buf[2] == 0x01) {
-		/*
-		 * Non-IBM drive doesn't have cartridge type so need to assume from density code.
-		 */
+	if (softc->vendor == VENDOR_HP) {
 		softc->cart_type = assume_cart_type(softc->density_code);
 		if (buf[2] == 0x01)
 			softc->is_worm = true;
 	} else {
-		/*
-		 * IBM drive haves cartridge type in buf[2] like TC_MP_LTO5D_CART.
-		 */
 		softc->cart_type = buf[2];
 	}
 
@@ -1244,7 +1239,7 @@ static int camtape_get_next_block_to_xfer(void *device, struct tc_position *pos)
 		camtape_process_errors(softc, rc, msg, "READPOS", true);
 	else {
 		pos->partition = ext_data.partition;
-		pos->block = scsi_8btou64(ext_data.last_object);
+		pos->block = scsi_8btou64(ext_data.last_object)
 		ltfsmsg(LTFS_DEBUG, 30398D, "next-block-to-xfer",
 				(unsigned long long) pos->block, 0, 0, softc->drive_serial);
 	}

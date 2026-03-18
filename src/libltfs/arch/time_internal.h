@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -55,7 +55,7 @@ extern "C" {
 #endif
 
 #ifdef mingw_PLATFORM
-#include "libltfs/arch/win/win_util.h"
+#include "arch/win/win_util.h"
 #elif defined(__APPLE__)
 #include <time.h>
 typedef time_t ltfs_time_t;

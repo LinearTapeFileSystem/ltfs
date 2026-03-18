@@ -115,7 +115,7 @@ root:table {
 		30868I:string { "Retry to reserve from key registration (%s)" }
 		30869W:string { "The drive is already reserved: %s (%s)" }
 		30870I:string { "Failed to get the cartridge status. The cartridge is not loaded." }
-		30871W:string { "Failed to get medium type code: medium type check is skipped." }
+		// unused 30871
 		30872I:string { "Setting up timeout values from %s." }
 
 		30992D:string { "Backend %s %s." }

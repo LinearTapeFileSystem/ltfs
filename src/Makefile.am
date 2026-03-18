@@ -122,6 +122,7 @@ nobase_pkginclude_HEADERS = \
 	libltfs/arch/arch_info.h \
 	libltfs/arch/time_internal.h \
 	libltfs/arch/errormap.h \
+	libltfs/arch/ltfs_arch_ops.h \
 	tape_drivers/ibm_tape.h \
 	tape_drivers/spc_op_codes.h \
 	tape_drivers/ssc_op_codes.h \

@@ -3,7 +3,7 @@
 **  OO_Copyright_BEGIN
 **
 **
-**  Copyright 2010, 2020 IBM Corp. All rights reserved.
+**  Copyright 2010, 2025 IBM Corp. All rights reserved.
 **
 **  Redistribution and use in source and binary forms, with or without
 **   modification, are permitted provided that the following conditions
@@ -317,7 +317,6 @@
 #define LTFS_XML_WRONG_PART_MAP   5048  /* Unexpected partition map in a label */
 #define LTFS_XML_WRONG_BLOCKSIZE  5049  /* Unexpected blocksize in a label */
 #define LTFS_XML_WRONG_COMP       5050  /* Unexpected compression in a label */
-#define LTFS_BAD_INDEX_TYPE       5051  /* Unsupported index type is specified */
 
 #define LTFS_ERR_MAX              19999
 
