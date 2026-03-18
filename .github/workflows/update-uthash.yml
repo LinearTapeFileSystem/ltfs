@@ -8,6 +8,7 @@ on:
     paths:
       - '.gitmodules'
       - 'src/libltfs/uthash_submodule/**'
+      - '.github/workflows/update-uthash.yml'
 
 jobs:
   update-uthash:
@@ -21,7 +22,11 @@ jobs:
 
       - name: Update submodule to latest
         run: |
-          git submodule update --remote --merge src/libltfs/uthash_submodule
+          cd src/libltfs/uthash_submodule
+          git fetch origin
+          git checkout master || git checkout main
+          git reset --hard origin/master || git reset --hard origin/main
+          cd ../../..
           git add src/libltfs/uthash_submodule
           
       - name: Check for changes

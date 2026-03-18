@@ -1,10 +1,10 @@
-name: Debian10 Build Job
+name: Debian12 Build Job
 
 on: [push, pull_request]
 
 jobs:
   build:
-    name: Build on Debian10
+    name: Build on Debian12
     runs-on: ubuntu-latest
 
     steps:
@@ -14,6 +14,7 @@ jobs:
           submodules: recursive
       - name: Build LTFS
         id: build
-        uses: LinearTapeFileSystem/Debian10-Build@v1.1
+        uses: LinearTapeFileSystem/Debian12-Build@v1.0
         with:
           destination: '/tmp/ltfs'
+          submodules: recursive
