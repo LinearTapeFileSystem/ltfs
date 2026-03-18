@@ -21,7 +21,11 @@ jobs:
 
       - name: Update submodule to latest
         run: |
-          git submodule update --remote --merge src/libltfs/uthash_submodule
+          cd src/libltfs/uthash_submodule
+          git fetch origin
+          git checkout master || git checkout main
+          git reset --hard origin/master || git reset --hard origin/main
+          cd ../../..
           git add src/libltfs/uthash_submodule
           
       - name: Check for changes
@@ -47,5 +51,3 @@ jobs:
             **Note:** The OOM handling macros are defined in `uthash_ext.h` and remain unchanged.
           branch: automated/update-uthash
           delete-branch: true
-
-# Made with Bob
