@@ -834,6 +834,8 @@ v
 		17290I:string { "Partitioning the medium with the destructive method." }
 		17291I:string { "Unpartitioning the medium with the destructive method." }
 		17292I:string { "Current position is (%llu, %llu), Error position is (%llu, %llu)." }
+	 	17293E:string { "Position mismatch. Cached tape position = %llu. Current tape position = %llu." }
+	 	17294I:string { "Continue signal (%d) received" }
 
 		// For Debug 19999I:string { "%s %s %d." }
 

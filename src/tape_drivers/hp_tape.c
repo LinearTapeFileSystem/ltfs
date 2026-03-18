@@ -226,7 +226,7 @@ static struct _timeout_tape timeout_lto9[] = {
 	{-1, -1}
 };
 
-static struct _timeout_tape timeout_ltoA[] =  {
+static struct _timeout_tape timeout_lto10[] =  {
 	{ ERASE,                           16320  },
 	{ FORMAT_MEDIUM,                   3180   },
 	{ LOAD_UNLOAD,                     780    },
@@ -346,7 +346,7 @@ static struct _timeout_tape timeout_lto9_hh[] = {
 	{-1, -1}
 };
 
-static struct _timeout_tape timeout_ltoA_hh[] = {
+static struct _timeout_tape timeout_lto10_hh[] =  {
 	{ ERASE,                           166370 },
 	{ FORMAT_MEDIUM,                   3240   },
 	{ LOAD_UNLOAD,                     960    },
@@ -442,11 +442,11 @@ int hp_tape_init_timeout(struct timeout_tape** table, int type)
 		case DRIVE_LTO9_HH:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto9_hh);
 			break;
-		case DRIVE_LTOA:
-			ret = _create_table_tape(table, timeout_lto, timeout_ltoA);
+		case DRIVE_LTO10:
+			ret = _create_table_tape(table, timeout_lto, timeout_lto10);
 			break;
-		case DRIVE_LTOA_HH:
-			ret = _create_table_tape(table, timeout_lto, timeout_ltoA_hh);
+		case DRIVE_LTO10_HH:
+			ret = _create_table_tape(table, timeout_lto, timeout_lto10_hh);
 			break;
 		default:
 			ret = _create_table_tape(table, timeout_lto, timeout_lto7_hh);

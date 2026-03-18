@@ -1,0 +1,51 @@
+name: Update uthash.h from submodule
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
+  workflow_dispatch:  # Allow manual trigger
+  push:
+    paths:
+      - '.gitmodules'
+      - 'src/libltfs/uthash_submodule/**'
+
+jobs:
+  update-uthash:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update submodule to latest
+        run: |
+          git submodule update --remote --merge src/libltfs/uthash_submodule
+          git add src/libltfs/uthash_submodule
+          
+      - name: Check for changes
+        id: check_changes
+        run: |
+          git diff --cached --quiet || echo "changed=true" >> $GITHUB_OUTPUT
+          
+      - name: Create Pull Request
+        if: steps.check_changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: 'chore: update uthash.h from upstream'
+          title: 'chore: update uthash.h from upstream'
+          body: |
+            Automated update of uthash.h from the official uthash repository.
+            
+            This PR updates `src/libltfs/uthash.h` to the latest version from the uthash submodule.
+            
+            **Changes:**
+            - Updated uthash submodule to latest commit
+            - Copied uthash.h from submodule to src/libltfs/
+            
+            **Note:** The OOM handling macros are defined in `uthash_ext.h` and remain unchanged.
+          branch: automated/update-uthash
+          delete-branch: true
+
+# Made with Bob

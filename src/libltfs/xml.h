@@ -115,7 +115,7 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 /* standard parser variables */
 #define declare_parser(toptag) \
 	const char *name, *parent_tag = (toptag); \
-	int i, type, empty, ret;
+	int i, type, empty, ret = 0;
 
 #define declare_parser_vars_noloop(toptag) \
 	const char *name, *value, *parent_tag = (toptag); \
@@ -139,12 +139,25 @@ int xml_format_time(struct ltfs_timespec t, char** out);
 	int type;
 
 /* generate required/optional tag tracking arrays for the parser */
-#define declare_tracking_arrays(num_req, num_opt) \
-	const int ntags_req = (num_req), ntags_opt = (num_opt); \
-	bool *have_required_tags = ntags_req > 0 ? (bool*)calloc(ntags_req, sizeof(bool)) : NULL; \
-	bool *have_optional_tags = ntags_opt > 0 ? (bool*)calloc(ntags_opt, sizeof(bool)) : NULL; \
-	if(! have_optional_tags) (void)(have_optional_tags); \
-	if(! have_required_tags) (void)(have_required_tags);
+#define declare_tracking_arrays(num_req, num_opt)					\
+	const int ntags_req = (num_req), ntags_opt = (num_opt);			\
+	bool have_required_tags[num_req], have_optional_tags[num_opt];	\
+	memset(have_required_tags, 0, sizeof(have_required_tags));		\
+	memset(have_optional_tags, 0, sizeof(have_optional_tags));		\
+	(void)ntags_opt
+
+#define declare_tracking_arrays_no_opt(num_req)						\
+	const int ntags_req = (num_req), ntags_opt = (0);				\
+	bool have_required_tags[num_req];								\
+	bool *have_optional_tags = NULL;								\
+	memset(have_required_tags, 0, sizeof(have_required_tags));		\
+	(void)ntags_req; (void)ntags_opt; (void)have_optional_tags
+
+#define declare_tracking_arrays_no_tags()							\
+	const int ntags_req = (0), ntags_opt = (0);						\
+	bool *have_required_tags = NULL;								\
+	bool *have_optional_tags = NULL;								\
+	(void)ntags_req; (void)ntags_opt; (void)have_required_tags; (void)have_optional_tags
 
 
 /* grab the next tag inside the given tag. It breaks if the end of the given tag is detected.

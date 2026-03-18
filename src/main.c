@@ -695,7 +695,7 @@ int main(int argc, char **argv)
 
 	/* Show build time information */
 	ltfsmsg(LTFS_INFO, 14105I, BUILD_SYS_FOR);
-	ltfsmsg(LTFS_INFO, 14106I, BUILD_SYS_GCC);
+	ltfsmsg(LTFS_INFO, 14106I, BUILD_SYS_COMPILER_VER);
 
 	/* Show run time information */
 	show_runtime_system_info();
@@ -1241,10 +1241,14 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	ltfsmsg(LTFS_INFO, 14111I);
 	ltfsmsg(LTFS_INFO, 14112I);
 	ltfsmsg(LTFS_INFO, 14113I);
+	/* Set handlers for signals that need to be caught while fuse main is running*/
+	ltfs_extra_signal_handlers();
 	ret = fuse_main(args->argc, args->argv, &ltfs_ops, priv);
 	if (ret != 0) {
 		ltfsmsg(LTFS_WARN, 14123W, ret);
 	}
+	/* Unset extra handlers once fuse main exits */
+	ltfs_unset_extra_signal_handler();
 
 	/*  Setup signal handler again to terminate cleanly */
 	ret = ltfs_set_signal_handlers();
