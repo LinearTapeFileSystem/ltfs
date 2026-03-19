@@ -4,14 +4,24 @@ set -e
 
 KERNEL_NAME=`uname -s`
 if [ "$KERNEL_NAME" = "Darwin" ]; then
-	ICU_FRAMEWORK=/Library/Frameworks/ICU.framework
+	# Compilation with brew help
+	ICU_FRAMEWORK="$(brew --prefix icu4c)"	
+	if [ -n "$ICU_FRAMEWORK" ]; then
+		GENRB=${ICU_FRAMEWORK}/bin/genrb
+		PKGDATA=${ICU_FRAMEWORK}/bin/pkgdata
+		ICUBREW_INSTALLED=true
+	else
+		ICUBREW_INSTALLED=false
+		ICU_FRAMEWORK=/Library/Frameworks/ICU.framework
+	fi
 
-	if [ -d ${ICU_FRAMEWORK} ]; then
+	# Old compilation
+	if [ "$ICUBREW_INSTALLED" = false ] && [ -d ${ICU_FRAMEWORK} ]; then
 		export PATH=${PATH}:${ICU_FRAMEWORK}/Versions/Current/usr/bin
 		export DYLD_LIBRARY_PATH=${ICU_FRAMEWORK}/Versions/Current/usr/lib
 		GENRB=${ICU_FRAMEWORK}/Versions/Current/usr/bin/genrb
 		PKGDATA=${ICU_FRAMEWORK}/Versions/Current/usr/bin/pkgdata
-	else
+	elif [ "$ICUBREW_INSTALLED" = false ]; then
 		GENRB=genrb
 		PKGDATA=pkgdata
 	fi

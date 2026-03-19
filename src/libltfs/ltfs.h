@@ -94,7 +94,7 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
+#include "ltfs_fuse_version.h"
 #include "libltfs/arch/signal_internal.h"
 #include "libltfs/arch/arch_info.h"
 #include "libltfs/ltfs_error.h"
@@ -161,7 +161,7 @@ struct device_data;
 
 #define LTFS_NO_BARCODE               "NO_BARCODE"
 
-#ifndef __APPLE_MAKEFILE__
+#ifndef __APPLE_CONFIG__
 #include "config.h"
 #endif
 
