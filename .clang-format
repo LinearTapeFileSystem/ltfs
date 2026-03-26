@@ -1,0 +1,76 @@
+# .clang-format for LTFS (Linear Tape File System)
+# Derived from the LTFS C Language Coding Style Guide.
+#
+# NOTE: Several guide rules cannot be enforced by clang-format and must be
+# observed manually or via other tooling:
+#   - Naming conventions (snake_case, capital enumerator entries, etc.)
+#   - Positive logic naming for boolean parameters
+#   - Doxygen comment content and placement
+#   - sizeof(variable) preferred over sizeof(type)
+#   - Include guard presence in headers
+#   - File preamble / copyright block
+#   - C++-style comments (//) restricted to logic comment-out only
+#   - Magic editor lines (vim/emacs modelines)
+---
+Language: C
+ColumnLimit: 120
+IndentWidth: 2
+UseTab: Always
+TabWidth: 2
+ReflowComments: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: true
+  AfterControlStatement: false
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: None
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceAfterCStyleCast: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+IndentCaseLabels: true
+IndentCaseBlocks: false
+AlwaysBreakAfterReturnType: None
+AlignAfterOpenBracket: Align
+BinPackParameters: false
+BinPackArguments: false
+PointerAlignment: Right
+ReferenceAlignment: Right
+IndentPPDirectives: AfterHash
+AlignConsecutiveAssignments:
+  Enabled: false
+AlignConsecutiveDeclarations:
+  Enabled: false
+AlignEscapedNewlines: Left
+AlignOperands: Align
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 1
+CompactNamespaces: false
+IncludeBlocks: Preserve
+SortIncludes: CaseSensitive
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: false
+SpacesBeforeTrailingComments: 2
+Cpp11BracedListStyle: false
+InsertTrailingCommas: None
