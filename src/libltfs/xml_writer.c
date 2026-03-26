@@ -54,18 +54,18 @@
 #include <libxml/xmlstring.h>
 #include <libxml/xmlwriter.h>
 
+#include "arch/time_internal.h"
+#include "fs.h"
 #include "libltfs/arch/ltfs_arch_ops.h"
 #include "ltfs.h"
-#include "xml.h"
-#include "fs.h"
-#include "tape.h"
 #include "pathname.h"
-#include "arch/time_internal.h"
+#include "tape.h"
+#include "xml.h"
 
 /**
  * Format a raw timespec structure for the XML file.
  */
-int xml_format_time(struct ltfs_timespec t, char** out)
+int xml_format_time(struct ltfs_timespec t, char **out)
 {
 	char *timebuf;
 	struct tm tm, *gmt;
@@ -77,7 +77,7 @@ int xml_format_time(struct ltfs_timespec t, char** out)
 	sec = t.tv_sec;
 
 	gmt = ltfs_gmtime(&sec, &tm);
-	if (! gmt) {
+	if (!gmt) {
 		ltfsmsg(LTFS_ERR, 17056E);
 		return -1;
 	}
@@ -87,8 +87,16 @@ int xml_format_time(struct ltfs_timespec t, char** out)
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -1;
 	}
-	arch_sprintf(timebuf, (31*sizeof(char)), "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ", tm.tm_year + 1900, tm.tm_mon + 1,
-			tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, t.tv_nsec);
+	arch_sprintf(timebuf,
+							 (31 * sizeof(char)),
+							 "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ",
+							 tm.tm_year + 1900,
+							 tm.tm_mon + 1,
+							 tm.tm_mday,
+							 tm.tm_hour,
+							 tm.tm_min,
+							 tm.tm_sec,
+							 t.tv_nsec);
 	*out = timebuf;
 
 	return noramized;
@@ -102,14 +110,12 @@ int xml_output_tape_write_callback(void *context, const char *buffer, int len)
 {
 	ssize_t ret;
 	struct xml_output_tape *ctx = context;
-	uint32_t copy_count; /* number of bytes of "buffer" to write immediately */
+	uint32_t copy_count;			/* number of bytes of "buffer" to write immediately */
 	uint32_t bytes_remaining; /* number of input bytes waiting to be handled */
 
-	if (len == 0)
-		return 0;
+	if (len == 0) return 0;
 
-	if (ctx->err_code || ctx->errno_fd)
-		return -1;
+	if (ctx->err_code || ctx->errno_fd) return -1;
 
 	if (ctx->buf_used + len < ctx->buf_size) {
 		memcpy(ctx->buf + ctx->buf_used, buffer, len);
@@ -138,8 +144,7 @@ int xml_output_tape_write_callback(void *context, const char *buffer, int len)
 			ctx->buf_used = 0;
 			bytes_remaining -= copy_count;
 		} while (bytes_remaining > ctx->buf_size);
-		if (bytes_remaining > 0)
-			memcpy(ctx->buf, buffer + (len - bytes_remaining), bytes_remaining);
+		if (bytes_remaining > 0) memcpy(ctx->buf, buffer + (len - bytes_remaining), bytes_remaining);
 		ctx->buf_used = bytes_remaining;
 	}
 
@@ -162,8 +167,7 @@ int xml_output_tape_close_callback(void *context)
 			ctx->err_code = ret_t;
 			ret = -1;
 		} else {
-			if (ctx->fd >= 0)
-				ret_d = arch_write(ctx->fd, ctx->buf, ctx->buf_used);
+			if (ctx->fd >= 0) ret_d = arch_write(ctx->fd, ctx->buf, ctx->buf_used);
 			if (ret_d < 0) {
 				ltfsmsg(LTFS_ERR, 17245E, (int)errno);
 				ctx->errno_fd = -LTFS_CACHE_IO;
@@ -225,10 +229,11 @@ int xml_output_fd_close_callback(void *context)
 #define COPY_BUF_SIZE (512 * KB)
 
 #ifdef _WIN32
-#include <windows.h>
-#include <io.h>
+#	include <io.h>
+#	include <windows.h>
 
-int ftruncate(int fd, off_t length) {
+int ftruncate(int fd, off_t length)
+{
 	HANDLE hFile = (HANDLE)_get_osfhandle(fd);
 	if (hFile == INVALID_HANDLE_VALUE) {
 		return -1;
@@ -250,7 +255,6 @@ int ftruncate(int fd, off_t length) {
 
 #endif
 
-
 static int _copy_file_contents(int dest, int src)
 {
 	int ret = 0;
@@ -264,14 +268,14 @@ static int _copy_file_contents(int dest, int src)
 	}
 
 	ret = lseek(src, 0, SEEK_SET);
-	if (ret < 0){
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17246E, "source seek", errno);
 		free(buf);
 		return -LTFS_CACHE_IO;
 	}
 
 	ret = lseek(dest, 0, SEEK_SET);
-	if (ret < 0){
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17246E, "destination seek", errno);
 		free(buf);
 		return -LTFS_CACHE_IO;
@@ -306,13 +310,13 @@ static int _copy_file_contents(int dest, int src)
 	}
 
 	ret = lseek(src, 0, SEEK_SET);
-	if (ret < 0){
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17246E, "source seek (P)", errno);
 		return -LTFS_CACHE_IO;
 	}
 
 	ret = lseek(dest, 0, SEEK_SET);
-	if (ret < 0){
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17246E, "destination seek (P)", errno);
 		return -LTFS_CACHE_IO;
 	}
@@ -326,9 +330,9 @@ static int _copy_file_contents(int dest, int src)
  * @param write true if write lock
  * @param bk backup fd to revert
  */
-const struct timespec lock_wait = {0, 100000000}; /* 100ms */
-const struct timespec lock_zero = {0, 0};
-#define LOCK_RETRIES (12000) /* 100ms x 12,000 = 1200sec = 20 min */
+const struct timespec lock_wait = { 0, 100000000 }; /* 100ms */
+const struct timespec lock_zero = { 0, 0 };
+#define LOCK_RETRIES (12000)												/* 100ms x 12,000 = 1200sec = 20 min */
 int xml_acquire_file_lock(const char *file, int *fd, int *bk_fd, bool is_write)
 {
 	int ret = -LTFS_CACHE_IO;
@@ -342,7 +346,7 @@ int xml_acquire_file_lock(const char *file, int *fd, int *bk_fd, bool is_write)
 	*fd = *bk_fd = -1;
 
 	/* Open specified file to lock */
-	arch_open(fd,file,O_RDWR | O_CREAT | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
+	arch_open(fd, file, O_RDWR | O_CREAT | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 	if (*fd < 0) {
 		/* Failed to open the advisory lock '%s' (%d) */
 		errno_save = errno;
@@ -352,8 +356,8 @@ int xml_acquire_file_lock(const char *file, int *fd, int *bk_fd, bool is_write)
 
 #ifndef mingw_PLATFORM /* There isn't flock in windows */
 	int retry_count = 0;
-	struct timespec next_wait  = lock_wait;
-	struct timespec remaining = {0, 0};
+	struct timespec next_wait = lock_wait;
+	struct timespec remaining = { 0, 0 };
 
 retry:
 	/* Acquire lock */
@@ -410,14 +414,13 @@ retry:
 	/* Create backup file if required */
 	if (bk_fd) {
 		asprintf(&backup_file, "%s.%s", file, "bk");
-		if (!backup_file){
+		if (!backup_file) {
 			ltfsmsg(LTFS_ERR, 10001E, "xml_acquire_file_lock: backup name");
 			arch_close(*fd);
 			*fd = -1;
 			goto out;
 		}
-		arch_open(bk_fd,backup_file,
-					  O_RDWR | O_CREAT | O_BINARY | O_TRUNC,SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
+		arch_open(bk_fd, backup_file, O_RDWR | O_CREAT | O_BINARY | O_TRUNC, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 		if (*bk_fd < 0) {
 			ltfsmsg(LTFS_ERR, 17246E, "backup file creation", errno);
 			errno_save = errno;
@@ -451,7 +454,7 @@ retry:
 	}
 
 	ret = ftruncate(*fd, 0);
-	if (ret < 0){
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17246E, "truncate", errno);
 		errno_save = errno;
 		arch_close(*fd);
@@ -464,7 +467,7 @@ retry:
 	ret = 0;
 
 out:
-    errno = errno_save;
+	errno = errno_save;
 	return ret;
 }
 
@@ -508,10 +511,10 @@ int xml_release_file_lock(const char *file, int fd, int bk_fd, bool revert)
 
 	if (fd >= 0) arch_close(fd);
 	if (bk_fd >= 0) arch_close(bk_fd);
-    errno = errno_save;
+	errno = errno_save;
 
 	asprintf(&backup_file, "%s.%s", file, "bk");
-	if (!backup_file){
+	if (!backup_file) {
 		ltfsmsg(LTFS_ERR, 10001E, "xml_release_file_lock: backup name");
 		ret = -LTFS_NO_MEMORY;
 	} else {

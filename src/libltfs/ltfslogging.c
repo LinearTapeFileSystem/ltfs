@@ -46,75 +46,76 @@
  */
 
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
-#include <windows.h>
+#	include "arch/win/win_util.h"
+#	include <windows.h>
 #endif
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
 #include <errno.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
 #ifndef mingw_PLATFORM
-#include <syslog.h>
+#	include <syslog.h>
 #endif
 
 #ifdef __APPLE_MAKEFILE__
-#include <ICU/unicode/ucnv.h>
-#include <ICU/unicode/ures.h>
-#include <ICU/unicode/utypes.h>
-#include <ICU/unicode/udata.h>
-#include <ICU/unicode/uclean.h>
+#	include <ICU/unicode/uclean.h>
+#	include <ICU/unicode/ucnv.h>
+#	include <ICU/unicode/udata.h>
+#	include <ICU/unicode/ures.h>
+#	include <ICU/unicode/utypes.h>
 #else
-#include <unicode/ucnv.h>
-#include <unicode/ures.h>
-#include <unicode/utypes.h>
-#include <unicode/udata.h>
-#include <unicode/putil.h>
-#include <unicode/uclean.h>
+#	include <unicode/putil.h>
+#	include <unicode/uclean.h>
+#	include <unicode/ucnv.h>
+#	include <unicode/udata.h>
+#	include <unicode/ures.h>
+#	include <unicode/utypes.h>
 #endif
 #ifdef mingw_PLATFORM
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include "arch/win/winlog.h"
+#	include "arch/win/winlog.h"
+#	include <fcntl.h>
+#	include <sys/stat.h>
+#	include <sys/types.h>
+#	include <unistd.h>
 #else
-#include <dlfcn.h>
-#include <sys/types.h>
+#	include <dlfcn.h>
+#	include <sys/types.h>
 #endif
 
-#include "libltfs/ltfslogging.h"
-#include "libltfs/ltfs_thread.h"
-#include "libltfs/ltfs_locking.h"
 #include "libltfs/ltfs_error.h"
-#include "queue.h"
+#include "libltfs/ltfs_locking.h"
+#include "libltfs/ltfs_thread.h"
+#include "libltfs/ltfslogging.h"
 #include "ltfssnmp.h"
+#include "queue.h"
 
 /* Some hard-coded message bits. */
-#define MSG_PREFIX_POSIX_TID   "%016llx LTFS%s "
-#define MSG_PREFIX_TID         "%lx LTFS%s "
-#define MSG_PREFIX             "LTFS%s "
-#define MSG_FALLBACK           "(could not generate message)"
+#define MSG_PREFIX_POSIX_TID "%016llx LTFS%s "
+#define MSG_PREFIX_TID "%lx LTFS%s "
+#define MSG_PREFIX "LTFS%s "
+#define MSG_FALLBACK "(could not generate message)"
 
-#define OUTPUT_BUF_SIZE 4096  /* Output buffer size, should be big enough to hold any message. */
+#define OUTPUT_BUF_SIZE 4096 /* Output buffer size, should be big enough to hold any message. */
 
-struct plugin_bundle {
+struct plugin_bundle
+{
 	TAILQ_ENTRY(plugin_bundle) list;
-	int32_t start_id;                  /**< First message ID allocated to this plugin */
-	int32_t end_id;                    /**< Last message ID allocated to this plugin */
-	UResourceBundle *bundle_root;      /**< Root resource bundle for this plugin */
-	UResourceBundle *bundle_messages;  /**< Resource bundle containing this plugin's messages */
+	int32_t start_id;									/**< First message ID allocated to this plugin */
+	int32_t end_id;										/**< Last message ID allocated to this plugin */
+	UResourceBundle *bundle_root;			/**< Root resource bundle for this plugin */
+	UResourceBundle *bundle_messages; /**< Resource bundle containing this plugin's messages */
 };
 
 /* Syslog levels corresponding to the LTFS logging levels defined in libltfs/ltfslogging.h. */
 static int syslog_levels[] = {
-	LOG_ERR,      /* LTFS_ERR    */
-	LOG_WARNING,  /* LTFS_WARN   */
-	LOG_INFO,     /* LTFS_INFO   */
-	LOG_DEBUG,    /* LTFS_DEBUG  */
-	LOG_DEBUG,    /* LTFS_DEBUG1 */
-	LOG_DEBUG,    /* LTFS_DEBUG2 */
-	LOG_DEBUG,    /* LTFS_DEBUG3 */
-	LOG_DEBUG,    /* LTFS_TRACE  */
+	LOG_ERR,		 /* LTFS_ERR    */
+	LOG_WARNING, /* LTFS_WARN   */
+	LOG_INFO,		 /* LTFS_INFO   */
+	LOG_DEBUG,	 /* LTFS_DEBUG  */
+	LOG_DEBUG,	 /* LTFS_DEBUG1 */
+	LOG_DEBUG,	 /* LTFS_DEBUG2 */
+	LOG_DEBUG,	 /* LTFS_DEBUG3 */
+	LOG_DEBUG,	 /* LTFS_TRACE  */
 };
 
 #ifdef mingw_PLATFORM
@@ -122,9 +123,9 @@ char *libltfs_dat;
 char *internal_error_dat;
 char *tape_common_dat;
 #else
-U_CFUNC char libltfs_dat[]; /* U_CFUNC is an ICU synonym for extern. */
+U_CFUNC char libltfs_dat[];				 /* U_CFUNC is an ICU synonym for extern. */
 U_CFUNC char internal_error_dat[]; /* U_CFUNC is an ICU synonym for extern. */
-U_CFUNC char tape_common_dat[]; /* U_CFUNC is an ICU synonym for extern. */
+U_CFUNC char tape_common_dat[];		 /* U_CFUNC is an ICU synonym for extern. */
 #endif
 
 static bool libltfs_dat_init = false;
@@ -190,7 +191,7 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 	}
 
 	/* Load the libltfs message bundle and the primary message set */
-	ret = ltfsprintf_load_plugin("internal_error", internal_error_dat, (void**)&pl);
+	ret = ltfsprintf_load_plugin("internal_error", internal_error_dat, (void **)&pl);
 	if (ret < 0) {
 		fprintf(stderr, "LTFS11293E Cannot load messages for internal error (%d)\n", ret);
 		ltfsprintf_finish();
@@ -216,7 +217,6 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 /* Shut down the logging and error reporting framework. */
 void ltfsprintf_finish()
 {
-
 	libltfs_dat_init = false;
 
 	if (bundle_fallback) {
@@ -224,7 +224,7 @@ void ltfsprintf_finish()
 		bundle_fallback = NULL;
 	}
 	while (1) {
-		if (! TAILQ_EMPTY(&plugin_bundles))
+		if (!TAILQ_EMPTY(&plugin_bundles))
 			ltfsprintf_unload_plugin(TAILQ_LAST(&plugin_bundles, message_struct));
 		else
 			break;
@@ -250,17 +250,14 @@ int ltfsprintf_set_log_level(int log_level)
 	if (log_level < LTFS_ERR) {
 		fprintf(stderr, "LTFS11318W Unknown log level (%d), forced the level to (%d)\n", log_level, LTFS_ERR);
 		log_level = LTFS_ERR;
-	}
-	else if (log_level > LTFS_TRACE) {
+	} else if (log_level > LTFS_TRACE) {
 		fprintf(stderr, "LTFS11318W Unknown log level (%d), forced the level to (%d)\n", log_level, LTFS_TRACE);
 		log_level = LTFS_TRACE;
-	}
-	else {
+	} else {
 		ltfs_log_level = log_level;
 	}
 	return 0;
 }
-
 
 int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **messages)
 {
@@ -283,7 +280,7 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 #endif
 
 	pl = calloc(1, sizeof(struct plugin_bundle));
-	if (! pl) {
+	if (!pl) {
 		if (libltfs_dat_init)
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		else
@@ -318,7 +315,8 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 		if (libltfs_dat_init)
 			ltfsmsg(LTFS_ERR, 11282E, err);
 		else
-			fprintf(stderr, "LTFS11282E Cannot load messages: failed to determine first message ID (ures_getByKey: %d)\n", err);
+			fprintf(
+					stderr, "LTFS11282E Cannot load messages: failed to determine first message ID (ures_getByKey: %d)\n", err);
 		ures_close(pl->bundle_messages);
 		ures_close(pl->bundle_root);
 		free(pl);
@@ -392,23 +390,22 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	 * hence we need to remove quotes first.
 	 */
 	idlen = strlen(_id);
-	if (idlen > sizeof(id) - 1)
-		goto internal_error;
+	if (idlen > sizeof(id) - 1) goto internal_error;
 
 	if (idlen > 1 && _id[0] == '"' && _id[idlen - 1] == '"') {
 		arch_strncpy_auto(id, _id + 1, idlen - 2);
 		id[idlen - 2] = '\0';
-	}
-	else {
+	} else {
 		arch_strcpy_auto(id, _id);
 	}
 
 	id_val = atol(id);
 
 	/* Check loaded plugins for the message, most recently loaded first */
-	if (! TAILQ_EMPTY(&plugin_bundles)) {
+	if (!TAILQ_EMPTY(&plugin_bundles)) {
 		ltfs_mutex_lock(&output_lock);
-		TAILQ_FOREACH(entry, &plugin_bundles, list) {
+		TAILQ_FOREACH(entry, &plugin_bundles, list)
+		{
 			if (entry->start_id <= id_val && id_val <= entry->end_id) {
 				err = U_ZERO_ERROR;
 				format_uc = ures_getStringByKey(entry->bundle_messages, id, &format_len, &err);
@@ -421,8 +418,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 			} else if (id[0] == 'I' || id[0] == 'D') {
 				err = U_ZERO_ERROR;
 				format_uc = ures_getStringByKey(entry->bundle_messages, id, &format_len, &err);
-				if (U_SUCCESS(err))
-					break;
+				if (U_SUCCESS(err)) break;
 				format_uc = NULL;
 			}
 		}
@@ -431,10 +427,9 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 	}
 
 	/* Try to get a fallback message if we didn't find the real message */
-	if (! format_uc) {
+	if (!format_uc) {
 		format_uc = ures_getStringByKey(bundle_fallback, "notfound", &format_len, &err);
-		if (U_FAILURE(err))
-			goto internal_error;
+		if (U_FAILURE(err)) goto internal_error;
 	}
 
 	/* Format and print the message string. */
@@ -443,8 +438,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 		prefix_len = print_id ? arch_sprintf_auto(output_buf, MSG_PREFIX_TID, (unsigned long)ltfs_get_thread_id(), id) : 0;
 	else
 		prefix_len = print_id ? arch_sprintf_auto(output_buf, MSG_PREFIX, id) : 0;
-	ucnv_fromUChars(output_conv, output_buf + prefix_len, OUTPUT_BUF_SIZE - prefix_len - 1,
-		format_uc, format_len, &err);
+	ucnv_fromUChars(output_conv, output_buf + prefix_len, OUTPUT_BUF_SIZE - prefix_len - 1, format_uc, format_len, &err);
 	if (err == U_BUFFER_OVERFLOW_ERROR) {
 		err = U_ZERO_ERROR;
 		format_uc = ures_getStringByKey(bundle_fallback, "overflow", &format_len, &err);
@@ -453,22 +447,19 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 			goto internal_error;
 		}
 
-		ucnv_fromUChars(output_conv, output_buf + prefix_len, OUTPUT_BUF_SIZE - prefix_len - 1,
-			format_uc, format_len, &err);
+		ucnv_fromUChars(
+				output_conv, output_buf + prefix_len, OUTPUT_BUF_SIZE - prefix_len - 1, format_uc, format_len, &err);
 		if (U_FAILURE(err)) {
 			ltfs_mutex_unlock(&output_lock);
 			goto internal_error;
 		}
-	}
-	else if (U_FAILURE(err)) {
+	} else if (U_FAILURE(err)) {
 		ltfs_mutex_unlock(&output_lock);
 		goto internal_error;
 	}
 
 #ifdef mingw_PLATFORM
-	if (level <= ltfs_syslog_level 
-		|| level <= ltfs_log_level
-		|| level == (LTFS_TRACE + 1)) // For "Help" messages
+	if (level <= ltfs_syslog_level || level <= ltfs_log_level || level == (LTFS_TRACE + 1))	 // For "Help" messages
 	{
 		va_start(argp, _id);
 		vsyslog2(level, output_buf, argp);
@@ -508,7 +499,7 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *_id, 
 			arch_vsprintf(msg_buf, sizeof(msg_buf), output_buf, argp);
 			va_end(argp);
 			pos = strstr(msg_buf, " ");
-			send_ltfsInfoTrap(pos+1);
+			send_ltfsInfoTrap(pos + 1);
 		}
 	}
 #endif

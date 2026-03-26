@@ -50,11 +50,12 @@
 
 #include "dcache.h"
 
-struct dcache_priv {
-	void *dlopen_handle;            /**< Handle returned from dlopen */
-	struct libltfs_plugin *plugin;  /**< Reference to the plugin */
-	struct dcache_ops *ops;         /**< Dentry cache manager operations */
-	void *backend_handle;           /**< Backend private data */
+struct dcache_priv
+{
+	void *dlopen_handle;					 /**< Handle returned from dlopen */
+	struct libltfs_plugin *plugin; /**< Reference to the plugin */
+	struct dcache_ops *ops;				 /**< Dentry cache manager operations */
+	void *backend_handle;					 /**< Backend private data */
 };
 
 /**
@@ -65,8 +66,7 @@ struct dcache_priv {
  * structure. On failure a negative value is returned.
  */
 
-int dcache_init(struct libltfs_plugin *plugin, const struct dcache_options *options,
-	struct ltfs_volume *vol)
+int dcache_init(struct libltfs_plugin *plugin, const struct dcache_options *options, struct ltfs_volume *vol)
 {
 	struct dcache_priv *priv;
 	unsigned int i;
@@ -75,7 +75,7 @@ int dcache_init(struct libltfs_plugin *plugin, const struct dcache_options *opti
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	priv = calloc(1, sizeof(struct dcache_priv));
-	if (! priv) {
+	if (!priv) {
 		ltfsmsg(LTFS_ERR, 10001E, "dcache_init: private data");
 		return -LTFS_NO_MEMORY;
 	}
@@ -84,7 +84,7 @@ int dcache_init(struct libltfs_plugin *plugin, const struct dcache_options *opti
 	priv->ops = plugin->ops;
 
 	/* Verify that backend implements all required operations */
-	for (i=0; i<sizeof(struct dcache_ops)/sizeof(void *); ++i) {
+	for (i = 0; i < sizeof(struct dcache_ops) / sizeof(void *); ++i) {
 		if (((void **)(priv->ops))[i] == NULL) {
 			/* Dentry cache backend does not implement all required methods */
 			ltfsmsg(LTFS_ERR, 13004E);
@@ -94,7 +94,7 @@ int dcache_init(struct libltfs_plugin *plugin, const struct dcache_options *opti
 	}
 
 	priv->backend_handle = priv->ops->init(options, vol);
-	if (! priv->backend_handle) {
+	if (!priv->backend_handle) {
 		free(priv);
 		return -1;
 	}
@@ -116,7 +116,7 @@ int dcache_init(struct libltfs_plugin *plugin, const struct dcache_options *opti
  */
 int dcache_destroy(struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 	int ret;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -149,33 +149,33 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 	*out = NULL;
 
 	opt = calloc(1, sizeof(struct dcache_options));
-	if (! opt) {
+	if (!opt) {
 		ltfsmsg(LTFS_ERR, 10001E, "dcache_parse_options: opt");
 		return -ENOMEM;
 	}
 
-	for (i=0; options[i]; ++i) {
+	for (i = 0; options[i]; ++i) {
 		line = arch_strdup(options[i]);
-		if (! line) {
+		if (!line) {
 			ltfsmsg(LTFS_ERR, 10001E, "dcache_parse_options: line");
 			ret = -ENOMEM;
 			goto out_free;
 		}
 		char *contextVal = NULL;
 		option = arch_strtok(line, " \t", contextVal);
-		if (! option) {
+		if (!option) {
 			/* Failed to parse LTFS dcache configuration rules: invalid option '%s' */
 			ltfsmsg(LTFS_ERR, 17170E, options[i]);
 			ret = -EINVAL;
 			goto out_free;
 		}
 
-		if (! strcmp(option, "enabled")) {
+		if (!strcmp(option, "enabled")) {
 			opt->enabled = true;
 			free(line);
 			line = NULL;
 			continue;
-		} else if (! strcmp(option, "disabled")) {
+		} else if (!strcmp(option, "disabled")) {
 			opt->enabled = false;
 			free(line);
 			line = NULL;
@@ -183,14 +183,14 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 		}
 
 		value = arch_strtok(NULL, " \t", contextVal);
-		if (! value) {
+		if (!value) {
 			/* Failed to parse LTFS dcache configuration rules: invalid option '%s' */
 			ltfsmsg(LTFS_ERR, 17170E, options[i]);
 			ret = -EINVAL;
 			goto out_free;
 		}
 
-		if (! strcmp(option, "minsize")) {
+		if (!strcmp(option, "minsize")) {
 			opt->minsize = atoi(value);
 			if (opt->minsize <= 0) {
 				/* Failed to parse LTFS dcache configuration rules: invalid value '%d' for option '%s' */
@@ -198,7 +198,7 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 				ret = -EINVAL;
 				goto out_free;
 			}
-		} else if (! strcmp(option, "maxsize")) {
+		} else if (!strcmp(option, "maxsize")) {
 			opt->maxsize = atoi(value);
 			if (opt->maxsize <= 0) {
 				/* Failed to parse LTFS dcache configuration rules: invalid value '%d' for option '%s' */
@@ -220,10 +220,8 @@ int dcache_parse_options(const char **options, struct dcache_options **out)
 	*out = opt;
 
 out_free:
-	if (ret != 0 && opt)
-		dcache_free_options(&opt);
-	if (line)
-		free(line);
+	if (ret != 0 && opt) dcache_free_options(&opt);
+	if (line) free(line);
 	return ret;
 }
 
@@ -246,7 +244,7 @@ void dcache_free_options(struct dcache_options **options)
  */
 bool dcache_initialized(struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 	bool assigned = false;
 
 	CHECK_ARG_NULL(vol, false);
@@ -268,7 +266,7 @@ bool dcache_initialized(struct ltfs_volume *vol)
  */
 int dcache_mkcache(const char *name, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -287,7 +285,7 @@ int dcache_mkcache(const char *name, struct ltfs_volume *vol)
  */
 int dcache_rmcache(const char *name, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -308,7 +306,7 @@ int dcache_rmcache(const char *name, struct ltfs_volume *vol)
  */
 int dcache_cache_exists(const char *name, bool *exists, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(exists, -LTFS_NULL_ARG);
@@ -328,7 +326,7 @@ int dcache_cache_exists(const char *name, bool *exists, struct ltfs_volume *vol)
  */
 int dcache_set_workdir(const char *workdir, bool clean, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(workdir, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -347,7 +345,7 @@ int dcache_set_workdir(const char *workdir, bool clean, struct ltfs_volume *vol)
  */
 int dcache_get_workdir(char **workdir, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(workdir, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -366,7 +364,7 @@ int dcache_get_workdir(char **workdir, struct ltfs_volume *vol)
  */
 int dcache_assign_name(const char *name, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -385,7 +383,7 @@ int dcache_assign_name(const char *name, struct ltfs_volume *vol)
  */
 int dcache_unassign_name(struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol->index, -LTFS_NULL_ARG);
@@ -403,7 +401,7 @@ int dcache_unassign_name(struct ltfs_volume *vol)
  */
 int dcache_wipe_dentry_tree(struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol->index->root, -LTFS_NULL_ARG);
@@ -422,9 +420,9 @@ int dcache_wipe_dentry_tree(struct ltfs_volume *vol)
  * @param vol LTFS volume of the cartridge. Must have been initialized with dcache_init().
  * @return 0 to indicate success or a negative value on error.
  */
-int dcache_get_vol_uuid(const char *work_dir, const char *barcode, char  **uuid, struct ltfs_volume *vol)
+int dcache_get_vol_uuid(const char *work_dir, const char *barcode, char **uuid, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(uuid, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -443,7 +441,7 @@ int dcache_get_vol_uuid(const char *work_dir, const char *barcode, char  **uuid,
  */
 int dcache_set_vol_uuid(char *uuid, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(uuid, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -464,7 +462,7 @@ int dcache_set_vol_uuid(char *uuid, struct ltfs_volume *vol)
  */
 int dcache_get_generation(const char *work_dir, const char *barcode, unsigned int *gen, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(gen, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -483,7 +481,7 @@ int dcache_get_generation(const char *work_dir, const char *barcode, unsigned in
  */
 int dcache_set_generation(unsigned int gen, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
@@ -503,7 +501,7 @@ int dcache_set_generation(unsigned int gen, struct ltfs_volume *vol)
  */
 int dcache_get_dirty(const char *work_dir, const char *barcode, bool *dirty, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(dirty, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -523,7 +521,7 @@ int dcache_get_dirty(const char *work_dir, const char *barcode, bool *dirty, str
  */
 int dcache_set_dirty(bool dirty, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
@@ -540,7 +538,7 @@ int dcache_set_dirty(bool dirty, struct ltfs_volume *vol)
  */
 int dcache_diskimage_create(struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
@@ -557,7 +555,7 @@ int dcache_diskimage_create(struct ltfs_volume *vol)
  */
 int dcache_diskimage_remove(struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
@@ -574,7 +572,7 @@ int dcache_diskimage_remove(struct ltfs_volume *vol)
  */
 int dcache_diskimage_mount(struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
@@ -591,7 +589,7 @@ int dcache_diskimage_mount(struct ltfs_volume *vol)
  */
 int dcache_diskimage_unmount(struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
@@ -603,7 +601,7 @@ int dcache_diskimage_unmount(struct ltfs_volume *vol)
 
 bool dcache_diskimage_is_full(struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
@@ -615,7 +613,7 @@ bool dcache_diskimage_is_full(struct ltfs_volume *vol)
 
 int dcache_get_advisory_lock(const char *name, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -628,7 +626,7 @@ int dcache_get_advisory_lock(const char *name, struct ltfs_volume *vol)
 
 int dcache_put_advisory_lock(const char *name, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -641,7 +639,7 @@ int dcache_put_advisory_lock(const char *name, struct ltfs_volume *vol)
 
 int dcache_open(const char *path, struct dentry **d, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
@@ -655,7 +653,7 @@ int dcache_open(const char *path, struct dentry **d, struct ltfs_volume *vol)
 
 int dcache_close(struct dentry *d, bool lock_meta, bool descend, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -668,7 +666,7 @@ int dcache_close(struct dentry *d, bool lock_meta, bool descend, struct ltfs_vol
 
 int dcache_create(const char *path, struct dentry *d, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
@@ -682,7 +680,7 @@ int dcache_create(const char *path, struct dentry *d, struct ltfs_volume *vol)
 
 int dcache_unlink(const char *path, struct dentry *d, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
@@ -694,10 +692,9 @@ int dcache_unlink(const char *path, struct dentry *d, struct ltfs_volume *vol)
 	return priv->ops->unlink(path, d, priv->backend_handle);
 }
 
-int dcache_rename(const char *oldpath, const char *newpath, struct dentry **old_dentry,
-	struct ltfs_volume *vol)
+int dcache_rename(const char *oldpath, const char *newpath, struct dentry **old_dentry, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(oldpath, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(newpath, -LTFS_NULL_ARG);
@@ -712,14 +709,14 @@ int dcache_rename(const char *oldpath, const char *newpath, struct dentry **old_
 
 int dcache_flush(struct dentry *d, enum dcache_flush_flags flags, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv->ops, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv->ops->flush, -LTFS_NULL_ARG);
 
-	if (! d) {
+	if (!d) {
 		/* The I/O scheduler handles NULL dentries in a special case. We just need to ignore them. */
 		return 0;
 	}
@@ -728,7 +725,7 @@ int dcache_flush(struct dentry *d, enum dcache_flush_flags flags, struct ltfs_vo
 
 int dcache_readdir(struct dentry *d, bool dentries, void ***result, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(result, -LTFS_NULL_ARG);
@@ -740,9 +737,9 @@ int dcache_readdir(struct dentry *d, bool dentries, void ***result, struct ltfs_
 	return priv->ops->readdir(d, dentries, result, priv->backend_handle);
 }
 
-int dcache_read_direntry(struct dentry *d, struct ltfs_direntry *dirent, unsigned long index,  struct ltfs_volume *vol)
+int dcache_read_direntry(struct dentry *d, struct ltfs_direntry *dirent, unsigned long index, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dirent, -LTFS_NULL_ARG);
@@ -756,7 +753,7 @@ int dcache_read_direntry(struct dentry *d, struct ltfs_direntry *dirent, unsigne
 
 int dcache_get_dentry(struct dentry *d, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -769,7 +766,7 @@ int dcache_get_dentry(struct dentry *d, struct ltfs_volume *vol)
 
 int dcache_put_dentry(struct dentry *d, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -780,10 +777,10 @@ int dcache_put_dentry(struct dentry *d, struct ltfs_volume *vol)
 	return priv->ops->put_dentry(d, priv->backend_handle);
 }
 
-int dcache_openat(const char *parent_path, struct dentry *parent, const char *name,
-	struct dentry **result, struct ltfs_volume *vol)
+int dcache_openat(
+		const char *parent_path, struct dentry *parent, const char *name, struct dentry **result, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(parent_path, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(parent, -LTFS_NULL_ARG);
@@ -797,10 +794,15 @@ int dcache_openat(const char *parent_path, struct dentry *parent, const char *na
 	return priv->ops->openat(parent_path, parent, name, result, priv->backend_handle);
 }
 
-int dcache_setxattr(const char *path, struct dentry *d, const char *xattr, const char *value,
-	size_t size, int flags, struct ltfs_volume *vol)
+int dcache_setxattr(const char *path,
+										struct dentry *d,
+										const char *xattr,
+										const char *value,
+										size_t size,
+										int flags,
+										struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
@@ -814,10 +816,9 @@ int dcache_setxattr(const char *path, struct dentry *d, const char *xattr, const
 	return priv->ops->setxattr(path, d, xattr, value, size, flags, priv->backend_handle);
 }
 
-int dcache_removexattr(const char *path, struct dentry *d, const char *xattr,
-	struct ltfs_volume *vol)
+int dcache_removexattr(const char *path, struct dentry *d, const char *xattr, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
@@ -830,10 +831,9 @@ int dcache_removexattr(const char *path, struct dentry *d, const char *xattr,
 	return priv->ops->removexattr(path, d, xattr, priv->backend_handle);
 }
 
-int dcache_listxattr(const char *path, struct dentry *d, char *list, size_t size,
-	struct ltfs_volume *vol)
+int dcache_listxattr(const char *path, struct dentry *d, char *list, size_t size, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
@@ -845,10 +845,10 @@ int dcache_listxattr(const char *path, struct dentry *d, char *list, size_t size
 	return priv->ops->listxattr(path, d, list, size, priv->backend_handle);
 }
 
-int dcache_getxattr(const char *path, struct dentry *d, const char *name,
-		void *value, size_t size, struct ltfs_volume *vol)
+int dcache_getxattr(
+		const char *path, struct dentry *d, const char *name, void *value, size_t size, struct ltfs_volume *vol)
 {
-	struct dcache_priv *priv = (struct dcache_priv *) vol ? vol->dcache_handle : NULL;
+	struct dcache_priv *priv = (struct dcache_priv *)vol ? vol->dcache_handle : NULL;
 
 	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);

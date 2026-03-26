@@ -52,17 +52,18 @@
 #define __open_factor_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void init_openfactor(void);
-void destroy_openfactor(void);
-void increment_openfactor(int host, int channel);
-void decrement_openfactor(int host, int channel);
-int get_openfactor(int host, int channel);
+	void init_openfactor(void);
+	void destroy_openfactor(void);
+	void increment_openfactor(int host, int channel);
+	void decrement_openfactor(int host, int channel);
+	int get_openfactor(int host, int channel);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __open_factor_h
+#endif	// __open_factor_h

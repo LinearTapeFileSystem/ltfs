@@ -51,16 +51,17 @@
 #define __reed_solomon_crc_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void *memcpy_rs_gf256_enc(void *dest, const void *src, size_t n);
-int  memcpy_rs_gf256_check(void *dest, const void *src, size_t n);
-void rs_gf256_enc(void *buf, size_t n);
-int  rs_gf256_check(void *buf, size_t n);
+	void *memcpy_rs_gf256_enc(void *dest, const void *src, size_t n);
+	int memcpy_rs_gf256_check(void *dest, const void *src, size_t n);
+	void rs_gf256_enc(void *buf, size_t n);
+	int rs_gf256_check(void *buf, size_t n);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __reed_solomon_crc_h
+#endif	// __reed_solomon_crc_h

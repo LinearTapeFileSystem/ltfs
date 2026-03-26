@@ -50,29 +50,29 @@
 
 /* TODO: verify that this is correct for mingw */
 #ifdef mingw_PLATFORM
-#include <winsock2.h>
+#	include <winsock2.h>
 #else
-#include <arpa/inet.h>
+#	include <arpa/inet.h>
 #endif /* mingw_PLATFORM */
 
 /**
  * Convert a uint64_t value (src) to big endian and store it in the 8-byte buffer
  * pointed to by dest.
  */
-#define ltfs_u64tobe(dest, src) \
-	do { \
-		uint32_t *tmp = (uint32_t *)(dest); \
-		uint64_t stmp = (src); \
+#define ltfs_u64tobe(dest, src)                \
+	do {                                         \
+		uint32_t *tmp = (uint32_t *)(dest);        \
+		uint64_t stmp = (src);                     \
 		tmp[0] = htonl((stmp >> 32) & 0xffffffff); \
-		tmp[1] = htonl(stmp & 0xffffffff); \
+		tmp[1] = htonl(stmp & 0xffffffff);         \
 	} while (0)
 
 /**
  * Convert a uint32_t value (src) to big endian and store it in the 4-byte buffer
  * pointed to by dest.
  */
-#define ltfs_u32tobe(dest, src) \
-	do { \
+#define ltfs_u32tobe(dest, src)           \
+	do {                                    \
 		*((uint32_t *)(dest)) = htonl((src)); \
 	} while (0)
 
@@ -80,8 +80,8 @@
  * Convert a uint16_t value (src) to big endian and store it in the 2-byte buffer
  * pointed to by dest.
  */
-#define ltfs_u16tobe(dest, src) \
-	do { \
+#define ltfs_u16tobe(dest, src)           \
+	do {                                    \
 		*((uint16_t *)(dest)) = htons((src)); \
 	} while (0)
 
@@ -89,8 +89,7 @@
  * Convert a big endian 64-bit unsigned integer (pointed to by buf)
  * to a uint64_t in local byte order.
  */
-#define ltfs_betou64(buf) \
-	(((uint64_t)ntohl(*((uint32_t *)(buf)))) << 32) + (uint64_t)ntohl(*(((uint32_t *)(buf))+1))
+#define ltfs_betou64(buf) (((uint64_t)ntohl(*((uint32_t *)(buf)))) << 32) + (uint64_t)ntohl(*(((uint32_t *)(buf)) + 1))
 
 /**
  * Convert a big endian 32-bit unsigned integer (pointed to by buf)
@@ -105,4 +104,3 @@
 #define ltfs_betou16(buf) ntohs(*((uint16_t *)(buf)))
 
 #endif /* __LTFS_ENDIAN_H__ */
-

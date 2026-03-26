@@ -52,7 +52,7 @@
 
 #include "libltfs/ltfs.h"
 
-void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, struct ltfs_index *idx);
+void update_platform_safe_name(struct dentry *dentry, bool handle_invalid_char, struct ltfs_index *idx);
 int ltfs_compare_names(const char *name1, const char *name2, int *result);
 
 #endif /* time_internal_h_ */

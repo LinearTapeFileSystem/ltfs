@@ -51,22 +51,22 @@
 #define __kmi_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-#include "plugin.h"
 #include "kmi_ops.h"
+#include "plugin.h"
 
-int kmi_init(struct libltfs_plugin * const plugin, struct ltfs_volume * const vol);
-int kmi_destroy(struct ltfs_volume * const vol);
-bool kmi_initialized(const struct ltfs_volume * const vol);
-int kmi_get_key(unsigned char **keyalias, unsigned char **key, void * const kmi_handle);
-int kmi_print_help_message(const struct kmi_ops * const ops);
-int kmi_parse_opts(void * const kmi_handle, void *opt_args);
+	int kmi_init(struct libltfs_plugin *const plugin, struct ltfs_volume *const vol);
+	int kmi_destroy(struct ltfs_volume *const vol);
+	bool kmi_initialized(const struct ltfs_volume *const vol);
+	int kmi_get_key(unsigned char **keyalias, unsigned char **key, void *const kmi_handle);
+	int kmi_print_help_message(const struct kmi_ops *const ops);
+	int kmi_parse_opts(void *const kmi_handle, void *opt_args);
 
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif /* __kmi_h */

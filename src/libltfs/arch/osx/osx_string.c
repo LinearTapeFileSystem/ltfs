@@ -49,29 +49,30 @@
 
 #ifdef __APPLE__
 
-#include "osx_string.h"
+#	include "osx_string.h"
 
-size_t strnlen(const char *s, size_t maxlen) {
-        const char *null_pos = memchr(s, '\0', maxlen);
+size_t strnlen(const char *s, size_t maxlen)
+{
+	const char *null_pos = memchr(s, '\0', maxlen);
 
-        if (null_pos) {
-                return null_pos - s;
-        } else {
-                return maxlen;
-        }
+	if (null_pos) {
+		return null_pos - s;
+	} else {
+		return maxlen;
+	}
 }
 
-char *strndup(const char *s, size_t maxlen) {
+char *strndup(const char *s, size_t maxlen)
+{
+	size_t length = strnlen(s, maxlen);
+	char *destination = malloc(length + 1);
 
-        size_t length = strnlen(s, maxlen);
-        char *destination = malloc(length + 1);
+	if (destination == NULL) {
+		return NULL;
+	}
 
-        if(destination == NULL) {
-                return NULL;
-        }
-
-        destination[length] = '\0';
-        return memcpy(destination, s, length);
+	destination[length] = '\0';
+	return memcpy(destination, s, length);
 }
 
 #endif /* __APPLE__ */

@@ -55,16 +55,17 @@
 #define __crc32c_crc_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void *memcpy_crc32c_enc(void *dest, const void *src, size_t n);
-int  memcpy_crc32c_check(void *dest, const void *src, size_t n);
-void crc32c_enc(void *buf, size_t n);
-int  crc32c_check(void *buf, size_t n);
+	void *memcpy_crc32c_enc(void *dest, const void *src, size_t n);
+	int memcpy_crc32c_check(void *dest, const void *src, size_t n);
+	void crc32c_enc(void *buf, size_t n);
+	int crc32c_check(void *buf, size_t n);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __crc32c_crc_h
+#endif	// __crc32c_crc_h

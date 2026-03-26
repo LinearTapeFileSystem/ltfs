@@ -51,17 +51,17 @@
 #define __LTFSSNMP_H__
 
 #ifdef ENABLE_SNMP
-#include <net-snmp/net-snmp-config.h>
-#include <net-snmp/net-snmp-includes.h>
-#include <net-snmp/agent/net-snmp-agent-includes.h>
+#	include <net-snmp/agent/net-snmp-agent-includes.h>
+#	include <net-snmp/net-snmp-config.h>
+#	include <net-snmp/net-snmp-includes.h>
 #endif
 
-#include <stdbool.h>
-#include <errno.h>
-#include "libltfs/queue.h"
+#include "libltfs/arch/ltfs_arch_ops.h"
 #include "libltfs/ltfs_error.h"
 #include "libltfs/ltfslogging.h"
-#include "libltfs/arch/ltfs_arch_ops.h"
+#include "libltfs/queue.h"
+#include <errno.h>
+#include <stdbool.h>
 /*
  * function declarations
  */
@@ -74,4 +74,4 @@ int send_ltfsStopTrap(void);
 int send_ltfsInfoTrap(char *);
 int send_ltfsErrorTrap(char *);
 
-#endif         /* __LTFSSNMP_H__ */
+#endif /* __LTFSSNMP_H__ */

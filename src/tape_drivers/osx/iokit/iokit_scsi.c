@@ -55,19 +55,19 @@
 
 #include <stdint.h>
 
-#include <IOKit/IOKitLib.h>
 #include <IOKit/IOCFPlugIn.h>
+#include <IOKit/IOKitLib.h>
 #include <IOKit/IOTypes.h>
 #include <IOKit/scsi/SCSITaskLib.h>
-#include <IOKit/storage/IOStorageProtocolCharacteristics.h>
 #include <IOKit/storage/IOStorageDeviceCharacteristics.h>
+#include <IOKit/storage/IOStorageProtocolCharacteristics.h>
 #include <mach/mach.h>
 
-#include "iokit_service.h"
 #include "iokit_scsi.h"
+#include "iokit_service.h"
 
-#include "libltfs/ltfs_error.h"
 #include "libltfs/ltfs_endian.h"
+#include "libltfs/ltfs_error.h"
 #include "libltfs/ltfslogging.h"
 
 #include "tape_drivers/vendor_compat.h"
@@ -80,72 +80,60 @@ struct error_table *vendor_table = NULL;
 static int iokit_sense2errno(struct iokit_scsi_request *req, uint32_t *s, char **msg)
 {
 	SCSI_Sense_Data *sense = &req->sense_buffer;
-	uint32_t        sense_value = 0;
-	int             rc = -EDEV_UNKNOWN;
+	uint32_t sense_value = 0;
+	int rc = -EDEV_UNKNOWN;
 
-	sense_value += (uint32_t) ((sense->SENSE_KEY & kSENSE_KEY_Mask) & 0x0F) << 16;
-	sense_value += (uint32_t) (sense->ADDITIONAL_SENSE_CODE) << 8;
-	sense_value += (uint32_t) sense->ADDITIONAL_SENSE_CODE_QUALIFIER;
+	sense_value += (uint32_t)((sense->SENSE_KEY & kSENSE_KEY_Mask) & 0x0F) << 16;
+	sense_value += (uint32_t)(sense->ADDITIONAL_SENSE_CODE) << 8;
+	sense_value += (uint32_t)sense->ADDITIONAL_SENSE_CODE_QUALIFIER;
 
 	*s = sense_value;
 
 	rc = _sense2errorcode(sense_value, standard_table, msg, MASK_WITH_SENSE_KEY);
 	/* NOTE: error table must be changed in library edition */
-	if (rc == -EDEV_VENDOR_UNIQUE)
-		rc = _sense2errorcode(sense_value, vendor_table, msg, MASK_WITH_SENSE_KEY);
+	if (rc == -EDEV_VENDOR_UNIQUE) rc = _sense2errorcode(sense_value, vendor_table, msg, MASK_WITH_SENSE_KEY);
 
-	if (rc == -EDEV_UNKNOWN && ((sense_value & 0xFF0000) == 0x040000) )
-		rc = -EDEV_HARDWARE_ERROR;
+	if (rc == -EDEV_UNKNOWN && ((sense_value & 0xFF0000) == 0x040000)) rc = -EDEV_HARDWARE_ERROR;
 
 	return rc;
 }
 
-static bool is_expected_error(struct iokit_device *device, uint8_t *cdb, int32_t rc )
+static bool is_expected_error(struct iokit_device *device, uint8_t *cdb, int32_t rc)
 {
-	int cmd = (cdb[0]&0xFF);
+	int cmd = (cdb[0] & 0xFF);
 	uint64_t destination;
 	uint64_t cdb_dest[8];
 	int i;
 
 	switch (cmd) {
 		case TEST_UNIT_READY:
-			if (rc == -EDEV_NEED_INITIALIZE || rc == -EDEV_CONFIGURE_CHANGED)
-				return true;
+			if (rc == -EDEV_NEED_INITIALIZE || rc == -EDEV_CONFIGURE_CHANGED) return true;
 			break;
 		case READ:
-			if (rc == -EDEV_FILEMARK_DETECTED || rc == -EDEV_NO_SENSE || rc == -EDEV_CLEANING_REQUIRED)
-				return true;
-			if ((rc == -EDEV_CRYPTO_ERROR || rc == -EDEV_KEY_REQUIRED) && !device->is_data_key_set)
-				return true;
+			if (rc == -EDEV_FILEMARK_DETECTED || rc == -EDEV_NO_SENSE || rc == -EDEV_CLEANING_REQUIRED) return true;
+			if ((rc == -EDEV_CRYPTO_ERROR || rc == -EDEV_KEY_REQUIRED) && !device->is_data_key_set) return true;
 			break;
 		case WRITE:
-			if (rc == -EDEV_EARLY_WARNING || rc == -EDEV_PROG_EARLY_WARNING || rc == -EDEV_CLEANING_REQUIRED)
-				return true;
+			if (rc == -EDEV_EARLY_WARNING || rc == -EDEV_PROG_EARLY_WARNING || rc == -EDEV_CLEANING_REQUIRED) return true;
 			break;
 		case WRITE_FILEMARKS6:
-			if (rc == -EDEV_EARLY_WARNING || rc == -EDEV_PROG_EARLY_WARNING || rc == -EDEV_CLEANING_REQUIRED)
-				return true;
+			if (rc == -EDEV_EARLY_WARNING || rc == -EDEV_PROG_EARLY_WARNING || rc == -EDEV_CLEANING_REQUIRED) return true;
 			break;
 		case LOAD_UNLOAD:
-			if ((cdb[4] & 0x01) == 0) // Unload
-				if (rc == -EDEV_CLEANING_REQUIRED)
-					return true;
+			if ((cdb[4] & 0x01) == 0)	 // Unload
+				if (rc == -EDEV_CLEANING_REQUIRED) return true;
 			break;
 		case MODE_SELECT10:
-			if (rc == -EDEV_MODE_PARAMETER_ROUNDED)
-				return true;
+			if (rc == -EDEV_MODE_PARAMETER_ROUNDED) return true;
 			break;
 		case LOCATE16:
-			for (i=0; i<8; i++)
-				cdb_dest[i] = (uint64_t)cdb[i+4] & 0xff;
+			for (i = 0; i < 8; i++)
+				cdb_dest[i] = (uint64_t)cdb[i + 4] & 0xff;
 
-			destination = (cdb_dest[0] << 56) + (cdb_dest[1] << 48)
-			+ (cdb_dest[2] << 40) + (cdb_dest[3] << 32)
-			+ (cdb_dest[4] << 24) + (cdb_dest[5] << 16)
-			+ (cdb_dest[6] << 8) + cdb_dest[7];
+			destination = (cdb_dest[0] << 56) + (cdb_dest[1] << 48) + (cdb_dest[2] << 40) + (cdb_dest[3] << 32) +
+										(cdb_dest[4] << 24) + (cdb_dest[5] << 16) + (cdb_dest[6] << 8) + cdb_dest[7];
 
-			if (destination == TAPE_BLOCK_MAX && rc == -EDEV_EOD_DETECTED)
-				return true;
+			if (destination == TAPE_BLOCK_MAX && rc == -EDEV_EOD_DETECTED) return true;
 			break;
 	}
 
@@ -153,11 +141,10 @@ static bool is_expected_error(struct iokit_device *device, uint8_t *cdb, int32_t
 }
 
 /* Global functions */
-int iokit_issue_cdb_command(struct iokit_device *device,
-							struct iokit_scsi_request *req,
-							char **msg)
+int iokit_issue_cdb_command(struct iokit_device *device, struct iokit_scsi_request *req, char **msg)
 {
-	int ret = -EDEV_INTERNAL_ERROR;;
+	int ret = -EDEV_INTERNAL_ERROR;
+	;
 	//char sense_string[SIZE_OF_SENSE_STRING] = "";
 
 	IOReturn kernelReturn = kIOReturnSuccess;
@@ -168,14 +155,14 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 	CHECK_ARG_NULL(device->scsiTaskInterface, -LTFS_NULL_ARG);
 
 	ret = iokit_allocate_scsitask(device);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 
-	if( (req->dxferp) && (req->dxfer_len > 0) ) {
+	if ((req->dxferp) && (req->dxfer_len > 0)) {
 		// Allocate a virtual range for the buffer. If we had more than 1 scatter-gather entry,
 		// we would allocate more than 1 IOVirtualRange.
-		range = (IOVirtualRange *) malloc(sizeof(IOVirtualRange));
+		range = (IOVirtualRange *)malloc(sizeof(IOVirtualRange));
 		if (range == NULL) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			ret = -EDEV_NO_MEMORY;
@@ -183,12 +170,12 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 		}
 
 		// Set up the range. The address is just the buffer's address. The length is our request size.
-		range->address = (IOVirtualAddress) req->dxferp;
+		range->address = (IOVirtualAddress)req->dxferp;
 		range->length = req->dxfer_len;
 
 		// Set the scatter-gather entry in the task.
-		kernelReturn = (*device->task)->SetScatterGatherEntries(device->task, range, 1,
-																req->dxfer_len, req->dxfer_direction);
+		kernelReturn =
+				(*device->task)->SetScatterGatherEntries(device->task, range, 1, req->dxfer_len, req->dxfer_direction);
 		if (kernelReturn != kIOReturnSuccess) {
 			ltfsmsg(LTFS_INFO, 30800I, *req->cmdp, kernelReturn);
 			ret = -EDEV_INTERNAL_ERROR;
@@ -212,8 +199,7 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 		goto free;
 	}
 
-	kernelReturn = (*device->task)->ExecuteTaskSync(device->task, &req->sense_buffer,
-													&req->status, &transfer_count);
+	kernelReturn = (*device->task)->ExecuteTaskSync(device->task, &req->sense_buffer, &req->status, &transfer_count);
 	if (kernelReturn != kIOReturnSuccess) {
 		ltfsmsg(LTFS_INFO, 30803I, *req->cmdp, kernelReturn);
 		ret = -EDEV_INTERNAL_ERROR;
@@ -221,7 +207,7 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 	}
 
 	req->actual_xfered = transfer_count;
-	req->resid         = req->dxfer_len - transfer_count;
+	req->resid = req->dxfer_len - transfer_count;
 
 	switch (req->status) {
 		case kSCSITaskStatus_GOOD:
@@ -290,29 +276,27 @@ static int _inquiry_low(struct iokit_device *device, uint8_t page, unsigned char
 
 	/* Build CDB */
 	cdb[0] = INQUIRY;
-	if(page)
-		cdb[1] = 0x01;
+	if (page) cdb[1] = 0x01;
 	cdb[2] = page;
 	ltfs_u16tobe(cdb + 3, size);
 
 	/* Build request */
 	req.dxfer_direction = SCSI_FROM_TARGET_TO_INITIATOR;
-	req.cmd_len         = sizeof(cdb);
-	req.mx_sb_len       = sizeof(SCSI_Sense_Data);
-	req.dxfer_len       = size;
-	req.dxferp          = buf;
-	req.cmdp            = cdb;
+	req.cmd_len = sizeof(cdb);
+	req.mx_sb_len = sizeof(SCSI_Sense_Data);
+	req.dxfer_len = size;
+	req.dxferp = buf;
+	req.cmdp = cdb;
 	memset(&req.sense_buffer, 0, req.mx_sb_len);
-	req.timeout         = IOKitConversion(10);
-	req.desc            = cmd_desc;
+	req.timeout = IOKitConversion(10);
+	req.desc = cmd_desc;
 
 	ret = iokit_issue_cdb_command(device, &req, &msg);
 
 	return ret;
 }
 
-int iokit_get_drive_identifier(struct iokit_device *device,
-							   scsi_device_identifier *id_data)
+int iokit_get_drive_identifier(struct iokit_device *device, scsi_device_identifier *id_data)
 {
 	int ret;
 	unsigned char inquiry_buf[MAX_INQ_LEN];
@@ -321,24 +305,24 @@ int iokit_get_drive_identifier(struct iokit_device *device,
 	CHECK_ARG_NULL(id_data, -LTFS_NULL_ARG);
 
 	ret = _inquiry_low(device, 0, inquiry_buf, MAX_INQ_LEN);
-	if( ret < 0 ) {
+	if (ret < 0) {
 		ltfsmsg(LTFS_INFO, 30809I, ret);
 		return ret;
 	}
 
 	memset(id_data, 0, sizeof(scsi_device_identifier));
 
-	strncpy(id_data->vendor_id,   (char*)(&(inquiry_buf[8])),  VENDOR_ID_LENGTH);
-	strncpy(id_data->product_id,  (char*)(&(inquiry_buf[16])), PRODUCT_ID_LENGTH);
-	strncpy(id_data->product_rev, (char*)(&(inquiry_buf[32])), PRODUCT_REV_LENGTH);
+	strncpy(id_data->vendor_id, (char *)(&(inquiry_buf[8])), VENDOR_ID_LENGTH);
+	strncpy(id_data->product_id, (char *)(&(inquiry_buf[16])), PRODUCT_ID_LENGTH);
+	strncpy(id_data->product_rev, (char *)(&(inquiry_buf[32])), PRODUCT_REV_LENGTH);
 
 	ret = _inquiry_low(device, 0x80, inquiry_buf, MAX_INQ_LEN);
-	if( ret < 0 ) {
+	if (ret < 0) {
 		ltfsmsg(LTFS_INFO, 30809I, ret);
 		return ret;
 	}
 
-	strncpy(id_data->unit_serial, (char*)(&(inquiry_buf[4])), inquiry_buf[3]);
+	strncpy(id_data->unit_serial, (char *)(&(inquiry_buf[4])), inquiry_buf[3]);
 
 	return 0;
 }

@@ -49,8 +49,8 @@
 
 #ifdef __APPLE__
 
-#include <pthread.h>
-#include <mach/mach.h>
+#	include <mach/mach.h>
+#	include <pthread.h>
 
 uint32_t ltfs_get_thread_id(void)
 {
@@ -63,8 +63,8 @@ uint32_t ltfs_get_thread_id(void)
 
 #elif defined(__FreeBSD__)
 
-#include <pthread.h>
-#include <pthread_np.h>
+#	include <pthread.h>
+#	include <pthread_np.h>
 
 uint32_t ltfs_get_thread_id(void)
 {
@@ -77,7 +77,7 @@ uint32_t ltfs_get_thread_id(void)
 
 #elif defined(__NetBSD__)
 
-#include <pthread.h>
+#	include <pthread.h>
 
 uint32_t ltfs_get_thread_id(void)
 {
@@ -87,6 +87,5 @@ uint32_t ltfs_get_thread_id(void)
 
 	return tid;
 }
-
 
 #endif

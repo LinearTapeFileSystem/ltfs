@@ -47,35 +47,36 @@
 *************************************************************************************
 */
 
-#include <stdlib.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #include "tape_drivers/spc_op_codes.h"
 #include "tape_drivers/ssc_op_codes.h"
 #include "tape_drivers/tape_drivers.h"
 
-#include "libltfs/ltfslogging.h"
 #include "libltfs/ltfs_error.h"
+#include "libltfs/ltfslogging.h"
 
 #ifndef __hp_tape_h
 
-#define __hp_tape_h
+#	define __hp_tape_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#	ifdef __cplusplus
+extern "C"
+{
+#	endif
 
-#define HP_VENDOR_ID  "HP"
-#define HPE_VENDOR_ID "HPE"
+#	define HP_VENDOR_ID "HP"
+#	define HPE_VENDOR_ID "HPE"
 
-extern struct error_table hp_tape_errors[];
+	extern struct error_table hp_tape_errors[];
 
-int hp_tape_init_timeout(struct timeout_tape** table, int type);
+	int hp_tape_init_timeout(struct timeout_tape **table, int type);
 
-extern struct supported_device *hp_supported_drives[];
+	extern struct supported_device *hp_supported_drives[];
 
-#ifdef __cplusplus
+#	ifdef __cplusplus
 }
-#endif
+#	endif
 
-#endif // __hp_tape_h
+#endif	// __hp_tape_h

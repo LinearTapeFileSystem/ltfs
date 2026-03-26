@@ -72,27 +72,21 @@ static int _filedebug_tc_write_schema(xmlTextWriterPtr writer, const struct file
 
 	xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST "filedebug_cartridge_config"), -1);
 
-	xml_mktag(xmlTextWriterWriteFormatElement(writer,
-											  BAD_CAST "dummy_io",
-											  "%s", conf->dummy_io ? "true" : "false"), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(writer, BAD_CAST "dummy_io", "%s", conf->dummy_io ? "true" : "false"), -1);
 
-	xml_mktag(xmlTextWriterWriteFormatElement(writer,
-											  BAD_CAST "emulate_readonly",
-											  "%s", conf->emulate_readonly ? "true" : "false"), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(
+								writer, BAD_CAST "emulate_readonly", "%s", conf->emulate_readonly ? "true" : "false"),
+						-1);
 
-	xml_mktag(xmlTextWriterWriteFormatElement(writer,
-											  BAD_CAST "capacity_mb",
-											  "%"PRIu64, conf->capacity_mb), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(writer, BAD_CAST "capacity_mb", "%" PRIu64, conf->capacity_mb), -1);
 
-	xml_mktag(xmlTextWriterWriteFormatElement(writer,
-											  BAD_CAST "cart_type",
-											  "%s", ibm_tape_assume_cart_name(conf->cart_type)), -1);
+	xml_mktag(
+			xmlTextWriterWriteFormatElement(writer, BAD_CAST "cart_type", "%s", ibm_tape_assume_cart_name(conf->cart_type)),
+			-1);
 
-	xml_mktag(xmlTextWriterWriteFormatElement(writer,
-											  BAD_CAST "density_code",
-											  "%x", conf->density_code), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(writer, BAD_CAST "density_code", "%x", conf->density_code), -1);
 
-	switch(conf->delay_mode) {
+	switch (conf->delay_mode) {
 		case DELAY_CALC:
 			xml_mktag(xmlTextWriterWriteFormatElement(writer, BAD_CAST "delay_mode", "Calculate"), -1);
 			break;
@@ -104,26 +98,17 @@ static int _filedebug_tc_write_schema(xmlTextWriterPtr writer, const struct file
 			break;
 	}
 
-	xml_mktag(xmlTextWriterWriteFormatElement(writer,
-											  BAD_CAST "wraps",
-											  "%"PRIu64, conf->wraps), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(writer, BAD_CAST "wraps", "%" PRIu64, conf->wraps), -1);
 
-	xml_mktag(xmlTextWriterWriteFormatElement(writer,
-											  BAD_CAST "eot_to_bot_sec",
-											  "%"PRIu64, conf->eot_to_bot_sec), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(writer, BAD_CAST "eot_to_bot_sec", "%" PRIu64, conf->eot_to_bot_sec), -1);
 
-	xml_mktag(xmlTextWriterWriteFormatElement(writer,
-											  BAD_CAST "change_direction_us",
-											  "%"PRIu64, conf->change_direction_us), -1);
+	xml_mktag(
+			xmlTextWriterWriteFormatElement(writer, BAD_CAST "change_direction_us", "%" PRIu64, conf->change_direction_us),
+			-1);
 
-	xml_mktag(xmlTextWriterWriteFormatElement(writer,
-											  BAD_CAST "change_track_us",
-											  "%"PRIu64, conf->change_track_us), -1);
+	xml_mktag(xmlTextWriterWriteFormatElement(writer, BAD_CAST "change_track_us", "%" PRIu64, conf->change_track_us), -1);
 
-	xml_mktag(xmlTextWriterWriteFormatElement(writer,
-											  BAD_CAST "threading_sec",
-											  "%"PRIu64, conf->threading_sec), -1);
-
+	xml_mktag(xmlTextWriterWriteFormatElement(writer, BAD_CAST "threading_sec", "%" PRIu64, conf->threading_sec), -1);
 
 	xml_mktag(xmlTextWriterEndElement(writer), -1);
 
@@ -143,7 +128,7 @@ int filedebug_conf_tc_write_xml(char *filename, const struct filedebug_conf_tc *
 
 	/* Create XML writer. */
 	writer = xmlNewTextWriterFilename(filename, 0);
-	if (! writer) {
+	if (!writer) {
 		ltfsmsg(LTFS_ERR, 30152E);
 		return -1;
 	}
@@ -166,8 +151,7 @@ static int _filedebug_parser_init(xmlTextReaderPtr reader, const char *top_name)
 	const char *name, *encoding;
 	int type;
 
-	if (xml_next_tag(reader, "", &name, &type) < 0)
-		return -1;
+	if (xml_next_tag(reader, "", &name, &type) < 0) return -1;
 	if (strcmp(name, top_name)) {
 		ltfsmsg(LTFS_ERR, 30155E, name);
 		return -1;
@@ -175,7 +159,7 @@ static int _filedebug_parser_init(xmlTextReaderPtr reader, const char *top_name)
 
 	/* reject this XML file if it isn't UTF-8 */
 	encoding = (const char *)xmlTextReaderConstEncoding(reader);
-	if (! encoding || strcmp(encoding, "UTF-8")) {
+	if (!encoding || strcmp(encoding, "UTF-8")) {
 		ltfsmsg(LTFS_ERR, 30156E, encoding);
 		return -1;
 	}
@@ -191,30 +175,26 @@ static int _filedebug_tc_parse_schema(xmlTextReaderPtr reader, struct filedebug_
 
 	/* start the parser: find top-level "index" tag, check version and encoding */
 	ret = _filedebug_parser_init(reader, parent_tag);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
 	/* parse index file contents */
 	while (true) {
 		get_next_tag();
 
-		if (! strcmp(name, "dummy_io")) {
+		if (!strcmp(name, "dummy_io")) {
 			get_tag_text();
-			if (xml_parse_bool(&conf->dummy_io, value) < 0)
-				return -1;
+			if (xml_parse_bool(&conf->dummy_io, value) < 0) return -1;
 			check_tag_end("dummy_io");
 
-		} else if (! strcmp(name, "emulate_readonly")) {
+		} else if (!strcmp(name, "emulate_readonly")) {
 			get_tag_text();
-			if (xml_parse_bool(&conf->emulate_readonly, value) < 0)
-				return -1;
+			if (xml_parse_bool(&conf->emulate_readonly, value) < 0) return -1;
 			check_tag_end("emulate_readonly");
 
-		} else if (! strcmp(name, "capacity_mb")) {
+		} else if (!strcmp(name, "capacity_mb")) {
 			get_tag_text();
 
-			if (xml_parse_ull(&value_ll, value) < 0)
-				return -1;
+			if (xml_parse_ull(&value_ll, value) < 0) return -1;
 
 			if (value_ll > 0)
 				conf->capacity_mb = value_ll;
@@ -223,20 +203,19 @@ static int _filedebug_tc_parse_schema(xmlTextReaderPtr reader, struct filedebug_
 
 			check_tag_end("capacity_mb");
 
-		} else if (! strcmp(name, "cart_type")) {
+		} else if (!strcmp(name, "cart_type")) {
 			get_tag_text();
 			conf->cart_type = ibm_tape_assume_cart_type(value);
 			check_tag_end("cart_type");
 
-		} else if (! strcmp(name, "density_code")) {
+		} else if (!strcmp(name, "density_code")) {
 			get_tag_text();
 
-			if (xml_parse_xll(&value_ll, value) < 0)
-				return -1;
+			if (xml_parse_xll(&value_ll, value) < 0) return -1;
 			conf->density_code = (char)value_ll;
 			check_tag_end("density_code");
 
-		} else if (! strcmp(name, "delay_mode")) {
+		} else if (!strcmp(name, "delay_mode")) {
 			get_tag_text();
 			if (!strcmp(value, "Calculate"))
 				conf->delay_mode = DELAY_CALC;
@@ -247,61 +226,55 @@ static int _filedebug_tc_parse_schema(xmlTextReaderPtr reader, struct filedebug_
 
 			check_tag_end("delay_mode");
 
-		} else if (! strcmp(name, "wraps")) {
+		} else if (!strcmp(name, "wraps")) {
 			get_tag_text();
 
-			if (xml_parse_ull(&value_ll, value) < 0)
-				return -1;
+			if (xml_parse_ull(&value_ll, value) < 0) return -1;
 
 			if (value_ll > 0)
 				conf->wraps = value_ll;
 			else
 				conf->wraps = DEFAULT_WRAPS;
 
-		} else if (! strcmp(name, "eot_to_bot_sec")) {
+		} else if (!strcmp(name, "eot_to_bot_sec")) {
 			get_tag_text();
 
-			if (xml_parse_ull(&value_ll, value) < 0)
-				return -1;
+			if (xml_parse_ull(&value_ll, value) < 0) return -1;
 
 			if (value_ll > 0)
 				conf->eot_to_bot_sec = value_ll;
 			else
 				conf->eot_to_bot_sec = DEFAULT_EOT_TO_BOT;
 
-		} else if (! strcmp(name, "change_direction_us")) {
+		} else if (!strcmp(name, "change_direction_us")) {
 			get_tag_text();
 
-			if (xml_parse_ull(&value_ll, value) < 0)
-				return -1;
+			if (xml_parse_ull(&value_ll, value) < 0) return -1;
 
 			if (value_ll > 0)
 				conf->change_direction_us = value_ll;
 			else
 				conf->change_direction_us = DEFAULT_CHANGE_DIRECTION;
 
-		} else if (! strcmp(name, "change_track_us")) {
+		} else if (!strcmp(name, "change_track_us")) {
 			get_tag_text();
 
-			if (xml_parse_ull(&value_ll, value) < 0)
-				return -1;
+			if (xml_parse_ull(&value_ll, value) < 0) return -1;
 
 			if (value_ll > 0)
 				conf->change_track_us = value_ll;
 			else
 				conf->change_track_us = DEFAULT_CHANGE_TRACK;
 
-		} else if (! strcmp(name, "threading_sec")) {
+		} else if (!strcmp(name, "threading_sec")) {
 			get_tag_text();
 
-			if (xml_parse_ull(&value_ll, value) < 0)
-				return -1;
+			if (xml_parse_ull(&value_ll, value) < 0) return -1;
 
 			if (value_ll > 0)
 				conf->threading_sec = value_ll;
 			else
 				conf->threading_sec = DEFAULT_CHANGE_TRACK;
-
 		}
 	}
 
@@ -315,7 +288,7 @@ int filedebug_conf_tc_read_xml(char *filename, struct filedebug_conf_tc *conf)
 	xmlDocPtr doc;
 
 	reader = xmlReaderForFile(filename, NULL, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
-	if (! reader) {
+	if (!reader) {
 		ltfsmsg(LTFS_ERR, 30157E);
 		return -1;
 	}
@@ -328,8 +301,7 @@ int filedebug_conf_tc_read_xml(char *filename, struct filedebug_conf_tc *conf)
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 30158E);
 	}
-	if (doc)
-		xmlFreeDoc(doc);
+	if (doc) xmlFreeDoc(doc);
 	xmlFreeTextReader(reader);
 
 	return ret;

@@ -52,17 +52,18 @@
 #define __LTFS_LOCKING_H__
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #ifdef mingw_PLATFORM
-	#include "ltfs_locking_old.h"
+#	include "ltfs_locking_old.h"
 #else /* ! mingw_PLATFORM */
-	#ifdef USE_NEW_LOCKING
-		#include "ltfs_locking_new.h"
-	#else
-		#include "ltfs_locking_old.h"
-	#endif
+#	ifdef USE_NEW_LOCKING
+#		include "ltfs_locking_new.h"
+#	else
+#		include "ltfs_locking_old.h"
+#	endif
 #endif
 
 #ifdef __cplusplus

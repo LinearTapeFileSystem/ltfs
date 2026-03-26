@@ -47,36 +47,36 @@
 *************************************************************************************
 */
 
+#include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <errno.h>
 
 #ifdef __APPLE_MAKEFILE__
-#include <ICU/unicode/uchar.h>
-#include <ICU/unicode/ustring.h>
-#include <ICU/unicode/utypes.h>
-#include <ICU/unicode/ucnv.h>
-#ifdef ICU6x
-#include <ICU/unicode/unorm2.h>
+#	include <ICU/unicode/uchar.h>
+#	include <ICU/unicode/ucnv.h>
+#	include <ICU/unicode/ustring.h>
+#	include <ICU/unicode/utypes.h>
+#	ifdef ICU6x
+#		include <ICU/unicode/unorm2.h>
+#	else
+#		include <ICU/unicode/unorm.h>
+#	endif
 #else
-#include <ICU/unicode/unorm.h>
-#endif
-#else
-#include <unicode/uchar.h>
-#include <unicode/ustring.h>
-#include <unicode/utypes.h>
-#include <unicode/ucnv.h>
-#ifdef ICU6x
-#include <unicode/unorm2.h>
-#else
-#include <unicode/unorm.h>
-#endif
+#	include <unicode/uchar.h>
+#	include <unicode/ucnv.h>
+#	include <unicode/ustring.h>
+#	include <unicode/utypes.h>
+#	ifdef ICU6x
+#		include <unicode/unorm2.h>
+#	else
+#		include <unicode/unorm.h>
+#	endif
 #endif
 
+#include "libltfs/ltfslogging.h"
 #include "ltfs.h"
 #include "pathname.h"
-#include "libltfs/ltfslogging.h"
 
 int _pathname_is_utf8(const char *name, size_t size);
 int _pathname_validate(const char *name, bool allow_slash);
@@ -94,7 +94,6 @@ int _pathname_utf16_to_utf8_icu(const UChar *src, char **dest);
 int _pathname_system_to_utf16_icu(const char *src, UChar **dest);
 int _pathname_utf8_to_system_icu(const char *src, char **dest);
 int _pathname_normalize_utf8_nfd_icu(const char *src, char **dest);
-
 
 /**
  * Convert a path name in the system locale to the canonical LTFS form (UTF-8, NFC).
@@ -149,8 +148,8 @@ int pathname_caseless_match(const char *name1, const char *name2, int *result)
 	CHECK_ARG_NULL(name1, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(name2, -LTFS_NULL_ARG);
 
-	if (! (ret=pathname_prepare_caseless(name1, &dname1, true))) {
-		if (! (ret=pathname_prepare_caseless(name2, &dname2, true))) {
+	if (!(ret = pathname_prepare_caseless(name1, &dname1, true))) {
+		if (!(ret = pathname_prepare_caseless(name2, &dname2, true))) {
 			*result = u_strcmp(dname1, dname2);
 			free(dname2);
 		}
@@ -178,8 +177,7 @@ int pathname_prepare_caseless(const char *name, UChar **new_name, bool use_nfc)
 
 	/* Convert to ICU's internal UTF-16 representation. */
 	ret = _pathname_utf8_to_utf16_icu(name, &icu_name);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
 	/* Figure out whether an initial NFD mapping is needed. This is the case if the string
 	 * contains U+0345 or a code point whose canonical decomposition contains U+0345.
@@ -197,19 +195,15 @@ int pathname_prepare_caseless(const char *name, UChar **new_name, bool use_nfc)
 	/* Convert to NFD if needed, then case fold the name. */
 	if (need_initial_nfd) {
 		ret = _pathname_normalize_nfd_icu(icu_name, &icu_nfd);
-		if (icu_name != icu_nfd)
-			free(icu_name);
-		if (ret < 0)
-			return ret;
+		if (icu_name != icu_nfd) free(icu_name);
+		if (ret < 0) return ret;
 		ret = _pathname_foldcase_icu(icu_nfd, &icu_fold);
 		free(icu_nfd);
-		if (ret < 0)
-			return ret;
+		if (ret < 0) return ret;
 	} else {
 		ret = _pathname_foldcase_icu(icu_name, &icu_fold);
 		free(icu_name);
-		if (ret < 0)
-			return ret;
+		if (ret < 0) return ret;
 	}
 
 	/* Perform the final normalization mapping to the output. */
@@ -217,10 +211,8 @@ int pathname_prepare_caseless(const char *name, UChar **new_name, bool use_nfc)
 		ret = _pathname_normalize_nfc_icu(icu_fold, new_name);
 	else
 		ret = _pathname_normalize_nfd_icu(icu_fold, new_name);
-	if (icu_fold != *new_name)
-		free(icu_fold);
-	if (ret < 0)
-		return ret;
+	if (icu_fold != *new_name) free(icu_fold);
+	if (ret < 0) return ret;
 
 	return 0;
 }
@@ -254,8 +246,7 @@ int pathname_validate_file(const char *name)
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 
 	namelen = pathname_strlen(name);
-	if (namelen < 0)
-		return namelen;
+	if (namelen < 0) return namelen;
 	if (namelen > LTFS_FILENAME_MAX) {
 		return -LTFS_NAMETOOLONG;
 	}
@@ -275,8 +266,7 @@ int pathname_validate_target(const char *name)
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 
 	namelen = pathname_strlen(name);
-	if (namelen < 0)
-		return namelen;
+	if (namelen < 0) return namelen;
 	ret = _pathname_validate(name, true);
 	return ret;
 }
@@ -316,21 +306,18 @@ int pathname_validate_xattr_value(const char *name, size_t size)
 		return 1;
 
 	/* Check for characters disallowed in XML. */
-	while (i < (ssize_t) size) {
-		U8_NEXT(name, i, (int32_t) size, c);
+	while (i < (ssize_t)size) {
+		U8_NEXT(name, i, (int32_t)size, c);
 		if (c < 0) {
 			ltfsmsg(LTFS_ERR, 11234E);
 			return -LTFS_ICU_ERROR;
 		}
 
-		if (_chars_valid_in_xml(c) == 0)
-			return 1;
+		if (_chars_valid_in_xml(c) == 0) return 1;
 	}
 
 	return 0;
 }
-
-
 
 /* Private pathname functions are not traced. This is because (a) tracing their inner workings
  * is not expected to be interesting, and (b) tracing them produces large amounts of output,
@@ -339,8 +326,6 @@ int pathname_validate_xattr_value(const char *name, size_t size)
  * The call path from public pathname functions to private ones is rather simple, so tracing
  * the private functions is unlikely to yield any useful debugging information.
  */
-
-
 
 /**
  * Count the code points in a null-terminated UTF-8 string.
@@ -355,8 +340,7 @@ int pathname_strlen(const char *name)
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 
 	while (*tmp) {
-		if (! (*tmp & 0x80) || (*tmp & 0xC0) == 0xC0)
-			++ret;
+		if (!(*tmp & 0x80) || (*tmp & 0xC0) == 0xC0) ++ret;
 		++tmp;
 	}
 	return ret;
@@ -376,7 +360,7 @@ int pathname_truncate(char *name, size_t size)
 	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
 
 	while (*tmp) {
-		if (! (*tmp & 0x80) || (*tmp & 0xC0) == 0xC0) {
+		if (!(*tmp & 0x80) || (*tmp & 0xC0) == 0xC0) {
 			if (len++ == size) {
 				*tmp = '\0';
 				break;
@@ -425,8 +409,7 @@ int _pathname_validate(const char *name, bool allow_slash)
 			return -LTFS_ICU_ERROR;
 		}
 
-		if (_pathname_valid_in_xml(c) == 0 || (! allow_slash && c == '/'))
-			return -LTFS_INVALID_PATH;
+		if (_pathname_valid_in_xml(c) == 0 || (!allow_slash && c == '/')) return -LTFS_INVALID_PATH;
 	}
 
 	return 0;
@@ -447,8 +430,8 @@ int _pathname_valid_in_xml(UChar32 c)
 
 int _chars_valid_in_xml(UChar32 c)
 {
-	if ((c >= 0 && c <= 0x1f && c != 0x09 && c != 0x0a && c != 0x0d) ||
-		(c >= 0xd800 && c <= 0xdfff) || c == 0xfffe || c == 0xffff)
+	if ((c >= 0 && c <= 0x1f && c != 0x09 && c != 0x0a && c != 0x0d) || (c >= 0xd800 && c <= 0xdfff) || c == 0xfffe ||
+			c == 0xffff)
 		return 0;
 	else
 		return 1;
@@ -470,25 +453,21 @@ int _pathname_format_icu(const char *src, char **dest, bool validate, bool allow
 
 	/* convert to UTF-16 for normalization with ICU */
 	ret = _pathname_system_to_utf16_icu(src, &utf16_name);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
 	/* normalize */
 	ret = _pathname_normalize_nfc_icu(utf16_name, &utf16_name_norm);
-	if (utf16_name != utf16_name_norm)
-		free(utf16_name);
-	if (ret < 0)
-		return ret;
+	if (utf16_name != utf16_name_norm) free(utf16_name);
+	if (ret < 0) return ret;
 
 	/* convert to UTF-8 */
 	ret = _pathname_utf16_to_utf8_icu(utf16_name_norm, dest);
 	free(utf16_name_norm);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
 	if (validate) {
 		/* check length of the name unless it's supposed to be a path */
-		if (! allow_slash) {
+		if (!allow_slash) {
 			ret = pathname_strlen(*dest);
 			if (ret < 0) {
 				free(*dest);
@@ -530,14 +509,11 @@ int _pathname_normalize_utf8_nfd_icu(const char *src, char **dest)
 	int ret;
 
 	ret = _pathname_utf8_to_utf16_icu(src, &icu_str);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
 	ret = _pathname_normalize_nfd_icu(icu_str, &icu_str_norm);
-	if (icu_str != icu_str_norm)
-		free(icu_str);
-	if (ret < 0)
-		return ret;
+	if (icu_str != icu_str_norm) free(icu_str);
+	if (ret < 0) return ret;
 
 	ret = _pathname_utf16_to_utf8_icu(icu_str_norm, dest);
 	free(icu_str_norm);
@@ -555,8 +531,7 @@ int _pathname_check_utf8_icu(const char *src, size_t size)
 	UErrorCode err = U_ZERO_ERROR;
 
 	u_strFromUTF8(NULL, 0, NULL, src, (int32_t)size, &err);
-	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR)
-		return 1;
+	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) return 1;
 
 	return 0;
 }
@@ -573,13 +548,11 @@ int _pathname_foldcase_utf8_icu(const char *src, char **dest)
 	int ret;
 
 	ret = _pathname_utf8_to_utf16_icu(src, &icu_str);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
 	ret = _pathname_foldcase_icu(icu_str, &icu_str_fold);
 	free(icu_str);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
 	ret = _pathname_utf16_to_utf8_icu(icu_str_fold, dest);
 	free(icu_str_fold);
@@ -598,14 +571,11 @@ int _pathname_normalize_utf8_icu(const char *src, char **dest)
 	int ret;
 
 	ret = _pathname_utf8_to_utf16_icu(src, &icu_str);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
 	ret = _pathname_normalize_nfc_icu(icu_str, &icu_str_norm);
-	if (icu_str != icu_str_norm)
-		free(icu_str);
-	if (ret < 0)
-		return ret;
+	if (icu_str != icu_str_norm) free(icu_str);
+	if (ret < 0) return ret;
 
 	ret = _pathname_utf16_to_utf8_icu(icu_str_norm, dest);
 	free(icu_str_norm);
@@ -632,7 +602,7 @@ int _pathname_foldcase_icu(const UChar *src, UChar **dest)
 	err = U_ZERO_ERROR;
 
 	*dest = malloc((destlen + 1) * sizeof(UChar));
-	if (! *dest) {
+	if (!*dest) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
@@ -657,9 +627,9 @@ static inline void *_unorm_handle(bool nfc, UErrorCode *err)
 {
 #ifdef ICU6x
 	*err = U_ZERO_ERROR;
-	return (void *) unorm2_getInstance(NULL, "nfc", nfc ? UNORM2_COMPOSE : UNORM2_DECOMPOSE, err);
+	return (void *)unorm2_getInstance(NULL, "nfc", nfc ? UNORM2_COMPOSE : UNORM2_DECOMPOSE, err);
 #else
-	return nfc ? (void *) 0xff : NULL;
+	return nfc ? (void *)0xff : NULL;
 #endif
 }
 
@@ -667,7 +637,7 @@ static inline UNormalizationCheckResult _unorm_quickCheck(void *handle, const UC
 {
 	*err = U_ZERO_ERROR;
 #ifdef ICU6x
-	const UNormalizer2 *n2 = (const UNormalizer2 *) handle;
+	const UNormalizer2 *n2 = (const UNormalizer2 *)handle;
 	return unorm2_quickCheck(n2, src, -1, err);
 #else
 	bool nfc = handle != NULL;
@@ -679,7 +649,7 @@ static inline int32_t _unorm_normalize(void *handle, const UChar *src, UChar **d
 {
 	*err = U_ZERO_ERROR;
 #ifdef ICU6x
-	const UNormalizer2 *n2 = (const UNormalizer2 *) handle;
+	const UNormalizer2 *n2 = (const UNormalizer2 *)handle;
 	return unorm2_normalize(n2, src, -1, dest ? *dest : NULL, len, err);
 #else
 	bool nfc = handle != NULL;
@@ -703,7 +673,7 @@ int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 	int32_t destlen;
 
 	if (_unorm_quickCheck(handle, src, dest, &err) == UNORM_YES) {
-		*dest = (UChar *) src;
+		*dest = (UChar *)src;
 		return 0;
 	}
 
@@ -714,7 +684,7 @@ int _pathname_normalize_nfc_icu(const UChar *src, UChar **dest)
 	}
 
 	*dest = malloc((destlen + 1) * sizeof(UChar));
-	if (! *dest) {
+	if (!*dest) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
@@ -780,7 +750,7 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 	int32_t destlen;
 
 	if (_unorm_quickCheck(handle, src, dest, &err) == UNORM_YES) {
-		*dest = (UChar *) src;
+		*dest = (UChar *)src;
 		return 0;
 	}
 
@@ -791,7 +761,7 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest)
 	}
 
 	*dest = malloc((destlen + 1) * sizeof(UChar));
-	if (! *dest) {
+	if (!*dest) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
@@ -827,7 +797,7 @@ int _pathname_utf8_to_utf16_icu(const char *src, UChar **dest)
 	err = U_ZERO_ERROR;
 
 	*dest = malloc((destlen + 1) * sizeof(UChar));
-	if (! *dest) {
+	if (!*dest) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
@@ -864,7 +834,7 @@ int _pathname_utf16_to_utf8_icu(const UChar *src, char **dest)
 	err = U_ZERO_ERROR;
 
 	*dest = malloc(destlen + 1);
-	if (! *dest) {
+	if (!*dest) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
@@ -917,7 +887,7 @@ int _pathname_system_to_utf16_icu(const char *src, UChar **dest)
 	err = U_ZERO_ERROR;
 
 	*dest = malloc((destlen + 1) * sizeof(UChar));
-	if (! *dest) {
+	if (!*dest) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		ucnv_close(syslocale);
 		return -LTFS_NO_MEMORY;
@@ -951,10 +921,9 @@ int _pathname_utf8_to_system_icu(const char *src, char **dest)
 
 	/* If current locale is UTF-8, no conversion needed */
 	syslocale = ucnv_getDefaultName();
-	if (! strcmp(syslocale, "UTF-8")) {
+	if (!strcmp(syslocale, "UTF-8")) {
 		*dest = arch_strdup(src);
-		if (! *dest)
-			return -LTFS_NO_MEMORY;
+		if (!*dest) return -LTFS_NO_MEMORY;
 		return 0;
 	}
 
@@ -967,7 +936,7 @@ int _pathname_utf8_to_system_icu(const char *src, char **dest)
 	err = U_ZERO_ERROR;
 
 	*dest = malloc(destlen + 1);
-	if (! *dest) {
+	if (!*dest) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}

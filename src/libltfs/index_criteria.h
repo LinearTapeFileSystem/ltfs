@@ -38,7 +38,7 @@
 **
 ** FILE NAME:       index_criteria.h
 **
-** DESCRIPTION:     Header file for the routines that deal with the index partition 
+** DESCRIPTION:     Header file for the routines that deal with the index partition
 **                  criteria.
 **
 ** AUTHOR:          Lucas C. Villa Real
@@ -49,18 +49,21 @@
 */
 #ifndef __index_criteria_h
 #define __index_criteria_h
+#include "ltfs.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-int index_criteria_parse(const char *filterrules, struct ltfs_volume *vol);
-int index_criteria_dup_rules(struct index_criteria *dest_ic, struct index_criteria *src_ic);
-int index_criteria_set_allow_update(bool allow, struct ltfs_volume *vol);
-bool index_criteria_match(struct dentry *d, struct ltfs_volume *vol);
-size_t index_criteria_get_max_filesize(struct ltfs_volume *vol);
-const char **index_criteria_get_glob_patterns(struct ltfs_volume *vol);
-void index_criteria_free(struct index_criteria *ic);
+	int index_criteria_parse(const char *filterrules, struct ltfs_volume *vol);
+	int index_criteria_dup_rules(struct index_criteria *dest_ic, struct index_criteria *src_ic);
+	int index_criteria_set_allow_update(bool allow, struct ltfs_volume *vol);
+	bool index_criteria_match(struct dentry *d, struct ltfs_volume *vol);
+	size_t index_criteria_get_max_filesize(struct ltfs_volume *vol);
+	const char **index_criteria_get_glob_patterns(struct ltfs_volume *vol);
+	void index_criteria_free(struct index_criteria *ic);
 
 #ifdef __cplusplus
 }

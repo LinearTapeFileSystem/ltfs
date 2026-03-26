@@ -47,10 +47,10 @@
 *************************************************************************************
 */
 
-#include <string.h>
-#include <limits.h>
-#include "libltfs/ltfslogging.h"
 #include "base64.h"
+#include "libltfs/ltfslogging.h"
+#include <limits.h>
+#include <string.h>
 
 static const char *base64_enc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -84,19 +84,18 @@ size_t base64_decode(const unsigned char *enc, size_t nbytes_in, unsigned char *
 	}
 
 	/* prepare the decode map */
-	memset(base64_dec,UCHAR_MAX,256);
-	for (i=0; i<64; ++i)
+	memset(base64_dec, UCHAR_MAX, 256);
+	for (i = 0; i < 64; ++i)
 		base64_dec[(size_t)base64_enc[i]] = i;
 
 	/* check for out-of-place '=' and invalid characters */
 	nequal = 0;
 	nbytes_real = nbytes_in;
-	for (i=0; i<nbytes_in; ++i) {
-		if (i == nbytes_in-2 && enc[i] == '=' && enc[i+1] == '=') {
+	for (i = 0; i < nbytes_in; ++i) {
+		if (i == nbytes_in - 2 && enc[i] == '=' && enc[i + 1] == '=') {
 			nequal = 2;
-		} else if (i == nbytes_in-1 && enc[i] == '=') {
-			if (enc[i-1] != '=')
-				nequal = 1;
+		} else if (i == nbytes_in - 1 && enc[i] == '=') {
+			if (enc[i - 1] != '=') nequal = 1;
 		} else if (enc[i] == '\r' || enc[i] == '\n' || enc[i] == ' ' || enc[i] == '\t') {
 			--nbytes_real;
 		} else if (base64_dec[enc[i]] == UCHAR_MAX) {
@@ -122,20 +121,19 @@ size_t base64_decode(const unsigned char *enc, size_t nbytes_in, unsigned char *
 	/* generate output */
 	quad_count = 0;
 	out_pos = 0;
-	for (i=0; i<nbytes_in; ++i) {
-		if (enc[i] == '\n' || enc[i] == '\r' || enc[i] == '\t' || enc[i] == ' ')
-			continue;
+	for (i = 0; i < nbytes_in; ++i) {
+		if (enc[i] == '\n' || enc[i] == '\r' || enc[i] == '\t' || enc[i] == ' ') continue;
 		cur_quad[quad_count++] = base64_dec[enc[i]];
 		if (quad_count == 4) {
 			quad_count = 0;
 			(*dec)[out_pos] = cur_quad[0] << 2;
 			(*dec)[out_pos] |= (cur_quad[1] & 0x30) >> 4;
 			if (cur_quad[2] != UCHAR_MAX) {
-				(*dec)[out_pos+1] = (cur_quad[1] & 0xF) << 4;
-				(*dec)[out_pos+1] |= (cur_quad[2] & 0x3C) >> 2;
+				(*dec)[out_pos + 1] = (cur_quad[1] & 0xF) << 4;
+				(*dec)[out_pos + 1] |= (cur_quad[2] & 0x3C) >> 2;
 				if (cur_quad[3] != UCHAR_MAX) {
-					(*dec)[out_pos+2] = (cur_quad[2] & 0x3) << 6;
-					(*dec)[out_pos+2] |= cur_quad[3];
+					(*dec)[out_pos + 2] = (cur_quad[2] & 0x3) << 6;
+					(*dec)[out_pos + 2] |= cur_quad[3];
 				}
 			}
 			out_pos += 3;
@@ -144,4 +142,3 @@ size_t base64_decode(const unsigned char *enc, size_t nbytes_in, unsigned char *
 
 	return nout;
 }
-

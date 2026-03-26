@@ -47,17 +47,18 @@
 *************************************************************************************
 */
 
+#include "libltfs/iosched_ops.h"
 #include "libltfs/ltfs.h"
 #include "libltfs/ltfs_fsops_raw.h"
 #include "ltfs_copyright.h"
-#include "libltfs/iosched_ops.h"
 
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
-	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
+volatile char *copyright = LTFS_COPYRIGHT_0 "\n" LTFS_COPYRIGHT_1 "\n" LTFS_COPYRIGHT_2 "\n" LTFS_COPYRIGHT_3
+																						"\n" LTFS_COPYRIGHT_4 "\n" LTFS_COPYRIGHT_5 "\n";
 
-struct fcfs_data {
-	ltfs_mutex_t sched_lock;    /**< Serializes read and write access */
-	struct ltfs_volume *vol;    /**< A reference to the LTFS volume structure */
+struct fcfs_data
+{
+	ltfs_mutex_t sched_lock; /**< Serializes read and write access */
+	struct ltfs_volume *vol; /**< A reference to the LTFS volume structure */
 };
 
 /**
@@ -69,7 +70,7 @@ void *fcfs_init(struct ltfs_volume *vol)
 {
 	int ret;
 	struct fcfs_data *priv = calloc(1, sizeof(struct fcfs_data));
-	if (! priv) {
+	if (!priv) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return NULL;
 	}
@@ -91,7 +92,7 @@ void *fcfs_init(struct ltfs_volume *vol)
  */
 int fcfs_destroy(void *iosched_handle)
 {
-	struct fcfs_data *priv = (struct fcfs_data *) iosched_handle;
+	struct fcfs_data *priv = (struct fcfs_data *)iosched_handle;
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
 
 	ltfs_mutex_destroy(&priv->sched_lock);
@@ -110,7 +111,7 @@ int fcfs_destroy(void *iosched_handle)
  */
 int fcfs_open(const char *path, bool open_write, struct dentry **dentry, void *iosched_handle)
 {
-	struct fcfs_data *priv = (struct fcfs_data *) iosched_handle;
+	struct fcfs_data *priv = (struct fcfs_data *)iosched_handle;
 
 	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dentry, -LTFS_NULL_ARG);
@@ -147,7 +148,7 @@ int fcfs_close(struct dentry *d, bool flush, void *iosched_handle)
  */
 ssize_t fcfs_read(struct dentry *d, char *buf, size_t size, off_t offset, void *iosched_handle)
 {
-	struct fcfs_data *priv = (struct fcfs_data *) iosched_handle;
+	struct fcfs_data *priv = (struct fcfs_data *)iosched_handle;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(buf, -LTFS_NULL_ARG);
@@ -167,10 +168,10 @@ ssize_t fcfs_read(struct dentry *d, char *buf, size_t size, off_t offset, void *
  * @param iosched_handle the I/O scheduler handle
  * @return the number of bytes enqueued for writing or a negative value on error
  */
-ssize_t fcfs_write(struct dentry *d, const char *buf, size_t size, off_t offset,
-				   bool isupdatetime, void *iosched_handle)
+ssize_t
+fcfs_write(struct dentry *d, const char *buf, size_t size, off_t offset, bool isupdatetime, void *iosched_handle)
 {
-	struct fcfs_data *priv = (struct fcfs_data *) iosched_handle;
+	struct fcfs_data *priv = (struct fcfs_data *)iosched_handle;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(buf, -LTFS_NULL_ARG);
@@ -189,7 +190,7 @@ ssize_t fcfs_write(struct dentry *d, const char *buf, size_t size, off_t offset,
  */
 int fcfs_flush(struct dentry *d, bool closeflag, void *iosched_handle)
 {
-	(void) closeflag;
+	(void)closeflag;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
@@ -199,7 +200,7 @@ int fcfs_flush(struct dentry *d, bool closeflag, void *iosched_handle)
 
 int fcfs_truncate(struct dentry *d, off_t length, void *iosched_handle)
 {
-	struct fcfs_data *priv = (struct fcfs_data *) iosched_handle;
+	struct fcfs_data *priv = (struct fcfs_data *)iosched_handle;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
@@ -251,14 +252,14 @@ int fcfs_set_profiler(char *work_dir, bool enable, void *iosched_handle)
 }
 
 struct iosched_ops fcfs_ops = {
-	.init         = fcfs_init,
-	.destroy      = fcfs_destroy,
-	.open         = fcfs_open,
-	.close        = fcfs_close,
-	.read         = fcfs_read,
-	.write        = fcfs_write,
-	.flush        = fcfs_flush,
-	.truncate     = fcfs_truncate,
+	.init = fcfs_init,
+	.destroy = fcfs_destroy,
+	.open = fcfs_open,
+	.close = fcfs_close,
+	.read = fcfs_read,
+	.write = fcfs_write,
+	.flush = fcfs_flush,
+	.truncate = fcfs_truncate,
 	.get_filesize = fcfs_get_filesize,
 	.update_data_placement = fcfs_update_data_placement,
 	.set_profiler = fcfs_set_profiler,

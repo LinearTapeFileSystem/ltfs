@@ -50,11 +50,11 @@
 #ifndef time_internal_c_
 #define time_internal_c_
 
+#include "libltfs/arch/time_internal.h"
+#include "libltfs/ltfslogging.h"
+#include <limits.h>
 #include <string.h>
 #include <time.h>
-#include <limits.h>
-#include "libltfs/ltfslogging.h"
-#include "libltfs/arch/time_internal.h"
 
 #ifdef __APPLE__
 /*
@@ -62,15 +62,15 @@
  * It is specified by compile option of Makefile.osx because autoconf architecture is
  * not used under OSX.
  */
-#define SIZEOF_TIME_T (8)
+#	define SIZEOF_TIME_T (8)
 #else
-#include "config.h"
+#	include "config.h"
 #endif
 
 #ifndef mingw_PLATFORM
-#if ! ((SIZEOF_TIME_T == 4) || (SIZEOF_TIME_T == 8))
-	#error time_t width is not 4 or 8
-#endif
+#	if !((SIZEOF_TIME_T == 4) || (SIZEOF_TIME_T == 8))
+#		error time_t width is not 4 or 8
+#	endif
 #endif
 
 ltfs_time_t ltfs_timegm(struct tm *t)
@@ -80,19 +80,15 @@ ltfs_time_t ltfs_timegm(struct tm *t)
 	ltfs_time_t ret;
 
 	tmp = (t->tm_mon - 13) / 12;
-	rel = 86400LL * ((1461 * (t->tm_year + 6700 + tmp)) / 4
-	                 + (367 * (t->tm_mon - 1 - 12 * tmp)) / 12
-	                 - (3 * ((t->tm_year + 6800 + tmp) / 100)) / 4
-	                 + t->tm_mday - 2472663)
-	      + 3600 * t->tm_hour + 60 * t->tm_min + t->tm_sec;
+	rel = 86400LL * ((1461 * (t->tm_year + 6700 + tmp)) / 4 + (367 * (t->tm_mon - 1 - 12 * tmp)) / 12 -
+									 (3 * ((t->tm_year + 6800 + tmp) / 100)) / 4 + t->tm_mday - 2472663) +
+				3600 * t->tm_hour + 60 * t->tm_min + t->tm_sec;
 
 	if (sizeof(time_t) == 4) {
 		if (rel > LONG_MAX)
-			ltfsmsg(LTFS_WARN, 17172W, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday
-					, t->tm_hour, t->tm_min, t->tm_sec);
+			ltfsmsg(LTFS_WARN, 17172W, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
 		if (rel < LONG_MIN)
-			ltfsmsg(LTFS_WARN, 17173W, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday
-					, t->tm_hour, t->tm_min, t->tm_sec);
+			ltfsmsg(LTFS_WARN, 17173W, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
 	}
 
 	ret = rel;
@@ -100,22 +96,22 @@ ltfs_time_t ltfs_timegm(struct tm *t)
 }
 
 #ifdef __APPLE__
-#include <errno.h>
-#include <libkern/OSReturn.h>
-#include <mach/mach.h>
-#include <mach/clock.h>
-#include <mach/mach_time.h>
+#	include <errno.h>
+#	include <libkern/OSReturn.h>
+#	include <mach/clock.h>
+#	include <mach/mach.h>
+#	include <mach/mach_time.h>
 
-void __get_time(_time_stamp_t* t)
+void __get_time(_time_stamp_t *t)
 {
-	*t =  mach_absolute_time();
+	*t = mach_absolute_time();
 }
 
 int get_timer_info(struct timer_info *ti)
 {
 	mach_timebase_info_data_t timebase;
 
-	(void) mach_timebase_info(&timebase);
+	(void)mach_timebase_info(&timebase);
 
 	ti->type = TIMER_TYPE_OSX;
 	ti->base = ((uint64_t)timebase.denom << 32) + timebase.numer;
@@ -123,33 +119,33 @@ int get_timer_info(struct timer_info *ti)
 	return 0;
 }
 
-int get_osx_current_timespec(struct ltfs_timespec* now) {
+int get_osx_current_timespec(struct ltfs_timespec *now)
+{
 	int ret = -1;
 
 	kern_return_t kernel_return;
-	clock_serv_t  clock;
+	clock_serv_t clock;
 	mach_timespec_t time;
 
 	kernel_return = host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &clock);
 	if (KERN_SUCCESS == kernel_return) {
 		kernel_return = clock_get_time(clock, &time);
 		if (KERN_SUCCESS == kernel_return) {
-			now->tv_sec  = time.tv_sec;
+			now->tv_sec = time.tv_sec;
 			now->tv_nsec = time.tv_nsec;
 			ret = 0;
 		}
-	  }
+	}
 	if (ret != 0) {
 		errno = EINVAL;
 		ret = -1;
 	}
-	if (ret < 0)
-		ltfsmsg(LTFS_ERR, 11110E, ret);
+	if (ret < 0) ltfsmsg(LTFS_ERR, 11110E, ret);
 	return ret;
 }
 #elif defined(mingw_PLATFORM)
 #else
-int get_unix_current_timespec(struct ltfs_timespec* now)
+int get_unix_current_timespec(struct ltfs_timespec *now)
 {
 	struct timespec ts;
 	int ret = clock_gettime(CLOCK_REALTIME, &ts);
@@ -166,12 +162,11 @@ struct tm *get_unix_localtime(const ltfs_time_t *timep)
 
 int ltfs_get_days_of_year(int64_t nYear)
 {
-	int nDays = ((nYear % 400) == 0 || (((nYear % 100) != 0) && ((nYear % 4) == 0))) ?
-		366 : 365;
+	int nDays = ((nYear % 400) == 0 || (((nYear % 100) != 0) && ((nYear % 4) == 0))) ? 366 : 365;
 	return nDays;
 }
 
-int ltfs_get_mday_from_yday(int64_t nYear, int nYday, int* pnMonth)
+int ltfs_get_mday_from_yday(int64_t nYear, int nYday, int *pnMonth)
 {
 	int i = 0;
 	int nMday = nYday;
@@ -202,46 +197,43 @@ int ltfs_get_mday_from_yday(int64_t nYear, int nYday, int* pnMonth)
 struct tm *ltfs_gmtime(const ltfs_time_t *timep, struct tm *result)
 {
 	int n;
-	int64_t nSrcTime  = *timep;
+	int64_t nSrcTime = *timep;
 	int64_t nYears = 0;
 	int64_t nYday = 0;
 	int nDaysOfYear = 0;
 
 	// cyclic periods in terms leap years
-	int64_t nDays4Y   =   1461; //   4 years = (365 days ) *  4 + 1
-	int64_t nDays100Y =  36524; // 100 years = (  4 years) * 25 - 1
-	int64_t nDays400Y = 146097; // 400 years = (100 years) *  4 + 1
+	int64_t nDays4Y = 1461;			 //   4 years = (365 days ) *  4 + 1
+	int64_t nDays100Y = 36524;	 // 100 years = (  4 years) * 25 - 1
+	int64_t nDays400Y = 146097;	 // 400 years = (100 years) *  4 + 1
 	int64_t n400Y, n100Y, n4Y, n1Y;
 
 	memset(result, 0, sizeof(struct tm));
 
 	n = nSrcTime % 60;	// n = seconds
-	nSrcTime /= 60;	// nSrcTime is in minutes
+	nSrcTime /= 60;			// nSrcTime is in minutes
 	if (0 <= n) {
-		result->tm_sec  = n;
-	}
-	else {
-		result->tm_sec  = n + 60;
+		result->tm_sec = n;
+	} else {
+		result->tm_sec = n + 60;
 		nSrcTime--;
 	}
 
 	n = nSrcTime % 60;	// n = minutes
-	nSrcTime /= 60;	// nSrcTime is in hours
+	nSrcTime /= 60;			// nSrcTime is in hours
 	if (0 <= n) {
-		result->tm_min  = n;
-	}
-	else {
-		result->tm_min  = n + 60;
+		result->tm_min = n;
+	} else {
+		result->tm_min = n + 60;
 		nSrcTime--;
 	}
 
 	n = nSrcTime % 24;	// n = hours
-	nSrcTime /= 24;	// nSrcTime is in days
+	nSrcTime /= 24;			// nSrcTime is in days
 	if (0 <= n) {
-		result->tm_hour  = n;
-	}
-	else {
-		result->tm_hour  = n + 24;
+		result->tm_hour = n;
+	} else {
+		result->tm_hour = n + 24;
 		nSrcTime--;
 	}
 
@@ -292,8 +284,7 @@ struct tm *ltfs_gmtime(const ltfs_time_t *timep, struct tm *result)
 	if (nDaysOfYear <= nYday) {
 		nYears++;
 		nYday -= nDaysOfYear;
-	}
-	else if (nYday < 0) {
+	} else if (nYday < 0) {
 		nDaysOfYear = ltfs_get_days_of_year((--nYears) + 2000);
 		nYday += nDaysOfYear;
 	}

@@ -80,8 +80,7 @@ int label_alloc(struct ltfs_label **label)
 void label_free(struct ltfs_label **label)
 {
 	if (label && *label) {
-		if ((*label)->creator)
-			free((*label)->creator);
+		if ((*label)->creator) free((*label)->creator);
 		free(*label);
 		*label = NULL;
 	}
@@ -109,7 +108,7 @@ int label_compare(struct ltfs_label *label1, struct ltfs_label *label2)
 		return -LTFS_LABEL_MISMATCH;
 
 	} else if (label1->format_time.tv_sec != label2->format_time.tv_sec ||
-		label1->format_time.tv_nsec != label2->format_time.tv_nsec) {
+						 label1->format_time.tv_nsec != label2->format_time.tv_nsec) {
 		ltfsmsg(LTFS_ERR, 11184E);
 		return -LTFS_LABEL_MISMATCH;
 
@@ -121,8 +120,7 @@ int label_compare(struct ltfs_label *label1, struct ltfs_label *label2)
 		ltfsmsg(LTFS_ERR, 11186E);
 		return -LTFS_LABEL_MISMATCH;
 
-	} else if (! ltfs_is_valid_partid(label1->partid_dp) ||
-			   ! ltfs_is_valid_partid(label1->partid_ip)) {
+	} else if (!ltfs_is_valid_partid(label1->partid_dp) || !ltfs_is_valid_partid(label1->partid_ip)) {
 		ltfsmsg(LTFS_ERR, 11187E);
 		return -LTFS_LABEL_MISMATCH;
 
@@ -130,15 +128,12 @@ int label_compare(struct ltfs_label *label1, struct ltfs_label *label2)
 		ltfsmsg(LTFS_ERR, 11188E);
 		return -LTFS_LABEL_MISMATCH;
 
-	} else if (label2->partid_dp != label1->partid_dp ||
-			   label2->partid_ip != label1->partid_ip) {
+	} else if (label2->partid_dp != label1->partid_dp || label2->partid_ip != label1->partid_ip) {
 		ltfsmsg(LTFS_ERR, 11189E);
 		return -LTFS_LABEL_MISMATCH;
 
-	} else if ((label1->this_partition != label1->partid_dp &&
-			    label1->this_partition != label1->partid_ip) ||
-			   (label2->this_partition != label1->partid_dp &&
-			    label2->this_partition != label1->partid_ip)) {
+	} else if ((label1->this_partition != label1->partid_dp && label1->this_partition != label1->partid_ip) ||
+						 (label2->this_partition != label1->partid_dp && label2->this_partition != label1->partid_ip)) {
 		ltfsmsg(LTFS_ERR, 11190E);
 		return -LTFS_LABEL_MISMATCH;
 
@@ -174,13 +169,12 @@ int label_compare(struct ltfs_label *label1, struct ltfs_label *label2)
 void label_make_ansi_label(struct ltfs_volume *vol, char *label, size_t size)
 {
 	size_t barcode_len;
-	memset(label,' ',size);
-	memcpy(label,"VOL1",4);
+	memset(label, ' ', size);
+	memcpy(label, "VOL1", 4);
 	barcode_len = strlen(vol->label->barcode);
-	if (barcode_len > 0)
-		memcpy(label+4, vol->label->barcode, barcode_len > 6 ? 6 : barcode_len);
+	if (barcode_len > 0) memcpy(label + 4, vol->label->barcode, barcode_len > 6 ? 6 : barcode_len);
 	label[10] = 'L';
-	memcpy(label+24,"LTFS",4);
+	memcpy(label + 24, "LTFS", 4);
 	/* TODO: fill "owner identifier" field? */
-	label[size-1] = '4';
+	label[size - 1] = '4';
 }

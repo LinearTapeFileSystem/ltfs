@@ -12,7 +12,6 @@
 #   - C++-style comments (//) restricted to logic comment-out only
 #   - Magic editor lines (vim/emacs modelines)
 ---
-Language: C
 ColumnLimit: 120
 IndentWidth: 2
 UseTab: Always

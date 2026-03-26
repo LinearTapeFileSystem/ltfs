@@ -53,12 +53,12 @@
 
 #include <stdint.h>
 
-#include <IOKit/IOKitLib.h>
 #include <IOKit/IOCFPlugIn.h>
+#include <IOKit/IOKitLib.h>
 #include <IOKit/IOTypes.h>
 #include <IOKit/scsi/SCSITaskLib.h>
-#include <IOKit/storage/IOStorageProtocolCharacteristics.h>
 #include <IOKit/storage/IOStorageDeviceCharacteristics.h>
+#include <IOKit/storage/IOStorageProtocolCharacteristics.h>
 #include <mach/mach.h>
 
 #include "iokit_service.h"
@@ -82,30 +82,30 @@ static int _get_device_count(CFMutableDictionaryRef *matchingDict)
 	// Search I/O Registry for matching devices
 	kernelResult = IOServiceGetMatchingServices(masterPort, *matchingDict, &serviceIterator);
 
-	if( (serviceIterator == IO_OBJECT_NULL) || (IOIteratorNext(serviceIterator) == 0) ) {
+	if ((serviceIterator == IO_OBJECT_NULL) || (IOIteratorNext(serviceIterator) == 0)) {
 		count = -101;
 		return count;
 	}
 
-	if(serviceIterator && kernelResult == kIOReturnSuccess) {
+	if (serviceIterator && kernelResult == kIOReturnSuccess) {
 		io_service_t scsiDevice = IO_OBJECT_NULL;
 		count = 0;
 
 		IOIteratorReset(serviceIterator);
 
-		if(! IOIteratorIsValid(serviceIterator)) {
+		if (!IOIteratorIsValid(serviceIterator)) {
 			count = -102;
 			return count;
 		}
 
 		// Count devices matching service class
-		while( (scsiDevice = IOIteratorNext(serviceIterator)) ) {
+		while ((scsiDevice = IOIteratorNext(serviceIterator))) {
 			count++;
 		}
 
 		IOIteratorReset(serviceIterator);
-		while( (scsiDevice = IOIteratorNext(serviceIterator)) ) {
-			kernelResult = IOObjectRelease(scsiDevice); // Done with SCSI object from I/O Registry.
+		while ((scsiDevice = IOIteratorNext(serviceIterator))) {
+			kernelResult = IOObjectRelease(scsiDevice);	 // Done with SCSI object from I/O Registry.
 		}
 	}
 
@@ -130,29 +130,29 @@ static int _find_device(struct iokit_device *device, int device_number, CFMutabl
 	// Search I/O Registry for matching devices
 	kernelResult = IOServiceGetMatchingServices(device->masterPort, *matchingDict, &serviceIterator);
 
-	if( (serviceIterator == IO_OBJECT_NULL) || (IOIteratorNext(serviceIterator) == 0) ) {
+	if ((serviceIterator == IO_OBJECT_NULL) || (IOIteratorNext(serviceIterator) == 0)) {
 		/* TODO: Replace to better logic*/
 		ret = -101;
 		return ret;
 	}
 
-	if(serviceIterator && kernelResult == kIOReturnSuccess) {
+	if (serviceIterator && kernelResult == kIOReturnSuccess) {
 		io_service_t scsiDevice = IO_OBJECT_NULL;
 		int count = 0;
 
 		IOIteratorReset(serviceIterator);
 
 		// Select N'th tape drive based on driveNumber value
-		while( (scsiDevice = IOIteratorNext(serviceIterator)) ) {
-			if(count == device_number) {
+		while ((scsiDevice = IOIteratorNext(serviceIterator))) {
+			if (count == device_number) {
 				break;
 			} else {
-				kernelResult = IOObjectRelease(scsiDevice); // Done with SCSI object from I/O Registry.
+				kernelResult = IOObjectRelease(scsiDevice);	 // Done with SCSI object from I/O Registry.
 				count++;
 			}
 		}
 
-		if(scsiDevice == IO_OBJECT_NULL) {
+		if (scsiDevice == IO_OBJECT_NULL) {
 			/* TODO: Replace to better logic*/
 			ret = -1;
 			return ret;
@@ -163,16 +163,13 @@ static int _find_device(struct iokit_device *device, int device_number, CFMutabl
 
 		// Create DeviceInterface and store in lto_osx_data struct.
 		assert(device->ioservice != IO_OBJECT_NULL);
-		IOCFPlugInInterface		**plugin_interface = NULL;
-		SCSITaskDeviceInterface	**task_device_interface = NULL;
-		HRESULT					plugin_query_result = S_OK;
+		IOCFPlugInInterface **plugin_interface = NULL;
+		SCSITaskDeviceInterface **task_device_interface = NULL;
+		HRESULT plugin_query_result = S_OK;
 		SInt32 score = 0;
 
-		kernelResult = IOCreatePlugInInterfaceForService(device->ioservice,
-														 kIOSCSITaskDeviceUserClientTypeID,
-														 kIOCFPlugInInterfaceID,
-														 &plugin_interface,
-														 &score);
+		kernelResult = IOCreatePlugInInterfaceForService(
+				device->ioservice, kIOSCSITaskDeviceUserClientTypeID, kIOCFPlugInInterfaceID, &plugin_interface, &score);
 		if (kernelResult != kIOReturnSuccess) {
 			/* TODO: Replace to better logic*/
 			ret = -1;
@@ -180,9 +177,10 @@ static int _find_device(struct iokit_device *device, int device_number, CFMutabl
 		} else {
 			// Query the base plugin interface for an instance of the specific SCSI device interface
 			// object.
-			plugin_query_result = (*plugin_interface)->QueryInterface(plugin_interface,
-																	  CFUUIDGetUUIDBytes(kIOSCSITaskDeviceInterfaceID),
-																	  (LPVOID *) &task_device_interface);
+			plugin_query_result = (*plugin_interface)
+																->QueryInterface(plugin_interface,
+																								 CFUUIDGetUUIDBytes(kIOSCSITaskDeviceInterfaceID),
+																								 (LPVOID *)&task_device_interface);
 
 			if (plugin_query_result != S_OK) {
 				/* TODO: Replace to better logic*/
@@ -201,34 +199,33 @@ static int _find_device(struct iokit_device *device, int device_number, CFMutabl
 	return ret;
 }
 
-
 static void _create_matching_dictionary_for_device_class(CFMutableDictionaryRef *matchingDict,
-														 SInt32 peripheralDeviceType )
+																												 SInt32 peripheralDeviceType)
 {
 	CFMutableDictionaryRef subDictionary;
 
 	assert(matchingDict != NULL);
 
 	// Create the matching dictionaries...
-	*matchingDict = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks,
-													&kCFTypeDictionaryValueCallBacks);
-	if(*matchingDict != NULL) {
+	*matchingDict = CFDictionaryCreateMutable(
+			kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+	if (*matchingDict != NULL) {
 		// Create a sub-dictionary to hold the required device patterns.
-		subDictionary = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks,
-													&kCFTypeDictionaryValueCallBacks);
+		subDictionary = CFDictionaryCreateMutable(
+				kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 
 		if (subDictionary != NULL) {
 			// Set the "SCSITaskDeviceCategory" key so that we match
 			// devices that understand SCSI commands.
-			CFDictionarySetValue(subDictionary, CFSTR(kIOPropertySCSITaskDeviceCategory),
-												 CFSTR(kIOPropertySCSITaskUserClientDevice));
+			CFDictionarySetValue(
+					subDictionary, CFSTR(kIOPropertySCSITaskDeviceCategory), CFSTR(kIOPropertySCSITaskUserClientDevice));
 			// Set the "PeripheralDeviceType" key so that we match
 			// sequential storage (tape) devices.
 			SInt32 deviceTypeNumber = peripheralDeviceType;
 			CFNumberRef deviceTypeRef = NULL;
 			deviceTypeRef = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &deviceTypeNumber);
 			CFDictionarySetValue(subDictionary, CFSTR(kIOPropertySCSIPeripheralDeviceType), deviceTypeRef);
-			CFRelease (deviceTypeRef);
+			CFRelease(deviceTypeRef);
 		}
 
 		// Add the sub-dictionary pattern to the main dictionary with the key "IOPropertyMatch" to
@@ -239,12 +236,10 @@ static void _create_matching_dictionary_for_device_class(CFMutableDictionaryRef 
 	}
 }
 
-
 static void _create_matching_dictionary_for_ssc(CFMutableDictionaryRef *matchingDict)
 {
 	_create_matching_dictionary_for_device_class(matchingDict, kINQUIRY_PERIPHERAL_TYPE_SequentialAccessSSCDevice);
 }
-
 
 static void _create_matching_dictionary_for_smc(CFMutableDictionaryRef *matchingDict)
 {
@@ -253,10 +248,9 @@ static void _create_matching_dictionary_for_smc(CFMutableDictionaryRef *matching
 
 static void _release_scsitask(struct iokit_device *device)
 {
-	if(device != NULL) {
+	if (device != NULL) {
 		// Release IOKit task interface
-		if(device->scsiTaskInterface != NULL)
-			(*device->scsiTaskInterface)->Release(device->scsiTaskInterface);
+		if (device->scsiTaskInterface != NULL) (*device->scsiTaskInterface)->Release(device->scsiTaskInterface);
 	}
 }
 
@@ -309,12 +303,12 @@ int iokit_release_exclusive_access(struct iokit_device *device)
 
 int iokit_allocate_scsitask(struct iokit_device *device)
 {
-	if(device == NULL) {
+	if (device == NULL) {
 		/* TODO: Replace to better logic */
 		return -100;
 	}
 
-	if(device->task == NULL) {
+	if (device->task == NULL) {
 		// Create a SCSI task for the device. This task will be re-used for all future SCSI operations.
 		device->task = (*device->scsiTaskInterface)->CreateSCSITask(device->scsiTaskInterface);
 
@@ -329,10 +323,9 @@ int iokit_allocate_scsitask(struct iokit_device *device)
 
 void iokit_release_scsitask(struct iokit_device *device)
 {
-	if(device != NULL) {
+	if (device != NULL) {
 		// Release IOKit task interface
-		if(device->scsiTaskInterface != NULL)
-			(*device->scsiTaskInterface)->Release(device->scsiTaskInterface);
+		if (device->scsiTaskInterface != NULL) (*device->scsiTaskInterface)->Release(device->scsiTaskInterface);
 	}
 }
 
@@ -347,7 +340,6 @@ int iokit_get_ssc_device_count(void)
 	return count;
 }
 
-
 int iokit_get_smc_device_count(void)
 {
 	int count = -1;
@@ -359,7 +351,6 @@ int iokit_get_smc_device_count(void)
 	return count;
 }
 
-
 int iokit_find_ssc_device(struct iokit_device *device, int drive_number)
 {
 	int ret = -1;
@@ -369,7 +360,6 @@ int iokit_find_ssc_device(struct iokit_device *device, int drive_number)
 	ret = _find_device(device, drive_number, &matchingDict);
 	return ret;
 }
-
 
 int iokit_find_smc_device(struct iokit_device *device, int changer_number)
 {
@@ -381,28 +371,26 @@ int iokit_find_smc_device(struct iokit_device *device, int changer_number)
 	return ret;
 }
 
-
 int iokit_free_device(struct iokit_device *device)
 {
 	int ret = 0;
 	kern_return_t kernelResult;
 
-	if(device == NULL)
-		return ret;
+	if (device == NULL) return ret;
 
 	_release_scsitask(device);
 
 	// Release PlugInInterface
-	if(device->plugInInterface != NULL) {
+	if (device->plugInInterface != NULL) {
 		kernelResult = IODestroyPlugInInterface(device->plugInInterface);
-		if(kernelResult != kIOReturnSuccess) {
+		if (kernelResult != kIOReturnSuccess) {
 			ret = -100;
 		}
 	}
 
 	// Release SCSI object from I/O Registry.
 	kernelResult = IOObjectRelease(device->ioservice);
-	if(kernelResult != kIOReturnSuccess) {
+	if (kernelResult != kIOReturnSuccess) {
 		ret = -101;
 	}
 

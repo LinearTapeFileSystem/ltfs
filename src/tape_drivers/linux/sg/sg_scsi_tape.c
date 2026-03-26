@@ -51,8 +51,8 @@
 #include <stdint.h>
 #include <sys/ioctl.h>
 
-#include "libltfs/ltfs_error.h"
 #include "libltfs/ltfs_endian.h"
+#include "libltfs/ltfs_error.h"
 #include "libltfs/ltfslogging.h"
 
 #include "tape_drivers/vendor_compat.h"
@@ -70,23 +70,21 @@ static int sg_sense2errno(sg_io_hdr_t *req, uint32_t *s, char **msg)
 	unsigned char *sense = req->sbp;
 	uint32_t sense_value = 0;
 
-	unsigned char sk   = (*(sense + 2)) & 0x0F;
-	unsigned char asc  = *(sense + 12);
+	unsigned char sk = (*(sense + 2)) & 0x0F;
+	unsigned char asc = *(sense + 12);
 	unsigned char ascq = *(sense + 13);
 
-	sense_value += (uint32_t) sk << 16;
-	sense_value += (uint32_t) asc << 8;
-	sense_value += (uint32_t) ascq;
+	sense_value += (uint32_t)sk << 16;
+	sense_value += (uint32_t)asc << 8;
+	sense_value += (uint32_t)ascq;
 
 	*s = sense_value;
 
 	rc = _sense2errorcode(sense_value, standard_table, msg, MASK_WITH_SENSE_KEY);
 	/* NOTE: error table must be changed in library edition */
-	if (rc == -EDEV_VENDOR_UNIQUE)
-		rc = _sense2errorcode(sense_value, vendor_table, msg, MASK_WITH_SENSE_KEY);
+	if (rc == -EDEV_VENDOR_UNIQUE) rc = _sense2errorcode(sense_value, vendor_table, msg, MASK_WITH_SENSE_KEY);
 
-	if (rc == -EDEV_UNKNOWN && ((sense_value & 0xFF0000) == 0x040000) )
-		rc = -EDEV_HARDWARE_ERROR;
+	if (rc == -EDEV_UNKNOWN && ((sense_value & 0xFF0000) == 0x040000)) rc = -EDEV_HARDWARE_ERROR;
 
 	if (rc == -EDEV_UNKNOWN) {
 		ltfsmsg(LTFS_INFO, 30287I, sense_value);
@@ -95,52 +93,42 @@ static int sg_sense2errno(sg_io_hdr_t *req, uint32_t *s, char **msg)
 	return rc;
 }
 
-static bool is_expected_error(struct sg_tape *device, uint8_t *cdb, int32_t rc )
+static bool is_expected_error(struct sg_tape *device, uint8_t *cdb, int32_t rc)
 {
-	int cmd = (cdb[0]&0xFF);
+	int cmd = (cdb[0] & 0xFF);
 	uint64_t destination;
 	uint64_t cdb_dest[8];
 	int i;
 
 	switch (cmd) {
 		case TEST_UNIT_READY:
-			if (rc == -EDEV_NEED_INITIALIZE || rc == -EDEV_CONFIGURE_CHANGED)
-				return true;
+			if (rc == -EDEV_NEED_INITIALIZE || rc == -EDEV_CONFIGURE_CHANGED) return true;
 			break;
 		case READ:
-			if (rc == -EDEV_FILEMARK_DETECTED || rc == -EDEV_NO_SENSE || rc == -EDEV_CLEANING_REQUIRED)
-				return true;
-			if ((rc == -EDEV_CRYPTO_ERROR || rc == -EDEV_KEY_REQUIRED) && !device->is_data_key_set)
-				return true;
+			if (rc == -EDEV_FILEMARK_DETECTED || rc == -EDEV_NO_SENSE || rc == -EDEV_CLEANING_REQUIRED) return true;
+			if ((rc == -EDEV_CRYPTO_ERROR || rc == -EDEV_KEY_REQUIRED) && !device->is_data_key_set) return true;
 			break;
 		case WRITE:
-			if (rc == -EDEV_EARLY_WARNING || rc == -EDEV_PROG_EARLY_WARNING || rc == -EDEV_CLEANING_REQUIRED)
-				return true;
+			if (rc == -EDEV_EARLY_WARNING || rc == -EDEV_PROG_EARLY_WARNING || rc == -EDEV_CLEANING_REQUIRED) return true;
 			break;
 		case WRITE_FILEMARKS6:
-			if (rc == -EDEV_EARLY_WARNING || rc == -EDEV_PROG_EARLY_WARNING || rc == -EDEV_CLEANING_REQUIRED)
-				return true;
+			if (rc == -EDEV_EARLY_WARNING || rc == -EDEV_PROG_EARLY_WARNING || rc == -EDEV_CLEANING_REQUIRED) return true;
 			break;
 		case LOAD_UNLOAD:
-			if ((cdb[4] & 0x01) == 0) // Unload
-				if (rc == -EDEV_CLEANING_REQUIRED)
-					return true;
+			if ((cdb[4] & 0x01) == 0)	 // Unload
+				if (rc == -EDEV_CLEANING_REQUIRED) return true;
 			break;
 		case MODE_SELECT10:
-			if (rc == -EDEV_MODE_PARAMETER_ROUNDED)
-				return true;
+			if (rc == -EDEV_MODE_PARAMETER_ROUNDED) return true;
 			break;
 		case LOCATE16:
-			for (i=0; i<8; i++)
-				cdb_dest[i] = (uint64_t)cdb[i+4] & 0xff;
+			for (i = 0; i < 8; i++)
+				cdb_dest[i] = (uint64_t)cdb[i + 4] & 0xff;
 
-			destination = (cdb_dest[0] << 56) + (cdb_dest[1] << 48)
-			+ (cdb_dest[2] << 40) + (cdb_dest[3] << 32)
-			+ (cdb_dest[4] << 24) + (cdb_dest[5] << 16)
-			+ (cdb_dest[6] << 8) + cdb_dest[7];
+			destination = (cdb_dest[0] << 56) + (cdb_dest[1] << 48) + (cdb_dest[2] << 40) + (cdb_dest[3] << 32) +
+										(cdb_dest[4] << 24) + (cdb_dest[5] << 16) + (cdb_dest[6] << 8) + cdb_dest[7];
 
-			if (destination == TAPE_BLOCK_MAX && rc == -EDEV_EOD_DETECTED)
-				return true;
+			if (destination == TAPE_BLOCK_MAX && rc == -EDEV_EOD_DETECTED) return true;
 			break;
 	}
 
@@ -148,41 +136,41 @@ static bool is_expected_error(struct sg_tape *device, uint8_t *cdb, int32_t rc )
 }
 
 /* Global functions */
-#define HOST_OK          (0x00)
-#define HOST_NO_CONNECT  (0x01)
-#define HOST_BUS_BUSY    (0x02)
-#define HOST_TIME_OUT    (0x03)
-#define HOST_BAD_TARGET  (0x04)
-#define HOST_ABORT       (0x05)
-#define HOST_PARITY      (0x06)
-#define HOST_ERROR       (0x07)
-#define HOST_RESET       (0x08)
-#define HOST_BAD_INTR    (0x09)
+#define HOST_OK (0x00)
+#define HOST_NO_CONNECT (0x01)
+#define HOST_BUS_BUSY (0x02)
+#define HOST_TIME_OUT (0x03)
+#define HOST_BAD_TARGET (0x04)
+#define HOST_ABORT (0x05)
+#define HOST_PARITY (0x06)
+#define HOST_ERROR (0x07)
+#define HOST_RESET (0x08)
+#define HOST_BAD_INTR (0x09)
 #define HOST_PASSTHROUGH (0x0a)
-#define HOST_SOFT_ERROR  (0x0b)
-#define HOST_IMM_RETRY   (0x0c)
-#define HOST_REQUEUE     (0x0d)
-#define HOST_TRANS_DISR  (0x0e)
-#define HOST_TRANS_FAIL  (0x0f)
+#define HOST_SOFT_ERROR (0x0b)
+#define HOST_IMM_RETRY (0x0c)
+#define HOST_REQUEUE (0x0d)
+#define HOST_TRANS_DISR (0x0e)
+#define HOST_TRANS_FAIL (0x0f)
 #define HOST_TARGET_FAIL (0x10)
-#define HOST_NEXUS_FAIL  (0x11)
+#define HOST_NEXUS_FAIL (0x11)
 
-#define DRIVER_OK        (0x00)
-#define DRIVER_BUSY      (0x01)
-#define DRIVER_SOFT      (0x02)
-#define DRIVER_MEDIA     (0x03)
-#define DRIVER_ERROR     (0x04)
-#define DRIVER_INVALID   (0x05)
-#define DRIVER_TIMEOUT   (0x06)
-#define DRIVER_HARD      (0x07)
-#define DRIVER_SENSE     (0x08)
+#define DRIVER_OK (0x00)
+#define DRIVER_BUSY (0x01)
+#define DRIVER_SOFT (0x02)
+#define DRIVER_MEDIA (0x03)
+#define DRIVER_ERROR (0x04)
+#define DRIVER_INVALID (0x05)
+#define DRIVER_TIMEOUT (0x06)
+#define DRIVER_HARD (0x07)
+#define DRIVER_SENSE (0x08)
 
-#define NO_SUGGESTION    (0x00)
-#define SUGGEST_RETRY    (0x10)
-#define SUGGEST_ABORT    (0x20)
-#define SUGGEST_REMAP    (0x30)
-#define SUGGEST_DIE      (0x40)
-#define SUGGEST_SENSE    (0x80)
+#define NO_SUGGESTION (0x00)
+#define SUGGEST_RETRY (0x10)
+#define SUGGEST_ABORT (0x20)
+#define SUGGEST_REMAP (0x30)
+#define SUGGEST_DIE (0x40)
+#define SUGGEST_SENSE (0x80)
 
 int sg_issue_cdb_command(struct sg_tape *device, sg_io_hdr_t *req, char **msg)
 {
@@ -195,8 +183,7 @@ int sg_issue_cdb_command(struct sg_tape *device, sg_io_hdr_t *req, char **msg)
 	CHECK_ARG_NULL(req, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(msg, -LTFS_NULL_ARG);
 
-	if (device->fd < 0)
-		return -EDEV_NO_CONNECTION;
+	if (device->fd < 0) return -EDEV_NO_CONNECTION;
 
 start:
 	ret = ioctl(device->fd, SG_IO, req);
@@ -294,13 +281,12 @@ start:
 				break;
 		}
 
-		if (ret)
-			return ret;
+		if (ret) return ret;
 	}
 
 	if (req->driver_status) {
 		d_suggest = req->driver_status & 0xF0;
-		d_status  = req->driver_status & 0x0F;
+		d_status = req->driver_status & 0x0F;
 
 		switch (d_status) {
 			case DRIVER_OK:
@@ -342,24 +328,20 @@ start:
 				ret = -EDEV_DRIVER_ERROR;
 				break;
 			case SUGGEST_SENSE:
-				if (masked_status != SCSI_CHECK_CONDITION)
-					masked_status = SCSI_CHECK_CONDITION;
+				if (masked_status != SCSI_CHECK_CONDITION) masked_status = SCSI_CHECK_CONDITION;
 				break;
 			case SUGGEST_ABORT:
 			case SUGGEST_REMAP:
 			case SUGGEST_DIE:
 			default:
-				if (!ret)
-					ret = -EDEV_DRIVER_ERROR;
+				if (!ret) ret = -EDEV_DRIVER_ERROR;
 				break;
 		}
 
-		if (ret)
-			return ret;
+		if (ret) return ret;
 	}
 
-	if (masked_status != SCSI_CHECK_CONDITION)
-		masked_status = req->masked_status;
+	if (masked_status != SCSI_CHECK_CONDITION) masked_status = req->masked_status;
 
 	switch (masked_status) {
 		case SCSI_GOOD:
@@ -414,8 +396,7 @@ static int _inquiry_low(struct sg_tape *device, uint8_t page, unsigned char *buf
 
 	// Zero out the CDB and the result buffer
 	ret = init_sg_io_header(&req);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
 	memset(cdb, 0, sizeof(cdb));
 	memset(sense, 0, sizeof(sense));
@@ -423,21 +404,20 @@ static int _inquiry_low(struct sg_tape *device, uint8_t page, unsigned char *buf
 
 	/* Build CDB */
 	cdb[0] = INQUIRY;
-	if(page)
-		cdb[1] = 0x01;
+	if (page) cdb[1] = 0x01;
 	cdb[2] = page;
 	ltfs_u16tobe(cdb + 3, size);
 
 	/* Build request */
 	req.dxfer_direction = SCSI_FROM_TARGET_TO_INITIATOR;
-	req.cmd_len         = sizeof(cdb);
-	req.mx_sb_len       = sizeof(sense);
-	req.dxfer_len       = size;
-	req.dxferp          = buf;
-	req.cmdp            = cdb;
-	req.sbp             = sense;
-	req.timeout         = SGConversion(10);
-	req.usr_ptr         = (void *)cmd_desc;
+	req.cmd_len = sizeof(cdb);
+	req.mx_sb_len = sizeof(sense);
+	req.dxfer_len = size;
+	req.dxferp = buf;
+	req.cmdp = cdb;
+	req.sbp = sense;
+	req.timeout = SGConversion(10);
+	req.usr_ptr = (void *)cmd_desc;
 
 	ret = sg_issue_cdb_command(device, &req, &msg);
 
@@ -452,7 +432,7 @@ int sg_get_drive_identifier(struct sg_tape *device, scsi_device_identifier *id_d
 	CHECK_ARG_NULL(id_data, -LTFS_NULL_ARG);
 
 	ret = _inquiry_low(device, 0, inquiry_buf, MAX_INQ_LEN);
-	if( ret < 0 ) {
+	if (ret < 0) {
 		ltfsmsg(LTFS_INFO, 30206I, ret);
 		return ret;
 	}
@@ -464,17 +444,17 @@ int sg_get_drive_identifier(struct sg_tape *device, scsi_device_identifier *id_d
 		return -EDEV_DEVICE_UNSUPPORTABLE;
 	}
 
-	strncpy(id_data->vendor_id,   (char*)(&(inquiry_buf[8])),  VENDOR_ID_LENGTH);
-	strncpy(id_data->product_id,  (char*)(&(inquiry_buf[16])), PRODUCT_ID_LENGTH);
-	strncpy(id_data->product_rev, (char*)(&(inquiry_buf[32])), PRODUCT_REV_LENGTH);
+	strncpy(id_data->vendor_id, (char *)(&(inquiry_buf[8])), VENDOR_ID_LENGTH);
+	strncpy(id_data->product_id, (char *)(&(inquiry_buf[16])), PRODUCT_ID_LENGTH);
+	strncpy(id_data->product_rev, (char *)(&(inquiry_buf[32])), PRODUCT_REV_LENGTH);
 
 	ret = _inquiry_low(device, 0x80, inquiry_buf, MAX_INQ_LEN);
-	if( ret < 0 ) {
+	if (ret < 0) {
 		ltfsmsg(LTFS_INFO, 30206I, ret);
 		return ret;
 	}
 
-	strncpy(id_data->unit_serial, (char*)(&(inquiry_buf[4])), inquiry_buf[3]);
+	strncpy(id_data->unit_serial, (char *)(&(inquiry_buf[4])), inquiry_buf[3]);
 
 	return 0;
 }

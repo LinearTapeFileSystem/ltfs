@@ -51,13 +51,13 @@
 *************************************************************************************
 */
 
-#include "ltfs.h"
-#include "ltfs_internal.h"
+#include "arch/time_internal.h"
+#include "dcache.h"
 #include "fs.h"
 #include "index_criteria.h"
-#include "arch/time_internal.h"
+#include "ltfs.h"
+#include "ltfs_internal.h"
 #include "tape.h"
-#include "dcache.h"
 
 int ltfs_fsraw_open(const char *path, bool open_write, struct dentry **d, struct ltfs_volume *vol)
 {
@@ -69,8 +69,7 @@ int ltfs_fsraw_open(const char *path, bool open_write, struct dentry **d, struct
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	ret = ltfs_get_volume_lock(false, vol);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
 	if (dcache_initialized(vol))
 		ret = dcache_open(path, &dtmp, vol);
@@ -78,16 +77,15 @@ int ltfs_fsraw_open(const char *path, bool open_write, struct dentry **d, struct
 		ret = fs_path_lookup(path, 0, &dtmp, vol->index);
 	if (ret < 0) {
 		/* Print message only if the error code is an unexpected one */
-		if (ret != -LTFS_NO_DENTRY && ret != -LTFS_NAMETOOLONG)
-			ltfsmsg(LTFS_ERR, 11040E, ret);
+		if (ret != -LTFS_NO_DENTRY && ret != -LTFS_NAMETOOLONG) ltfsmsg(LTFS_ERR, 11040E, ret);
 		releaseread_mrsw(&vol->lock);
 		return ret;
 	}
 
-	if (open_write && ! dtmp->isdir) {
+	if (open_write && !dtmp->isdir) {
 		uint64_t max_filesize = index_criteria_get_max_filesize(vol);
 		acquirewrite_mrsw(&dtmp->meta_lock);
-		if (! dtmp->matches_name_criteria && max_filesize > 0 && dtmp->size <= max_filesize)
+		if (!dtmp->matches_name_criteria && max_filesize > 0 && dtmp->size <= max_filesize)
 			dtmp->matches_name_criteria = index_criteria_match(dtmp, vol);
 		releasewrite_mrsw(&dtmp->meta_lock);
 	}
@@ -113,8 +111,12 @@ int ltfs_fsraw_close(struct dentry *d)
  * to a read lock on exit.
  * It takes the tape device lock internally, so the caller must not hold any dentry meta lock.
  */
-int _ltfs_fsraw_write_data_unlocked(char partition, const char *buf, size_t count, uint64_t repetitions,
-	tape_block_t *startblock, struct ltfs_volume *vol)
+int _ltfs_fsraw_write_data_unlocked(char partition,
+																		const char *buf,
+																		size_t count,
+																		uint64_t repetitions,
+																		tape_block_t *startblock,
+																		struct ltfs_volume *vol)
 {
 	int ret;
 	uint64_t blocksize, rep_count;
@@ -179,8 +181,7 @@ int _ltfs_fsraw_write_data_unlocked(char partition, const char *buf, size_t coun
 		vol->ip_index_file_end = false;
 	else { /* partition == ltfs_dp_id(vol) */
 		vol->dp_index_file_end = false;
-		if (!vol->first_locate.tv_sec && !vol->first_locate.tv_nsec)
-			is_first_dp_locate = true;
+		if (!vol->first_locate.tv_sec && !vol->first_locate.tv_nsec) is_first_dp_locate = true;
 	}
 
 	/* Write lock on the volume is not needed past this point */
@@ -210,8 +211,7 @@ int _ltfs_fsraw_write_data_unlocked(char partition, const char *buf, size_t coun
 	}
 
 	/* Tell the caller about the first block written */
-	if (startblock)
-		*startblock = start.block;
+	if (startblock) *startblock = start.block;
 
 	/* write blocks to tape */
 	for (rep_count = 0; rep_count < repetitions; ++rep_count) {
@@ -239,8 +239,12 @@ out_unlock:
 	return ret;
 }
 
-int ltfs_fsraw_write_data(char partition, const char *buf, size_t count, uint64_t repetitions,
-	tape_block_t *startblock, struct ltfs_volume *vol)
+int ltfs_fsraw_write_data(char partition,
+													const char *buf,
+													size_t count,
+													uint64_t repetitions,
+													tape_block_t *startblock,
+													struct ltfs_volume *vol)
 {
 	int ret;
 
@@ -249,14 +253,11 @@ int ltfs_fsraw_write_data(char partition, const char *buf, size_t count, uint64_
 
 start:
 	ret = ltfs_get_volume_lock(true, vol);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 	ret = _ltfs_fsraw_write_data_unlocked(partition, buf, count, repetitions, startblock, vol);
 	if (ret == -LTFS_DEVICE_FENCED || NEED_REVAL(ret)) {
-		ret = (ret == -LTFS_DEVICE_FENCED) ?
-			ltfs_wait_revalidation(vol) : ltfs_revalidate(false, vol);
-		if (ret == 0)
-			goto start;
+		ret = (ret == -LTFS_DEVICE_FENCED) ? ltfs_wait_revalidation(vol) : ltfs_revalidate(false, vol);
+		if (ret == 0) goto start;
 	} else if (IS_UNEXPECTED_MOVE(ret)) {
 		vol->reval = -LTFS_REVAL_FAILED;
 		releaseread_mrsw(&vol->lock);
@@ -269,8 +270,10 @@ start:
  * Non-locking version of ltfs_fsraw_add_extent.
  * The caller should hold a read lock on vol->lock and a write lock on d->contents_lock.
  */
-int _ltfs_fsraw_add_extent_unlocked(struct dentry *d, struct extent_info *ext, bool update_time,
-	struct ltfs_volume *vol)
+int _ltfs_fsraw_add_extent_unlocked(struct dentry *d,
+																		struct extent_info *ext,
+																		bool update_time,
+																		struct ltfs_volume *vol)
 {
 	struct extent_info *entry, *preventry;
 	struct extent_info *ext_copy, *splitentry;
@@ -285,15 +288,16 @@ int _ltfs_fsraw_add_extent_unlocked(struct dentry *d, struct extent_info *ext, b
 
 	/* Copy the input extent now to avoid failing after the extent list has already been updated */
 	ext_copy = malloc(sizeof(struct extent_info));
-	if (! ext_copy) {
+	if (!ext_copy) {
 		ltfsmsg(LTFS_ERR, 10001E, "ltfs_append_extent_unlocked: extent copy");
 		return -LTFS_NO_MEMORY;
 	}
 	*ext_copy = *ext;
 
 	/* Update the extent list */
-	if (! TAILQ_EMPTY(&d->extentlist)) {
-		TAILQ_FOREACH_REVERSE_SAFE(entry, &d->extentlist, extent_struct, list, preventry) {
+	if (!TAILQ_EMPTY(&d->extentlist)) {
+		TAILQ_FOREACH_REVERSE_SAFE(entry, &d->extentlist, extent_struct, list, preventry)
+		{
 			entry_fileoffset_end = entry->fileoffset + entry->bytecount;
 			entry_byteoffset_end = entry->byteoffset + entry->bytecount;
 			entry_blockcount = entry_byteoffset_end / blocksize;
@@ -318,8 +322,7 @@ int _ltfs_fsraw_add_extent_unlocked(struct dentry *d, struct extent_info *ext, b
 					entry_byteoffset_end = entry->byteoffset + entry->bytecount;
 					entry_blockcount = entry_byteoffset_end / blocksize;
 				}
-			} else if (ext->fileoffset > entry->fileoffset &&
-				ext->fileoffset < entry_fileoffset_end) {
+			} else if (ext->fileoffset > entry->fileoffset && ext->fileoffset < entry_fileoffset_end) {
 				if (ext_fileoffset_end >= entry_fileoffset_end) {
 					/* Truncate entry from its end */
 					entry->bytecount = ext->fileoffset - entry->fileoffset;
@@ -330,7 +333,7 @@ int _ltfs_fsraw_add_extent_unlocked(struct dentry *d, struct extent_info *ext, b
 				} else {
 					/* Split entry */
 					splitentry = malloc(sizeof(struct extent_info));
-					if (! splitentry) {
+					if (!splitentry) {
 						ltfsmsg(LTFS_ERR, 10001E, "ltfs_append_extent_unlocked: splitentry");
 						free(ext_copy);
 						return -LTFS_NO_MEMORY;
@@ -340,8 +343,7 @@ int _ltfs_fsraw_add_extent_unlocked(struct dentry *d, struct extent_info *ext, b
 					fileoffset_diff = ext_fileoffset_end - entry->fileoffset;
 					entry_byteoffset_mod = fileoffset_diff + entry->byteoffset;
 					splitentry->start.partition = entry->start.partition;
-					splitentry->start.block = entry->start.block +
-						(entry_byteoffset_mod / blocksize);
+					splitentry->start.block = entry->start.block + (entry_byteoffset_mod / blocksize);
 					splitentry->byteoffset = entry_byteoffset_mod % blocksize;
 					splitentry->bytecount = entry->bytecount - fileoffset_diff;
 					splitentry->fileoffset = ext_fileoffset_end;
@@ -356,11 +358,9 @@ int _ltfs_fsraw_add_extent_unlocked(struct dentry *d, struct extent_info *ext, b
 			}
 
 			/* Process ext's contents by appending to entry or inserting ext after entry */
-			if (entry && ext->fileoffset == entry_fileoffset_end &&
-				entry->start.partition == ext->start.partition &&
-				entry_byteoffset_end % blocksize == 0 &&
-				entry->start.block + entry_blockcount == ext->start.block &&
-				ext->byteoffset == 0) {
+			if (entry && ext->fileoffset == entry_fileoffset_end && entry->start.partition == ext->start.partition &&
+					entry_byteoffset_end % blocksize == 0 && entry->start.block + entry_blockcount == ext->start.block &&
+					ext->byteoffset == 0) {
 				/* Add ext's bytes to entry */
 				entry->bytecount += ext->bytecount;
 				realsize_new += ext->bytecount;
@@ -377,7 +377,7 @@ int _ltfs_fsraw_add_extent_unlocked(struct dentry *d, struct extent_info *ext, b
 		}
 	}
 
-	if (! ext_used) {
+	if (!ext_used) {
 		TAILQ_INSERT_HEAD(&d->extentlist, ext_copy, list);
 		realsize_new += ext->bytecount;
 	} else if (free_ext)
@@ -385,8 +385,7 @@ int _ltfs_fsraw_add_extent_unlocked(struct dentry *d, struct extent_info *ext, b
 
 	/* Update file size and times */
 	acquirewrite_mrsw(&d->meta_lock);
-	if (ext_fileoffset_end > d->size)
-		d->size = ext_fileoffset_end;
+	if (ext_fileoffset_end > d->size) d->size = ext_fileoffset_end;
 	d->realsize = realsize_new;
 	if (update_time) {
 		get_current_timespec(&d->modify_time);
@@ -406,8 +405,7 @@ int _ltfs_fsraw_add_extent_unlocked(struct dentry *d, struct extent_info *ext, b
 	return 0;
 }
 
-int ltfs_fsraw_add_extent(struct dentry *d, struct extent_info *ext, bool update_time,
-	struct ltfs_volume *vol)
+int ltfs_fsraw_add_extent(struct dentry *d, struct extent_info *ext, bool update_time, struct ltfs_volume *vol)
 {
 	int ret;
 
@@ -418,51 +416,50 @@ int ltfs_fsraw_add_extent(struct dentry *d, struct extent_info *ext, bool update
 	/* This function is not called until blocks are already on the tape, so the
 	 * out of space condition is not a problem. */
 	ret = ltfs_get_partition_readonly(ltfs_ip_id(vol), vol);
-	if (ret < 0 && ret != -LTFS_NO_SPACE && ret != -LTFS_LESS_SPACE)
-		return ret;
+	if (ret < 0 && ret != -LTFS_NO_SPACE && ret != -LTFS_LESS_SPACE) return ret;
 	ret = ltfs_get_partition_readonly(ltfs_dp_id(vol), vol);
-	if (ret < 0 && ret != -LTFS_NO_SPACE && ret != -LTFS_LESS_SPACE)
-		return ret;
+	if (ret < 0 && ret != -LTFS_NO_SPACE && ret != -LTFS_LESS_SPACE) return ret;
 
 	ret = ltfs_get_volume_lock(false, vol);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
 	acquirewrite_mrsw(&d->contents_lock);
 	ret = _ltfs_fsraw_add_extent_unlocked(d, ext, update_time, vol);
 	releasewrite_mrsw(&d->contents_lock);
 
-	if (dcache_initialized(vol))
-		ret = dcache_flush(d, FLUSH_EXTENT_LIST, vol);
+	if (dcache_initialized(vol)) ret = dcache_flush(d, FLUSH_EXTENT_LIST, vol);
 
 	releaseread_mrsw(&vol->lock);
 
 	return ret;
 }
 
-int ltfs_fsraw_cleanup_extent(struct dentry *d, struct tc_position err_pos, unsigned long blocksize, struct ltfs_volume *vol)
+int ltfs_fsraw_cleanup_extent(struct dentry *d,
+															struct tc_position err_pos,
+															unsigned long blocksize,
+															struct ltfs_volume *vol)
 {
 	int ret = 0;
-	struct name_list   *entry, *tmp;
+	struct name_list *entry, *tmp;
 	struct extent_info *ext, *preventry;
-	struct tc_position extent_last = {0, 0, UINT32_MAX, false, false};
+	struct tc_position extent_last = { 0, 0, UINT32_MAX, false, false };
 
 	if (HASH_COUNT(d->child_list) != 0) {
-		HASH_ITER(hh, d->child_list, entry, tmp) {
+		HASH_ITER(hh, d->child_list, entry, tmp)
+		{
 			if (entry->d->isdir) {
 				ret = ltfs_fsraw_cleanup_extent(entry->d, err_pos, blocksize, vol);
-			}
-			else {
-                TAILQ_FOREACH_REVERSE_SAFE(ext, &entry->d->extentlist, extent_struct, list, preventry) {
+			} else {
+				TAILQ_FOREACH_REVERSE_SAFE(ext, &entry->d->extentlist, extent_struct, list, preventry)
+				{
 					if (ext->start.block && ext->bytecount) {
 						extent_last.partition = ltfs_part_id2num(ext->start.partition, vol);
 						/* Calculate the last block of this extent */
 						extent_last.block = ext->start.block + (ext->bytecount / blocksize);
-						if ( (ext->bytecount % blocksize) == 0 )
-							extent_last.block--;
+						if ((ext->bytecount % blocksize) == 0) extent_last.block--;
 					} else {
 						extent_last.partition = UINT32_MAX;
-						extent_last.block     = 0;
+						extent_last.block = 0;
 					}
 
 					/*
@@ -470,22 +467,23 @@ int ltfs_fsraw_cleanup_extent(struct dentry *d, struct tc_position err_pos, unsi
 					 * but not transferred to the medium.
 					 * It means position (err_pos-1) is the last block on the medium.
 					 */
-					if ( extent_last.partition == err_pos.partition && err_pos.block <= extent_last.block ) {
-
-						ltfsmsg(LTFS_INFO, 11334I, entry->name, (unsigned long long)ext->start.block, (unsigned long long)ext->bytecount);
+					if (extent_last.partition == err_pos.partition && err_pos.block <= extent_last.block) {
+						ltfsmsg(LTFS_INFO,
+										11334I,
+										entry->name,
+										(unsigned long long)ext->start.block,
+										(unsigned long long)ext->bytecount);
 
 						ret = ltfs_get_volume_lock(false, vol);
-						if (ret < 0)
-							return ret;
+						if (ret < 0) return ret;
 
 						acquirewrite_mrsw(&d->contents_lock);
-                        entry->d->size -= ext->bytecount;
+						entry->d->size -= ext->bytecount;
 						TAILQ_REMOVE(&entry->d->extentlist, ext, list);
 						free(ext);
 						releasewrite_mrsw(&d->contents_lock);
 
-						if (dcache_initialized(vol))
-							ret = dcache_flush(d, FLUSH_EXTENT_LIST, vol);
+						if (dcache_initialized(vol)) ret = dcache_flush(d, FLUSH_EXTENT_LIST, vol);
 
 						releaseread_mrsw(&vol->lock);
 					}
@@ -496,8 +494,13 @@ int ltfs_fsraw_cleanup_extent(struct dentry *d, struct tc_position err_pos, unsi
 	return ret;
 }
 
-int ltfs_fsraw_write(struct dentry *d, const char *buf, size_t count, off_t offset, char partition,
-	bool update_time, struct ltfs_volume *vol)
+int ltfs_fsraw_write(struct dentry *d,
+										 const char *buf,
+										 size_t count,
+										 off_t offset,
+										 char partition,
+										 bool update_time,
+										 struct ltfs_volume *vol)
 {
 	int ret;
 	struct extent_info tmpext;
@@ -512,14 +515,11 @@ int ltfs_fsraw_write(struct dentry *d, const char *buf, size_t count, off_t offs
 	/* Take locks and write data to the medium */
 start:
 	ret = ltfs_get_volume_lock(true, vol);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 	ret = _ltfs_fsraw_write_data_unlocked(partition, buf, count, 1, &logical_start.block, vol);
 	if (ret == -LTFS_DEVICE_FENCED || NEED_REVAL(ret)) {
-		ret = (ret == -LTFS_DEVICE_FENCED) ?
-			ltfs_wait_revalidation(vol) : ltfs_revalidate(false, vol);
-		if (ret == 0)
-			goto start;
+		ret = (ret == -LTFS_DEVICE_FENCED) ? ltfs_wait_revalidation(vol) : ltfs_revalidate(false, vol);
+		if (ret == 0) goto start;
 		return ret;
 	} else if (IS_UNEXPECTED_MOVE(ret)) {
 		vol->reval = -LTFS_REVAL_FAILED;
@@ -545,8 +545,7 @@ start:
 	return ret;
 }
 
-ssize_t ltfs_fsraw_read(struct dentry *d, char *buf, size_t count, off_t offset,
-	struct ltfs_volume *vol)
+ssize_t ltfs_fsraw_read(struct dentry *d, char *buf, size_t count, off_t offset, struct ltfs_volume *vol)
 {
 	int ret;
 	uint64_t next_off, last_off;
@@ -566,15 +565,13 @@ ssize_t ltfs_fsraw_read(struct dentry *d, char *buf, size_t count, off_t offset,
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(buf, -LTFS_NULL_ARG);
 
-	if (count == 0)
-		return 0;
+	if (count == 0) return 0;
 
 	/* Lock the index, dentry and device */
 start:
 	read_count = 0;
 	ret = ltfs_get_volume_lock(false, vol);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 	acquireread_mrsw(&d->contents_lock);
 	ret = tape_device_lock(vol->device);
 	if (ret == -LTFS_DEVICE_FENCED) {
@@ -592,9 +589,9 @@ start:
 	}
 
 	/* allocate the last block cache if necessary */
-	if (! vol->last_block) {
+	if (!vol->last_block) {
 		vol->last_block = malloc(vol->label->blocksize);
-		if (! vol->last_block) {
+		if (!vol->last_block) {
 			ltfsmsg(LTFS_ERR, 10001E, "ltfs_fsraw_read: block cache");
 			ret = -LTFS_NO_MEMORY;
 			goto out_unlock;
@@ -605,9 +602,9 @@ start:
 	next_off = (uint64_t)offset;
 	last_off = (uint64_t)offset + count;
 
-	TAILQ_FOREACH(entry, &d->extentlist, list) {
-		if (read_count == count)
-			break;
+	TAILQ_FOREACH(entry, &d->extentlist, list)
+	{
+		if (read_count == count) break;
 
 		entry_fileoffset_end = entry->fileoffset + entry->bytecount;
 
@@ -634,17 +631,14 @@ start:
 
 			/* Compute target position */
 			seekpos.partition = ltfs_part_id2num(entry->start.partition, vol);
-			seekpos.block = entry->start.block +
-				(next_off - entry->fileoffset + entry->byteoffset) / blocksize;
+			seekpos.block = entry->start.block + (next_off - entry->fileoffset + entry->byteoffset) / blocksize;
 
 			/* Seek if required */
 			if ((curpos.partition != seekpos.partition || curpos.block != seekpos.block) &&
-				! (curpos.partition == seekpos.partition && curpos.block == seekpos.block + 1 &&
-				   entry->start.partition == vol->last_pos.partition &&
-				   seekpos.block == vol->last_pos.block)) {
-
+					!(curpos.partition == seekpos.partition && curpos.block == seekpos.block + 1 &&
+						entry->start.partition == vol->last_pos.partition && seekpos.block == vol->last_pos.block)) {
 				if (!vol->first_locate.tv_sec && !vol->first_locate.tv_nsec &&
-					(seekpos.partition == (uint32_t)ltfs_dp_id(vol))) {
+						(seekpos.partition == (uint32_t)ltfs_dp_id(vol))) {
 					get_current_timespec(&ts_start);
 					is_first_dp_locate = true;
 					vol->first_locate.tv_sec = UINT64_MAX;
@@ -663,19 +657,16 @@ start:
 			}
 
 			/* Read from the extent until end of extent or output buffer full */
-			firstbyte = entry->fileoffset - entry->byteoffset +
-				(seekpos.block - entry->start.block) * blocksize;
+			firstbyte = entry->fileoffset - entry->byteoffset + (seekpos.block - entry->start.block) * blocksize;
 			lastbyte = firstbyte;
 			while (entry_fileoffset_end > next_off && read_count < count) {
 				lastbyte += blocksize;
-				if (entry_fileoffset_end < lastbyte)
-					lastbyte = entry_fileoffset_end;
+				if (entry_fileoffset_end < lastbyte) lastbyte = entry_fileoffset_end;
 				blockbytes = lastbyte - firstbyte;
 
 				/* Read this block into a temp buffer or return the existing contents */
-				if (entry->start.partition == vol->last_pos.partition &&
-					seekpos.block == vol->last_pos.block &&
-					(seekpos.partition == curpos.partition && seekpos.block + 1 == curpos.block)) {
+				if (entry->start.partition == vol->last_pos.partition && seekpos.block == vol->last_pos.block &&
+						(seekpos.partition == curpos.partition && seekpos.block + 1 == curpos.block)) {
 					if (vol->last_size < blockbytes) {
 						ltfsmsg(LTFS_ERR, 11087E, (unsigned int)blockbytes, vol->last_size);
 						ret = -LTFS_SMALL_BLOCK;
@@ -684,17 +675,15 @@ start:
 
 				} else {
 					if (blocksize == blockbytes)
-						nread = tape_read(vol->device, vol->last_block, blocksize, false,
-							vol->kmi_handle);
+						nread = tape_read(vol->device, vol->last_block, blocksize, false, vol->kmi_handle);
 					else
-						nread = tape_read(vol->device, vol->last_block, blocksize, true,
-							vol->kmi_handle);
+						nread = tape_read(vol->device, vol->last_block, blocksize, true, vol->kmi_handle);
 
 					if (nread < 0) {
 						ret = nread;
 						ltfsmsg(LTFS_ERR, 11088E, ret);
 						goto out_unlock;
-					} else if ((size_t) nread < blockbytes) {
+					} else if ((size_t)nread < blockbytes) {
 						ltfsmsg(LTFS_ERR, 11089E, (unsigned int)blockbytes, (unsigned int)nread);
 						ret = -LTFS_SMALL_BLOCK;
 						goto out_unlock;
@@ -738,8 +727,7 @@ out_unlock:
 		tape_start_fence(vol->device);
 		tape_device_unlock(vol->device);
 		ret = ltfs_revalidate(false, vol);
-		if (ret == 0)
-			goto start;
+		if (ret == 0) goto start;
 	} else if (IS_UNEXPECTED_MOVE(ret)) {
 		vol->reval = -LTFS_REVAL_FAILED;
 		tape_device_unlock(vol->device);
@@ -749,8 +737,7 @@ out_unlock:
 		releaseread_mrsw(&vol->lock);
 	}
 
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 	return read_count;
 }
 
@@ -764,15 +751,15 @@ int ltfs_fsraw_truncate(struct dentry *d, off_t length, struct ltfs_volume *vol)
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	ret = ltfs_get_volume_lock(false, vol);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 	acquirewrite_mrsw(&d->contents_lock);
 
 	new_realsize = d->realsize;
 
 	/* Truncate the extent list if necessary */
-	if (ulength < d->size && ! TAILQ_EMPTY(&d->extentlist)) {
-		TAILQ_FOREACH_REVERSE_SAFE(entry, &d->extentlist, extent_struct, list, preventry) {
+	if (ulength < d->size && !TAILQ_EMPTY(&d->extentlist)) {
+		TAILQ_FOREACH_REVERSE_SAFE(entry, &d->extentlist, extent_struct, list, preventry)
+		{
 			entry_fileoffset_last = entry->fileoffset + entry->bytecount;
 			if (entry->fileoffset >= ulength || ulength == 0) {
 				/* This extent is full past the new EOF */
@@ -812,8 +799,7 @@ struct dentry *ltfs_fsraw_get_dentry(struct dentry *d, struct ltfs_volume *vol)
 	CHECK_ARG_NULL(vol, NULL);
 
 	ret = ltfs_get_volume_lock(false, vol);
-	if (ret < 0)
-		return NULL;
+	if (ret < 0) return NULL;
 	if (dcache_initialized(vol)) {
 		dcache_get_dentry(d, vol);
 	} else {
@@ -827,10 +813,10 @@ struct dentry *ltfs_fsraw_get_dentry(struct dentry *d, struct ltfs_volume *vol)
 
 void ltfs_fsraw_put_dentry(struct dentry *d, struct ltfs_volume *vol)
 {
-	if (! d) {
+	if (!d) {
 		ltfsmsg(LTFS_WARN, 10006W, "d", __FUNCTION__);
 		return;
-	} else if (! vol) {
+	} else if (!vol) {
 		ltfsmsg(LTFS_WARN, 10006W, "vol", __FUNCTION__);
 		return;
 	}

@@ -47,32 +47,31 @@
 *************************************************************************************
 */
 
-#include <stdio.h>
-#include <errno.h>
 #include "libltfs/kmi_ops.h"
 #include "libltfs/ltfs_fuse_version.h"
+#include <errno.h>
+#include <stdio.h>
 
 #include "key_format_ltfs.h"
 #include <fuse.h>
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
+#	include "arch/win/win_util.h"
 
 #endif
 
-struct kmi_flatfile_options_data {
-	unsigned char *dk_list;        /**< DK and DKi pairs' list */
+struct kmi_flatfile_options_data
+{
+	unsigned char *dk_list;				 /**< DK and DKi pairs' list */
 	unsigned char *dki_for_format; /**< DKi to get DK for formatting a volume */
 };
 
 static struct kmi_flatfile_options_data priv;
 
-#define KMI_FLATFILE_OPT(templ,offset,value) { templ, offsetof(struct kmi_flatfile_options_data, offset), value }
+#define KMI_FLATFILE_OPT(templ, offset, value) { templ, offsetof(struct kmi_flatfile_options_data, offset), value }
 
-static struct fuse_opt kmi_flatfile_options[] = {
-	KMI_FLATFILE_OPT("kmi_dk_list=%s",        dk_list,       0),
-	KMI_FLATFILE_OPT("kmi_dki_for_format=%s", dki_for_format, 0),
-	FUSE_OPT_END
-};
+static struct fuse_opt kmi_flatfile_options[] = { KMI_FLATFILE_OPT("kmi_dk_list=%s", dk_list, 0),
+																									KMI_FLATFILE_OPT("kmi_dki_for_format=%s", dki_for_format, 0),
+																									FUSE_OPT_END };
 
 /**
  * Convert original dk_list to dk_list on simple plug-in format
@@ -80,25 +79,26 @@ static struct fuse_opt kmi_flatfile_options[] = {
  * @dk_list dk_list on simple plug-in format
  * @return 0 on success or a negative value on error.
  */
-static int convert_option(const unsigned char * const path, unsigned char **dk_list)
+static int convert_option(const unsigned char *const path, unsigned char **dk_list)
 {
 	CHECK_ARG_NULL(dk_list, -LTFS_NULL_ARG);
 
-	struct {
-		const char * const name;
+	struct
+	{
+		const char *const name;
 		const unsigned char separetor;
 	} tag[2] = { { "DK=", '/' }, { "DKi=", ':' } };
 	int ret = 0;
 	int dk_list_length = 1; /* for '\0' at the end of string */
 	int dk_list_offset = 0;
 	*dk_list = calloc(dk_list_length, sizeof(unsigned char));
-	if (! *dk_list) {
+	if (!*dk_list) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
 
-	FILE *fp = fopen((const char *) path, "r");
-	if (! fp) {
+	FILE *fp = fopen((const char *)path, "r");
+	if (!fp) {
 		ret = -errno;
 		ltfsmsg(LTFS_ERR, 15553E, path, ret);
 		return ret;
@@ -108,9 +108,8 @@ static int convert_option(const unsigned char * const path, unsigned char **dk_l
 	unsigned int num_of_lines = 0; /* number of lines which has a valid info */
 	for (num_of_lines = 0; fgets(buf, sizeof(buf), fp); ++num_of_lines) {
 		const int i = num_of_lines % 2;
-		if (! strncmp(buf, tag[i].name, strlen(tag[i].name)) && strlen(buf) >= strlen(tag[i].name)) {
-			if (buf[strlen(buf) - 1] == '\n')
-				buf[strlen(buf) - 1] = '\0';
+		if (!strncmp(buf, tag[i].name, strlen(tag[i].name)) && strlen(buf) >= strlen(tag[i].name)) {
+			if (buf[strlen(buf) - 1] == '\n') buf[strlen(buf) - 1] = '\0';
 
 			if (num_of_lines == 0)
 				dk_list_length += strlen(buf) - strlen(tag[i].name);
@@ -118,7 +117,7 @@ static int convert_option(const unsigned char * const path, unsigned char **dk_l
 				dk_list_length += SEPARATOR_LENGTH + strlen(buf) - strlen(tag[i].name);
 
 			void *new_dk_list = realloc(*dk_list, dk_list_length);
-			if (! new_dk_list) {
+			if (!new_dk_list) {
 				ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 				fclose(fp);
 				return -LTFS_NO_MEMORY;
@@ -159,11 +158,10 @@ static int convert_option(const unsigned char * const path, unsigned char **dk_l
  */
 void *flatfile_init(struct ltfs_volume *vol)
 {
-	void* km;
+	void *km;
 
 	km = key_format_ltfs_init(vol);
-	if (km)
-		ltfsmsg(LTFS_DEBUG, 15550D);
+	if (km) ltfsmsg(LTFS_DEBUG, 15550D);
 
 	return km;
 }
@@ -173,7 +171,7 @@ void *flatfile_init(struct ltfs_volume *vol)
  * @param kmi_handle the key manager interface handle
  * @return 0 on success or a negative value on error.
  */
-int flatfile_destroy(void * const kmi_handle)
+int flatfile_destroy(void *const kmi_handle)
 {
 	int ret;
 
@@ -190,7 +188,7 @@ int flatfile_destroy(void * const kmi_handle)
  * @param kmi_handle the key manager interface handle
  * @return 0 on success or a negative value on error.
  */
-int flatfile_get_key(unsigned char **keyalias, unsigned char **key, void * const kmi_handle)
+int flatfile_get_key(unsigned char **keyalias, unsigned char **key, void *const kmi_handle)
 {
 	static unsigned char *dk_list = NULL; /* dk_list on simple plug-in format */
 
@@ -207,7 +205,7 @@ int flatfile_get_key(unsigned char **keyalias, unsigned char **key, void * const
 
 	const int ret = key_format_ltfs_get_key(keyalias, key, kmi_handle, dk_list, priv.dki_for_format);
 
-/*
+	/*
  *  Cache DK and DKi for revalidation at tape drive POR
  *	if (dk_list) {
  *		free(dk_list);
@@ -240,7 +238,7 @@ static int null_parser(void *priv, const char *arg, int key, struct fuse_args *o
  */
 int flatfile_parse_opts(void *opt_args)
 {
-	struct fuse_args *args = (struct fuse_args *) opt_args;
+	struct fuse_args *args = (struct fuse_args *)opt_args;
 	int ret;
 
 #ifdef mingw_PLATFORM
@@ -262,11 +260,11 @@ int flatfile_parse_opts(void *opt_args)
 }
 
 struct kmi_ops flatfile_ops = {
-	.init         = flatfile_init,
-	.destroy      = flatfile_destroy,
-	.get_key      = flatfile_get_key,
+	.init = flatfile_init,
+	.destroy = flatfile_destroy,
+	.get_key = flatfile_get_key,
 	.help_message = flatfile_help_message,
-	.parse_opts   = flatfile_parse_opts,
+	.parse_opts = flatfile_parse_opts,
 };
 
 struct kmi_ops *kmi_get_ops(void)
@@ -278,7 +276,7 @@ struct kmi_ops *kmi_get_ops(void)
 extern char kmi_flatfile_dat[];
 #endif
 
-const char *kmi_get_message_bundle_name(void ** const message_data)
+const char *kmi_get_message_bundle_name(void **const message_data)
 {
 #ifndef mingw_PLATFORM
 	*message_data = kmi_flatfile_dat;

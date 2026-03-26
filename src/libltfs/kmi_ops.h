@@ -55,15 +55,16 @@
  * kmi_ops structure.
  * Defines operations that must be supported by the key manager interface plugins.
  */
-struct kmi_ops {
-	void    *(*init)(struct ltfs_volume *vol);
-	int      (*destroy)(void * const kmi_handle);
-	int      (*get_key)(unsigned char ** const keyalias, unsigned char ** const key, void * const kmi_handle);
-	int      (*help_message)(void);
-	int      (*parse_opts)(void *opt_args);
+struct kmi_ops
+{
+	void *(*init)(struct ltfs_volume *vol);
+	int (*destroy)(void *const kmi_handle);
+	int (*get_key)(unsigned char **const keyalias, unsigned char **const key, void *const kmi_handle);
+	int (*help_message)(void);
+	int (*parse_opts)(void *opt_args);
 };
 
 struct kmi_ops *kmi_get_ops(void);
-const char *kmi_get_message_bundle_name(void ** const message_data);
+const char *kmi_get_message_bundle_name(void **const message_data);
 
 #endif /* __kmi_ops_h */

@@ -49,25 +49,32 @@
 
 #ifndef __key_format_ltfs_h
 #define __key_format_ltfs_h
+#include "libltfs/ltfs.h"
+#include <stdlib.h>
 
 #define DK_LENGTH 32
 #define DKI_LENGTH 12
 #define DKI_ASCII_LENGTH 3
-#define	SEPARATOR_LENGTH 1 /* length of ':' and '/' */
+#define SEPARATOR_LENGTH 1 /* length of ':' and '/' */
 
-struct key {
-	unsigned char dk[DK_LENGTH];   /**< Data Key */
+struct key
+{
+	unsigned char dk[DK_LENGTH];	 /**< Data Key */
 	unsigned char dki[DKI_LENGTH]; /**< Data Key Identifier */
 };
 
-struct key_format_ltfs {
-	int num_of_keys;                  /**< Number of DK and DKi pairs */
-	struct key *dk_list;              /**< DK and DKi pairs' list */
+struct key_format_ltfs
+{
+	int num_of_keys;		 /**< Number of DK and DKi pairs */
+	struct key *dk_list; /**< DK and DKi pairs' list */
 };
 
 void *key_format_ltfs_init(struct ltfs_volume *vol);
-int key_format_ltfs_destroy(void * const kmi_handle);
-int key_format_ltfs_get_key(unsigned char **keyalias, unsigned char **key, void * const kmi_handle,
-	unsigned char * const dk_list, unsigned char * const dki_for_format);
+int key_format_ltfs_destroy(void *const kmi_handle);
+int key_format_ltfs_get_key(unsigned char **keyalias,
+														unsigned char **key,
+														void *const kmi_handle,
+														unsigned char *const dk_list,
+														unsigned char *const dki_for_format);
 
 #endif /* __key_format_ltfs_h */

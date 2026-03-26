@@ -52,31 +52,30 @@
 */
 
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
+#	include "arch/win/win_util.h"
 #else
-#include <syslog.h>
+#	include <syslog.h>
 #endif /* mingw_PLATFORM */
 
-
-#include "libltfs/ltfs_fuse_version.h"
-#include <fuse.h>
-#include <getopt.h>
-#include "libltfs/ltfs.h"
-#include "ltfs_copyright.h"
 #include "libltfs/index_criteria.h"
+#include "libltfs/kmi.h"
+#include "libltfs/ltfs.h"
+#include "libltfs/ltfs_fuse_version.h"
 #include "libltfs/pathname.h"
 #include "libltfs/plugin.h"
-#include "libltfs/kmi.h"
 #include "libltfs/tape.h"
+#include "ltfs_copyright.h"
+#include <fuse.h>
+#include <getopt.h>
 
 #ifdef mingw_PLATFORM
 static
 #endif
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
-	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
+		volatile char *copyright = LTFS_COPYRIGHT_0 "\n" LTFS_COPYRIGHT_1 "\n" LTFS_COPYRIGHT_2 "\n" LTFS_COPYRIGHT_3
+																								"\n" LTFS_COPYRIGHT_4 "\n" LTFS_COPYRIGHT_5 "\n";
 
 #ifdef __APPLE__
-#include "libltfs/arch/osx/osx_string.h"
+#	include "libltfs/arch/osx/osx_string.h"
 #endif
 
 #define INDEX_PART_ID 'a'
@@ -90,66 +89,65 @@ char *bin_mkltfs_dat;
 extern char bin_mkltfs_dat[];
 #endif
 
-struct other_format_opts {
+struct other_format_opts
+{
 	struct config_file *config; /**< Configuration data read from the global LTFS config file */
-	char *devname;              /**< Device to format */
-	char *backend_path;         /**< Path to tape backend shared library */
-	char *kmi_backend_name;     /**< Name or path to the key manager interface backend library */
-	char *volume_name;          /**< Human-readable volume name */
-	char *filterrules;          /**< Rules for files that should go to the index partition */
-	char *barcode;              /**< 6-character cartridge barcode number */
-	unsigned long blocksize;    /**< Nominal tape block size */
-	bool enable_compression;    /**< Use compression on the tape? */
-	bool allow_update;          /**< Allow overriding index rules at mount time? */
-	bool keep_capacity;         /**< Reset tape capacity? */
-	bool unformat;              /**< Unformat medium? */
-	bool force;                 /**< Force to format */
-	bool quiet;                 /**< Quiet mode indicator */
-	bool trace;                 /**< Debug mode indicator */
-	bool syslogtrace;           /**< Generate debug output to stderr and syslog*/
-	bool fulltrace;             /**< Full trace mode indicator */
-	bool long_wipe;             /**< Clean up whole tape by long erase? */
-	bool destructive;           /**< Use destructive FORMAT_MEDIUM or not */
+	char *devname;							/**< Device to format */
+	char *backend_path;					/**< Path to tape backend shared library */
+	char *kmi_backend_name;			/**< Name or path to the key manager interface backend library */
+	char *volume_name;					/**< Human-readable volume name */
+	char *filterrules;					/**< Rules for files that should go to the index partition */
+	char *barcode;							/**< 6-character cartridge barcode number */
+	unsigned long blocksize;		/**< Nominal tape block size */
+	bool enable_compression;		/**< Use compression on the tape? */
+	bool allow_update;					/**< Allow overriding index rules at mount time? */
+	bool keep_capacity;					/**< Reset tape capacity? */
+	bool unformat;							/**< Unformat medium? */
+	bool force;									/**< Force to format */
+	bool quiet;									/**< Quiet mode indicator */
+	bool trace;									/**< Debug mode indicator */
+	bool syslogtrace;						/**< Generate debug output to stderr and syslog*/
+	bool fulltrace;							/**< Full trace mode indicator */
+	bool long_wipe;							/**< Clean up whole tape by long erase? */
+	bool destructive;						/**< Use destructive FORMAT_MEDIUM or not */
 };
 
 /* Forward declarations */
 int format_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *args);
 int unformat_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *args);
-int _mkltfs_validate_options(char *prg_name, struct ltfs_volume *vol,
-	struct other_format_opts *opt);
+int _mkltfs_validate_options(char *prg_name, struct ltfs_volume *vol, struct other_format_opts *opt);
 
 /* Command line options */
 static const char *short_options = "i:e:d:b:s:n:r:cokwfqtxhpV";
-static struct option long_options[] = {
-	{"config",          1, 0, 'i'},
-	{"backend",         1, 0, 'e'},
-	{"device",          1, 0, 'd'},
-	{"blocksize",       1, 0, 'b'},
-	{"tape-serial",     1, 0, 's'},
-	{"volume-name",     1, 0, 'n'},
-	{"rules",           1, 0, 'r'},
-	{"kmi-backend",     1, 0, '-'},
-	{"no-compression",  0, 0, 'c'},
-	{"no-override",     0, 0, ' '},
-	{"keep-capacity",   0, 0, 'k'},
-	{"wipe",            0, 0, 'w'},
-	{"long-wipe",       0, 0, '+'},
-	{"destructive",     0, 0, '&'},
-	{"force",           0, 0, 'f'},
-	{"quiet",           0, 0, 'q'},
-	{"trace",           0, 0, 't'},
-	{"syslogtrace",     0, 0, '!'},
-	{"fulltrace",       0, 0, 'x'},
-	{"help",            0, 0, 'h'},
-	{"advanced-help",   0, 0, 'p'},
-	{"version",			0, 0, 'V'},
-	{0, 0, 0, 0}
-};
+static struct option long_options[] = { { "config", 1, 0, 'i' },
+																				{ "backend", 1, 0, 'e' },
+																				{ "device", 1, 0, 'd' },
+																				{ "blocksize", 1, 0, 'b' },
+																				{ "tape-serial", 1, 0, 's' },
+																				{ "volume-name", 1, 0, 'n' },
+																				{ "rules", 1, 0, 'r' },
+																				{ "kmi-backend", 1, 0, '-' },
+																				{ "no-compression", 0, 0, 'c' },
+																				{ "no-override", 0, 0, ' ' },
+																				{ "keep-capacity", 0, 0, 'k' },
+																				{ "wipe", 0, 0, 'w' },
+																				{ "long-wipe", 0, 0, '+' },
+																				{ "destructive", 0, 0, '&' },
+																				{ "force", 0, 0, 'f' },
+																				{ "quiet", 0, 0, 'q' },
+																				{ "trace", 0, 0, 't' },
+																				{ "syslogtrace", 0, 0, '!' },
+																				{ "fulltrace", 0, 0, 'x' },
+																				{ "help", 0, 0, 'h' },
+																				{ "advanced-help", 0, 0, 'p' },
+																				{ "version", 0, 0, 'V' },
+																				{ 0, 0, 0, 0 } };
 
 #ifdef mingw_PLATFORM
 static
 #endif
-void show_usage(char *appname, struct config_file *config, bool full)
+		void
+		show_usage(char *appname, struct config_file *config, bool full)
 {
 	struct libltfs_plugin backend;
 	const char *default_backend;
@@ -161,36 +159,35 @@ void show_usage(char *appname, struct config_file *config, bool full)
 		plugin_unload(&backend);
 	}
 
-	if (! devname)
-		devname = arch_strdup("<devname>");
+	if (!devname) devname = arch_strdup("<devname>");
 
 	fprintf(stderr, "\n");
-	ltfsresult(15400I, appname);  /* Usage: %s <options> */
+	ltfsresult(15400I, appname);																				 /* Usage: %s <options> */
 	fprintf(stderr, "\n");
-	ltfsresult(15401I);           /* Available options are: */
-	ltfsresult(15402I);           /* -d, --device=<name> */
-	ltfsresult(15420I);           /* -f, --force */
-	ltfsresult(15403I);           /* -s, --tape-serial=<id> */
-	ltfsresult(15404I);           /* -n, --volume-name */
-	ltfsresult(15405I);           /* -r, --rules=<rule[,rule]> */
-	ltfsresult(15406I);           /*     --no-override */
-	ltfsresult(15418I);           /* -w, --wipe */
-	ltfsresult(15407I);           /* -q, --quiet */
-	ltfsresult(15408I);           /* -t, --trace */
-	ltfsresult(15422I);           /* --syslogtrace */
-	ltfsresult(15423I);           /* -V, --version */
-	ltfsresult(15409I);           /* -h, --help */
-	ltfsresult(15412I);           /* -p, --advanced-help */
+	ltfsresult(15401I);																									 /* Available options are: */
+	ltfsresult(15402I);																									 /* -d, --device=<name> */
+	ltfsresult(15420I);																									 /* -f, --force */
+	ltfsresult(15403I);																									 /* -s, --tape-serial=<id> */
+	ltfsresult(15404I);																									 /* -n, --volume-name */
+	ltfsresult(15405I);																									 /* -r, --rules=<rule[,rule]> */
+	ltfsresult(15406I);																									 /*     --no-override */
+	ltfsresult(15418I);																									 /* -w, --wipe */
+	ltfsresult(15407I);																									 /* -q, --quiet */
+	ltfsresult(15408I);																									 /* -t, --trace */
+	ltfsresult(15422I);																									 /* --syslogtrace */
+	ltfsresult(15423I);																									 /* -V, --version */
+	ltfsresult(15409I);																									 /* -h, --help */
+	ltfsresult(15412I);																									 /* -p, --advanced-help */
 	if (full) {
-		ltfsresult(15413I, LTFS_CONFIG_FILE);       /* -i, --config=<file> */
-		ltfsresult(15414I, default_backend);        /* -e, --backend */
+		ltfsresult(15413I, LTFS_CONFIG_FILE);															 /* -i, --config=<file> */
+		ltfsresult(15414I, default_backend);															 /* -e, --backend */
 		ltfsresult(15421I, config_file_get_default_plugin("kmi", config)); /* --kmi-backend */
-		ltfsresult(15415I, LTFS_DEFAULT_BLOCKSIZE); /* -b, --blocksize */
-		ltfsresult(15416I);                         /* -c, --no-compression */
-		ltfsresult(15419I);                         /* -k, --keep-capacity */
-		ltfsresult(15417I);                         /* -x, --fulltrace */
-		ltfsresult(15424I);                         /* --long-wipe */
-		ltfsresult(15425I);                         /* --destructive */
+		ltfsresult(15415I, LTFS_DEFAULT_BLOCKSIZE);												 /* -b, --blocksize */
+		ltfsresult(15416I);																								 /* -c, --no-compression */
+		ltfsresult(15419I);																								 /* -k, --keep-capacity */
+		ltfsresult(15417I);																								 /* -x, --fulltrace */
+		ltfsresult(15424I);																								 /* --long-wipe */
+		ltfsresult(15425I);																								 /* --destructive */
 		fprintf(stderr, "\n");
 		plugin_usage(appname, "driver", config);
 		fprintf(stderr, "\n");
@@ -198,14 +195,13 @@ void show_usage(char *appname, struct config_file *config, bool full)
 	}
 
 	fprintf(stderr, "\n");
-	ltfsresult(15410I); /* Usage example: */
+	ltfsresult(15410I);																 /* Usage example: */
 	ltfsresult(15411I, appname, devname, "size=100K"); /* %s --device=%s --rules="%s" */
 	ltfsresult(15411I, appname, devname, "size=1M/name=*.jpg");
 	ltfsresult(15411I, appname, devname, "size=1M/name=*.jpg:*.png");
 
 	free(devname);
 }
-
 
 /* Operation */
 int main(int argc, char **argv)
@@ -218,21 +214,23 @@ int main(int argc, char **argv)
 	void *message_handle;
 	int fuse_argc = argc;
 	char **fuse_argv = calloc(fuse_argc, sizeof(char *));
-	if (! fuse_argv) {
+	if (!fuse_argv) {
 		return MKLTFS_OPERATIONAL_ERROR;
 	}
 	for (i = 0; i < fuse_argc; ++i) {
 		fuse_argv[i] = arch_strdup(argv[i]);
-		if (! fuse_argv[i]) {
+		if (!fuse_argv[i]) {
 			return MKLTFS_OPERATIONAL_ERROR;
 		}
 	}
 	struct fuse_args args = FUSE_ARGS_INIT(fuse_argc, fuse_argv);
 
 	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
-	arch_getenv(lang,"LANG");
-	if (! lang) {
-		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting mkltfs.\n");
+	arch_getenv(lang, "LANG");
+	if (!lang) {
+		fprintf(stderr,
+						"LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable "
+						"before starting mkltfs.\n");
 		ret = setenv("LANG", "en_US.UTF-8", 1);
 		if (ret) {
 			fprintf(stderr, "LTFS9016E Cannot set the LANG environment variable\n");
@@ -279,8 +277,7 @@ int main(int argc, char **argv)
 	while (true) {
 		int option_index = 0;
 		int c = getopt_long(argc, argv, short_options, long_options, &option_index);
-		if (c == -1)
-			break;
+		if (c == -1) break;
 		if (c == 'i') {
 			config_file = arch_strdup(optarg);
 			break;
@@ -300,8 +297,7 @@ int main(int argc, char **argv)
 	while (true) {
 		int option_index = 0;
 		int c = getopt_long(argc, argv, short_options, long_options, &option_index);
-		if (c == -1)
-			break;
+		if (c == -1) break;
 
 		switch (c) {
 			case 'i':
@@ -389,23 +385,22 @@ int main(int argc, char **argv)
 	}
 
 	/* Pick up default backend if one wasn't specified before */
-	if (! opt.backend_path) {
+	if (!opt.backend_path) {
 		const char *default_backend = config_file_get_default_plugin("tape", opt.config);
-		if (! default_backend) {
+		if (!default_backend) {
 			ltfsmsg(LTFS_ERR, 10009E);
 			return MKLTFS_OPERATIONAL_ERROR;
 		}
 		opt.backend_path = arch_strdup(default_backend);
 	}
-	if (! opt.kmi_backend_name) {
+	if (!opt.kmi_backend_name) {
 		const char *default_backend = config_file_get_default_plugin("kmi", opt.config);
 		if (default_backend)
 			opt.kmi_backend_name = arch_strdup(default_backend);
 		else
 			opt.kmi_backend_name = arch_strdup("none");
 	}
-	if (opt.kmi_backend_name && strcmp(opt.kmi_backend_name, "none") == 0)
-		opt.kmi_backend_name = NULL;
+	if (opt.kmi_backend_name && strcmp(opt.kmi_backend_name, "none") == 0) opt.kmi_backend_name = NULL;
 
 	/* Set the logging level */
 	if (opt.quiet && (opt.trace || opt.fulltrace)) {
@@ -435,7 +430,7 @@ int main(int argc, char **argv)
 	ltfsmsg(LTFS_INFO, 15000I, PACKAGE_NAME, PACKAGE_VERSION, log_level);
 
 	/* Show command line arguments */
-	for (i = 0, cmd_args_len = 0 ; i < argc; i++) {
+	for (i = 0, cmd_args_len = 0; i < argc; i++) {
 		cmd_args_len += strlen(argv[i]) + 1;
 	}
 	cmd_args = calloc(1, cmd_args_len + 1);
@@ -444,9 +439,9 @@ int main(int argc, char **argv)
 		ltfsmsg(LTFS_ERR, 10001E, "mkltfs (arguments)");
 		return MKLTFS_OPERATIONAL_ERROR;
 	}
-	arch_strcat(cmd_args, cmd_args_len,argv[0]);
+	arch_strcat(cmd_args, cmd_args_len, argv[0]);
 	for (i = 1; i < argc; i++) {
-		arch_strcat(cmd_args, cmd_args_len," ");
+		arch_strcat(cmd_args, cmd_args_len, " ");
 		arch_strcat(cmd_args, cmd_args_len, argv[i]);
 	}
 	ltfsmsg(LTFS_INFO, 15041I, cmd_args);
@@ -468,8 +463,7 @@ int main(int argc, char **argv)
 
 	ret = ltfs_set_blocksize(opt.blocksize, newvol);
 	if (ret < 0) {
-		if (ret == -LTFS_SMALL_BLOCKSIZE)
-			ltfsmsg(LTFS_ERR, 15028E, LTFS_MIN_BLOCKSIZE);
+		if (ret == -LTFS_SMALL_BLOCKSIZE) ltfsmsg(LTFS_ERR, 15028E, LTFS_MIN_BLOCKSIZE);
 		show_usage(argv[0], opt.config, false);
 		return MKLTFS_OPERATIONAL_ERROR;
 	}
@@ -491,20 +485,18 @@ int main(int argc, char **argv)
 	}
 
 	ret = ltfs_fs_init();
-	if (ret)
-		return LTFSCK_OPERATIONAL_ERROR;;
+	if (ret) return LTFSCK_OPERATIONAL_ERROR;
+	;
 
 	ltfsmsg(LTFS_INFO, 15003I, opt.devname);
 	ltfsmsg(LTFS_INFO, 15004I, opt.blocksize);
 	ltfsmsg(LTFS_INFO, 15005I, opt.filterrules ? opt.filterrules : "None");
-	if (! opt.quiet)
-		fprintf(stderr, "\n");
+	if (!opt.quiet) fprintf(stderr, "\n");
 
-	if(opt.unformat)
+	if (opt.unformat)
 		ret = unformat_tape(newvol, &opt, &args);
 	else
 		ret = format_tape(newvol, &opt, &args);
-
 
 	arch_safe_free(opt.backend_path);
 	arch_safe_free(opt.kmi_backend_name);
@@ -521,13 +513,12 @@ int format_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *ar
 	int ret = MKLTFS_OPERATIONAL_ERROR;
 	struct device_capacity cap;
 	struct libltfs_plugin backend; /* tape driver backend */
-	struct libltfs_plugin kmi; /* key manager interface backend */
+	struct libltfs_plugin kmi;		 /* key manager interface backend */
 	struct ltfs_volume *dummy_vol;
 	bool is_worm;
 
 	ret = ltfs_set_volume_name(opt->volume_name, vol);
-	if (ret < 0)
-		return MKLTFS_OPERATIONAL_ERROR;
+	if (ret < 0) return MKLTFS_OPERATIONAL_ERROR;
 	ret = ltfs_reset_capacity(!opt->keep_capacity, vol);
 	if (ret < 0) {
 		return MKLTFS_OPERATIONAL_ERROR;
@@ -572,8 +563,7 @@ int format_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *ar
 		}
 
 		ret = tape_clear_key(vol->device, vol->kmi_handle);
-		if (ret < 0)
-			goto out_unload_backend;
+		if (ret < 0) goto out_unload_backend;
 	}
 
 	{
@@ -610,7 +600,7 @@ int format_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *ar
 	ltfs_set_partition_map(DATA_PART_ID, INDEX_PART_ID, DATA_PART_NUM, INDEX_PART_NUM, vol);
 
 	/* Check target medium state */
-	if (! opt->force) {
+	if (!opt->force) {
 		ltfsmsg(LTFS_INFO, 15049I, "mount");
 		ret = ltfs_volume_alloc("mkltfs", &dummy_vol);
 		if (ret < 0) {
@@ -626,8 +616,7 @@ int format_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *ar
 			if (ret == 0) {
 				ltfsmsg(LTFS_ERR, 15047E, ret);
 				ltfsmsg(LTFS_INFO, 15048I);
-			}
-			else if (ret == -EDEV_KEY_REQUIRED) {
+			} else if (ret == -EDEV_KEY_REQUIRED) {
 				ltfsmsg(LTFS_ERR, 15056E);
 				ltfsmsg(LTFS_INFO, 15057I);
 			}
@@ -636,8 +625,7 @@ int format_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *ar
 			goto out_close;
 		}
 		ltfs_volume_free(&dummy_vol);
-	}
-	else {
+	} else {
 		ltfsmsg(LTFS_INFO, 15049I, "load");
 		ret = tape_load_tape(vol->device, vol->kmi_handle, false);
 		if (ret < 0) {
@@ -657,7 +645,7 @@ int format_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *ar
 	}
 
 	/* Set up index data: filter rules */
-	ret = index_criteria_set_allow_update(is_worm? false : opt->allow_update, vol);
+	ret = index_criteria_set_allow_update(is_worm ? false : opt->allow_update, vol);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 15014E, ret);
 		ret = MKLTFS_OPERATIONAL_ERROR;
@@ -687,10 +675,10 @@ int format_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *ar
 		if (ret == -LTFS_INTERRUPTED) {
 			ltfsmsg(LTFS_ERR, 15045E);
 			ret = MKLTFS_CANCELED_BY_USER;
-		}else if (ret == -EDEV_WRITE_PROTECTED_WORM) {
+		} else if (ret == -EDEV_WRITE_PROTECTED_WORM) {
 			ltfsmsg(LTFS_ERR, 15061E);
 			ret = MKLTFS_USAGE_SYNTAX_ERROR;
-		}else {
+		} else {
 			ltfsmsg(LTFS_ERR, 15012E);
 			if (ret == -LTFS_WRITE_PROTECT || ret == -LTFS_WRITE_ERROR)
 				ret = MKLTFS_USAGE_SYNTAX_ERROR;
@@ -700,18 +688,18 @@ int format_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *ar
 		goto out_close;
 	}
 	ltfsmsg(LTFS_INFO, 15013I, ltfs_get_volume_uuid(vol));
-	if (! opt->quiet)
-		fprintf(stderr, "\n");
+	if (!opt->quiet) fprintf(stderr, "\n");
 
 	/* Print volume capacity as GB (10^9 Bytes - SI) */
 	memset(&cap, 0, sizeof(cap));
 	ltfs_capacity_data(&cap, vol);
-	ltfsmsg(LTFS_INFO, 15019I, (unsigned long long)(((cap.total_dp * (opt->blocksize / 1048576.0)
-														* (1024 * 1024)) + 500000000)
-													  / 1000 / 1000 / 1000));
+	ltfsmsg(LTFS_INFO,
+					15019I,
+					(unsigned long long)(((cap.total_dp * (opt->blocksize / 1048576.0) * (1024 * 1024)) + 500000000) / 1000 /
+															 1000 / 1000));
 
-	vol->t_attr = (struct tape_attr *) calloc(1, sizeof(struct tape_attr));
-	if (! vol->t_attr) {
+	vol->t_attr = (struct tape_attr *)calloc(1, sizeof(struct tape_attr));
+	if (!vol->t_attr) {
 		ltfsmsg(LTFS_ERR, 10001E, "format_tape: vol->t_attr");
 		goto out_close;
 	}
@@ -734,23 +722,19 @@ out_close:
 	ltfs_device_close(vol);
 	ltfs_volume_free(&vol);
 	ltfs_unset_signal_handlers();
-	if (ret == MKLTFS_NO_ERRORS)
-		ltfsmsg(LTFS_DEBUG, 15022D);
+	if (ret == MKLTFS_NO_ERRORS) ltfsmsg(LTFS_DEBUG, 15022D);
 out_unload_backend:
 	if (ret == MKLTFS_NO_ERRORS) {
 		ret = plugin_unload(&backend);
-		if (ret < 0)
-			ltfsmsg(LTFS_WARN, 15021W);
+		if (ret < 0) ltfsmsg(LTFS_WARN, 15021W);
 		if (opt->kmi_backend_name) {
 			ret = plugin_unload(&kmi);
-			if (ret < 0)
-				ltfsmsg(LTFS_WARN, 15051W);
+			if (ret < 0) ltfsmsg(LTFS_WARN, 15051W);
 		}
 		ret = MKLTFS_NO_ERRORS;
 	} else {
 		plugin_unload(&backend);
-		if (opt->kmi_backend_name)
-			plugin_unload(&kmi);
+		if (opt->kmi_backend_name) plugin_unload(&kmi);
 	}
 
 	if (ret == MKLTFS_NO_ERRORS)
@@ -765,7 +749,7 @@ int unformat_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *
 {
 	int ret = MKLTFS_OPERATIONAL_ERROR;
 	struct libltfs_plugin backend; /* tape driver backend */
-	struct libltfs_plugin kmi; /* key manager interface backend */
+	struct libltfs_plugin kmi;		 /* key manager interface backend */
 
 	/* load the backend, open the tape device, and load a tape */
 	ltfsmsg(LTFS_DEBUG, 15006D);
@@ -801,8 +785,7 @@ int unformat_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *
 		}
 
 		ret = tape_clear_key(vol->device, vol->kmi_handle);
-		if (ret < 0)
-			goto out_unload_backend;
+		if (ret < 0) goto out_unload_backend;
 	}
 	{
 		int i = 0;
@@ -832,10 +815,10 @@ int unformat_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *
 		if (ret == -LTFS_INTERRUPTED) {
 			ltfsmsg(LTFS_ERR, 15046E);
 			ret = MKLTFS_CANCELED_BY_USER;
-		}else if (ret == -EDEV_WRITE_PROTECTED_WORM) {
+		} else if (ret == -EDEV_WRITE_PROTECTED_WORM) {
 			ltfsmsg(LTFS_ERR, 15062E);
 			ret = MKLTFS_USAGE_SYNTAX_ERROR;
-		}else {
+		} else {
 			ltfsmsg(LTFS_ERR, 15038E);
 			ret = MKLTFS_OPERATIONAL_ERROR;
 		}
@@ -851,23 +834,19 @@ out_close:
 	ltfs_device_close(vol);
 	ltfs_volume_free(&vol);
 	ltfs_unset_signal_handlers();
-	if (ret == MKLTFS_UNFORMATTED)
-		ltfsmsg(LTFS_DEBUG, 15022D);
+	if (ret == MKLTFS_UNFORMATTED) ltfsmsg(LTFS_DEBUG, 15022D);
 out_unload_backend:
 	if (ret == MKLTFS_UNFORMATTED) {
 		ret = plugin_unload(&backend);
-		if (ret < 0)
-			ltfsmsg(LTFS_WARN, 15021W);
+		if (ret < 0) ltfsmsg(LTFS_WARN, 15021W);
 		if (opt->kmi_backend_name) {
 			ret = plugin_unload(&kmi);
-			if (ret < 0)
-				ltfsmsg(LTFS_WARN, 15051W);
+			if (ret < 0) ltfsmsg(LTFS_WARN, 15051W);
 		}
 		ret = MKLTFS_UNFORMATTED;
 	} else {
 		plugin_unload(&backend);
-		if (opt->kmi_backend_name)
-			plugin_unload(&kmi);
+		if (opt->kmi_backend_name) plugin_unload(&kmi);
 	}
 
 	if (ret == MKLTFS_UNFORMATTED)
@@ -878,8 +857,7 @@ out_unload_backend:
 	return ret;
 }
 
-int _mkltfs_validate_options(char *prg_name, struct ltfs_volume *vol,
-	struct other_format_opts *opt)
+int _mkltfs_validate_options(char *prg_name, struct ltfs_volume *vol, struct other_format_opts *opt)
 {
 	int ret;
 	char *tmp;

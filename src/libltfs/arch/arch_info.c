@@ -49,12 +49,12 @@
 
 #include "libltfs/ltfs.h"
 #ifdef HAVE_SYS_SYSCTL_H
-#include <sys/sysctl.h>
+#	include <sys/sysctl.h>
 #endif
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 void show_runtime_system_info(void)
 #if defined(__linux__)
@@ -68,31 +68,29 @@ void show_runtime_system_info(void)
 	char *path, *tmp;
 
 	fd = open("/proc/version", O_RDONLY);
-	if( fd == -1) {
+	if (fd == -1) {
 		ltfsmsg(LTFS_WARN, 17086W);
 	} else {
 		memset(kernel_version, 0, sizeof(kernel_version));
 		read(fd, kernel_version, sizeof(kernel_version));
-		if((tmp = strchr(kernel_version, '\n')) != NULL)
-			*tmp = '\0';
+		if ((tmp = strchr(kernel_version, '\n')) != NULL) *tmp = '\0';
 
-		if(stat("/proc/sys/kernel/vsyscall64", &stat_vm64) != -1 && S_ISREG(stat_vm64.st_mode)) {
-#if defined(__i386__) || defined(__x86_64__)
+		if (stat("/proc/sys/kernel/vsyscall64", &stat_vm64) != -1 && S_ISREG(stat_vm64.st_mode)) {
+#	if defined(__i386__) || defined(__x86_64__)
 			strcat(kernel_version, " x86_64");
-#elif defined(__ppc__) || defined(__ppc64__)
+#	elif defined(__ppc__) || defined(__ppc64__)
 			strcat(kernel_version, " ppc64");
-#else
+#	else
 			strcat(kernel_version, " unknown");
-#endif
-		}
-		else {
-#if defined(__i386__) || defined(__x86_64__)
+#	endif
+		} else {
+#	if defined(__i386__) || defined(__x86_64__)
 			strcat(kernel_version, " i386");
-#elif defined(__ppc__) || defined(__ppc64__)
+#	elif defined(__ppc__) || defined(__ppc64__)
 			strcat(kernel_version, " ppc");
-#else
+#	else
 			strcat(kernel_version, " unknown");
-#endif
+#	endif
 		}
 		ltfsmsg(LTFS_INFO, 17087I, kernel_version);
 		close(fd);
@@ -100,9 +98,9 @@ void show_runtime_system_info(void)
 
 	dir = opendir("/etc");
 	if (dir) {
-		while( (dent = readdir(dir)) != NULL) {
-			if(strlen(dent->d_name) > strlen("-release") &&
-			   !strcmp(&(dent->d_name[strlen(dent->d_name) - strlen("-release")]), "-release")) {
+		while ((dent = readdir(dir)) != NULL) {
+			if (strlen(dent->d_name) > strlen("-release") &&
+					!strcmp(&(dent->d_name[strlen(dent->d_name) - strlen("-release")]), "-release")) {
 				path = calloc(1, strlen(dent->d_name) + strlen("/etc/") + 1);
 				if (!path) {
 					/* Memory allocation failed */
@@ -113,14 +111,13 @@ void show_runtime_system_info(void)
 				strcat(path, "/etc/");
 				strcat(path, dent->d_name);
 				fd = open(path, O_RDONLY);
-				if( fd == -1) {
+				if (fd == -1) {
 					ltfsmsg(LTFS_WARN, 17088W);
 				} else {
 					if (fstat(fd, &stat_rel) != -1 && S_ISREG(stat_rel.st_mode)) {
 						memset(destribution, 0, sizeof(destribution));
 						read(fd, destribution, sizeof(destribution));
-						if((tmp = strchr(destribution, '\n')) != NULL)
-							*tmp = '\0';
+						if ((tmp = strchr(destribution, '\n')) != NULL) *tmp = '\0';
 						ltfsmsg(LTFS_INFO, 17089I, destribution);
 					}
 

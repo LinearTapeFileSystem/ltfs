@@ -51,42 +51,45 @@
 #define __LTFS_THREAD_H__
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #ifdef mingw_PLATFORM
-#include "arch/win/win_thread.h"
+#	include "arch/win/win_thread.h"
 #else
 
 /*
  * restrict is a C99 extension, and isn't necessarily supported by C++
  * compilers.
  */
-#ifdef __cplusplus
-#define	restrict
-#endif
+#	ifdef __cplusplus
+#		define restrict
+#	endif
 
-#include <pthread.h>
-#include <sys/time.h>
-#include <sys/syscall.h>
-#include <unistd.h>
+#	include <pthread.h>
+#	include <sys/syscall.h>
+#	include <sys/time.h>
+#	include <unistd.h>
 
-typedef pthread_t          ltfs_thread_t;
+typedef pthread_t ltfs_thread_t;
 
 /* Use struct for checking wrong usage of ltfs_mutex and ltfs_thread_mutex by compliter */
-typedef struct {
+typedef struct
+{
 	pthread_mutex_t thread_lock;
 } ltfs_thread_mutex_t;
 
-typedef pthread_attr_t     ltfs_thread_attr_t;
-typedef pthread_cond_t     ltfs_thread_cond_t;
+typedef pthread_attr_t ltfs_thread_attr_t;
+typedef pthread_cond_t ltfs_thread_cond_t;
 typedef pthread_condattr_t ltfs_thread_condattr_t;
-typedef void               *ltfs_thread_return;
-typedef void               *ltfs_thread_return_detached;
+typedef void *ltfs_thread_return;
+typedef void *ltfs_thread_return_detached;
 
-#define LTFS_THREAD_RC_NULL    (NULL)
+#	define LTFS_THREAD_RC_NULL (NULL)
 
-enum {
+enum
+{
 	LTFS_THREAD_CREATE_DETACHED = PTHREAD_CREATE_DETACHED,
 	LTFS_THREAD_CREATE_JOINABLE = PTHREAD_CREATE_JOINABLE
 };
@@ -151,9 +154,8 @@ static inline int ltfs_thread_cond_init(ltfs_thread_cond_t *restrict cond)
 	return pthread_cond_init(cond, NULL);
 }
 
-static inline int ltfs_thread_cond_timedwait(ltfs_thread_cond_t *restrict cond,
-											 ltfs_thread_mutex_t *restrict mutex,
-											 const int sec)
+static inline int
+ltfs_thread_cond_timedwait(ltfs_thread_cond_t *restrict cond, ltfs_thread_mutex_t *restrict mutex, const int sec)
 {
 	struct timeval now;
 	struct timespec timeout;
@@ -165,23 +167,20 @@ static inline int ltfs_thread_cond_timedwait(ltfs_thread_cond_t *restrict cond,
 	return pthread_cond_timedwait(cond, &mutex->thread_lock, &timeout);
 }
 
-static inline int ltfs_thread_cond_wait(ltfs_thread_cond_t *restrict cond,
-										ltfs_thread_mutex_t *restrict mutex)
+static inline int ltfs_thread_cond_wait(ltfs_thread_cond_t *restrict cond, ltfs_thread_mutex_t *restrict mutex)
 {
 	return pthread_cond_wait(cond, &mutex->thread_lock);
 }
 
-static inline int ltfs_thread_create(ltfs_thread_t *thread,
-									 ltfs_thread_return (*start_routine) (void *),
-									 void *arg)
+static inline int ltfs_thread_create(ltfs_thread_t *thread, ltfs_thread_return (*start_routine)(void *), void *arg)
 {
 	return pthread_create(thread, NULL, start_routine, arg);
 }
 
 static inline int ltfs_thread_create_detached(ltfs_thread_t *thread,
-											  const ltfs_thread_attr_t *attr,
-											  ltfs_thread_return_detached (*start_routine) (void *),
-											  void *arg)
+																							const ltfs_thread_attr_t *attr,
+																							ltfs_thread_return_detached (*start_routine)(void *),
+																							void *arg)
 {
 	return pthread_create(thread, attr, start_routine, arg);
 }
@@ -208,16 +207,16 @@ static inline ltfs_thread_t ltfs_thread_self(void)
 
 static inline int ltfs_thread_yield(void)
 {
-#if defined (__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#	if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 	return sched_yield();
-#else
+#	else
 	return pthread_yield();
-#endif
+#	endif
 }
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#	if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 extern uint32_t ltfs_get_thread_id(void);
-#else
+#	else
 static inline uint32_t ltfs_get_thread_id(void)
 {
 	uint32_t tid;
@@ -226,7 +225,7 @@ static inline uint32_t ltfs_get_thread_id(void)
 
 	return tid;
 }
-#endif
+#	endif
 
 #endif
 
