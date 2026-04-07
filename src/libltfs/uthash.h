@@ -46,11 +46,9 @@
 #ifndef LTFS_UTHASH_H
 #define LTFS_UTHASH_H
 
- /* The modifications for LTFS first */
+/* The modifications for LTFS first */
 #include "uthash_ext.h"
- /* Include official uthash.h from submodule */
+/* Include official uthash.h from submodule */
 #include "uthash_submodule/src/uthash.h"
 
-
 #endif /* LTFS_UTHASH_H */
-

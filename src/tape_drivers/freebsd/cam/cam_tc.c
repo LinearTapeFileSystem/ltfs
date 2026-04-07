@@ -54,24 +54,24 @@
 
 #define __camtape_tc_c
 
-#include <inttypes.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/queue.h>
+#include <bsdxml.h>
+#include <cam/scsi/scsi_message.h>
+#include <ctype.h>
 #include <dirent.h>
 #include <fcntl.h>
-#include <string.h>
-#include <unistd.h>
-#include <stddef.h>
-#include <ctype.h>
-#include <bsdxml.h>
-#include <mtlib.h>
-#include <cam/scsi/scsi_message.h>
+#include <inttypes.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <mtlib.h>
+#include <stddef.h>
+#include <string.h>
+#include <sys/queue.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-#include "libltfs/ltfs_fuse_version.h"
 #include "libltfs/arch/time_internal.h"
+#include "libltfs/ltfs_fuse_version.h"
 #include <fuse.h>
 
 #include "libltfs/ltfslogging.h"
@@ -81,8 +81,8 @@
 
 #define TAPE_BACKEND /* Use static vriable definition in tape_drivers.h */
 #include "cam_cmn.h"
-#include "reed_solomon_crc.h"
 #include "crc32c_crc.h"
+#include "reed_solomon_crc.h"
 
 /*
  * Prototypes for opening the SA (Sequential Access) and pass (Pass Through)
@@ -90,7 +90,7 @@
 */
 int open_sa_pass(struct camtape_data *softc, const char *saDeviceName);
 
-int open_sa_device(struct camtape_data *softc, const char* saDeviceName);
+int open_sa_device(struct camtape_data *softc, const char *saDeviceName);
 void close_sa_device(struct camtape_data *softc);
 
 void close_cd_pass_device(struct camtape_data *softc);
@@ -108,14 +108,14 @@ const char *camtape_default_changer_device = "/dev/ch0";
 /*
  *  Definitions
  */
-#define LOG_PAGE_HEADER_SIZE      (4)
+#define LOG_PAGE_HEADER_SIZE (4)
 #define LOG_PAGE_PARAMSIZE_OFFSET (3)
-#define LOG_PAGE_PARAM_OFFSET     (4)
+#define LOG_PAGE_PARAM_OFFSET (4)
 
 #define LINUX_MAX_BLOCK_SIZE (1 * MB)
-#define	LTFS_CRC_LEN			  4
+#define LTFS_CRC_LEN 4
 #ifndef MIN
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#	define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
 #define CRC32C_CRC (0x02)
@@ -132,9 +132,13 @@ struct error_table *vendor_table;
  */
 int camtape_readpos(void *device, struct tc_position *pos);
 int camtape_rewind(void *device, struct tc_position *pos);
-int camtape_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc, const uint8_t subpage,
-					  unsigned char *buf, const size_t size);
-int camtape_set_key(void *device, const unsigned char * const keyalias, const unsigned char * const key);
+int camtape_modesense(void *device,
+											const uint8_t page,
+											const TC_MP_PC_TYPE pc,
+											const uint8_t subpage,
+											unsigned char *buf,
+											const size_t size);
+int camtape_set_key(void *device, const unsigned char *const keyalias, const unsigned char *const key);
 int camtape_set_lbp(void *device, bool enable);
 
 /*
@@ -150,8 +154,8 @@ int camtape_set_lbp(void *device, bool enable);
  * @param bufsize size of the buffer
  * @return 0 on success or negative value on error
  */
-int parse_logPage(const unsigned char *logdata, const uint16_t param, int *param_size,
-								unsigned char *buf, const size_t bufsize)
+int parse_logPage(
+		const unsigned char *logdata, const uint16_t param, int *param_size, unsigned char *buf, const size_t bufsize)
 {
 	uint16_t page_len, param_code, param_len;
 	long i;
@@ -161,15 +165,14 @@ int parse_logPage(const unsigned char *logdata, const uint16_t param, int *param
 
 	while (i < page_len) {
 		param_code = ltfs_betou16(logdata + i);
-		param_len = (uint16_t) logdata[i + LOG_PAGE_PARAMSIZE_OFFSET];
+		param_len = (uint16_t)logdata[i + LOG_PAGE_PARAMSIZE_OFFSET];
 		if (param_code == param) {
 			*param_size = param_len;
 			if (bufsize < param_len) {
 				ltfsmsg(LTFS_INFO, 31218I, bufsize, i + LOG_PAGE_PARAM_OFFSET);
 				memcpy(buf, &logdata[i + LOG_PAGE_PARAM_OFFSET], bufsize);
 				return -2;
-			}
-			else {
+			} else {
 				memcpy(buf, &logdata[i + LOG_PAGE_PARAM_OFFSET], param_len);
 				return 0;
 			}
@@ -185,15 +188,12 @@ int parse_logPage(const unsigned char *logdata, const uint16_t param, int *param
  * @param devname device name of the LTO tape driver
  * @return a pointer to the camtape backend on success or NULL on error
  */
-#define CAMTAPE_OPT(templ,offset,value) { templ, offsetof(struct camtape_global_data, offset), value }
+#define CAMTAPE_OPT(templ, offset, value) { templ, offsetof(struct camtape_global_data, offset), value }
 
 static struct fuse_opt camtape_global_opts[] = {
-	CAMTAPE_OPT("autodump",          disable_auto_dump, 0),
-	CAMTAPE_OPT("noautodump",        disable_auto_dump, 1),
-	CAMTAPE_OPT("scsi_lbprotect=%s", str_crc_checking, 0),
-	CAMTAPE_OPT("strict_drive",   strict_drive, 1),
-	CAMTAPE_OPT("nostrict_drive", strict_drive, 0),
-	FUSE_OPT_END
+	CAMTAPE_OPT("autodump", disable_auto_dump, 0),				 CAMTAPE_OPT("noautodump", disable_auto_dump, 1),
+	CAMTAPE_OPT("scsi_lbprotect=%s", str_crc_checking, 0), CAMTAPE_OPT("strict_drive", strict_drive, 1),
+	CAMTAPE_OPT("nostrict_drive", strict_drive, 0),				 FUSE_OPT_END
 };
 
 int null_parser(void *device, const char *arg, int key, struct fuse_args *outargs)
@@ -203,7 +203,7 @@ int null_parser(void *device, const char *arg, int key, struct fuse_args *outarg
 
 int camtape_parse_opts(void *device, void *opt_args)
 {
-	struct fuse_args *args = (struct fuse_args *) opt_args;
+	struct fuse_args *args = (struct fuse_args *)opt_args;
 	struct camtape_data *softc = (struct camtape_data *)device;
 	int ret;
 
@@ -260,7 +260,7 @@ int camtape_open(const char *devname, void **handle)
 	ltfsmsg(LTFS_INFO, 31223I, devname);
 
 	softc = calloc(1, sizeof(struct camtape_data));
-	if (! softc) {
+	if (!softc) {
 		ltfsmsg(LTFS_ERR, 10001E, "camtape_open: device private data");
 		return -EDEV_NO_MEMORY;
 	}
@@ -271,21 +271,19 @@ int camtape_open(const char *devname, void **handle)
 		return ret;
 	}
 
-	cam_strvis((uint8_t *)product, (uint8_t *)softc->cd->inq_data.product,
-	    sizeof(softc->cd->inq_data.product), sizeof(product));
-	cam_strvis((uint8_t *)vendor, (uint8_t *)softc->cd->inq_data.vendor,
-	    sizeof(softc->cd->inq_data.vendor), sizeof(vendor));
+	cam_strvis(
+			(uint8_t *)product, (uint8_t *)softc->cd->inq_data.product, sizeof(softc->cd->inq_data.product), sizeof(product));
+	cam_strvis(
+			(uint8_t *)vendor, (uint8_t *)softc->cd->inq_data.vendor, sizeof(softc->cd->inq_data.vendor), sizeof(vendor));
 	ltfsmsg(LTFS_INFO, 31228I, product);
 	ltfsmsg(LTFS_INFO, 31229I, vendor);
 
 	/* Check the drive is supportable */
 	softc->vendor = get_vendor_id(vendor);
 	struct supported_device **cur = get_supported_devs(softc->vendor);
-	while(*cur) {
-		if ((! strncmp((char*)softc->cd->inq_data.vendor, (*cur)->vendor_id,
-					   strlen((*cur)->vendor_id)) ) &&
-		   (! strncmp((char*)softc->cd->inq_data.product, (*cur)->product_id,
-					  strlen((*cur)->product_id)) ) ) {
+	while (*cur) {
+		if ((!strncmp((char *)softc->cd->inq_data.vendor, (*cur)->vendor_id, strlen((*cur)->vendor_id))) &&
+				(!strncmp((char *)softc->cd->inq_data.product, (*cur)->product_id, strlen((*cur)->product_id)))) {
 			drive_type = (*cur)->drive_type;
 			break;
 		}
@@ -298,8 +296,7 @@ int camtape_open(const char *devname, void **handle)
 		/* Setup vendor specific parameters */
 		init_error_table(softc->vendor, &standard_table, &vendor_table);
 		init_timeout(softc->vendor, &softc->timeouts, softc->drive_type);
-		if (!softc->timeouts)
-			ibm_tape_init_timeout(&softc->timeouts, softc->drive_type);
+		if (!softc->timeouts) ibm_tape_init_timeout(&softc->timeouts, softc->drive_type);
 	} else {
 		ltfsmsg(LTFS_INFO, 31230I, softc->cd->inq_data.product);
 		close(softc->fd_sa);
@@ -313,7 +310,7 @@ int camtape_open(const char *devname, void **handle)
 	memcpy(softc->drive_serial, softc->cd->serial_num, softc->cd->serial_num_len);
 
 	ltfsmsg(LTFS_INFO, 31232I, softc->cd->inq_data.revision);
-	if (! drive_has_supported_fw(softc->vendor, softc->drive_type, (uint8_t *)softc->cd->inq_data.revision)) {
+	if (!drive_has_supported_fw(softc->vendor, softc->drive_type, (uint8_t *)softc->cd->inq_data.revision)) {
 		ltfsmsg(LTFS_INFO, 31230I, "firmware", softc->cd->inq_data.revision);
 		close(softc->fd_sa);
 		close_cd_pass_device(softc);
@@ -326,12 +323,12 @@ int camtape_open(const char *devname, void **handle)
 
 	softc->loaded = false; /* Assume tape is not loaded until a successful load call. */
 
-	softc->clear_by_pc     = false;
+	softc->clear_by_pc = false;
 	softc->force_writeperm = DEFAULT_WRITEPERM;
-	softc->force_readperm  = DEFAULT_READPERM;
+	softc->force_readperm = DEFAULT_READPERM;
 	softc->force_errortype = DEFAULT_ERRORTYPE;
 
-	*handle = (void *) softc;
+	*handle = (void *)softc;
 	return DEVICE_GOOD;
 }
 
@@ -354,12 +351,11 @@ int camtape_reopen(const char *name, void *vstate)
  */
 int camtape_close(void *device)
 {
-	struct camtape_data *softc = (struct camtape_data *) device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	struct tc_position pos;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_CLOSE));
-	if (softc->loaded)
-		camtape_rewind(device, &pos);
+	if (softc->loaded) camtape_rewind(device, &pos);
 
 	camtape_set_lbp(device, false);
 
@@ -387,7 +383,7 @@ int camtape_close(void *device)
  */
 int camtape_close_raw(void *device)
 {
-	struct camtape_data *softc = (struct camtape_data *) device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_CLOSERAW));
 	close(softc->fd_sa);
@@ -422,7 +418,7 @@ int _mt_command(void *device, int cmd, char *cmd_name, int param, char **msg)
 {
 	struct camtape_data *softc = device;
 	int fd = softc->fd_sa;
-	struct mtop mt = {.mt_op = cmd,.mt_count = param };
+	struct mtop mt = { .mt_op = cmd, .mt_count = param };
 	struct scsi_sense_data sense_data;
 	int rc;
 
@@ -436,8 +432,7 @@ start:
 			goto start;
 		}
 		ltfsmsg(LTFS_INFO, 31208I, cmd_name, cmd, rc, errno, softc->drive_serial);
-	}
-	else {
+	} else {
 		*msg = NULL;
 		rc = DEVICE_GOOD;
 	}
@@ -454,15 +449,14 @@ start:
  * @param unusual_size a flag specified unusual size or not
  * @return read length on success or a negative value on error
  */
-int camtape_read(void *device, char *buf, size_t count, struct tc_position *pos,
-				 const bool unusual_size)
+int camtape_read(void *device, char *buf, size_t count, struct tc_position *pos, const bool unusual_size)
 {
 	ssize_t len = -1, read_len;
 	int rc;
 	bool silion = unusual_size;
 	char *msg = NULL;
-	struct camtape_data *softc = (struct camtape_data *) device;
-	int    fd = softc->fd_sa;
+	struct camtape_data *softc = (struct camtape_data *)device;
+	int fd = softc->fd_sa;
 	size_t datacount = count;
 
 	/*
@@ -493,83 +487,74 @@ int camtape_read(void *device, char *buf, size_t count, struct tc_position *pos,
 		uint8_t stream_bits;
 
 		/* XXX KDM need to pass back valid length of sense data */
-		rc = camtape_ioctlrc2err(softc, fd , &sense_data, /*control_cmd*/ 0, &msg);
+		rc = camtape_ioctlrc2err(softc, fd, &sense_data, /*control_cmd*/ 0, &msg);
 
-		if (scsi_get_stream_info(&sense_data, sizeof(sense_data), &softc->cd->inq_data,
-								 &stream_bits) != 0) {
+		if (scsi_get_stream_info(&sense_data, sizeof(sense_data), &softc->cd->inq_data, &stream_bits) != 0) {
 			stream_bits = 0;
 		}
 
 		switch (rc) {
-		case -EDEV_NO_SENSE:
-			if (stream_bits & SSD_FILEMARK) {
-				/* Filemark Detected */
+			case -EDEV_NO_SENSE:
+				if (stream_bits & SSD_FILEMARK) {
+					/* Filemark Detected */
+					ltfsmsg(LTFS_DEBUG, 31236D);
+					rc = DEVICE_GOOD;
+					pos->block++;
+					pos->filemarks++;
+					len = 0;
+				} else if (stream_bits & SSD_ILI) {
+					/* Illegal Length */
+					int64_t diff_len;
+					uint64_t unsigned_diff_len;
+
+					/* XXX KDM need to get the real length of the sense data */
+					if (scsi_get_sense_info(&sense_data, sizeof(sense_data), SSD_DESC_INFO, &unsigned_diff_len, &diff_len) != 0) {
+						/* XXX KDM what do we do if there is no info field? */
+						diff_len = 0;
+					}
+
+					if (diff_len < 0) {
+						ltfsmsg(LTFS_INFO, 31237I, diff_len, count - diff_len);	 // "Detect overrun condition"
+						rc = -EDEV_OVERRUN;
+					} else {
+						ltfsmsg(LTFS_DEBUG, 31238D, diff_len, count - diff_len);	// "Detect underrun condition"
+						len = count - diff_len;
+						rc = DEVICE_GOOD;
+						pos->block++;
+					}
+				} else if (errno == EOVERFLOW) {
+					ltfsmsg(LTFS_INFO, 31237I, count - read_len, read_len);	 // "Detect overrun condition"
+					rc = -EDEV_OVERRUN;
+				} else if ((size_t)read_len < count) {
+					ltfsmsg(LTFS_DEBUG, 31238D, count - read_len, read_len);	// "Detect underrun condition"
+					len = read_len;
+					rc = DEVICE_GOOD;
+					pos->block++;
+				}
+				break;
+			case -EDEV_FILEMARK_DETECTED:
 				ltfsmsg(LTFS_DEBUG, 31236D);
 				rc = DEVICE_GOOD;
 				pos->block++;
 				pos->filemarks++;
 				len = 0;
-			}
-			else if (stream_bits & SSD_ILI) {
-				/* Illegal Length */
-				int64_t diff_len;
-				uint64_t unsigned_diff_len;
-
-				/* XXX KDM need to get the real length of the sense data */
-				if (scsi_get_sense_info(&sense_data, sizeof(sense_data), SSD_DESC_INFO,
-					&unsigned_diff_len, &diff_len) != 0) {
-
-					/* XXX KDM what do we do if there is no info field? */
-					diff_len = 0;
-				}
-
-				if (diff_len < 0) {
-					ltfsmsg(LTFS_INFO, 31237I, diff_len, count - diff_len); // "Detect overrun condition"
-					rc = -EDEV_OVERRUN;
-				}
-				else {
-					ltfsmsg(LTFS_DEBUG, 31238D, diff_len, count - diff_len); // "Detect underrun condition"
-					len = count - diff_len;
-					rc = DEVICE_GOOD;
-					pos->block++;
-				}
-			}
-			else if (errno == EOVERFLOW) {
-				ltfsmsg(LTFS_INFO, 31237I, count - read_len, read_len); // "Detect overrun condition"
-				rc = -EDEV_OVERRUN;
-			}
-			else if ((size_t)read_len < count) {
-				ltfsmsg(LTFS_DEBUG, 31238D, count - read_len, read_len); // "Detect underrun condition"
-				len = read_len;
-				rc = DEVICE_GOOD;
-				pos->block++;
-			}
-			break;
-		case -EDEV_FILEMARK_DETECTED:
-			ltfsmsg(LTFS_DEBUG, 31236D);
-			rc = DEVICE_GOOD;
-			pos->block++;
-			pos->filemarks++;
-			len = 0;
-			break;
+				break;
 		}
 
 		if (rc != DEVICE_GOOD) {
-			if ((rc != -EDEV_CRYPTO_ERROR && rc != -EDEV_KEY_REQUIRED) || ((struct camtape_data *) device)->is_data_key_set) {
-				ltfsmsg(LTFS_INFO, 31208I, "READ", count, rc, errno, ((struct camtape_data *) device)->drive_serial);
+			if ((rc != -EDEV_CRYPTO_ERROR && rc != -EDEV_KEY_REQUIRED) || ((struct camtape_data *)device)->is_data_key_set) {
+				ltfsmsg(LTFS_INFO, 31208I, "READ", count, rc, errno, ((struct camtape_data *)device)->drive_serial);
 				camtape_process_errors(device, rc, msg, "read", true);
 			}
 			len = rc;
 		}
-	}
-	else {
+	} else {
 		len = silion ? read_len : (ssize_t)datacount;
 		pos->block++;
 	}
 
-	if(global_data.crc_checking && len > 4) {
-		if (softc->f_crc_check)
-			len = softc->f_crc_check(buf, len - 4);
+	if (global_data.crc_checking && len > 4) {
+		if (softc->f_crc_check) len = softc->f_crc_check(buf, len - 4);
 		if (len < 0) {
 			ltfsmsg(LTFS_ERR, 31239E);
 			len = -EDEV_LBP_READ_ERROR;
@@ -599,9 +584,9 @@ int camtape_write(void *device, const char *buf, size_t count, struct tc_positio
 	struct scsi_sense_data sense_data;
 	int write_retry_done = 0;
 
-	struct camtape_data *softc = (struct camtape_data *) device;
-	int    fd = softc->fd_sa;
-	size_t     datacount = count;
+	struct camtape_data *softc = (struct camtape_data *)device;
+	int fd = softc->fd_sa;
+	size_t datacount = count;
 
 	/*
 	 * TODO: Check count is smaller than max of SSIZE_MAX
@@ -610,18 +595,18 @@ int camtape_write(void *device, const char *buf, size_t count, struct tc_positio
 	 */
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITE));
-	ltfsmsg(LTFS_DEBUG, 31395D, "write", count, ((struct camtape_data *) device)->drive_serial);
+	ltfsmsg(LTFS_DEBUG, 31395D, "write", count, ((struct camtape_data *)device)->drive_serial);
 
-	if ( softc->force_writeperm ) {
+	if (softc->force_writeperm) {
 		softc->write_counter++;
-		if ( softc->write_counter > softc->force_writeperm ) {
+		if (softc->write_counter > softc->force_writeperm) {
 			ltfsmsg(LTFS_INFO, 31234I, "write");
 			ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
 			if (softc->force_errortype)
 				return -EDEV_NO_SENSE;
 			else
 				return -EDEV_WRITE_PERM;
-		} else if ( softc->write_counter > (softc->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE)) {
+		} else if (softc->write_counter > (softc->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE)) {
 			ltfsmsg(LTFS_INFO, 31235I);
 			pos->block++;
 			ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
@@ -630,9 +615,8 @@ int camtape_write(void *device, const char *buf, size_t count, struct tc_positio
 	}
 
 	/* Invoke _ioctl to Write */
-	if(global_data.crc_checking) {
-		if (softc->f_crc_enc)
-			softc->f_crc_enc((void *)buf, count);
+	if (global_data.crc_checking) {
+		if (softc->f_crc_enc) softc->f_crc_enc((void *)buf, count);
 		datacount = count + 4;
 	}
 
@@ -658,7 +642,7 @@ retry_write:
 			 * the write path, we do a blocking allocation that will sleep until it has memory.
 			 * So, the only failures we'll see here are failures that come from the tape drive.
 			 */
-			rc = camtape_ioctlrc2err(softc, fd , &sense_data, /*control_cmd*/ 0, &msg);
+			rc = camtape_ioctlrc2err(softc, fd, &sense_data, /*control_cmd*/ 0, &msg);
 		} else {
 			/*
 			 * Short write.  This means that we hit early warning.  Grab the position to see
@@ -670,14 +654,12 @@ retry_write:
 				write_retry_done = 1;
 				goto retry_write;
 			} else
-				rc = camtape_ioctlrc2err(softc, fd , &sense_data, /*control_cmd*/ 0, &msg);
+				rc = camtape_ioctlrc2err(softc, fd, &sense_data, /*control_cmd*/ 0, &msg);
 		}
 
-		if (rc != DEVICE_GOOD)
-			camtape_process_errors(device, rc, msg, "write", true);
+		if (rc != DEVICE_GOOD) camtape_process_errors(device, rc, msg, "write", true);
 
-		if (rc == -EDEV_LBP_WRITE_ERROR)
-			ltfsmsg(LTFS_ERR, 31247E);
+		if (rc == -EDEV_LBP_WRITE_ERROR) ltfsmsg(LTFS_ERR, 31247E);
 	} else {
 		rc = DEVICE_GOOD;
 		pos->block++;
@@ -702,7 +684,7 @@ int camtape_writefm(void *device, size_t count, struct tc_position *pos, bool im
 	char *msg = NULL;
 	size_t written_count;
 	tape_filemarks_t cur_fm = pos->filemarks;
-	struct camtape_data *softc = (struct camtape_data *) device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITEFM));
 	ltfsmsg(LTFS_DEBUG, 31396D, "writefm", count, softc->drive_serial);
@@ -714,35 +696,35 @@ start_wfm:
 
 	if (rc != DEVICE_GOOD) {
 		switch (rc) {
-		case -EDEV_EARLY_WARNING:
-			ltfsmsg(LTFS_WARN, 31245W, "writefm");
-			rc = DEVICE_GOOD;
-			pos->early_warning = true;
-			break;
-		case -EDEV_PROG_EARLY_WARNING:
-			ltfsmsg(LTFS_WARN, 31246W, "writefm");
-			rc = DEVICE_GOOD;
-			pos->programmable_early_warning = true;
-			break;
-		case -EDEV_CONFIGURE_CHANGED:
-			written_count = pos->filemarks - cur_fm;
-			if (count != written_count) {
-				/* need to write fm again */
-				count = count - written_count;
-				cur_fm = pos->filemarks;
-				goto start_wfm;
-			}
-			break;
-		default:
-			if (pos->early_warning) {
+			case -EDEV_EARLY_WARNING:
 				ltfsmsg(LTFS_WARN, 31245W, "writefm");
 				rc = DEVICE_GOOD;
-			}
-			if (pos->programmable_early_warning) {
+				pos->early_warning = true;
+				break;
+			case -EDEV_PROG_EARLY_WARNING:
 				ltfsmsg(LTFS_WARN, 31246W, "writefm");
 				rc = DEVICE_GOOD;
-			}
-			break;
+				pos->programmable_early_warning = true;
+				break;
+			case -EDEV_CONFIGURE_CHANGED:
+				written_count = pos->filemarks - cur_fm;
+				if (count != written_count) {
+					/* need to write fm again */
+					count = count - written_count;
+					cur_fm = pos->filemarks;
+					goto start_wfm;
+				}
+				break;
+			default:
+				if (pos->early_warning) {
+					ltfsmsg(LTFS_WARN, 31245W, "writefm");
+					rc = DEVICE_GOOD;
+				}
+				if (pos->programmable_early_warning) {
+					ltfsmsg(LTFS_WARN, 31246W, "writefm");
+					rc = DEVICE_GOOD;
+				}
+				break;
 		}
 
 		if (rc != DEVICE_GOOD) {
@@ -785,9 +767,9 @@ int camtape_rewind(void *device, struct tc_position *pos)
 		camtape_process_errors(device, rc, msg, "rewind", true);
 	}
 
-	softc->clear_by_pc     = false;
+	softc->clear_by_pc = false;
 	softc->force_writeperm = DEFAULT_WRITEPERM;
-	softc->force_readperm  = DEFAULT_READPERM;
+	softc->force_readperm = DEFAULT_READPERM;
 	softc->write_counter = 0;
 	softc->read_counter = 0;
 
@@ -811,8 +793,12 @@ int camtape_locate(void *device, struct tc_position dest, struct tc_position *po
 	struct mtlocate mtl;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOCATE));
-	ltfsmsg(LTFS_DEBUG, 31397D, "locate", (unsigned long long)dest.partition,
-		(unsigned long long)dest.block, softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG,
+					31397D,
+					"locate",
+					(unsigned long long)dest.partition,
+					(unsigned long long)dest.block,
+					softc->drive_serial);
 
 	memset(&mtl, 0, sizeof(mtl));
 
@@ -824,11 +810,11 @@ int camtape_locate(void *device, struct tc_position dest, struct tc_position *po
 		mtl.flags |= MT_LOCATE_FLAG_CHANGE_PART;
 
 		if (softc->clear_by_pc) {
-			softc->clear_by_pc     = false;
+			softc->clear_by_pc = false;
 			softc->force_writeperm = DEFAULT_WRITEPERM;
-			softc->force_readperm  = DEFAULT_READPERM;
+			softc->force_readperm = DEFAULT_READPERM;
 			softc->write_counter = 0;
-			softc->read_counter  = 0;
+			softc->read_counter = 0;
 		}
 	}
 
@@ -845,8 +831,7 @@ int camtape_locate(void *device, struct tc_position dest, struct tc_position *po
 			rc = DEVICE_GOOD;
 		}
 
-		if (rc != DEVICE_GOOD)
-			camtape_process_errors(device, rc, msg, "locate", true);
+		if (rc != DEVICE_GOOD) camtape_process_errors(device, rc, msg, "locate", true);
 	}
 
 	camtape_readpos(device, pos);
@@ -878,23 +863,19 @@ int camtape_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_posi
 			count = 0;
 			break;
 		case TC_SPACE_FM_F:
-			ltfsmsg(LTFS_DEBUG, 31394D, "space forward file marks", (unsigned long long)count,
-					softc->drive_serial);
+			ltfsmsg(LTFS_DEBUG, 31394D, "space forward file marks", (unsigned long long)count, softc->drive_serial);
 			cmd = MTFSF;
 			break;
 		case TC_SPACE_FM_B:
-			ltfsmsg(LTFS_DEBUG, 31394D, "space back file marks", (unsigned long long)count,
-					softc->drive_serial);
+			ltfsmsg(LTFS_DEBUG, 31394D, "space back file marks", (unsigned long long)count, softc->drive_serial);
 			cmd = MTBSF;
 			break;
 		case TC_SPACE_F:
-			ltfsmsg(LTFS_DEBUG, 31394D, "space forward records", (unsigned long long)count,
-					softc->drive_serial);
+			ltfsmsg(LTFS_DEBUG, 31394D, "space forward records", (unsigned long long)count, softc->drive_serial);
 			cmd = MTFSR;
 			break;
 		case TC_SPACE_B:
-			ltfsmsg(LTFS_DEBUG, 31394D, "space back records", (unsigned long long)count,
-					softc->drive_serial);
+			ltfsmsg(LTFS_DEBUG, 31394D, "space back records", (unsigned long long)count, softc->drive_serial);
 			cmd = MTBSR;
 			break;
 		default:
@@ -936,8 +917,7 @@ int camtape_long_erase(void *device)
 		goto bailout;
 	}
 
-	memset(&(&ccb->ccb_h)[1], 0,
-		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
+	memset(&(&ccb->ccb_h)[1], 0, sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, ERASE);
 	if (timeout < 0) {
@@ -946,24 +926,22 @@ int camtape_long_erase(void *device)
 	}
 
 	scsi_erase(&ccb->csio,
-			   /*retries*/ 1,
-			   /*cbfcnp*/ NULL,
-			   /*tag_action*/ MSG_SIMPLE_Q_TAG,
-			   /*immediate*/ 1,
-			   /*long_erase*/ 1,
-			   /*sense_len*/ SSD_FULL_SIZE,
-			   /*timeout*/ timeout);
+						 /*retries*/ 1,
+						 /*cbfcnp*/ NULL,
+						 /*tag_action*/ MSG_SIMPLE_Q_TAG,
+						 /*immediate*/ 1,
+						 /*long_erase*/ 1,
+						 /*sense_len*/ SSD_FULL_SIZE,
+						 /*timeout*/ timeout);
 
 	ccb->ccb_h.flags |= CAM_DEV_QFRZDIS | CAM_PASS_ERR_RECOVER;
 
 	rc = camtape_send_ccb(softc, ccb, &msg);
 
-	if (rc != DEVICE_GOOD)
-		camtape_process_errors(softc, rc, msg, "long erase", true);
+	if (rc != DEVICE_GOOD) camtape_process_errors(softc, rc, msg, "long erase", true);
 
 bailout:
-	if (ccb != NULL)
-		cam_freeccb(ccb);
+	if (ccb != NULL) cam_freeccb(ccb);
 
 	return rc;
 }
@@ -995,8 +973,7 @@ int camtape_erase(void *device, struct tc_position *pos, bool long_erase)
 			rc = camtape_long_erase(device);
 		}
 
-		if (rc != -EDEV_OPERATION_IN_PROGRESS)
-			goto bailout;
+		if (rc != -EDEV_OPERATION_IN_PROGRESS) goto bailout;
 
 		while (true) {
 			struct scsi_sense_data sense_data;
@@ -1004,12 +981,11 @@ int camtape_erase(void *device, struct tc_position *pos, bool long_erase)
 
 			memset(&sense_data, 0, sizeof(sense_data));
 			rc = camtape_request_sense(device, &sense_data, sizeof(sense_data), &fill_len);
-			if (rc != -EDEV_OPERATION_IN_PROGRESS)
-				goto bailout;
+			if (rc != -EDEV_OPERATION_IN_PROGRESS) goto bailout;
 
 			if (IS_ENTERPRISE(softc->drive_type)) {
 				get_current_timespec(&ts_now);
-				ltfsmsg(LTFS_INFO, 31251I, (ts_now.tv_sec - ts_start.tv_sec)/60);
+				ltfsmsg(LTFS_INFO, 31251I, (ts_now.tv_sec - ts_start.tv_sec) / 60);
 			} else {
 				struct scsi_sense_sks_progress prog;
 
@@ -1020,7 +996,7 @@ int camtape_erase(void *device, struct tc_position *pos, bool long_erase)
 
 					progress = scsi_2btoul(prog.progress);
 
-					ltfsmsg(LTFS_INFO, 31252I, progress*100/0xFFFF);
+					ltfsmsg(LTFS_INFO, 31252I, progress * 100 / 0xFFFF);
 				} else {
 					rc = 0;
 					goto bailout;
@@ -1057,42 +1033,38 @@ int _camtape_load_unload(void *device, bool load, struct tc_position *pos)
 	int rc;
 	char *msg = NULL;
 	bool take_dump = true;
-	struct camtape_data *softc = ((struct camtape_data *) device);
+	struct camtape_data *softc = ((struct camtape_data *)device);
 
 	if (load) {
 		rc = _mt_command(device, MTLOAD, "LOAD", 0, &msg);
-	}
-	else {
+	} else {
 		rc = _mt_command(device, MTOFFL, "UNLOAD", 0, &msg);
 	}
 
 	if (rc != DEVICE_GOOD) {
 		switch (rc) {
-		case -EDEV_LOAD_UNLOAD_ERROR:
-			if (softc->loadfailed) {
+			case -EDEV_LOAD_UNLOAD_ERROR:
+				if (softc->loadfailed) {
+					take_dump = false;
+				} else {
+					softc->loadfailed = true;
+				}
+				break;
+			case -EDEV_NO_MEDIUM:
+			case -EDEV_BECOMING_READY:
+			case -EDEV_MEDIUM_MAY_BE_CHANGED:
 				take_dump = false;
-			}
-			else {
-				softc->loadfailed = true;
-			}
-			break;
-		case -EDEV_NO_MEDIUM:
-		case -EDEV_BECOMING_READY:
-		case -EDEV_MEDIUM_MAY_BE_CHANGED:
-			take_dump = false;
-			break;
-		default:
-			break;
+				break;
+			default:
+				break;
 		}
 		camtape_readpos(device, pos);
 		camtape_process_errors(device, rc, msg, "load unload", take_dump);
-	}
-	else {
+	} else {
 		if (load) {
 			camtape_readpos(device, pos);
 			softc->tape_alert = 0;
-		}
-		else {
+		} else {
 			pos->partition = 0;
 			pos->block = 0;
 			softc->tape_alert = 0;
@@ -1128,9 +1100,9 @@ int camtape_load(void *device, struct tc_position *pos)
 	softc->loaded = true;
 	softc->is_worm = false;
 
-	softc->clear_by_pc     = false;
+	softc->clear_by_pc = false;
 	softc->force_writeperm = DEFAULT_WRITEPERM;
-	softc->force_readperm  = DEFAULT_READPERM;
+	softc->force_readperm = DEFAULT_READPERM;
 	softc->write_counter = 0;
 	softc->read_counter = 0;
 	softc->cart_type = buf[2];
@@ -1138,8 +1110,7 @@ int camtape_load(void *device, struct tc_position *pos)
 
 	if (softc->vendor == VENDOR_HP) {
 		softc->cart_type = assume_cart_type(softc->density_code);
-		if (buf[2] == 0x01)
-			softc->is_worm = true;
+		if (buf[2] == 0x01) softc->is_worm = true;
 	} else {
 		softc->cart_type = buf[2];
 	}
@@ -1151,8 +1122,7 @@ int camtape_load(void *device, struct tc_position *pos)
 	}
 
 	rc = is_supported_tape(softc->cart_type, softc->density_code, &(softc->is_worm));
-	if(rc == -LTFS_UNSUPPORTED_MEDIUM)
-		ltfsmsg(LTFS_INFO, 31255I, softc->cart_type, softc->density_code);
+	if (rc == -LTFS_UNSUPPORTED_MEDIUM) ltfsmsg(LTFS_INFO, 31255I, softc->cart_type, softc->density_code);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOAD));
 
@@ -1175,7 +1145,7 @@ int camtape_unload(void *device, struct tc_position *pos)
 
 	rc = _camtape_load_unload(device, false, pos);
 
-	softc->clear_by_pc     = false;
+	softc->clear_by_pc = false;
 	softc->force_writeperm = DEFAULT_WRITEPERM;
 	softc->force_readperm = DEFAULT_READPERM;
 	softc->write_counter = 0;
@@ -1225,14 +1195,14 @@ static int camtape_get_next_block_to_xfer(void *device, struct tc_position *pos)
 	 * XXX KDM should we do any retries here?  Doing retries potentially hides sense data.
 	 */
 	scsi_read_position_10(&ccb->csio,
-						  /*retries*/ 0,
-						  /*cbfcnp*/ NULL,
-						  /*tag_action*/ MSG_SIMPLE_Q_TAG,
-						  /*service_action*/ SA_RPOS_EXTENDED_FORM,
-						  /*data_ptr*/ (uint8_t *)&ext_data,
-						  /*length*/ sizeof(ext_data),
-						  /*sense_len*/ SSD_FULL_SIZE,
-						  /*timeout*/ timeout);
+												/*retries*/ 0,
+												/*cbfcnp*/ NULL,
+												/*tag_action*/ MSG_SIMPLE_Q_TAG,
+												/*service_action*/ SA_RPOS_EXTENDED_FORM,
+												/*data_ptr*/ (uint8_t *)&ext_data,
+												/*length*/ sizeof(ext_data),
+												/*sense_len*/ SSD_FULL_SIZE,
+												/*timeout*/ timeout);
 
 	ccb->ccb_h.flags |= CAM_DEV_QFRZDIS;
 	rc = camtape_send_ccb(softc, ccb, &msg);
@@ -1242,21 +1212,18 @@ static int camtape_get_next_block_to_xfer(void *device, struct tc_position *pos)
 	else {
 		pos->partition = ext_data.partition;
 		pos->block = scsi_8btou64(ext_data.last_object)
-		ltfsmsg(LTFS_DEBUG, 30398D, "next-block-to-xfer",
-				(unsigned long long) pos->block, 0, 0, softc->drive_serial);
+				ltfsmsg(LTFS_DEBUG, 30398D, "next-block-to-xfer", (unsigned long long)pos->block, 0, 0, softc->drive_serial);
 	}
 
 bailout:
-	if (ccb != NULL)
-		cam_freeccb(ccb);
+	if (ccb != NULL) cam_freeccb(ccb);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READPOS));
 
 	return rc;
 }
 
-static int camtape_load_attr(struct mt_status_data *mtinfo, xmlDocPtr doc, xmlAttr *attr,
-    int level, char **msg)
+static int camtape_load_attr(struct mt_status_data *mtinfo, xmlDocPtr doc, xmlAttr *attr, int level, char **msg)
 {
 	struct mt_status_entry *entry;
 	xmlAttr *xattr = NULL;
@@ -1307,8 +1274,7 @@ static int camtape_load_attr(struct mt_status_data *mtinfo, xmlDocPtr doc, xmlAt
 				STAILQ_INSERT_TAIL(&entry->nv_list, nv, links);
 				need_free = 0;
 			}
-			if (need_free != 0)
-				xmlFree(str);
+			if (need_free != 0) xmlFree(str);
 		}
 	}
 bailout:
@@ -1316,8 +1282,7 @@ bailout:
 	return (retval);
 }
 
-static int camtape_load_elements(struct mt_status_data *mtinfo, xmlDocPtr doc, xmlNode *node,
-    int level, char **msg)
+static int camtape_load_elements(struct mt_status_data *mtinfo, xmlDocPtr doc, xmlNode *node, int level, char **msg)
 {
 	struct mt_status_entry *entry;
 	xmlNode *xnode = NULL;
@@ -1328,8 +1293,7 @@ static int camtape_load_elements(struct mt_status_data *mtinfo, xmlDocPtr doc, x
 
 		if (xnode->type == XML_ELEMENT_NODE) {
 			mtinfo->level++;
-			if ((u_int)mtinfo->level > sizeof(mtinfo->cur_entry) /
-			    sizeof(mtinfo->cur_entry[0])) {
+			if ((u_int)mtinfo->level > sizeof(mtinfo->cur_entry) / sizeof(mtinfo->cur_entry[0])) {
 				*msg = strdup("Too many nesting levels");
 				retval = -EDEV_INVALID_ARG;
 				goto bailout;
@@ -1349,42 +1313,36 @@ static int camtape_load_elements(struct mt_status_data *mtinfo, xmlDocPtr doc, x
 			if (mtinfo->cur_entry[mtinfo->level - 1] == NULL) {
 				STAILQ_INSERT_TAIL(&mtinfo->entries, entry, links);
 			} else {
-				STAILQ_INSERT_TAIL(
-				    &mtinfo->cur_entry[mtinfo->level - 1]->child_entries,
-				    entry, links);
+				STAILQ_INSERT_TAIL(&mtinfo->cur_entry[mtinfo->level - 1]->child_entries, entry, links);
 				entry->parent = mtinfo->cur_entry[mtinfo->level - 1];
 			}
 		} else if (xnode->type == XML_TEXT_NODE) {
 			char *str;
 
-
 			str = (char *)xmlNodeListGetString(doc, xnode, 1);
 
-			if (xmlIsBlankNode(xnode) != 0)
-				continue;
+			if (xmlIsBlankNode(xnode) != 0) continue;
 
 			entry = mtinfo->cur_entry[mtinfo->level];
 
 			entry->value = str;
 			switch (entry->var_type) {
-			case MT_TYPE_INT:
-				entry->value_signed = strtoll(str, NULL, 0);
-				break;
-			case MT_TYPE_UINT:
-				entry->value_unsigned = strtoull(str, NULL, 0);
-				break;
-			default:
-				break;
+				case MT_TYPE_INT:
+					entry->value_signed = strtoll(str, NULL, 0);
+					break;
+				case MT_TYPE_UINT:
+					entry->value_unsigned = strtoull(str, NULL, 0);
+					break;
+				default:
+					break;
 			}
 		}
 		if (xnode->properties != NULL) {
 			retval = camtape_load_attr(mtinfo, doc, xnode->properties, level, msg);
-			if (retval != DEVICE_GOOD)
-				goto bailout;
+			if (retval != DEVICE_GOOD) goto bailout;
 		}
 		retval = camtape_load_elements(mtinfo, doc, xnode->children, level + 1, msg);
-		if (retval != DEVICE_GOOD)
-			goto bailout;
+		if (retval != DEVICE_GOOD) goto bailout;
 
 		if (created_element != 0) {
 			mtinfo->cur_entry[mtinfo->level] = NULL;
@@ -1396,8 +1354,7 @@ bailout:
 	return (retval);
 }
 
-int camtape_get_mtinfo(struct camtape_data *softc, struct mt_status_data *mtinfo, int params,
-    char **msg)
+int camtape_get_mtinfo(struct camtape_data *softc, struct mt_status_data *mtinfo, int params, char **msg)
 {
 	struct mtextget extget;
 	int alloc_size = 32768;
@@ -1422,8 +1379,7 @@ extget_retry:
 	if (ioctl(softc->fd_sa, (params != 0) ? MTIOCPARAMGET : MTIOCEXTGET, &extget) == -1) {
 		char tmpstr[512];
 
-		snprintf(tmpstr, sizeof(tmpstr), "ioctl error from sa(4) driver: %s",
-		    strerror(errno));
+		snprintf(tmpstr, sizeof(tmpstr), "ioctl error from sa(4) driver: %s", strerror(errno));
 		*msg = strdup(tmpstr);
 		retval = -errno;
 		goto bailout;
@@ -1442,8 +1398,7 @@ extget_retry:
 		char tmpstr[512];
 
 		retval = -EDEV_DRIVER_ERROR;
-		snprintf(tmpstr, sizeof(tmpstr), "Error getting status data from sa(4) driver: status = %d",
-			extget.status);
+		snprintf(tmpstr, sizeof(tmpstr), "Error getting status data from sa(4) driver: status = %d", extget.status);
 		*msg = strdup(tmpstr);
 		goto bailout;
 	}
@@ -1478,12 +1433,9 @@ extget_retry:
 
 bailout:
 
-	if (xml_str != NULL)
-		free(xml_str);
-	if (doc != NULL)
-		xmlFreeDoc(doc);
-	if (ctx != NULL)
-		xmlFreeParserCtxt(ctx);
+	if (xml_str != NULL) free(xml_str);
+	if (doc != NULL) xmlFreeDoc(doc);
+	if (ctx != NULL) xmlFreeParserCtxt(ctx);
 
 	return (retval);
 }
@@ -1495,37 +1447,39 @@ int camtape_free_mtinfo(struct camtape_data *softc, struct mt_status_data *mtinf
 	return (DEVICE_GOOD);
 }
 
-typedef enum {
-	MT_REPORTED_FILENO 	= 0,
-	MT_REPORTED_BLKNO	= 1,
-	MT_PARTITION		= 2,
-	MT_BOP				= 3,
-	MT_EOP				= 4,
-	MT_BPEW				= 5
+typedef enum
+{
+	MT_REPORTED_FILENO = 0,
+	MT_REPORTED_BLKNO = 1,
+	MT_PARTITION = 2,
+	MT_BOP = 3,
+	MT_EOP = 4,
+	MT_BPEW = 5
 } camtape_status_index;
 
-struct camtape_status_item {
+struct camtape_status_item
+{
 	const char *name;
 	struct mt_status_entry *entry;
-} req_status_items[] = {
-	{"reported_fileno", NULL },
-	{"reported_blkno", NULL },
-	{"partition", NULL },
-	{"bop", NULL },
-	{"eop", NULL },
-	{"bpew", NULL}
-};
-#define	CT_NUM_STATUS_ITEMS	(sizeof(req_status_items)/sizeof(req_status_items[0]))
+} req_status_items[] = { { "reported_fileno", NULL },
+												 { "reported_blkno", NULL },
+												 { "partition", NULL },
+												 { "bop", NULL },
+												 { "eop", NULL },
+												 { "bpew", NULL } };
+#define CT_NUM_STATUS_ITEMS (sizeof(req_status_items) / sizeof(req_status_items[0]))
 
-int camtape_getstatus(struct camtape_data *softc, struct mt_status_data *mtinfo,
-    struct camtape_status_item *status_items, int num_status_items, char **msg)
+int camtape_getstatus(struct camtape_data *softc,
+											struct mt_status_data *mtinfo,
+											struct camtape_status_item *status_items,
+											int num_status_items,
+											char **msg)
 {
 	int retval = DEVICE_GOOD;
 	int i;
 
 	retval = camtape_get_mtinfo(softc, mtinfo, /*params*/ 0, msg);
-	if (retval != DEVICE_GOOD)
-		goto bailout;
+	if (retval != DEVICE_GOOD) goto bailout;
 
 	for (i = 0; i < num_status_items; i++) {
 		char *name;
@@ -1585,9 +1539,13 @@ int camtape_readpos(void *device, struct tc_position *pos)
 	pos->block = status_items[MT_REPORTED_BLKNO].entry->value_signed;
 	pos->filemarks = status_items[MT_REPORTED_FILENO].entry->value_signed;
 
-	ltfsmsg(LTFS_DEBUG, 31398D, "readpos", (unsigned long long)pos->partition,
-			(unsigned long long)pos->block, (unsigned long long)pos->filemarks,
-			softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG,
+					31398D,
+					"readpos",
+					(unsigned long long)pos->partition,
+					(unsigned long long)pos->block,
+					(unsigned long long)pos->filemarks,
+					softc->drive_serial);
 bailout:
 
 	camtape_free_mtinfo(softc, &mtinfo);
@@ -1606,7 +1564,8 @@ bailout:
  * @param vol_mam_uuid Volume UUID, unused by libtlfs (HPE extension)
  * @return 0 on success or a negative value on error
  */
-int camtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid)
+int camtape_format(
+		void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid)
 {
 	int rc, aux_rc;
 	char *msg = NULL;
@@ -1618,7 +1577,7 @@ int camtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, co
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_FORMAT));
 	ltfsmsg(LTFS_DEBUG, 31392D, "format", softc->drive_serial);
 
-	if ((unsigned char) format >= (unsigned char) TC_FORMAT_MAX) {
+	if ((unsigned char)format >= (unsigned char)TC_FORMAT_MAX) {
 		ltfsmsg(LTFS_INFO, 31256I, format);
 		ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_FORMAT));
 		return -1;
@@ -1630,8 +1589,7 @@ int camtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, co
 		goto bailout;
 	}
 
-	memset(&(&ccb->ccb_h)[1], 0,
-		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
+	memset(&(&ccb->ccb_h)[1], 0, sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, FORMAT_MEDIUM);
 	if (timeout < 0) {
@@ -1640,15 +1598,15 @@ int camtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, co
 	}
 
 	scsi_format_medium(&ccb->csio,
-					   /*retries*/ 1,
-					   /*cbfcnp*/ NULL,
-					   /*tag_action*/ MSG_SIMPLE_Q_TAG,
-					   /*byte1*/ 0,
-					   /*byte2*/ format,
-					   /*data_ptr*/ NULL,
-					   /*dxfer_len*/ 0,
-					   /*sense_len*/ SSD_FULL_SIZE,
-					   /*timeout*/ timeout);
+										 /*retries*/ 1,
+										 /*cbfcnp*/ NULL,
+										 /*tag_action*/ MSG_SIMPLE_Q_TAG,
+										 /*byte1*/ 0,
+										 /*byte2*/ format,
+										 /*data_ptr*/ NULL,
+										 /*dxfer_len*/ 0,
+										 /*sense_len*/ SSD_FULL_SIZE,
+										 /*timeout*/ timeout);
 
 	ccb->ccb_h.flags |= CAM_DEV_QFRZDIS | CAM_PASS_ERR_RECOVER;
 
@@ -1665,8 +1623,7 @@ int camtape_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, co
 		softc->density_code = buf[8];
 	}
 bailout:
-	if (ccb != NULL)
-		cam_freeccb(ccb);
+	if (ccb != NULL) cam_freeccb(ccb);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_FORMAT));
 	return rc;
@@ -1682,8 +1639,7 @@ bailout:
  */
 #define MAX_UINT16 (0x0000FFFF)
 
-int camtape_logsense(void *device, const uint8_t page, const uint8_t subpage,
-					 unsigned char *buf, const size_t size)
+int camtape_logsense(void *device, const uint8_t page, const uint8_t subpage, unsigned char *buf, const size_t size)
 {
 	int rc = DEVICE_GOOD;
 	char *msg = NULL;
@@ -1697,12 +1653,10 @@ int camtape_logsense(void *device, const uint8_t page, const uint8_t subpage,
 	unsigned char *inner_buf = NULL;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_LOGSENSE));
-	ltfsmsg(LTFS_DEBUG3, 31397D, "logsense",
-			(unsigned long long)page, (unsigned long long)subpage, softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG3, 31397D, "logsense", (unsigned long long)page, (unsigned long long)subpage, softc->drive_serial);
 
 	inner_buf = calloc(1, MAXLP_SIZE); /* Assume max length of LP is 0xFFFF */
-	if (!inner_buf)
-		return -LTFS_NO_MEMORY;
+	if (!inner_buf) return -LTFS_NO_MEMORY;
 
 	ccb = cam_getccb(softc->cd);
 	if (ccb == NULL) {
@@ -1710,8 +1664,7 @@ int camtape_logsense(void *device, const uint8_t page, const uint8_t subpage,
 		goto bailout;
 	}
 
-	memset(&(&ccb->ccb_h)[1], 0,
-		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
+	memset(&(&ccb->ccb_h)[1], 0, sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, LOG_SENSE);
 	if (timeout < 0) {
@@ -1720,18 +1673,18 @@ int camtape_logsense(void *device, const uint8_t page, const uint8_t subpage,
 	}
 
 	scsi_log_sense(&ccb->csio,
-				   /*retries*/ 1,
-				   /*cbfcnp*/ NULL,
-				   /*tag_action*/ MSG_SIMPLE_Q_TAG,
-				   /*page_code*/ page,
-				   /*page*/ SLS_PAGE_CTRL_CUMULATIVE,
-				   /*save_pages*/ 0,
-				   /*ppc*/ 0,
-				   /*paramptr*/ 0,
-				   /*param_buf*/ inner_buf,
-				   /*param_len*/ MAXLP_SIZE,
-				   /*sense_len*/ SSD_FULL_SIZE,
-				   /*timeout*/ timeout);
+								 /*retries*/ 1,
+								 /*cbfcnp*/ NULL,
+								 /*tag_action*/ MSG_SIMPLE_Q_TAG,
+								 /*page_code*/ page,
+								 /*page*/ SLS_PAGE_CTRL_CUMULATIVE,
+								 /*save_pages*/ 0,
+								 /*ppc*/ 0,
+								 /*paramptr*/ 0,
+								 /*param_buf*/ inner_buf,
+								 /*param_len*/ MAXLP_SIZE,
+								 /*sense_len*/ SSD_FULL_SIZE,
+								 /*timeout*/ timeout);
 	/*
 	 * XXX KDM need to add subpage to the log sense fill function.
 	 */
@@ -1756,11 +1709,9 @@ int camtape_logsense(void *device, const uint8_t page, const uint8_t subpage,
 	}
 
 bailout:
-	if (inner_buf != NULL)
-		free(inner_buf);
+	if (inner_buf != NULL) free(inner_buf);
 
-	if (ccb != NULL)
-		cam_freeccb(ccb);
+	if (ccb != NULL) cam_freeccb(ccb);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOGSENSE));
 
@@ -1790,9 +1741,8 @@ int camtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 			return rc;
 		}
 
-		for(i = TAPECAP_REMAIN_0; i < TAPECAP_SIZE; i++) {
-			if (parse_logPage(logdata, (uint16_t) i, &param_size, buf, sizeof(buf))
-				|| param_size != sizeof(uint32_t)) {
+		for (i = TAPECAP_REMAIN_0; i < TAPECAP_SIZE; i++) {
+			if (parse_logPage(logdata, (uint16_t)i, &param_size, buf, sizeof(buf)) || param_size != sizeof(uint32_t)) {
 				ltfsmsg(LTFS_INFO, 31258I);
 				ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
 				return -EDEV_NO_MEMORY;
@@ -1801,27 +1751,26 @@ int camtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 			logcap = ltfs_betou32(buf);
 
 			switch (i) {
-			case TAPECAP_REMAIN_0:
-				cap->remaining_p0 = logcap;
-				break;
-			case TAPECAP_REMAIN_1:
-				cap->remaining_p1 = logcap;
-				break;
-			case TAPECAP_MAX_0:
-				cap->max_p0 = logcap;
-				break;
-			case TAPECAP_MAX_1:
-				cap->max_p1 = logcap;
-				break;
-			default:
-				ltfsmsg(LTFS_INFO, 31259I, i);
-				ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
-				return -EDEV_INVALID_ARG;
-				break;
+				case TAPECAP_REMAIN_0:
+					cap->remaining_p0 = logcap;
+					break;
+				case TAPECAP_REMAIN_1:
+					cap->remaining_p1 = logcap;
+					break;
+				case TAPECAP_MAX_0:
+					cap->max_p0 = logcap;
+					break;
+				case TAPECAP_MAX_1:
+					cap->max_p1 = logcap;
+					break;
+				default:
+					ltfsmsg(LTFS_INFO, 31259I, i);
+					ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_REMAINCAP));
+					return -EDEV_INVALID_ARG;
+					break;
 			}
 		}
-	}
-	else {
+	} else {
 		/* Issue LogPage 0x17 */
 		rc = camtape_logsense(device, LOG_VOLUMESTATS, (uint8_t)0, logdata, LOGSENSEPAGE);
 		if (rc < 0) {
@@ -1869,14 +1818,21 @@ int camtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 		cap->remaining_p1 = (cap->remaining_p1 * 1000 * 1000) >> 20;
 	}
 
-	ltfsmsg(LTFS_DEBUG3, 31397D, "capacity part0", (unsigned long long)cap->remaining_p0,
-			(unsigned long long)cap->max_p0, softc->drive_serial);
-	ltfsmsg(LTFS_DEBUG3, 31397D, "capacity part1", (unsigned long long)cap->remaining_p1,
-		(unsigned long long)cap->max_p1, softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG3,
+					31397D,
+					"capacity part0",
+					(unsigned long long)cap->remaining_p0,
+					(unsigned long long)cap->max_p0,
+					softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG3,
+					31397D,
+					"capacity part1",
+					(unsigned long long)cap->remaining_p1,
+					(unsigned long long)cap->max_p1,
+					softc->drive_serial);
 
 	return 0;
 }
-
 
 /**
  * Get mode data
@@ -1887,8 +1843,12 @@ int camtape_remaining_capacity(void *device, struct tc_remaining_cap *cap)
  * @param size length of buf
  * @return 0 on success or a negative value on error
  */
-int camtape_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc, const uint8_t subpage,
-					  unsigned char *buf, const size_t size)
+int camtape_modesense(void *device,
+											const uint8_t page,
+											const TC_MP_PC_TYPE pc,
+											const uint8_t subpage,
+											unsigned char *buf,
+											const size_t size)
 {
 	int rc;
 	char *msg = NULL;
@@ -1905,8 +1865,7 @@ int camtape_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc, 
 		goto bailout;
 	}
 
-	memset(&(&ccb->ccb_h)[1], 0,
-		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
+	memset(&(&ccb->ccb_h)[1], 0, sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, MODE_SENSE_10);
 	if (timeout < 0) {
@@ -1915,17 +1874,17 @@ int camtape_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc, 
 	}
 
 	scsi_mode_sense_len(&ccb->csio,
-						/*retries*/ 1,
-						/*cbfcnp*/ NULL,
-						/*tag_action*/ MSG_SIMPLE_Q_TAG,
-						/*dbd*/ 0,
-						/*page_code*/ pc,
-						/*page*/ page,
-						/*param_buf*/ buf,
-						/*param_len*/ MIN(MAX_UINT16, size),
-						/*minimum_cmd_size*/ 10,
-						/*sense_len*/ SSD_FULL_SIZE,
-						/*timeout*/ timeout);
+											/*retries*/ 1,
+											/*cbfcnp*/ NULL,
+											/*tag_action*/ MSG_SIMPLE_Q_TAG,
+											/*dbd*/ 0,
+											/*page_code*/ pc,
+											/*page*/ page,
+											/*param_buf*/ buf,
+											/*param_len*/ MIN(MAX_UINT16, size),
+											/*minimum_cmd_size*/ 10,
+											/*sense_len*/ SSD_FULL_SIZE,
+											/*timeout*/ timeout);
 	/*
 	 * XXX KDM need a version of scsi_mode_sense() that allows setting the subpage.  The offset
 	 * is the same in the 6 and 10 byte versions, so we can just set the same byte here.
@@ -1936,12 +1895,10 @@ int camtape_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc, 
 
 	rc = camtape_send_ccb(softc, ccb, &msg);
 
-	if (rc != DEVICE_GOOD)
-		camtape_process_errors(softc, rc, msg, "modesense", true);
+	if (rc != DEVICE_GOOD) camtape_process_errors(softc, rc, msg, "modesense", true);
 
 bailout:
-	if (ccb != NULL)
-		cam_freeccb(ccb);
+	if (ccb != NULL) cam_freeccb(ccb);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_MODESENSE));
 	return rc;
@@ -1971,8 +1928,7 @@ int camtape_modeselect(void *device, unsigned char *buf, const size_t size)
 		goto bailout;
 	}
 
-	memset(&(&ccb->ccb_h)[1], 0,
-		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
+	memset(&(&ccb->ccb_h)[1], 0, sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, MODE_SELECT_10);
 	if (timeout < 0) {
@@ -1981,31 +1937,28 @@ int camtape_modeselect(void *device, unsigned char *buf, const size_t size)
 	}
 
 	scsi_mode_select_len(&ccb->csio,
-						 /*retries*/ 1,
-						 /*cbfcnp*/ NULL,
-						 /*tag_action*/ MSG_SIMPLE_Q_TAG,
-						 /*scsi_page_fmt*/ 0,
-						 /*save_pages*/ 0,
-						 /*param_buf*/ buf,
-						 /*param_len*/ size,
-						 /*minimum_cmd_len*/ 10,
-						 /*sense_len*/ SSD_FULL_SIZE,
-						 /*timeout*/ timeout);
+											 /*retries*/ 1,
+											 /*cbfcnp*/ NULL,
+											 /*tag_action*/ MSG_SIMPLE_Q_TAG,
+											 /*scsi_page_fmt*/ 0,
+											 /*save_pages*/ 0,
+											 /*param_buf*/ buf,
+											 /*param_len*/ size,
+											 /*minimum_cmd_len*/ 10,
+											 /*sense_len*/ SSD_FULL_SIZE,
+											 /*timeout*/ timeout);
 
 	ccb->ccb_h.flags |= CAM_DEV_QFRZDIS | CAM_PASS_ERR_RECOVER;
 
 	rc = camtape_send_ccb(softc, ccb, &msg);
 
 	if (rc != DEVICE_GOOD) {
-		if (rc == -EDEV_MODE_PARAMETER_ROUNDED)
-			rc = DEVICE_GOOD;
+		if (rc == -EDEV_MODE_PARAMETER_ROUNDED) rc = DEVICE_GOOD;
 
-		if (rc != DEVICE_GOOD)
-			camtape_process_errors(device, rc, msg, "modeselect", true);
+		if (rc != DEVICE_GOOD) camtape_process_errors(device, rc, msg, "modeselect", true);
 	}
 bailout:
-	if (ccb != NULL)
-		cam_freeccb(ccb);
+	if (ccb != NULL) cam_freeccb(ccb);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_MODESELECT));
 	return rc;
@@ -2061,12 +2014,12 @@ int camtape_allow_medium_removal(void *device)
  * @param size length of the buffer
  * @return 0 on success or a negative value on error
  */
-int camtape_read_attribute(void *device, const tape_partition_t part, const uint16_t id,
-						   unsigned char *buf, const size_t size)
+int camtape_read_attribute(
+		void *device, const tape_partition_t part, const uint16_t id, unsigned char *buf, const size_t size)
 {
 	int rc = DEVICE_GOOD;
 	char *msg = NULL;
-	bool take_dump= true;
+	bool take_dump = true;
 	int timeout;
 	struct camtape_data *softc = (struct camtape_data *)device;
 	struct scsi_read_attribute_values *attr_header = NULL;
@@ -2074,12 +2027,10 @@ int camtape_read_attribute(void *device, const tape_partition_t part, const uint
 	union ccb *ccb = NULL;
 
 	/* TODO: Need to return data with header when size is MAXMAM_SIZE */
-	if (size == MAXMAM_SIZE)
-		return -LTFS_NO_XATTR;
+	if (size == MAXMAM_SIZE) return -LTFS_NO_XATTR;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READATTR));
-	ltfsmsg(LTFS_DEBUG3, 31397D, "readattr", (unsigned long long)part,
-			(unsigned long long)id, softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG3, 31397D, "readattr", (unsigned long long)part, (unsigned long long)id, softc->drive_serial);
 
 	ccb = cam_getccb(softc->cd);
 	if (ccb == NULL) {
@@ -2087,8 +2038,7 @@ int camtape_read_attribute(void *device, const tape_partition_t part, const uint
 		goto bailout;
 	}
 
-	memset(&(&ccb->ccb_h)[1], 0,
-		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
+	memset(&(&ccb->ccb_h)[1], 0, sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	/*
 	 * The function interface only includes enough space for the attribute, and doesn't include
@@ -2108,51 +2058,41 @@ int camtape_read_attribute(void *device, const tape_partition_t part, const uint
 	}
 
 	scsi_read_attribute(&ccb->csio,
-						/*retries*/ 1,
-						/*cbfcnp*/ NULL,
-						/*tag_action*/ MSG_SIMPLE_Q_TAG,
-						/*service_action*/ SRA_SA_ATTR_VALUES,
-						/*element*/ 0,
-						/*elem_type*/ 0,
-						/*logical_volume*/ 0,
-						/*partition*/ part,
-						/*first_attribute*/ id,
-						/*cache*/ 0,
-						/*data_ptr*/ (uint8_t *)attr_header,
-						/*length*/ attr_size,
-						/*sense_len*/ SSD_FULL_SIZE,
-						/*timeout*/ timeout);
+											/*retries*/ 1,
+											/*cbfcnp*/ NULL,
+											/*tag_action*/ MSG_SIMPLE_Q_TAG,
+											/*service_action*/ SRA_SA_ATTR_VALUES,
+											/*element*/ 0,
+											/*elem_type*/ 0,
+											/*logical_volume*/ 0,
+											/*partition*/ part,
+											/*first_attribute*/ id,
+											/*cache*/ 0,
+											/*data_ptr*/ (uint8_t *)attr_header,
+											/*length*/ attr_size,
+											/*sense_len*/ SSD_FULL_SIZE,
+											/*timeout*/ timeout);
 
 	ccb->ccb_h.flags |= CAM_DEV_QFRZDIS | CAM_PASS_ERR_RECOVER;
 
 	rc = camtape_send_ccb(softc, ccb, &msg);
 
 	if (rc != DEVICE_GOOD) {
-		if ( rc == -EDEV_INVALID_FIELD_CDB )
-			take_dump = false;
+		if (rc == -EDEV_INVALID_FIELD_CDB) take_dump = false;
 
 		camtape_process_errors(device, rc, msg, "readattr", take_dump);
 
-		if (rc < 0 &&
-			id != TC_MAM_PAGE_COHERENCY &&
-			id != TC_MAM_APP_VENDER &&
-			id != TC_MAM_APP_NAME &&
-			id != TC_MAM_APP_VERSION &&
-			id != TC_MAM_USER_MEDIUM_LABEL &&
-			id != TC_MAM_TEXT_LOCALIZATION_IDENTIFIER &&
-			id != TC_MAM_BARCODE &&
-			id != TC_MAM_APP_FORMAT_VERSION)
+		if (rc < 0 && id != TC_MAM_PAGE_COHERENCY && id != TC_MAM_APP_VENDER && id != TC_MAM_APP_NAME &&
+				id != TC_MAM_APP_VERSION && id != TC_MAM_USER_MEDIUM_LABEL && id != TC_MAM_TEXT_LOCALIZATION_IDENTIFIER &&
+				id != TC_MAM_BARCODE && id != TC_MAM_APP_FORMAT_VERSION)
 			ltfsmsg(LTFS_INFO, 31260I, rc);
 	} else {
-
 		memcpy(buf, &attr_header[1], size);
 	}
 
 bailout:
-	if (ccb != NULL)
-		cam_freeccb(ccb);
-	if (attr_header != NULL)
-		free(attr_header);
+	if (ccb != NULL) cam_freeccb(ccb);
+	if (attr_header != NULL) free(attr_header);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_READATTR));
 	return rc;
@@ -2168,8 +2108,7 @@ bailout:
  * @param size length of the attribute buffer
  * @return 0 on success or a negative value on error
  */
-int camtape_write_attribute(void *device, const tape_partition_t part, const unsigned char *buf,
-							const size_t size)
+int camtape_write_attribute(void *device, const tape_partition_t part, const unsigned char *buf, const size_t size)
 {
 	int rc = DEVICE_GOOD;
 	char *msg = NULL;
@@ -2180,8 +2119,7 @@ int camtape_write_attribute(void *device, const tape_partition_t part, const uns
 	union ccb *ccb = NULL;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITEATTR));
-	ltfsmsg(LTFS_DEBUG3, 31394D, "writeattr", (unsigned long long)part,
-			softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG3, 31394D, "writeattr", (unsigned long long)part, softc->drive_serial);
 
 	ccb = cam_getccb(softc->cd);
 	if (ccb == NULL) {
@@ -2189,8 +2127,7 @@ int camtape_write_attribute(void *device, const tape_partition_t part, const uns
 		goto bailout;
 	}
 
-	memset(&(&ccb->ccb_h)[1], 0,
-		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
+	memset(&(&ccb->ccb_h)[1], 0, sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	/*
 	 * The function interface only includes enough space for the attribute, and doesn't include
@@ -2214,30 +2151,27 @@ int camtape_write_attribute(void *device, const tape_partition_t part, const uns
 	}
 
 	scsi_write_attribute(&ccb->csio,
-						 /*retries*/ 1,
-						 /*cbfcnp*/ NULL,
-						 /*tag_action*/ MSG_SIMPLE_Q_TAG,
-						 /*element*/ 0,
-						 /*logical_volume*/ 0,
-						 /*partition*/ part,
-						 /*wtc*/ 1,
-						 /*data_ptr*/ (uint8_t *)attr_header,
-						 /*length*/ attr_size,
-						 /*sense_len*/ SSD_FULL_SIZE,
-						 /*timeout*/ timeout);
+											 /*retries*/ 1,
+											 /*cbfcnp*/ NULL,
+											 /*tag_action*/ MSG_SIMPLE_Q_TAG,
+											 /*element*/ 0,
+											 /*logical_volume*/ 0,
+											 /*partition*/ part,
+											 /*wtc*/ 1,
+											 /*data_ptr*/ (uint8_t *)attr_header,
+											 /*length*/ attr_size,
+											 /*sense_len*/ SSD_FULL_SIZE,
+											 /*timeout*/ timeout);
 
 	ccb->ccb_h.flags |= CAM_DEV_QFRZDIS | CAM_PASS_ERR_RECOVER;
 
 	rc = camtape_send_ccb(softc, ccb, &msg);
 
-	if (rc != DEVICE_GOOD)
-		camtape_process_errors(device, rc, msg, "writeattr", true);
+	if (rc != DEVICE_GOOD) camtape_process_errors(device, rc, msg, "writeattr", true);
 
 bailout:
-	if (ccb != NULL)
-		cam_freeccb(ccb);
-	if (attr_header != NULL)
-		free(attr_header);
+	if (ccb != NULL) cam_freeccb(ccb);
+	if (attr_header != NULL) free(attr_header);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITEATTR));
 	return rc;
@@ -2253,8 +2187,12 @@ int camtape_allow_overwrite(void *device, const struct tc_position pos)
 	union ccb *ccb;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ALLOWOVERW));
-	ltfsmsg(LTFS_DEBUG, 31397D, "allow overwrite", (unsigned long long)pos.partition,
-		(unsigned long long)pos.block, softc->drive_serial);
+	ltfsmsg(LTFS_DEBUG,
+					31397D,
+					"allow overwrite",
+					(unsigned long long)pos.partition,
+					(unsigned long long)pos.block,
+					softc->drive_serial);
 
 	ccb = cam_getccb(softc->cd);
 	if (ccb == NULL) {
@@ -2262,8 +2200,7 @@ int camtape_allow_overwrite(void *device, const struct tc_position pos)
 		goto bailout;
 	}
 
-	memset(&(&ccb->ccb_h)[1], 0,
-		sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
+	memset(&(&ccb->ccb_h)[1], 0, sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 	timeout = camtape_get_timeout(softc->timeouts, ALLOW_OVERWRITE);
 	if (timeout < 0) {
@@ -2274,14 +2211,14 @@ int camtape_allow_overwrite(void *device, const struct tc_position pos)
 	memset(&append_pos, 0, sizeof(append_pos));
 
 	scsi_allow_overwrite(&ccb->csio,
-						 /*retries*/ 1,
-						 /*cbfcnp*/ NULL,
-						 /*tag_action*/ MSG_SIMPLE_Q_TAG,
-						 /*allow_overwrite*/ SAO_ALLOW_OVERWRITE_CUR_POS,
-						 /*partition*/ pos.partition,
-						 /*logical_id*/ pos.block,
-						 /*sense_len*/ SSD_FULL_SIZE,
-						 /*timeout*/ timeout);
+											 /*retries*/ 1,
+											 /*cbfcnp*/ NULL,
+											 /*tag_action*/ MSG_SIMPLE_Q_TAG,
+											 /*allow_overwrite*/ SAO_ALLOW_OVERWRITE_CUR_POS,
+											 /*partition*/ pos.partition,
+											 /*logical_id*/ pos.block,
+											 /*sense_len*/ SSD_FULL_SIZE,
+											 /*timeout*/ timeout);
 
 	ccb->ccb_h.flags |= CAM_DEV_QFRZDIS | CAM_PASS_ERR_RECOVER;
 
@@ -2293,13 +2230,11 @@ int camtape_allow_overwrite(void *device, const struct tc_position pos)
 			rc = DEVICE_GOOD;
 		}
 
-		if (rc != DEVICE_GOOD)
-			camtape_process_errors(device, rc, msg, "allow overwrite", true);
+		if (rc != DEVICE_GOOD) camtape_process_errors(device, rc, msg, "allow overwrite", true);
 	}
 
 bailout:
-	if (ccb != NULL)
-		cam_freeccb(ccb);
+	if (ccb != NULL) cam_freeccb(ccb);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_ALLOWOVERW));
 	return rc;
@@ -2345,7 +2280,7 @@ int camtape_set_compression(void *device, const bool enable_compression, struct 
 
 	buf[0] = 0x00;
 	buf[1] = 0x00;
-	if(enable_compression)
+	if (enable_compression)
 		buf[18] |= 0x80; /* Set DCE field*/
 	else
 		buf[18] &= 0x7F; /* Unset DCE field*/
@@ -2380,13 +2315,12 @@ int camtape_set_default(void *device)
 			return rc;
 		}
 
-		buf[0]  = 0x00;
-		buf[1]  = 0x00;
+		buf[0] = 0x00;
+		buf[1] = 0x00;
 		buf[24] = 0x0C;
 
 		rc = camtape_modeselect(device, buf, sizeof(buf));
-		if (rc != DEVICE_GOOD)
-			goto bailout;
+		if (rc != DEVICE_GOOD) goto bailout;
 	}
 
 	/* set SILI bit */
@@ -2421,8 +2355,7 @@ int camtape_set_default(void *device)
 		rc = DEVICE_GOOD;
 	}
 
-	if (rc != DEVICE_GOOD)
-		goto bailout;
+	if (rc != DEVICE_GOOD) goto bailout;
 
 	ltfsmsg(LTFS_DEBUG, 31392D, __FUNCTION__, "Setting EOT model to 1FM");
 
@@ -2454,31 +2387,23 @@ bailout:
  * @return 0 on success or a negative value on error
  */
 
-#define LOG_TAPE_ALERT               (0x2E)
-#define LOG_PERFORMANCE              (0x37)
-#define LOG_PERFORMANCE_CAPACITY_SUB (0x64) // Scope(7-6): Mount Values
-                                            // Level(5-4): Return Advanced Counters
-                                            // Group(3-0): Capacity
+#define LOG_TAPE_ALERT (0x2E)
+#define LOG_PERFORMANCE (0x37)
+#define LOG_PERFORMANCE_CAPACITY_SUB \
+	(0x64)	// Scope(7-6): Mount Values             \
+					// Level(5-4): Return Advanced Counters \
+					// Group(3-0): Capacity
 
 static uint16_t volstats[] = {
-	VOLSTATS_MOUNTS,
-	VOLSTATS_WRITTEN_DS,
-	VOLSTATS_WRITE_TEMPS,
-	VOLSTATS_WRITE_PERMS,
-	VOLSTATS_READ_DS,
-	VOLSTATS_READ_TEMPS,
-	VOLSTATS_READ_PERMS,
-	VOLSTATS_WRITE_PERMS_PREV,
-	VOLSTATS_READ_PERMS_PREV,
-	VOLSTATS_WRITE_MB,
-	VOLSTATS_READ_MB,
-	VOLSTATS_PASSES_BEGIN,
-	VOLSTATS_PASSES_MIDDLE,
+	VOLSTATS_MOUNTS,		 VOLSTATS_WRITTEN_DS,		VOLSTATS_WRITE_TEMPS,			 VOLSTATS_WRITE_PERMS,		 VOLSTATS_READ_DS,
+	VOLSTATS_READ_TEMPS, VOLSTATS_READ_PERMS,		VOLSTATS_WRITE_PERMS_PREV, VOLSTATS_READ_PERMS_PREV, VOLSTATS_WRITE_MB,
+	VOLSTATS_READ_MB,		 VOLSTATS_PASSES_BEGIN, VOLSTATS_PASSES_MIDDLE,
 };
 
-enum {
-	PERF_CART_CONDITION       = 0x0001,	/* < Media Efficiency */
-	PERF_ACTIVE_CQ_LOSS_W     = 0x7113, /* < Active CQ loss Write */
+enum
+{
+	PERF_CART_CONDITION = 0x0001,		/* < Media Efficiency */
+	PERF_ACTIVE_CQ_LOSS_W = 0x7113, /* < Active CQ loss Write */
 };
 
 static uint16_t perfstats[] = {
@@ -2497,127 +2422,128 @@ int camtape_get_cartridge_health(void *device, struct tc_cartridge_health *cart_
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETCARTHLTH));
 
 	/* Issue LogPage 0x37 */
-	cart_health->tape_efficiency  = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->tape_efficiency = UNSUPPORTED_CARTRIDGE_HEALTH;
 	rc = camtape_logsense(device, LOG_PERFORMANCE, (uint8_t)0, logdata, LOGSENSEPAGE);
 	if (rc < 0)
 		ltfsmsg(LTFS_INFO, 31261I, LOG_PERFORMANCE, rc, "get cart health");
 	else {
-		for(i = 0; i < (int)((sizeof(perfstats)/sizeof(perfstats[0]))); i++) { /* BEAM: loop doesn't iterate - Use loop for future enhancement. */
+		for (i = 0; i < (int)((sizeof(perfstats) / sizeof(perfstats[0])));
+				 i++) { /* BEAM: loop doesn't iterate - Use loop for future enhancement. */
 			if (parse_logPage(logdata, perfstats[i], &param_size, buf, 16)) {
 				ltfsmsg(LTFS_INFO, 31262I, LOG_PERFORMANCE, "get cart health");
 			} else {
-				switch(param_size) {
-				case sizeof(uint8_t):
-					loghlt = (uint64_t)(buf[0]);
-					break;
-				case sizeof(uint16_t):
-					loghlt = (uint64_t)ltfs_betou16(buf);
-					break;
-				case sizeof(uint32_t):
-					loghlt = (uint32_t)ltfs_betou32(buf);
-					break;
-				case sizeof(uint64_t):
-					loghlt = ltfs_betou64(buf);
-					break;
-				default:
-					loghlt = UNSUPPORTED_CARTRIDGE_HEALTH;
-					break;
+				switch (param_size) {
+					case sizeof(uint8_t):
+						loghlt = (uint64_t)(buf[0]);
+						break;
+					case sizeof(uint16_t):
+						loghlt = (uint64_t)ltfs_betou16(buf);
+						break;
+					case sizeof(uint32_t):
+						loghlt = (uint32_t)ltfs_betou32(buf);
+						break;
+					case sizeof(uint64_t):
+						loghlt = ltfs_betou64(buf);
+						break;
+					default:
+						loghlt = UNSUPPORTED_CARTRIDGE_HEALTH;
+						break;
 				}
 
-				switch(perfstats[i]) {
-				case PERF_CART_CONDITION:
-					cart_health->tape_efficiency = loghlt;
-					break;
-				default:
-					break;
+				switch (perfstats[i]) {
+					case PERF_CART_CONDITION:
+						cart_health->tape_efficiency = loghlt;
+						break;
+					default:
+						break;
 				}
 			}
 		}
 	}
 
 	/* Issue LogPage 0x17 */
-	cart_health->mounts           = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->written_ds       = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->write_temps      = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->write_perms      = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->read_ds          = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->read_temps       = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->read_perms       = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->mounts = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->written_ds = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->write_temps = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->write_perms = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->read_ds = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->read_temps = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->read_perms = UNSUPPORTED_CARTRIDGE_HEALTH;
 	cart_health->write_perms_prev = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->read_perms_prev  = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->written_mbytes   = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->read_mbytes      = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->passes_begin     = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->passes_middle    = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->read_perms_prev = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->written_mbytes = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->read_mbytes = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->passes_begin = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->passes_middle = UNSUPPORTED_CARTRIDGE_HEALTH;
 
 	rc = camtape_logsense(device, LOG_VOLUMESTATS, (uint8_t)0, logdata, LOGSENSEPAGE);
 	if (rc < 0)
 		ltfsmsg(LTFS_INFO, 31261I, LOG_VOLUMESTATS, rc, "get cart health");
 	else {
-		for(i = 0; i < (int)((sizeof(volstats)/sizeof(volstats[0]))); i++) {
+		for (i = 0; i < (int)((sizeof(volstats) / sizeof(volstats[0]))); i++) {
 			if (parse_logPage(logdata, volstats[i], &param_size, buf, 16)) {
 				ltfsmsg(LTFS_INFO, 31262I, LOG_VOLUMESTATS, "get cart health");
 			} else {
-				switch(param_size) {
-				case sizeof(uint8_t):
-					loghlt = (uint64_t)(buf[0]);
-					break;
-				case sizeof(uint16_t):
-					loghlt = (uint64_t)ltfs_betou16(buf);
-					break;
-				case sizeof(uint32_t):
-					loghlt = (uint32_t)ltfs_betou32(buf);
-					break;
-				case sizeof(uint64_t):
-					loghlt = ltfs_betou64(buf);
-					break;
-				default:
-					loghlt = UNSUPPORTED_CARTRIDGE_HEALTH;
-					break;
+				switch (param_size) {
+					case sizeof(uint8_t):
+						loghlt = (uint64_t)(buf[0]);
+						break;
+					case sizeof(uint16_t):
+						loghlt = (uint64_t)ltfs_betou16(buf);
+						break;
+					case sizeof(uint32_t):
+						loghlt = (uint32_t)ltfs_betou32(buf);
+						break;
+					case sizeof(uint64_t):
+						loghlt = ltfs_betou64(buf);
+						break;
+					default:
+						loghlt = UNSUPPORTED_CARTRIDGE_HEALTH;
+						break;
 				}
 
-				switch(volstats[i]) {
-				case VOLSTATS_MOUNTS:
-					cart_health->mounts = loghlt;
-					break;
-				case VOLSTATS_WRITTEN_DS:
-					cart_health->written_ds = loghlt;
-					break;
-				case VOLSTATS_WRITE_TEMPS:
-					cart_health->write_temps = loghlt;
-					break;
-				case VOLSTATS_WRITE_PERMS:
-					cart_health->write_perms = loghlt;
-					break;
-				case VOLSTATS_READ_DS:
-					cart_health->read_ds = loghlt;
-					break;
-				case VOLSTATS_READ_TEMPS:
-					cart_health->read_temps = loghlt;
-					break;
-				case VOLSTATS_READ_PERMS:
-					cart_health->read_perms = loghlt;
-					break;
-				case VOLSTATS_WRITE_PERMS_PREV:
-					cart_health->write_perms_prev = loghlt;
-					break;
-				case VOLSTATS_READ_PERMS_PREV:
-					cart_health->read_perms_prev = loghlt;
-					break;
-				case VOLSTATS_WRITE_MB:
-					cart_health->written_mbytes = loghlt;
-					break;
-				case VOLSTATS_READ_MB:
-					cart_health->read_mbytes = loghlt;
-					break;
-				case VOLSTATS_PASSES_BEGIN:
-					cart_health->passes_begin = loghlt;
-					break;
-				case VOLSTATS_PASSES_MIDDLE:
-					cart_health->passes_middle = loghlt;
-					break;
-				default:
-					break;
+				switch (volstats[i]) {
+					case VOLSTATS_MOUNTS:
+						cart_health->mounts = loghlt;
+						break;
+					case VOLSTATS_WRITTEN_DS:
+						cart_health->written_ds = loghlt;
+						break;
+					case VOLSTATS_WRITE_TEMPS:
+						cart_health->write_temps = loghlt;
+						break;
+					case VOLSTATS_WRITE_PERMS:
+						cart_health->write_perms = loghlt;
+						break;
+					case VOLSTATS_READ_DS:
+						cart_health->read_ds = loghlt;
+						break;
+					case VOLSTATS_READ_TEMPS:
+						cart_health->read_temps = loghlt;
+						break;
+					case VOLSTATS_READ_PERMS:
+						cart_health->read_perms = loghlt;
+						break;
+					case VOLSTATS_WRITE_PERMS_PREV:
+						cart_health->write_perms_prev = loghlt;
+						break;
+					case VOLSTATS_READ_PERMS_PREV:
+						cart_health->read_perms_prev = loghlt;
+						break;
+					case VOLSTATS_WRITE_MB:
+						cart_health->written_mbytes = loghlt;
+						break;
+					case VOLSTATS_READ_MB:
+						cart_health->read_mbytes = loghlt;
+						break;
+					case VOLSTATS_PASSES_BEGIN:
+						cart_health->passes_begin = loghlt;
+						break;
+					case VOLSTATS_PASSES_MIDDLE:
+						cart_health->passes_middle = loghlt;
+						break;
+					default:
+						break;
 				}
 			}
 		}
@@ -2642,7 +2568,7 @@ int camtape_get_tape_alert(void *device, uint64_t *tape_alert)
 	int param_size, i;
 	int rc;
 	uint64_t ta;
-	struct camtape_data *softc = (struct camtape_data *) device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETTAPEALT));
 	/* Issue LogPage 0x2E */
@@ -2652,15 +2578,13 @@ int camtape_get_tape_alert(void *device, uint64_t *tape_alert)
 		ltfsmsg(LTFS_INFO, 31261I, LOG_TAPE_ALERT, rc, "get tape alert");
 	else {
 		rc = 0;
-		for(i = 1; i <= 64; i++) {
-			if (parse_logPage(logdata, (uint16_t) i, &param_size, buf, 16)
-				|| param_size != sizeof(uint8_t)) {
+		for (i = 1; i <= 64; i++) {
+			if (parse_logPage(logdata, (uint16_t)i, &param_size, buf, 16) || param_size != sizeof(uint8_t)) {
 				ltfsmsg(LTFS_INFO, 31262I, LOG_TAPE_ALERT, "get tape alert");
 				ta = 0;
 			}
 
-			if(buf[0])
-				ta += (uint64_t)(1) << (i - 1);
+			if (buf[0]) ta += (uint64_t)(1) << (i - 1);
 		}
 	}
 
@@ -2679,28 +2603,26 @@ int camtape_get_tape_alert(void *device, uint64_t *tape_alert)
  */
 int camtape_clear_tape_alert(void *device, uint64_t tape_alert)
 {
-	struct camtape_data *softc = (struct camtape_data *) device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_CLRTAPEALT));
 	softc->tape_alert &= ~tape_alert;
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_CLRTAPEALT));
 	return 0;
 }
 
-typedef enum {
-	MT_MAXIO			= 0,
-	MT_CPI_MAXIO		= 1,
-	MT_MAX_BLK			= 2,
-	MT_MAX_EFF_IO_SIZE	= 3,
+typedef enum
+{
+	MT_MAXIO = 0,
+	MT_CPI_MAXIO = 1,
+	MT_MAX_BLK = 2,
+	MT_MAX_EFF_IO_SIZE = 3,
 } camtape_block_index;
 
 struct camtape_status_item req_block_items[] = {
-	{"maxio", NULL },
-	{"cpi_maxio", NULL },
-	{"max_blk", NULL },
-	{"max_effective_iosize", NULL }
+	{ "maxio", NULL }, { "cpi_maxio", NULL }, { "max_blk", NULL }, { "max_effective_iosize", NULL }
 };
 
-#define	CT_NUM_BLOCK_ITEMS	(sizeof(req_block_items)/sizeof(req_block_items[0]))
+#define CT_NUM_BLOCK_ITEMS (sizeof(req_block_items) / sizeof(req_block_items[0]))
 
 /**
  * Get drive parameter
@@ -2799,12 +2721,11 @@ int camtape_get_parameters(void *device, struct tc_drive_param *params)
 				return rc;
 			}
 
-			if ( (buf[3] & 0x80) )
-				params->write_protect |= VOL_PHYSICAL_WP;
+			if ((buf[3] & 0x80)) params->write_protect |= VOL_PHYSICAL_WP;
 		}
 
 		params->cart_type = softc->cart_type;
-		params->density   = softc->density_code;
+		params->density = softc->density_code;
 		/* TODO: Following field shall be implemented in the future */
 		/*
 		params->is_worm = softc->is_worm;
@@ -2883,110 +2804,114 @@ int camtape_get_device_list(struct tc_drive_info *buf, int count)
 	ccb.cdm.pattern_buf_len = sizeof(patterns);
 	ccb.cdm.patterns = patterns;
 	patterns[0].type = DEV_MATCH_PERIPH;
-	snprintf(patterns[0].pattern.periph_pattern.periph_name,
-	    sizeof(patterns[0].pattern.periph_pattern.periph_name), "sa");
+	snprintf(
+			patterns[0].pattern.periph_pattern.periph_name, sizeof(patterns[0].pattern.periph_pattern.periph_name), "sa");
 	patterns[0].pattern.periph_pattern.flags = PERIPH_MATCH_NAME;
 	patterns[1].type = DEV_MATCH_DEVICE;
 	patterns[1].pattern.device_pattern.flags = DEV_MATCH_INQUIRY;
 	patterns[1].pattern.device_pattern.data.inq_pat.type = T_SEQUENTIAL;
 	patterns[1].pattern.device_pattern.data.inq_pat.media_type = SIP_MEDIA_REMOVABLE;
 	snprintf(patterns[1].pattern.device_pattern.data.inq_pat.vendor,
-	    sizeof(patterns[1].pattern.device_pattern.data.inq_pat.vendor), "*");
+					 sizeof(patterns[1].pattern.device_pattern.data.inq_pat.vendor),
+					 "*");
 	snprintf(patterns[1].pattern.device_pattern.data.inq_pat.product,
-	    sizeof(patterns[1].pattern.device_pattern.data.inq_pat.product), "*");
+					 sizeof(patterns[1].pattern.device_pattern.data.inq_pat.product),
+					 "*");
 	snprintf(patterns[1].pattern.device_pattern.data.inq_pat.revision,
-	    sizeof(patterns[1].pattern.device_pattern.data.inq_pat.revision), "*");
+					 sizeof(patterns[1].pattern.device_pattern.data.inq_pat.revision),
+					 "*");
 
 	buf_index = 0;
 
 	do {
-		if (ioctl(fd, CAMIOCOMMAND, &ccb) == -1)
-			err(1, "error sending CAMIOCOMMAND ioctl to %s",
-			    XPT_DEVICE);
+		if (ioctl(fd, CAMIOCOMMAND, &ccb) == -1) err(1, "error sending CAMIOCOMMAND ioctl to %s", XPT_DEVICE);
 
-		if ((ccb.ccb_h.status != CAM_REQ_CMP)
-		 || ((ccb.cdm.status != CAM_DEV_MATCH_LAST)
-		    && (ccb.cdm.status != CAM_DEV_MATCH_MORE)))
-			errx(1, "got CAM error %#x, CDM error %d\n",
-			      ccb.ccb_h.status, ccb.cdm.status);
+		if ((ccb.ccb_h.status != CAM_REQ_CMP) ||
+				((ccb.cdm.status != CAM_DEV_MATCH_LAST) && (ccb.cdm.status != CAM_DEV_MATCH_MORE)))
+			errx(1, "got CAM error %#x, CDM error %d\n", ccb.ccb_h.status, ccb.cdm.status);
 
 		for (i = 0; i < ccb.cdm.num_matches; i++) {
 			switch (ccb.cdm.matches[i].type) {
-			case DEV_MATCH_DEVICE: {
-				struct device_match_result *dev_result;
-				uint8_t vendor[16], product[48], revision[16];
+				case DEV_MATCH_DEVICE: {
+					struct device_match_result *dev_result;
+					uint8_t vendor[16], product[48], revision[16];
 
-				dev_result = &ccb.cdm.matches[i].result.device_result;
+					dev_result = &ccb.cdm.matches[i].result.device_result;
 
-				if ((dev_result->protocol == PROTO_SCSI) && (buf != NULL)) {
-				    cam_strvis(vendor, (const uint8_t *)dev_result->inq_data.vendor,
-					   sizeof(dev_result->inq_data.vendor), sizeof(vendor));
-				    cam_strvis(product, (const uint8_t *) dev_result->inq_data.product,
-					   sizeof(dev_result->inq_data.product), sizeof(product));
-				    cam_strvis(revision, (const uint8_t *)dev_result->inq_data.revision,
-					  sizeof(dev_result->inq_data.revision), sizeof(revision));
-					snprintf(buf[buf_index].vendor, sizeof(buf[buf_index].vendor), "%s", vendor);
-					snprintf(buf[buf_index].model, sizeof(buf[buf_index].model), "%s", product);
-					snprintf(buf[buf_index].product_name, sizeof(buf[buf_index].product_name), "%s",
-						generate_product_name((const char *)product));
-					buf[buf_index].host    = 0;
-					buf[buf_index].channel = 0;
-					buf[buf_index].target  = 0;
-					buf[buf_index].lun     = -1;
-				} else {
-					/*
+					if ((dev_result->protocol == PROTO_SCSI) && (buf != NULL)) {
+						cam_strvis(vendor,
+											 (const uint8_t *)dev_result->inq_data.vendor,
+											 sizeof(dev_result->inq_data.vendor),
+											 sizeof(vendor));
+						cam_strvis(product,
+											 (const uint8_t *)dev_result->inq_data.product,
+											 sizeof(dev_result->inq_data.product),
+											 sizeof(product));
+						cam_strvis(revision,
+											 (const uint8_t *)dev_result->inq_data.revision,
+											 sizeof(dev_result->inq_data.revision),
+											 sizeof(revision));
+						snprintf(buf[buf_index].vendor, sizeof(buf[buf_index].vendor), "%s", vendor);
+						snprintf(buf[buf_index].model, sizeof(buf[buf_index].model), "%s", product);
+						snprintf(buf[buf_index].product_name,
+										 sizeof(buf[buf_index].product_name),
+										 "%s",
+										 generate_product_name((const char *)product));
+						buf[buf_index].host = 0;
+						buf[buf_index].channel = 0;
+						buf[buf_index].target = 0;
+						buf[buf_index].lun = -1;
+					} else {
+						/*
 					 * XXX KDM what now?  We have a tape device that isn't SCSI??
 					 */
-				}
-				break;
-			}
-			case DEV_MATCH_PERIPH: {
-				struct periph_match_result *periph_result;
-
-				periph_result =
-				      &ccb.cdm.matches[i].result.periph_result;
-
-				if (buf != NULL) {
-					struct cam_device *dev;
-
-					dev = cam_open_spec_device(
-						periph_result->periph_name,
-						periph_result->unit_number, O_RDWR, NULL);
-					if (dev == NULL) {
-						err(1, "unable to open passthrough "
-						    "device for %s%d",
-						    periph_result->periph_name,
-						    periph_result->unit_number);
 					}
-					dev->serial_num[dev->serial_num_len] = '\0';
-					snprintf(buf[buf_index].serial_number, sizeof(buf[buf_index].serial_number),
-					    "%s", dev->serial_num);
-					snprintf(buf[buf_index].name, sizeof(buf[buf_index].name), "%s%d",
-						periph_result->periph_name, periph_result->unit_number);
-					buf[buf_index].host    = 0;
-					buf[buf_index].channel = 0;
-					buf[buf_index].target  = 0;
-					buf[buf_index].lun     = -1;
-					cam_close_device(dev);
+					break;
 				}
-				buf_index++;
-				if (buf != NULL && buf_index >= count)
-					goto bailout;
-				break;
-			}
-			default:
-				break;
+				case DEV_MATCH_PERIPH: {
+					struct periph_match_result *periph_result;
+
+					periph_result = &ccb.cdm.matches[i].result.periph_result;
+
+					if (buf != NULL) {
+						struct cam_device *dev;
+
+						dev = cam_open_spec_device(periph_result->periph_name, periph_result->unit_number, O_RDWR, NULL);
+						if (dev == NULL) {
+							err(1,
+									"unable to open passthrough "
+									"device for %s%d",
+									periph_result->periph_name,
+									periph_result->unit_number);
+						}
+						dev->serial_num[dev->serial_num_len] = '\0';
+						snprintf(buf[buf_index].serial_number, sizeof(buf[buf_index].serial_number), "%s", dev->serial_num);
+						snprintf(buf[buf_index].name,
+										 sizeof(buf[buf_index].name),
+										 "%s%d",
+										 periph_result->periph_name,
+										 periph_result->unit_number);
+						buf[buf_index].host = 0;
+						buf[buf_index].channel = 0;
+						buf[buf_index].target = 0;
+						buf[buf_index].lun = -1;
+						cam_close_device(dev);
+					}
+					buf_index++;
+					if (buf != NULL && buf_index >= count) goto bailout;
+					break;
+				}
+				default:
+					break;
 			}
 		}
 
-	} while ((ccb.ccb_h.status == CAM_REQ_CMP)
-		&& (ccb.cdm.status == CAM_DEV_MATCH_MORE));
+	} while ((ccb.ccb_h.status == CAM_REQ_CMP) && (ccb.cdm.status == CAM_DEV_MATCH_MORE));
 
 bailout:
 
 	close(fd);
-	if (ccb.cdm.matches != NULL)
-		free(ccb.cdm.matches);
+	if (ccb.cdm.matches != NULL) free(ccb.cdm.matches);
 
 	return buf_index;
 }
@@ -3023,10 +2948,10 @@ int camtape_setcap(void *device, uint16_t proportion)
 			return DEVICE_GOOD;
 		}
 
-		buf[0]   = 0x00;
-		buf[1]   = 0x00;
+		buf[0] = 0x00;
+		buf[1] = 0x00;
 		buf[27] |= 0x01;
-		buf[28]  = 0x00;
+		buf[28] = 0x00;
 
 		rc = camtape_modeselect(device, buf, sizeof(buf));
 	} else {
@@ -3038,8 +2963,7 @@ int camtape_setcap(void *device, uint16_t proportion)
 			goto bailout;
 		}
 
-		memset(&(&ccb->ccb_h)[1], 0,
-			sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
+		memset(&(&ccb->ccb_h)[1], 0, sizeof(struct ccb_scsiio) - sizeof(struct ccb_hdr));
 
 		timeout = camtape_get_timeout(softc->timeouts, SET_CAPACITY);
 		if (timeout < 0) {
@@ -3048,13 +2972,13 @@ int camtape_setcap(void *device, uint16_t proportion)
 		}
 
 		scsi_set_capacity(&ccb->csio,
-						  /*retries*/ 1,
-						  /*cbfcnp*/ NULL,
-						  /*tag_action*/ MSG_SIMPLE_Q_TAG,
-						  /*byte1*/ 0,
-						  /*proportion*/ proportion,
-						  /*sense_len*/ SSD_FULL_SIZE,
-						  /*timeout*/ timeout);
+											/*retries*/ 1,
+											/*cbfcnp*/ NULL,
+											/*tag_action*/ MSG_SIMPLE_Q_TAG,
+											/*byte1*/ 0,
+											/*proportion*/ proportion,
+											/*sense_len*/ SSD_FULL_SIZE,
+											/*timeout*/ timeout);
 
 		ccb->ccb_h.flags |= CAM_DEV_QFRZDIS | CAM_PASS_ERR_RECOVER;
 
@@ -3066,8 +2990,7 @@ int camtape_setcap(void *device, uint16_t proportion)
 	}
 
 bailout:
-	if (ccb != NULL)
-		cam_freeccb(ccb);
+	if (ccb != NULL) cam_freeccb(ccb);
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCAP));
 	return rc;
 }
@@ -3078,9 +3001,9 @@ bailout:
  * @param part Partition to read the parameter from.
  * @return enum eod_status or UNSUPPORTED_FUNCTION if not supported.
  */
-#define LOG_VOL_STATISTICS         (0x17)
-#define LOG_VOL_USED_CAPACITY      (0x203)
-#define LOG_VOL_PART_HEADER_SIZE   (4)
+#define LOG_VOL_STATISTICS (0x17)
+#define LOG_VOL_USED_CAPACITY (0x203)
+#define LOG_VOL_PART_HEADER_SIZE (4)
 
 int camtape_get_eod_status(void *device, int part)
 {
@@ -3091,10 +3014,10 @@ int camtape_get_eod_status(void *device, int part)
 
 	struct camtape_data *softc = (struct camtape_data *)device;
 	unsigned char logdata[LOGSENSEPAGE];
-	unsigned char buf[16] = {0};
+	unsigned char buf[16] = { 0 };
 	int param_size, rc;
 	unsigned int i;
-	uint32_t part_cap[2] = {EOD_UNKNOWN, EOD_UNKNOWN};
+	uint32_t part_cap[2] = { EOD_UNKNOWN, EOD_UNKNOWN };
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETEODSTAT));
 	/* Issue LogPage 0x17 */
@@ -3106,8 +3029,8 @@ int camtape_get_eod_status(void *device, int part)
 	}
 
 	/* Parse Approximate used native capacity of partitions (0x203)*/
-	if (parse_logPage(logdata, (uint16_t)LOG_VOL_USED_CAPACITY, &param_size, buf, sizeof(buf))
-		|| (param_size != sizeof(buf) ) ) {
+	if (parse_logPage(logdata, (uint16_t)LOG_VOL_USED_CAPACITY, &param_size, buf, sizeof(buf)) ||
+			(param_size != sizeof(buf))) {
 		ltfsmsg(LTFS_WARN, 31265W);
 		ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETEODSTAT));
 		return EOD_UNKNOWN;
@@ -3119,13 +3042,11 @@ int camtape_get_eod_status(void *device, int part)
 		uint16_t part_buf;
 
 		len = buf[i];
-		part_buf = (uint16_t)(buf[i + 2] << 8) + (uint16_t) buf[i + 3];
+		part_buf = (uint16_t)(buf[i + 2] << 8) + (uint16_t)buf[i + 3];
 		/* actual length - 1 is stored into len */
-		if ( (len - LOG_VOL_PART_HEADER_SIZE + 1) == sizeof(uint32_t) && part_buf < 2) {
-			part_cap[part_buf] = ((uint32_t) buf[i + 4] << 24) +
-				((uint32_t) buf[i + 5] << 16) +
-				((uint32_t) buf[i + 6] << 8) +
-				(uint32_t) buf[i + 7];
+		if ((len - LOG_VOL_PART_HEADER_SIZE + 1) == sizeof(uint32_t) && part_buf < 2) {
+			part_cap[part_buf] = ((uint32_t)buf[i + 4] << 24) + ((uint32_t)buf[i + 5] << 16) + ((uint32_t)buf[i + 6] << 8) +
+													 (uint32_t)buf[i + 7];
 		} else
 			ltfsmsg(LTFS_WARN, 31266W, i, part_buf, len);
 
@@ -3133,7 +3054,7 @@ int camtape_get_eod_status(void *device, int part)
 	}
 
 	/* Create return value */
-	if(part_cap[part] == 0xFFFFFFFF)
+	if (part_cap[part] == 0xFFFFFFFF)
 		rc = EOD_MISSING;
 	else
 		rc = EOD_GOOD;
@@ -3151,7 +3072,7 @@ int camtape_get_eod_status(void *device, int part)
  */
 int camtape_get_xattr(void *device, const char *name, char **buf)
 {
-	struct camtape_data *softc = (struct camtape_data *) device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 	unsigned char logdata[LOGSENSEPAGE];
 	unsigned char logbuf[16];
 	int param_size;
@@ -3160,15 +3081,14 @@ int camtape_get_xattr(void *device, const char *name, char **buf)
 	struct ltfs_timespec now;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETXATTR));
-	if (! strcmp(name, "ltfs.vendor.IBM.mediaCQsLossRate")) {
+	if (!strcmp(name, "ltfs.vendor.IBM.mediaCQsLossRate")) {
 		rc = DEVICE_GOOD;
 
 		/* If first fetch or cache value is too old and valuie is dirty, refetch value */
 		get_current_timespec(&now);
-		if ( softc->fetch_sec_acq_loss_w == 0 ||
-			 ((softc->fetch_sec_acq_loss_w + 60 < now.tv_sec) && softc->dirty_acq_loss_w)) {
-			rc = camtape_logsense(device, LOG_PERFORMANCE, LOG_PERFORMANCE_CAPACITY_SUB,
-								  logdata, LOGSENSEPAGE);
+		if (softc->fetch_sec_acq_loss_w == 0 ||
+				((softc->fetch_sec_acq_loss_w + 60 < now.tv_sec) && softc->dirty_acq_loss_w)) {
+			rc = camtape_logsense(device, LOG_PERFORMANCE, LOG_PERFORMANCE_CAPACITY_SUB, logdata, LOGSENSEPAGE);
 			if (rc < 0)
 				ltfsmsg(LTFS_INFO, 31261I, LOG_PERFORMANCE, rc, "get xattr");
 			else {
@@ -3177,30 +3097,29 @@ int camtape_get_xattr(void *device, const char *name, char **buf)
 					ltfsmsg(LTFS_INFO, 31262I, LOG_PERFORMANCE, "get xattr");
 					rc = -LTFS_NO_XATTR;
 				} else {
-					switch(param_size) {
-					case sizeof(uint32_t):
-						value32 = (uint32_t)ltfs_betou32(logbuf);
-						softc->acq_loss_w = (float)value32 / 65536.0;
-						softc->fetch_sec_acq_loss_w = now.tv_sec;
-						softc->dirty_acq_loss_w = false;
-						break;
-					default:
-						ltfsmsg(LTFS_INFO, 31267I, param_size);
-						rc = -LTFS_NO_XATTR;
-						break;
+					switch (param_size) {
+						case sizeof(uint32_t):
+							value32 = (uint32_t)ltfs_betou32(logbuf);
+							softc->acq_loss_w = (float)value32 / 65536.0;
+							softc->fetch_sec_acq_loss_w = now.tv_sec;
+							softc->dirty_acq_loss_w = false;
+							break;
+						default:
+							ltfsmsg(LTFS_INFO, 31267I, param_size);
+							rc = -LTFS_NO_XATTR;
+							break;
 					}
 				}
 			}
 		}
 
-		if(rc == DEVICE_GOOD) {
+		if (rc == DEVICE_GOOD) {
 			/* The buf allocated here shall be freed in xattr_get_virtual() */
 			rc = asprintf(buf, "%2.2f", softc->acq_loss_w);
 			if (rc < 0) {
 				rc = -LTFS_NO_MEMORY;
 				ltfsmsg(LTFS_INFO, 31268I, "getting active CQ loss write");
-			}
-			else
+			} else
 				rc = DEVICE_GOOD;
 		} else
 			softc->fetch_sec_acq_loss_w = 0;
@@ -3224,14 +3143,12 @@ int camtape_set_xattr(void *device, const char *name, const char *buf, size_t si
 	char *null_terminated;
 	struct camtape_data *softc = (struct camtape_data *)device;
 
-
-	if (!size)
-		return -LTFS_BAD_ARG;
+	if (!size) return -LTFS_BAD_ARG;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_SETXATTR));
 
 	null_terminated = malloc(size + 1);
-	if (! null_terminated) {
+	if (!null_terminated) {
 		ltfsmsg(LTFS_ERR, 10001E, "lin_tape_ibmtape_set_xattr: null_term");
 		ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETXATTR));
 		return -LTFS_NO_MEMORY;
@@ -3239,15 +3156,15 @@ int camtape_set_xattr(void *device, const char *name, const char *buf, size_t si
 	memcpy(null_terminated, buf, size);
 	null_terminated[size] = '\0';
 
-	if (! strcmp(name, "ltfs.vendor.IBM.forceErrorWrite")) {
+	if (!strcmp(name, "ltfs.vendor.IBM.forceErrorWrite")) {
 		softc->force_writeperm = strtoull(null_terminated, NULL, 0);
 		if (softc->force_writeperm && softc->force_writeperm < THRESHOLD_FORCE_WRITE_NO_WRITE)
 			softc->force_writeperm = THRESHOLD_FORCE_WRITE_NO_WRITE;
 		rc = DEVICE_GOOD;
-	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
+	} else if (!strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
 		softc->force_errortype = strtol(null_terminated, NULL, 0);
 		rc = DEVICE_GOOD;
-	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorRead")) {
+	} else if (!strcmp(name, "ltfs.vendor.IBM.forceErrorRead")) {
 		softc->force_readperm = strtoull(null_terminated, NULL, 0);
 		softc->read_counter = 0;
 		rc = DEVICE_GOOD;
@@ -3276,19 +3193,19 @@ char *camtape_enc_state_to_str(camtape_encryption_state encryption_state)
 	char *state = NULL;
 
 	switch (encryption_state) {
-	case CT_ENC_STATE_OFF:
-		state = "Off";
-		break;
-	case CT_ENC_STATE_ON:
-		state = "On";
-		break;
-	case CT_ENC_STATE_NA:
-		state = "N/A";
-		break;
-	case CT_ENC_STATE_UNKNOWN:
-	default:
-		state = "Unknown";
-		break;
+		case CT_ENC_STATE_OFF:
+			state = "Off";
+			break;
+		case CT_ENC_STATE_ON:
+			state = "On";
+			break;
+		case CT_ENC_STATE_NA:
+			state = "N/A";
+			break;
+		case CT_ENC_STATE_UNKNOWN:
+		default:
+			state = "Unknown";
+			break;
 	}
 
 	return (state);
@@ -3299,39 +3216,38 @@ char *camtape_enc_method_to_str(camtape_encryption_method encryption_method)
 	char *method = NULL;
 
 	switch (encryption_method) {
-	case CT_ENC_METHOD_NONE:
-		method = "None";
-		break;
-	case CT_ENC_METHOD_SYSTEM:
-		method = "System";
-		break;
-	case CT_ENC_METHOD_CONTROLLER:
-		method = "Controller";
-		break;
-	case CT_ENC_METHOD_APPLICATION:
-		method = "Application";
-		break;
-	case CT_ENC_METHOD_LIBRARY:
-		method = "Library";
-		break;
-	case CT_ENC_METHOD_INTERNAL:
-		method = "Internal";
-		break;
-	case CT_ENC_METHOD_CUSTOM:
-		method = "Custom";
-		break;
-	default:
-		method = "Unknown";
-		break;
+		case CT_ENC_METHOD_NONE:
+			method = "None";
+			break;
+		case CT_ENC_METHOD_SYSTEM:
+			method = "System";
+			break;
+		case CT_ENC_METHOD_CONTROLLER:
+			method = "Controller";
+			break;
+		case CT_ENC_METHOD_APPLICATION:
+			method = "Application";
+			break;
+		case CT_ENC_METHOD_LIBRARY:
+			method = "Library";
+			break;
+		case CT_ENC_METHOD_INTERNAL:
+			method = "Internal";
+			break;
+		case CT_ENC_METHOD_CUSTOM:
+			method = "Custom";
+			break;
+		default:
+			method = "Unknown";
+			break;
 	}
 
 	return (method);
 }
 
-static void ltfsmsg_encryption_state(const struct camtape_encryption_status * const es,
-	const bool set)
+static void ltfsmsg_encryption_state(const struct camtape_encryption_status *const es, const bool set)
 {
-	char s[128] = {'\0'};
+	char s[128] = { '\0' };
 	char *method = NULL;
 	char *state = NULL;
 
@@ -3339,14 +3255,22 @@ static void ltfsmsg_encryption_state(const struct camtape_encryption_status * co
 
 	state = camtape_enc_state_to_str(es->encryption_state);
 
-	sprintf(s, "Capable = %d, Method = %s(%d), State = %s(%d)", es->encryption_capable,
-			method, es->encryption_method, state, es->encryption_state);
+	sprintf(s,
+					"Capable = %d, Method = %s(%d), State = %s(%d)",
+					es->encryption_capable,
+					method,
+					es->encryption_method,
+					state,
+					es->encryption_state);
 
 	ltfsmsg(LTFS_DEBUG, 31392D, set ? "set encryption state:" : "get encryption state:", s);
 }
 
-static int camtape_get_encryption_state(void *device, struct camtape_encryption_status * const p,
-	uint8_t *rwc_mode_buf, size_t rwc_buf_len, size_t *rwc_fill_len)
+static int camtape_get_encryption_state(void *device,
+																				struct camtape_encryption_status *const p,
+																				uint8_t *rwc_mode_buf,
+																				size_t rwc_buf_len,
+																				size_t *rwc_fill_len)
 {
 	int rc = DEVICE_GOOD;
 	struct camtape_encryption_status es;
@@ -3373,8 +3297,7 @@ static int camtape_get_encryption_state(void *device, struct camtape_encryption_
 	 * also always assumes that the function issues a 10 byte mode sense.
 	 */
 	rc = camtape_modesense(device, CT_ISE_PAGE_CODE, TC_MP_PC_CURRENT, 0x00, buf, buf_size);
-	if (rc != DEVICE_GOOD)
-		goto bailout;
+	if (rc != DEVICE_GOOD) goto bailout;
 
 	mode_hdr = (struct scsi_mode_header_10 *)buf;
 	ise_page = (struct camtape_ibm_initiator_spec_ext_page *)find_mode_page_10(mode_hdr);
@@ -3398,8 +3321,7 @@ static int camtape_get_encryption_state(void *device, struct camtape_encryption_
 
 	rc = camtape_modesense(device, CT_RWC_PAGE_CODE, TC_MP_PC_CURRENT, 0x00, buf, buf_size);
 
-	if (rc != DEVICE_GOOD)
-		goto bailout;
+	if (rc != DEVICE_GOOD) goto bailout;
 
 	/*
 	 * Give the caller a copy of the buffer if he requested it.
@@ -3422,33 +3344,32 @@ static int camtape_get_encryption_state(void *device, struct camtape_encryption_
 	 */
 	es.encryption_method = rwc_page->encryption_method;
 	switch (rwc_page->encryption_method) {
-	case CT_RWC_ENC_METHOD_NONE:
-		es.encryption_state = CT_ENC_STATE_OFF;
-		break;
-	case CT_RWC_ENC_METHOD_SYSTEM:
-		es.encryption_state = rwc_page->encryption_state & CT_RWC_ENCRYPTION_STATE_MASK;
-		break;
-	case CT_RWC_ENC_METHOD_APPLICATION:
-		es.encryption_state = rwc_page->encryption_state & CT_RWC_ENCRYPTION_STATE_MASK;
-		break;
-	case CT_RWC_ENC_METHOD_LIBRARY:
-	case CT_RWC_ENC_METHOD_CUSTOM:
-	case CT_RWC_ENC_METHOD_INTERNAL:
-	case CT_RWC_ENC_METHOD_CONTROLLER:
-		es.encryption_state = CT_ENC_STATE_NA;
-		break;
-	default:
-		es.encryption_method = CT_ENC_METHOD_UNKNOWN;
-		es.encryption_state = CT_ENC_STATE_NA;
-		break;
+		case CT_RWC_ENC_METHOD_NONE:
+			es.encryption_state = CT_ENC_STATE_OFF;
+			break;
+		case CT_RWC_ENC_METHOD_SYSTEM:
+			es.encryption_state = rwc_page->encryption_state & CT_RWC_ENCRYPTION_STATE_MASK;
+			break;
+		case CT_RWC_ENC_METHOD_APPLICATION:
+			es.encryption_state = rwc_page->encryption_state & CT_RWC_ENCRYPTION_STATE_MASK;
+			break;
+		case CT_RWC_ENC_METHOD_LIBRARY:
+		case CT_RWC_ENC_METHOD_CUSTOM:
+		case CT_RWC_ENC_METHOD_INTERNAL:
+		case CT_RWC_ENC_METHOD_CONTROLLER:
+			es.encryption_state = CT_ENC_STATE_NA;
+			break;
+		default:
+			es.encryption_method = CT_ENC_METHOD_UNKNOWN;
+			es.encryption_state = CT_ENC_STATE_NA;
+			break;
 	}
 
 bailout:
 
 	ltfsmsg_encryption_state(&es, false);
 
-	if (rc != DEVICE_GOOD)
-		camtape_process_errors(device, rc, msg, "get encryption state", true);
+	if (rc != DEVICE_GOOD) camtape_process_errors(device, rc, msg, "get encryption state", true);
 
 	if (p != NULL) {
 		if (rc == DEVICE_GOOD)
@@ -3457,14 +3378,12 @@ bailout:
 			memset(p, 0, sizeof(es));
 	}
 
-	if (buf != NULL)
-		free(buf);
+	if (buf != NULL) free(buf);
 
 	return rc;
 }
 
-static int camtape_set_encryption_state(struct camtape_data *softc,
-	camtape_encryption_state encryption_state)
+static int camtape_set_encryption_state(struct camtape_data *softc, camtape_encryption_state encryption_state)
 {
 	int rc = DEVICE_GOOD;
 	struct camtape_encryption_status es;
@@ -3482,8 +3401,7 @@ static int camtape_set_encryption_state(struct camtape_data *softc,
 	memset(buf, 0, buf_size);
 
 	rc = camtape_get_encryption_state(softc, &es, buf, buf_size, &buf_fill_len);
-	if (rc != DEVICE_GOOD)
-		goto bailout;
+	if (rc != DEVICE_GOOD) goto bailout;
 
 	if (es.encryption_capable == CT_ENC_NOT_CAPABLE) {
 		rc = -EDEV_INVALID_ARG;
@@ -3517,19 +3435,29 @@ bailout:
 		ltfsmsg_encryption_state(&es, true);
 	}
 
-	if (buf != NULL)
-		free(buf);
+	if (buf != NULL) free(buf);
 	return rc;
 }
 
-static void ltfsmsg_keyalias(const char * const title, const unsigned char * const keyalias)
+static void ltfsmsg_keyalias(const char *const title, const unsigned char *const keyalias)
 {
-	char s[128] = {'\0'};
+	char s[128] = { '\0' };
 
 	if (keyalias)
-		sprintf(s, "keyalias = %c%c%c%02X%02X%02X%02X%02X%02X%02X%02X%02X", keyalias[0],
-				keyalias[1], keyalias[2], keyalias[3], keyalias[4], keyalias[5], keyalias[6],
-				keyalias[7], keyalias[8], keyalias[9], keyalias[10], keyalias[11]);
+		sprintf(s,
+						"keyalias = %c%c%c%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+						keyalias[0],
+						keyalias[1],
+						keyalias[2],
+						keyalias[3],
+						keyalias[4],
+						keyalias[5],
+						keyalias[6],
+						keyalias[7],
+						keyalias[8],
+						keyalias[9],
+						keyalias[10],
+						keyalias[11]);
 	else
 		sprintf(s, "keyalias: NULL");
 
@@ -3541,11 +3469,11 @@ static void ltfsmsg_keyalias(const char * const title, const unsigned char * con
  */
 static bool is_ame(struct camtape_data *softc)
 {
-	unsigned char buf[TC_MP_READ_WRITE_CTRL_SIZE] = {0};
+	unsigned char buf[TC_MP_READ_WRITE_CTRL_SIZE] = { 0 };
 	const int rc = camtape_modesense(softc, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 
 	if (rc != 0) {
-		char message[100] = {0};
+		char message[100] = { 0 };
 		sprintf(message, "failed to get MP %02Xh (%d)", TC_MP_READ_WRITE_CTRL, rc);
 		ltfsmsg(LTFS_DEBUG, 31392D, __FUNCTION__, message);
 
@@ -3553,7 +3481,7 @@ static bool is_ame(struct camtape_data *softc)
 	} else {
 		struct scsi_mode_header_10 *mode_hdr;
 		struct camtape_ibm_rw_control_page *rwc_page;
-		char message[100] = {0};
+		char message[100] = { 0 };
 		char *method = NULL;
 
 		mode_hdr = (struct scsi_mode_header_10 *)buf;
@@ -3573,7 +3501,6 @@ static bool is_ame(struct camtape_data *softc)
 
 static int is_encryption_capable(struct camtape_data *softc)
 {
-
 	/*
 	 * XXX KDM why does this only support encryption, or at least Application Managed Encryption,
 	 * on LTO drives and not on TS drives?
@@ -3583,8 +3510,7 @@ static int is_encryption_capable(struct camtape_data *softc)
 		return -EDEV_INTERNAL_ERROR;
 	}
 
-	if (! is_ame(softc))
-		return -EDEV_INTERNAL_ERROR;
+	if (!is_ame(softc)) return -EDEV_INTERNAL_ERROR;
 
 	return DEVICE_GOOD;
 }
@@ -3595,7 +3521,9 @@ static int is_encryption_capable(struct camtape_data *softc)
  * functionality.  The only obvious parameters are the key and key alias/key index.
  */
 static void camtape_fill_enc_subpage(struct camtape_ibm_enc_param_subpage *enc_sp,
-	int key_index_set, const uint8_t *key, const uint8_t *key_index)
+																		 int key_index_set,
+																		 const uint8_t *key,
+																		 const uint8_t *key_index)
 {
 	int subpage_length;
 
@@ -3627,22 +3555,21 @@ static void camtape_fill_enc_subpage(struct camtape_ibm_enc_param_subpage *enc_s
 	enc_sp->byte124 = CT_ENC_PARAM_BYTE_124_VALUE;
 	if (key_index_set != 0) {
 		enc_sp->ki_or_not.ki_is_set.byte127 = CT_ENC_PARAM_BYTE127_KI_VALUE;
-		memcpy(enc_sp->ki_or_not.ki_is_set.key_index, key_index,
-			sizeof(enc_sp->ki_or_not.ki_is_set.key_index));
+		memcpy(enc_sp->ki_or_not.ki_is_set.key_index, key_index, sizeof(enc_sp->ki_or_not.ki_is_set.key_index));
 		enc_sp->ki_or_not.ki_is_set.byte144 = CT_ENC_PARAM_BYTE144_KI_VALUE;
 	} else {
 		enc_sp->ki_or_not.ki_not_set.byte132 = CT_ENC_PARAM_BYTE132_NO_KI_VALUE;
 	}
 }
 
-int camtape_set_key(void *device, const unsigned char * const keyalias, const unsigned char * const key)
+int camtape_set_key(void *device, const unsigned char *const keyalias, const unsigned char *const key)
 {
 	struct camtape_data *softc = (struct camtape_data *)device;
 	camtape_encryption_state encryption_state = CT_ENC_STATE_OFF;
 	struct scsi_mode_header_10 *mode_hdr;
 	struct camtape_ibm_enc_param_subpage *enc_sp;
-	const char * const title = "set key:";
-	struct data_key dk = {{0}};
+	const char *const title = "set key:";
+	struct data_key dk = { { 0 } };
 	uint8_t *buf = NULL;
 	size_t bufsize = MAX_UINT16;
 	char *msg = NULL;
@@ -3680,11 +3607,10 @@ int camtape_set_key(void *device, const unsigned char * const keyalias, const un
 
 	ltfsmsg_keyalias(title, keyalias);
 
-	rc = camtape_modesense(device, CT_ENC_PARAM_SUBPAGE_PAGE_CODE, TC_MP_PC_CURRENT,
-		CT_ENC_PARAM_SUBPAGE_CODE, buf, bufsize);
+	rc = camtape_modesense(
+			device, CT_ENC_PARAM_SUBPAGE_PAGE_CODE, TC_MP_PC_CURRENT, CT_ENC_PARAM_SUBPAGE_CODE, buf, bufsize);
 
-	if (rc != DEVICE_GOOD)
-		goto bailout;
+	if (rc != DEVICE_GOOD) goto bailout;
 
 	mode_hdr = (struct scsi_mode_header_10 *)buf;
 	enc_sp = (struct camtape_ibm_enc_param_subpage *)find_mode_page_10(mode_hdr);
@@ -3696,38 +3622,35 @@ int camtape_set_key(void *device, const unsigned char * const keyalias, const un
 	rc = camtape_modeselect(device, buf, bufsize);
 
 bailout:
-	if (rc != DEVICE_GOOD)
-		camtape_process_errors(device, rc, msg, "set data key", true);
+	if (rc != DEVICE_GOOD) camtape_process_errors(device, rc, msg, "set data key", true);
 
-	if (buf != NULL)
-		free(buf);
+	if (buf != NULL) free(buf);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETKEY));
 
 	return rc;
 }
 
-static void show_hex_dump(const char * const title, const unsigned char * const buf, const uint size)
+static void show_hex_dump(const char *const title, const unsigned char *const buf, const uint size)
 {
 	/*
 	 * "         1         2         3         4         5         6         7         8"
 	 * "12345678901234567890123456789012345678901234567890123456789012345678901234567890"
 	 * "xxxxxx  00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F  0123456789ABCDEF\n" < 100
 	 */
-	char * const s = calloc((size / 0x10 + 1) * 100, sizeof(char));
+	char *const s = calloc((size / 0x10 + 1) * 100, sizeof(char));
 	char *p = s;
 	uint i = 0;
 	int j = 0;
 	int k = 0;
 
-	if (p == NULL)
-		return;
+	if (p == NULL) return;
 
 	for (i = 0; i < size; ++i) {
 		if (i % 0x10 == 0) {
 			if (i) {
 				for (j = 0x10; 0 < j; --j) {
-					p += sprintf(p, "%c", isprint(buf[i-j]) ? buf[i-j] : '.');
+					p += sprintf(p, "%c", isprint(buf[i - j]) ? buf[i - j] : '.');
 				}
 			}
 			p += sprintf(p, "\n%06X  ", i);
@@ -3738,7 +3661,7 @@ static void show_hex_dump(const char * const title, const unsigned char * const 
 		p += sprintf(p, "   %s", (i + k) % 8 == 7 ? " " : "");
 	}
 	for (j = 0x10 - k; 0 < j; --j) {
-		p += sprintf(p, "%c", isprint(buf[i-j]) ? buf[i-j] : '.');
+		p += sprintf(p, "%c", isprint(buf[i - j]) ? buf[i - j] : '.');
 	}
 
 	ltfsmsg(LTFS_DEBUG, 31392D, title, s);
@@ -3784,13 +3707,12 @@ int camtape_get_keyalias(void *device, unsigned char **keyalias) /* This is not 
 	 * 2nd loop: Get full data in the page.
 	 */
 	for (i = 0; i < 2; ++i) {
-
 		/* Prepare Data Buffer */
 		if (buf != NULL) {
 			free(buf);
 			buf = NULL;
 		}
-		buf = (uint8_t *) calloc(buffer_length, sizeof(uint8_t));
+		buf = (uint8_t *)calloc(buffer_length, sizeof(uint8_t));
 		if (buf == NULL) {
 			ltfsmsg(LTFS_ERR, 10001E, "camtape_get_keyalias: data buffer");
 			rc = -EDEV_NO_MEMORY;
@@ -3798,16 +3720,16 @@ int camtape_get_keyalias(void *device, unsigned char **keyalias) /* This is not 
 		}
 
 		scsi_security_protocol_in(&ccb->csio,
-								  /*retries*/ 1,
-								  /*cbfcnp*/ NULL,
-								  /*tag_action*/ MSG_SIMPLE_Q_TAG,
-								  /*security_protocol*/ SPI_PROT_TAPE_DATA_ENC,
-								  /*sps*/ TDE_NEXT_BLOCK_ENC_STATUS_PAGE,
-								  /*byte4*/ 0,
-								  /*data_ptr*/ buf,
-								  /*dxfer_len*/ buffer_length,
-								  /*sense_len*/ SSD_FULL_SIZE,
-								  /*timeout*/ timeout);
+															/*retries*/ 1,
+															/*cbfcnp*/ NULL,
+															/*tag_action*/ MSG_SIMPLE_Q_TAG,
+															/*security_protocol*/ SPI_PROT_TAPE_DATA_ENC,
+															/*sps*/ TDE_NEXT_BLOCK_ENC_STATUS_PAGE,
+															/*byte4*/ 0,
+															/*data_ptr*/ buf,
+															/*dxfer_len*/ buffer_length,
+															/*sense_len*/ SSD_FULL_SIZE,
+															/*timeout*/ timeout);
 
 		ccb->ccb_h.flags |= CAM_DEV_QFRZDIS | CAM_PASS_ERR_RECOVER;
 
@@ -3825,62 +3747,58 @@ int camtape_get_keyalias(void *device, unsigned char **keyalias) /* This is not 
 
 	enc_status = status_page->status & TDE_NBES_ENC_STATUS_MASK;
 	switch (enc_status) {
-	case TDE_NBES_ENC_ALG_NOT_SUPPORTED:
-	case TDE_NBES_ENC_SUPPORTED_ALG:
-	case TDE_NBES_ENC_NO_KEY: {
-		struct tde_data_enc_desc *desc;
-		uint8_t *next_desc;
+		case TDE_NBES_ENC_ALG_NOT_SUPPORTED:
+		case TDE_NBES_ENC_SUPPORTED_ALG:
+		case TDE_NBES_ENC_NO_KEY: {
+			struct tde_data_enc_desc *desc;
+			uint8_t *next_desc;
 
-		for (desc = (struct tde_data_enc_desc *)&status_page[1];
-			((((uint8_t *)desc - buf) + 4) <= buffer_length);
-			desc = (struct tde_data_enc_desc *)next_desc) {
-			uint32_t key_length;
+			for (desc = (struct tde_data_enc_desc *)&status_page[1]; ((((uint8_t *)desc - buf) + 4) <= buffer_length);
+					 desc = (struct tde_data_enc_desc *)next_desc) {
+				uint32_t key_length;
 
-			next_desc = (uint8_t *)desc;
-			key_length = scsi_2btoul(desc->key_desc_length);
-			next_desc += key_length + __offsetof(struct tde_data_enc_desc, key_desc);
+				next_desc = (uint8_t *)desc;
+				key_length = scsi_2btoul(desc->key_desc_length);
+				next_desc += key_length + __offsetof(struct tde_data_enc_desc, key_desc);
 
-			/*
+				/*
 			 * We're looking for the Authenticated Key-Associated Data descriptor.
 			 */
-			if (desc->key_desc_type != TDE_KEY_DESC_A_KAD)
-				continue;
+				if (desc->key_desc_type != TDE_KEY_DESC_A_KAD) continue;
 
-			/*
+				/*
 			 * Make sure that we aren't going off the end of the buffer.
 			 */
-			if ((next_desc - buf) > buffer_length)
-				break;
+				if ((next_desc - buf) > buffer_length) break;
 
-			/*
+				/*
 			 * Copy the key into the softc and let the caller know we got it.
 			 */
-			memcpy(softc->dki, desc->key_desc, MIN(key_length, sizeof(softc->dki)));
-			*keyalias = softc->dki;
+				memcpy(softc->dki, desc->key_desc, MIN(key_length, sizeof(softc->dki)));
+				*keyalias = softc->dki;
 
+				break;
+			}
 			break;
 		}
-		break;
-	}
-	default:
-		break;
+		default:
+			break;
 	}
 
-	const char * const title = "get key-alias:";
+	const char *const title = "get key-alias:";
 	ltfsmsg_keyalias(title, softc->dki);
 
 bailout:
 
-	if (ccb != NULL)
-		cam_freeccb(ccb);
-	if (buf != NULL)
-		free(buf);
+	if (ccb != NULL) cam_freeccb(ccb);
+	if (buf != NULL) free(buf);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_GETKEYALIAS));
 	return rc;
 }
 
-typedef enum {
+typedef enum
+{
 	CT_PP_LBP_R,
 	CT_PP_LBP_W,
 	CT_PP_RBDP,
@@ -3888,21 +3806,18 @@ typedef enum {
 	CT_PP_PROT_METHOD
 } ct_protect_param;
 
-struct ct_protect_info {
+struct ct_protect_info
+{
 	const char *name;
 	struct mt_status_entry *entry;
 	uint32_t value;
 } ct_protect_list[] = {
-	{ "lbp_r", NULL, 0 },
-	{ "lbp_w", NULL, 0 },
-	{ "rbdp", NULL, 0 },
-	{ "pi_length", NULL, 0 },
-	{ "prot_method", NULL, 0 }
+	{ "lbp_r", NULL, 0 }, { "lbp_w", NULL, 0 }, { "rbdp", NULL, 0 }, { "pi_length", NULL, 0 }, { "prot_method", NULL, 0 }
 };
 
-#define CT_NUM_PROTECT_PARAMS   (sizeof(ct_protect_list)/sizeof(ct_protect_list[0]))
-#define TC_MP_INIT_EXT_LBP_RS         (0x40)
-#define TC_MP_INIT_EXT_LBP_CRC32C     (0x20)
+#define CT_NUM_PROTECT_PARAMS (sizeof(ct_protect_list) / sizeof(ct_protect_list[0]))
+#define TC_MP_INIT_EXT_LBP_RS (0x40)
+#define TC_MP_INIT_EXT_LBP_CRC32C (0x20)
 
 int camtape_set_lbp(void *device, bool enable)
 {
@@ -3923,8 +3838,7 @@ int camtape_set_lbp(void *device, bool enable)
 
 	/* Check logical block protection capability */
 	rc = camtape_modesense(device, TC_MP_INIT_EXT, TC_MP_PC_CURRENT, 0x00, buf, sizeof(buf));
-	if (rc < 0)
-		return rc;
+	if (rc < 0) return rc;
 
 	if (buf[0x12] & TC_MP_INIT_EXT_LBP_CRC32C)
 		lbp_method = CRC32C_CRC;
@@ -3936,8 +3850,7 @@ int camtape_set_lbp(void *device, bool enable)
 	 */
 	memset(&mtinfo, 0, sizeof(mtinfo));
 	rc = camtape_get_mtinfo(softc, &mtinfo, /*params*/ 1, &msg);
-	if (rc != DEVICE_GOOD)
-		goto bailout;
+	if (rc != DEVICE_GOOD) goto bailout;
 
 	/*
 	 * Check to see whether protection is supported.
@@ -4003,8 +3916,7 @@ int camtape_set_lbp(void *device, bool enable)
 			goto bailout;
 		}
 		protect_list[i].entry = entry;
-		snprintf(params[i].value_name, sizeof(params[i].value_name), "%s.%s", MT_PROTECTION_NAME,
-		    protect_list[i].name);
+		snprintf(params[i].value_name, sizeof(params[i].value_name), "%s.%s", MT_PROTECTION_NAME, protect_list[i].name);
 		params[i].value_type = MT_PARAM_SET_UNSIGNED;
 		params[i].value_len = sizeof(protect_list[i].value);
 		params[i].value.value_unsigned = protect_list[i].value;
@@ -4017,8 +3929,11 @@ int camtape_set_lbp(void *device, bool enable)
 	if (ioctl(softc->fd_sa, MTIOCSETLIST, &param_list) == -1) {
 		char tmpstr[512];
 
-		snprintf(tmpstr, sizeof(tmpstr), "Error returned from MTIOCSETLIST ioctl to set "
-			"protection parameters: %s", strerror(errno));
+		snprintf(tmpstr,
+						 sizeof(tmpstr),
+						 "Error returned from MTIOCSETLIST ioctl to set "
+						 "protection parameters: %s",
+						 strerror(errno));
 		msg = strdup(tmpstr);
 		rc = -errno;
 		camtape_process_errors(device, rc, msg, "get lbp", true);
@@ -4035,18 +3950,18 @@ int camtape_set_lbp(void *device, bool enable)
 
 	if (enable) {
 		switch (lbp_method) {
-		case CRC32C_CRC:
-			softc->f_crc_enc = crc32c_enc;
-			softc->f_crc_check = crc32c_check;
-			break;
-		case REED_SOLOMON_CRC:
-			softc->f_crc_enc = rs_gf256_enc;
-			softc->f_crc_check = rs_gf256_check;
-			break;
-		default:
-			softc->f_crc_enc   = NULL;
-			softc->f_crc_check = NULL;
-			break;
+			case CRC32C_CRC:
+				softc->f_crc_enc = crc32c_enc;
+				softc->f_crc_check = crc32c_check;
+				break;
+			case REED_SOLOMON_CRC:
+				softc->f_crc_enc = rs_gf256_enc;
+				softc->f_crc_check = rs_gf256_check;
+				break;
+			default:
+				softc->f_crc_enc = NULL;
+				softc->f_crc_check = NULL;
+				break;
 		}
 		ltfsmsg(LTFS_INFO, 31271I);
 	} else {
@@ -4059,19 +3974,14 @@ bailout:
 	return rc;
 }
 
-int camtape_is_mountable(void *device, const char *barcode, const unsigned char cart_type,
-						 const unsigned char density)
+int camtape_is_mountable(void *device, const char *barcode, const unsigned char cart_type, const unsigned char density)
 {
 	int ret;
 	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_ISMOUNTABLE));
 
-	ret = ibm_tape_is_mountable(softc->drive_type,
-							   barcode,
-							   cart_type,
-							   density,
-							   global_data.strict_drive);
+	ret = ibm_tape_is_mountable(softc->drive_type, barcode, cart_type, density, global_data.strict_drive);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_ISMOUNTABLE));
 
@@ -4083,11 +3993,7 @@ bool camtape_is_readonly(void *device)
 	int ret;
 	struct camtape_data *softc = (struct camtape_data *)device;
 
-	ret = ibm_tape_is_mountable(softc->drive_type,
-							   NULL,
-							   softc->cart_type,
-							   softc->density_code,
-							   global_data.strict_drive);
+	ret = ibm_tape_is_mountable(softc->drive_type, NULL, softc->cart_type, softc->density_code, global_data.strict_drive);
 
 	if (ret == MEDIUM_READONLY)
 		return true;
@@ -4099,13 +4005,12 @@ bool camtape_is_readonly(void *device)
 int camtape_get_worm_status(void *device, bool *is_worm)
 {
 	int rc = 0;
-	struct camtape_data *softc = (struct camtape_data *) device;
+	struct camtape_data *softc = (struct camtape_data *)device;
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_GETWORMSTAT));
 	if (softc->loaded) {
 		*is_worm = softc->is_worm;
-	}
-	else {
+	} else {
 		ltfsmsg(LTFS_INFO, 31289I);
 		*is_worm = false;
 		rc = -1;
@@ -4115,65 +4020,63 @@ int camtape_get_worm_status(void *device, bool *is_worm)
 	return rc;
 }
 
-struct tape_ops camtape_drive_handler = {
-	.open                   = camtape_open,
-	.reopen                 = camtape_reopen,
-	.close                  = camtape_close,
-	.close_raw              = camtape_close_raw,
-	.is_connected           = camtape_is_connected,
-	.inquiry                = camtape_inquiry,
-	.inquiry_page           = camtape_inquiry_page,
-	.test_unit_ready        = camtape_test_unit_ready,
-	.read                   = camtape_read,
-	.write                  = camtape_write,
-	.writefm                = camtape_writefm,
-	.rewind                 = camtape_rewind,
-	.locate                 = camtape_locate,
-	.space                  = camtape_space,
-	.erase                  = camtape_erase,
-	.load                   = camtape_load,
-	.unload                 = camtape_unload,
-	.readpos                = camtape_readpos,
-	.setcap                 = camtape_setcap,
-	.format                 = camtape_format,
-	.remaining_capacity     = camtape_remaining_capacity,
-	.logsense               = camtape_logsense,
-	.modesense              = camtape_modesense,
-	.modeselect             = camtape_modeselect,
-	.reserve_unit           = camtape_reserve_unit,
-	.release_unit           = camtape_release_unit,
-	.prevent_medium_removal = camtape_prevent_medium_removal,
-	.allow_medium_removal   = camtape_allow_medium_removal,
-	.write_attribute        = camtape_write_attribute,
-	.read_attribute         = camtape_read_attribute,
-	.allow_overwrite        = camtape_allow_overwrite,
-	.grao                   = camtape_grao,
-	.rrao                   = camtape_rrao,
-	// May be command combination
-	.set_compression        = camtape_set_compression,
-	.set_default            = camtape_set_default,
-	.get_cartridge_health   = camtape_get_cartridge_health,
-	.get_tape_alert         = camtape_get_tape_alert,
-	.clear_tape_alert       = camtape_clear_tape_alert,
-	.get_xattr              = camtape_get_xattr,
-	.set_xattr              = camtape_set_xattr,
-	.get_parameters         = camtape_get_parameters,
-	.get_eod_status         = camtape_get_eod_status,
-	.get_device_list        = camtape_get_device_list,
-	.help_message           = camtape_help_message,
-	.parse_opts             = camtape_parse_opts,
-	.default_device_name    = camtape_default_device_name,
-	.set_key                = camtape_set_key,
-	.get_keyalias           = camtape_get_keyalias,
-	.takedump_drive         = camtape_takedump_drive,
-	.is_mountable           = camtape_is_mountable,
-	.get_worm_status		= camtape_get_worm_status,
-	.get_serialnumber		= camtape_get_serialnumber,
-	.get_info               = camtape_get_info,
-	.set_profiler			= camtape_set_profiler,
-	.get_next_block_to_xfer = camtape_get_next_block_to_xfer,
-	.is_readonly			= camtape_is_readonly
-};
+struct tape_ops camtape_drive_handler = { .open = camtape_open,
+																					.reopen = camtape_reopen,
+																					.close = camtape_close,
+																					.close_raw = camtape_close_raw,
+																					.is_connected = camtape_is_connected,
+																					.inquiry = camtape_inquiry,
+																					.inquiry_page = camtape_inquiry_page,
+																					.test_unit_ready = camtape_test_unit_ready,
+																					.read = camtape_read,
+																					.write = camtape_write,
+																					.writefm = camtape_writefm,
+																					.rewind = camtape_rewind,
+																					.locate = camtape_locate,
+																					.space = camtape_space,
+																					.erase = camtape_erase,
+																					.load = camtape_load,
+																					.unload = camtape_unload,
+																					.readpos = camtape_readpos,
+																					.setcap = camtape_setcap,
+																					.format = camtape_format,
+																					.remaining_capacity = camtape_remaining_capacity,
+																					.logsense = camtape_logsense,
+																					.modesense = camtape_modesense,
+																					.modeselect = camtape_modeselect,
+																					.reserve_unit = camtape_reserve_unit,
+																					.release_unit = camtape_release_unit,
+																					.prevent_medium_removal = camtape_prevent_medium_removal,
+																					.allow_medium_removal = camtape_allow_medium_removal,
+																					.write_attribute = camtape_write_attribute,
+																					.read_attribute = camtape_read_attribute,
+																					.allow_overwrite = camtape_allow_overwrite,
+																					.grao = camtape_grao,
+																					.rrao = camtape_rrao,
+																					// May be command combination
+																					.set_compression = camtape_set_compression,
+																					.set_default = camtape_set_default,
+																					.get_cartridge_health = camtape_get_cartridge_health,
+																					.get_tape_alert = camtape_get_tape_alert,
+																					.clear_tape_alert = camtape_clear_tape_alert,
+																					.get_xattr = camtape_get_xattr,
+																					.set_xattr = camtape_set_xattr,
+																					.get_parameters = camtape_get_parameters,
+																					.get_eod_status = camtape_get_eod_status,
+																					.get_device_list = camtape_get_device_list,
+																					.help_message = camtape_help_message,
+																					.parse_opts = camtape_parse_opts,
+																					.default_device_name = camtape_default_device_name,
+																					.set_key = camtape_set_key,
+																					.get_keyalias = camtape_get_keyalias,
+																					.takedump_drive = camtape_takedump_drive,
+																					.is_mountable = camtape_is_mountable,
+																					.get_worm_status = camtape_get_worm_status,
+																					.get_serialnumber = camtape_get_serialnumber,
+																					.get_info = camtape_get_info,
+																					.set_profiler = camtape_set_profiler,
+																					.get_next_block_to_xfer = camtape_get_next_block_to_xfer,
+																					.is_readonly = camtape_is_readonly };
 
 struct tape_ops *tape_dev_get_ops(void)
 {
@@ -4213,7 +4116,7 @@ int open_sa_pass(struct camtape_data *softc, const char *saDeviceName)
 		return -EDEV_DEVICE_UNOPENABLE;
 	}
 
-	char passDeviceName[MAXPATHLEN+1];
+	char passDeviceName[MAXPATHLEN + 1];
 	snprintf(passDeviceName, MAXPATHLEN, "/dev/%s%d", cd_pass->device_name, cd_pass->dev_unit_num);
 
 	ret = open_sa_device(softc, saDeviceName);
@@ -4228,7 +4131,7 @@ int open_sa_pass(struct camtape_data *softc, const char *saDeviceName)
 	return 0;
 }
 
-int open_sa_device(struct camtape_data *softc, const char* saDeviceName)
+int open_sa_device(struct camtape_data *softc, const char *saDeviceName)
 {
 	int ret = 0;
 

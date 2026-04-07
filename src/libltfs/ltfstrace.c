@@ -98,15 +98,16 @@
  */
 #define LTFS_TRACE_SIGNATURE "LTFS_TRC"
 #pragma pack(push, 1)
-struct trace_header {
-	char signature[9];               /**< Signature for LTFS trace */
-	uint32_t header_size;            /**< Size of trace header */
-	uint32_t req_header_offset;      /**< Request trace header offset */
-	uint32_t fn_header_offset;       /**< Function trace header offset */
+struct trace_header
+{
+	char signature[9];							 /**< Signature for LTFS trace */
+	uint32_t header_size;						 /**< Size of trace header */
+	uint32_t req_header_offset;			 /**< Request trace header offset */
+	uint32_t fn_header_offset;			 /**< Function trace header offset */
 	unsigned short endian_signature; /**< Endian signagure : 0x1234 or 0x3412 */
-	struct timer_info timerinfo;     /**< Timer info to reconstruct time stamp in post process */
-	uint32_t trace_size;             /**< Whole size of trace (all headers and bodies) */
-	uint32_t crc;                    /**< CRC (reserved for future use) */
+	struct timer_info timerinfo;		 /**< Timer info to reconstruct time stamp in post process */
+	uint32_t trace_size;						 /**< Whole size of trace (all headers and bodies) */
+	uint32_t crc;										 /**< CRC (reserved for future use) */
 };
 #pragma pack(pop)
 
@@ -114,14 +115,16 @@ struct trace_header {
  * Definitions for LTFS Request header information
  */
 #pragma pack(push, 1)
-struct request_header {
-	uint32_t header_size;            /**< Size of request header */
-	uint32_t num_of_req_trace;       /**< Number of request trace descriptrs (always 1) */
-	struct request_trace_descriptor {
-		uint32_t  size_of_entry; /**< Size of entry */
-		uint32_t  num_of_entry;  /**< Number of entry */
-	} req_t_desc;                    /**< Request header descriptor */
-	uint32_t crc;                    /**< CRC (reserved for future use) */
+struct request_header
+{
+	uint32_t header_size;			 /**< Size of request header */
+	uint32_t num_of_req_trace; /**< Number of request trace descriptrs (always 1) */
+	struct request_trace_descriptor
+	{
+		uint32_t size_of_entry; /**< Size of entry */
+		uint32_t num_of_entry;	/**< Number of entry */
+	} req_t_desc;							/**< Request header descriptor */
+	uint32_t crc;							/**< CRC (reserved for future use) */
 };
 #pragma pack(pop)
 
@@ -129,15 +132,17 @@ struct request_header {
  * Definitions for LTFS function trace header
  */
 #pragma pack(push, 1)
-struct function_trace_header {
-	uint32_t header_size;		/**< Size of function trace header */
-	uint32_t num_of_fn_trace;	/**< Number of function trace */
-	struct function_trace_descriptor {
-		uint32_t type;		/**< Function trace type (admin or filesystem) */
-		uint32_t size_of_entry;	/**< Size of function trace entry */
+struct function_trace_header
+{
+	uint32_t header_size;			/**< Size of function trace header */
+	uint32_t num_of_fn_trace; /**< Number of function trace */
+	struct function_trace_descriptor
+	{
+		uint32_t type;					/**< Function trace type (admin or filesystem) */
+		uint32_t size_of_entry; /**< Size of function trace entry */
 		uint32_t num_of_entry;	/**< Number of function trace entries */
 	} *req_t_desc;
-	uint32_t crc;                    /**< CRC (reserved for future use) */
+	uint32_t crc;							/**< CRC (reserved for future use) */
 };
 #pragma pack(pop)
 
@@ -145,7 +150,8 @@ struct function_trace_header {
  * Definitions for LTFS function trace data
  */
 #pragma pack(push, 1)
-struct function_entry {
+struct function_entry
+{
 	uint64_t time;
 	uint64_t function;
 	uint64_t info1;
@@ -158,69 +164,74 @@ struct function_entry {
 /*
  * "Filesystem" Function Trace Data structure
  */
-#define FS_FN_TRACE_SIZE       (1 * 1024 * 1024) /* 1MB */
-#define FS_FN_TRACE_ENTRIES    (FS_FN_TRACE_SIZE / FN_TRACE_ENTRY_SIZE)
+#define FS_FN_TRACE_SIZE (1 * 1024 * 1024) /* 1MB */
+#define FS_FN_TRACE_ENTRIES (FS_FN_TRACE_SIZE / FN_TRACE_ENTRY_SIZE)
 
-struct filesystem_function_trace {
-	MultiReaderSingleWriter        trace_lock;      /**< Lock for trace data */
-	uint32_t                       max_index;
-	uint32_t                       cur_index;
-	struct function_entry          entries[FS_FN_TRACE_ENTRIES];
+struct filesystem_function_trace
+{
+	MultiReaderSingleWriter trace_lock; /**< Lock for trace data */
+	uint32_t max_index;
+	uint32_t cur_index;
+	struct function_entry entries[FS_FN_TRACE_ENTRIES];
 };
 
-struct filesystem_trace_list {
-	uint32_t                          tid;
+struct filesystem_trace_list
+{
+	uint32_t tid;
 	struct filesystem_function_trace *fn_entry;
-	UT_hash_handle                    hh;
+	UT_hash_handle hh;
 };
 
 /*
  * "Admin" Function Trace Data structure
  */
-#define ADMIN_FN_TRACE_ENTRIES	256
-#define ADMIN_FN_TRACE_SIZE	(ADMIN_FN_TRACE_ENTRIES * FN_TRACE_ENTRY_SIZE)
-struct admin_function_trace {
-	MultiReaderSingleWriter        trace_lock;      /**< Lock for trace data */
-	uint32_t                       max_index;
-	uint32_t                       cur_index;
-	struct function_entry          entries[ADMIN_FN_TRACE_ENTRIES];
+#define ADMIN_FN_TRACE_ENTRIES 256
+#define ADMIN_FN_TRACE_SIZE (ADMIN_FN_TRACE_ENTRIES * FN_TRACE_ENTRY_SIZE)
+struct admin_function_trace
+{
+	MultiReaderSingleWriter trace_lock; /**< Lock for trace data */
+	uint32_t max_index;
+	uint32_t cur_index;
+	struct function_entry entries[ADMIN_FN_TRACE_ENTRIES];
 };
 
-struct admin_trace_list {
-	uint32_t                       tid;
-	struct admin_function_trace    *fn_entry;
-	UT_hash_handle                 hh;
+struct admin_trace_list
+{
+	uint32_t tid;
+	struct admin_function_trace *fn_entry;
+	UT_hash_handle hh;
 };
 
 /*
  * Definitions for Tail Q of Admin function trace
  */
 #define MAX_ADMIN_COMP_NUM 512
-struct admin_completed_function_trace {
+struct admin_completed_function_trace
+{
 	TAILQ_ENTRY(admin_completed_function_trace) list;
-	uint32_t                       tid;
-	struct admin_function_trace    *fn_entry;
-	MultiReaderSingleWriter        trace_lock;
+	uint32_t tid;
+	struct admin_function_trace *fn_entry;
+	MultiReaderSingleWriter trace_lock;
 };
 
 /*
  *  Definitions for LTFS Profiler
  */
 
-struct trace_header           *trc_header    = NULL;
-struct request_header         *req_header    = NULL;
-struct function_trace_header  *fn_trc_header = NULL;
+struct trace_header *trc_header = NULL;
+struct request_header *req_header = NULL;
+struct function_trace_header *fn_trc_header = NULL;
 
-struct request_trace          *req_trace     = NULL;
-struct filesystem_trace_list  *fs_tr_list    = NULL;
-struct admin_trace_list       *admin_tr_list = NULL;
+struct request_trace *req_trace = NULL;
+struct filesystem_trace_list *fs_tr_list = NULL;
+struct admin_trace_list *admin_tr_list = NULL;
 TAILQ_HEAD(admin_completed, admin_completed_function_trace);
-struct admin_completed        *acomp         = NULL;
+struct admin_completed *acomp = NULL;
 
-_time_stamp_t                 start_offset;
-struct ltfs_timespec          start;
-struct timer_info             timerinfo;
-bool                          trace_enable   = true;
+_time_stamp_t start_offset;
+struct ltfs_timespec start;
+struct timer_info timerinfo;
+bool trace_enable = true;
 
 static int ltfs_request_trace_init(void)
 {
@@ -263,27 +274,26 @@ static void ltfs_request_trace_destroy(void)
 
 static int ltfs_fn_trace_init(void)
 {
-	acomp = (struct admin_completed *) calloc (1, sizeof(struct admin_completed));
+	acomp = (struct admin_completed *)calloc(1, sizeof(struct admin_completed));
 	TAILQ_INIT(acomp);
 	return 0;
 }
 
 int ltfs_fn_trace_start(FUNCTION_TRACE_TYPE type, uint32_t tid)
 {
-	if (trace_enable == false)
-		return 0;
+	if (trace_enable == false) return 0;
 
 	if (type == FILESYSTEM) {
 		struct filesystem_trace_list *item = NULL;
 		struct filesystem_function_trace *tr_data = NULL;
-		item = (struct filesystem_trace_list *) calloc(1, sizeof(struct filesystem_trace_list));
+		item = (struct filesystem_trace_list *)calloc(1, sizeof(struct filesystem_trace_list));
 		if (!item) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 		item->tid = tid;
 
-		tr_data = (struct filesystem_function_trace *) calloc(1, sizeof(struct filesystem_function_trace));
+		tr_data = (struct filesystem_function_trace *)calloc(1, sizeof(struct filesystem_function_trace));
 		if (!tr_data) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
@@ -296,14 +306,14 @@ int ltfs_fn_trace_start(FUNCTION_TRACE_TYPE type, uint32_t tid)
 	} else if (type == ADMIN) {
 		struct admin_trace_list *item = NULL;
 		struct admin_function_trace *tr_data = NULL;
-		item = (struct admin_trace_list *) calloc(1, sizeof(struct admin_trace_list));
+		item = (struct admin_trace_list *)calloc(1, sizeof(struct admin_trace_list));
 		if (!item) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 		item->tid = tid;
 
-		tr_data = (struct admin_function_trace *) calloc(1, sizeof(struct admin_function_trace));
+		tr_data = (struct admin_function_trace *)calloc(1, sizeof(struct admin_function_trace));
 		if (!tr_data) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
@@ -322,13 +332,12 @@ void ltfs_admin_function_trace_completed(uint32_t tid)
 	struct admin_completed_function_trace *tailq_item;
 	uint32_t num_of_comp_adm = 0;
 
-	if (trace_enable == false)
-		return;
+	if (trace_enable == false) return;
 
 	HASH_FIND_INT(admin_tr_list, &tid, item);
 	if (item != NULL) {
-		TAILQ_FOREACH (tailq_item, acomp, list)
-			num_of_comp_adm++;
+		TAILQ_FOREACH(tailq_item, acomp, list)
+		num_of_comp_adm++;
 
 		if (num_of_comp_adm > MAX_ADMIN_COMP_NUM) {
 			/* Remove first tailq entry */
@@ -337,13 +346,13 @@ void ltfs_admin_function_trace_completed(uint32_t tid)
 			free(tailq_item->fn_entry);
 			free(tailq_item);
 		}
-		tailq_item = (struct admin_completed_function_trace *) calloc(1, sizeof(struct admin_completed_function_trace));
+		tailq_item = (struct admin_completed_function_trace *)calloc(1, sizeof(struct admin_completed_function_trace));
 
 		acquirewrite_mrsw(&tailq_item->trace_lock);
 		struct admin_function_trace *ptr = NULL;
-		ptr = (struct admin_function_trace *) calloc(1, sizeof(struct admin_function_trace));
+		ptr = (struct admin_function_trace *)calloc(1, sizeof(struct admin_function_trace));
 		ptr->cur_index = item->fn_entry->cur_index;
-		for (unsigned int j=0; j<ptr->cur_index; j++) {
+		for (unsigned int j = 0; j < ptr->cur_index; j++) {
 			ptr->entries[j].time = item->fn_entry->entries[j].time;
 			ptr->entries[j].function = item->fn_entry->entries[j].function;
 			ptr->entries[j].info1 = item->fn_entry->entries[j].info1;
@@ -364,7 +373,8 @@ static void ltfs_function_trace_destroy(void)
 {
 	if (fs_tr_list) {
 		struct filesystem_trace_list *fsitem, *tmp;
-		HASH_ITER(hh, fs_tr_list, fsitem, tmp) {
+		HASH_ITER(hh, fs_tr_list, fsitem, tmp)
+		{
 			destroy_mrsw(&fsitem->fn_entry->trace_lock);
 			free(fsitem->fn_entry);
 			free(fsitem);
@@ -373,7 +383,8 @@ static void ltfs_function_trace_destroy(void)
 	}
 	if (admin_tr_list) {
 		struct admin_trace_list *aditem, *tmp;
-		HASH_ITER(hh, admin_tr_list, aditem, tmp) {
+		HASH_ITER(hh, admin_tr_list, aditem, tmp)
+		{
 			destroy_mrsw(&aditem->fn_entry->trace_lock);
 			free(aditem->fn_entry);
 			free(aditem);
@@ -382,7 +393,8 @@ static void ltfs_function_trace_destroy(void)
 	}
 	if (acomp) {
 		struct admin_completed_function_trace *tailq_item, *tmp;
-		TAILQ_FOREACH_SAFE(tailq_item, acomp, list, tmp) {
+		TAILQ_FOREACH_SAFE(tailq_item, acomp, list, tmp)
+		{
 			destroy_mrsw(&tailq_item->trace_lock);
 			free(tailq_item->fn_entry);
 			free(tailq_item);
@@ -398,8 +410,7 @@ void ltfs_function_trace(uint64_t func, uint64_t info1, uint64_t info2)
 	uint32_t tid;
 	uint64_t time;
 
-	if (trace_enable == false)
-		return;
+	if (trace_enable == false) return;
 
 	time = get_time_stamp(&start_offset);
 	tid = ltfs_get_thread_id();
@@ -442,11 +453,9 @@ int ltfs_request_profiler_start(const char *work_dir)
 	int ret;
 	char *path;
 
-	if (req_trace->profiler)
-		return 0;
+	if (req_trace->profiler) return 0;
 
-	if(!work_dir)
-		return -LTFS_BAD_ARG;
+	if (!work_dir) return -LTFS_BAD_ARG;
 
 	ret = asprintf(&path, "%s/%s", work_dir, REQ_PROFILER_FILE);
 	if (ret < 0) {
@@ -458,10 +467,10 @@ int ltfs_request_profiler_start(const char *work_dir)
 
 	free(path);
 
-	if (! req_trace->profiler)
+	if (!req_trace->profiler)
 		ret = -LTFS_FILE_ERR;
 	else {
-		fwrite((void*)&timerinfo, sizeof(timerinfo), 1, req_trace->profiler);
+		fwrite((void *)&timerinfo, sizeof(timerinfo), 1, req_trace->profiler);
 		ret = 0;
 	}
 
@@ -519,8 +528,7 @@ int ltfs_trace_init(void)
 {
 	int ret = 0;
 
-	if (trace_enable == false)
-		return ret;
+	if (trace_enable == false) return ret;
 
 	/* Store launch time */
 	get_current_timespec(&start);
@@ -541,7 +549,7 @@ int ltfs_trace_init(void)
 	return ret;
 }
 
-int ltfs_trace_get_offset(char** val)
+int ltfs_trace_get_offset(char **val)
 {
 #ifdef __APPLE__
 	return asprintf(val, "%llu", start_offset);
@@ -561,10 +569,10 @@ void ltfs_trace_destroy(void)
 	ltfs_function_trace_destroy();
 
 	free(trc_header);
-	trc_header    = NULL;
+	trc_header = NULL;
 
 	free(req_header);
-	req_header    = NULL;
+	req_header = NULL;
 
 	free(fn_trc_header);
 	fn_trc_header = NULL;
@@ -579,8 +587,7 @@ int ltfs_dump(char *fname, const char *work_dir)
 	const unsigned int max_arguments = 32;
 	const char *args[max_arguments];
 
-	if(!work_dir)
-		return -LTFS_BAD_ARG;
+	if (!work_dir) return -LTFS_BAD_ARG;
 
 	ret = asprintf(&path, "%s/%s", work_dir, fname);
 	if (ret < 0) {
@@ -597,14 +604,14 @@ int ltfs_dump(char *fname, const char *work_dir)
 	fork_pid = fork();
 	if (fork_pid < 0) {
 		ltfsmsg(LTFS_ERR, 17233E);
-	} else  if (fork_pid == 0) {
+	} else if (fork_pid == 0) {
 		args[num_args++] = "/usr/bin/gcore";
 		args[num_args++] = "-o";
 		args[num_args++] = path;
 		args[num_args++] = pid;
 		args[num_args++] = NULL;
 
-		execv(args[0], (char **) args);
+		execv(args[0], (char **)args);
 		exit(errno);
 	} else {
 		waitpid(fork_pid, &status, 0);
@@ -619,11 +626,9 @@ int ltfs_trace_dump(char *fname, const char *work_dir)
 	int ret = 0, fd;
 	char *path;
 
-	if(trace_enable == false)
-		return 0;
+	if (trace_enable == false) return 0;
 
-	if(!work_dir)
-		return -LTFS_BAD_ARG;
+	if (!work_dir) return -LTFS_BAD_ARG;
 
 	ret = asprintf(&path, "%s/%s", work_dir, fname);
 	if (ret < 0) {
@@ -632,14 +637,12 @@ int ltfs_trace_dump(char *fname, const char *work_dir)
 	}
 
 	/* Open file */
-	arch_open(&fd, path,O_WRONLY | O_CREAT | O_TRUNC, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
-	if(fd < 0)
-		return -errno;
+	arch_open(&fd, path, O_WRONLY | O_CREAT | O_TRUNC, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
+	if (fd < 0) return -errno;
 
 	free(path);
 
-	if (req_trace)
-	{
+	if (req_trace) {
 		uint32_t num_of_fn_trace = 0, num_of_fs_fn_trace = 0, num_of_adm_fn_trace = 0, n = 0;
 		struct admin_completed_function_trace *tailq_item;
 		struct filesystem_trace_list *fsitem;
@@ -648,35 +651,36 @@ int ltfs_trace_dump(char *fname, const char *work_dir)
 		/* Calculate the number of function traces */
 		num_of_fs_fn_trace += HASH_COUNT(fs_tr_list);
 		num_of_adm_fn_trace += HASH_COUNT(admin_tr_list);
-		TAILQ_FOREACH (tailq_item, acomp, list)
-			num_of_adm_fn_trace++;
+		TAILQ_FOREACH(tailq_item, acomp, list)
+		num_of_adm_fn_trace++;
 		num_of_fn_trace = num_of_fs_fn_trace + num_of_adm_fn_trace;
 
 		fn_trc_header->num_of_fn_trace = num_of_fn_trace;
 		fn_trc_header->header_size = 8 + 12 * num_of_fn_trace;
 
 		fn_trc_header->req_t_desc =
-			(struct function_trace_descriptor *) calloc(num_of_fn_trace, sizeof(struct function_trace_descriptor));
+				(struct function_trace_descriptor *)calloc(num_of_fn_trace, sizeof(struct function_trace_descriptor));
 		if (!fn_trc_header->req_t_desc) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 
-		for (fsitem=fs_tr_list; fsitem != NULL; fsitem=fsitem->hh.next) {
+		for (fsitem = fs_tr_list; fsitem != NULL; fsitem = fsitem->hh.next) {
 			fn_trc_header->req_t_desc[n].type = FILESYSTEM;
 			fn_trc_header->req_t_desc[n].size_of_entry = FS_FN_TRACE_SIZE;
 			acquireread_mrsw(&fsitem->fn_entry->trace_lock);
 			fn_trc_header->req_t_desc[n++].num_of_entry = fsitem->fn_entry->cur_index;
 			releaseread_mrsw(&fsitem->fn_entry->trace_lock);
 		}
-		for (admitem=admin_tr_list; admitem != NULL; admitem=admitem->hh.next) {
+		for (admitem = admin_tr_list; admitem != NULL; admitem = admitem->hh.next) {
 			fn_trc_header->req_t_desc[n].type = ADMIN;
 			fn_trc_header->req_t_desc[n].size_of_entry = ADMIN_FN_TRACE_SIZE;
 			acquireread_mrsw(&admitem->fn_entry->trace_lock);
 			fn_trc_header->req_t_desc[n++].num_of_entry = admitem->fn_entry->cur_index;
 			releaseread_mrsw(&admitem->fn_entry->trace_lock);
 		}
-		TAILQ_FOREACH (tailq_item, acomp, list) {
+		TAILQ_FOREACH(tailq_item, acomp, list)
+		{
 			fn_trc_header->req_t_desc[n].type = ADMIN_COMPLETED;
 			fn_trc_header->req_t_desc[n].size_of_entry = ADMIN_FN_TRACE_SIZE;
 			acquireread_mrsw(&tailq_item->fn_entry->trace_lock);
@@ -687,11 +691,10 @@ int ltfs_trace_dump(char *fname, const char *work_dir)
 		/* Set header information */
 		req_header->req_t_desc.num_of_entry = req_trace->cur_index;
 		req_header->req_t_desc.size_of_entry = REQ_TRACE_SIZE;
-		trc_header->trace_size =
-			req_header->req_t_desc.size_of_entry +		/* Request trace */
-			(num_of_fs_fn_trace * FS_FN_TRACE_SIZE) +	/* Function trace (filesystem) */
-			(num_of_adm_fn_trace * ADMIN_FN_TRACE_SIZE) +	/* Function trace (admin) */
-			trc_header->header_size + req_header->header_size + fn_trc_header->header_size;
+		trc_header->trace_size = req_header->req_t_desc.size_of_entry +				 /* Request trace */
+														 (num_of_fs_fn_trace * FS_FN_TRACE_SIZE) +		 /* Function trace (filesystem) */
+														 (num_of_adm_fn_trace * ADMIN_FN_TRACE_SIZE) + /* Function trace (admin) */
+														 trc_header->header_size + req_header->header_size + fn_trc_header->header_size;
 
 		/* Write headers */
 		(void)arch_write(fd, trc_header, sizeof(struct trace_header));
@@ -705,24 +708,25 @@ int ltfs_trace_dump(char *fname, const char *work_dir)
 		/* Write function trace header */
 		(void)arch_write(fd, &fn_trc_header->header_size, sizeof(uint32_t));
 		(void)arch_write(fd, &fn_trc_header->num_of_fn_trace, sizeof(uint32_t));
-		for (unsigned int i=0; i<n; i++)
+		for (unsigned int i = 0; i < n; i++)
 			(void)arch_write(fd, &fn_trc_header->req_t_desc[i], sizeof(struct function_trace_descriptor));
 		(void)arch_write(fd, &fn_trc_header->crc, sizeof(uint32_t));
 		free(fn_trc_header->req_t_desc);
 		fn_trc_header->req_t_desc = NULL;
 
 		/* Write function trace data */
-		for (fsitem=fs_tr_list; fsitem != NULL; fsitem=fsitem->hh.next) {
+		for (fsitem = fs_tr_list; fsitem != NULL; fsitem = fsitem->hh.next) {
 			acquireread_mrsw(&fsitem->fn_entry->trace_lock);
 			(void)arch_write(fd, fsitem->fn_entry->entries, FS_FN_TRACE_SIZE);
 			releaseread_mrsw(&fsitem->fn_entry->trace_lock);
 		}
-		for (admitem=admin_tr_list; admitem != NULL; admitem=admitem->hh.next) {
+		for (admitem = admin_tr_list; admitem != NULL; admitem = admitem->hh.next) {
 			acquireread_mrsw(&admitem->fn_entry->trace_lock);
 			(void)arch_write(fd, admitem->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
 			releaseread_mrsw(&admitem->fn_entry->trace_lock);
 		}
-		TAILQ_FOREACH (tailq_item, acomp, list) {
+		TAILQ_FOREACH(tailq_item, acomp, list)
+		{
 			acquireread_mrsw(&tailq_item->fn_entry->trace_lock);
 			(void)arch_write(fd, tailq_item->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
 			releaseread_mrsw(&tailq_item->fn_entry->trace_lock);
@@ -738,13 +742,13 @@ int ltfs_get_trace_status(char **val)
 	int ret = 0;
 	char *trstat = NULL;
 
-	ret = asprintf(&trstat, "%s", (trace_enable == true) ? "on" : "off" );
+	ret = asprintf(&trstat, "%s", (trace_enable == true) ? "on" : "off");
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
 	*val = arch_strdup(trstat);
-	if (! (*val)) {
+	if (!(*val)) {
 		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
@@ -756,12 +760,11 @@ int ltfs_set_trace_status(char *mode)
 {
 	int ret = 0;
 
-	if (! strcmp(mode, "on")) {
+	if (!strcmp(mode, "on")) {
 		trace_enable = true;
 		ltfs_trace_init();
 	} else {
-		if (trace_enable == true)
-			ltfs_trace_destroy();
+		if (trace_enable == true) ltfs_trace_destroy();
 		trace_enable = false;
 	}
 	return ret;

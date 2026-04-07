@@ -54,9 +54,9 @@
 #ifndef __xml_libltfs_h
 #define __xml_libltfs_h
 
-#include <libxml/tree.h>
 #include "ltfs.h"
 #include "xml.h"
+#include <libxml/tree.h>
 
 /*
  * Define dummy XML_PARSE_HUGE for old libxml2
@@ -64,21 +64,19 @@
  * and HAVE_XML_PARSE_HUGE shall be defined in config.h.
  */
 #if !HAVE_XML_PARSE_HUGE
-#define XML_PARSE_HUGE 0
+#	define XML_PARSE_HUGE 0
 #endif
 
 /* A couple of tag names */
 #define BACKUPTIME_TAGNAME "backuptime"
-#define NEXTUID_TAGNAME    "highestfileuid"
-#define UID_TAGNAME        "fileuid"
+#define NEXTUID_TAGNAME "highestfileuid"
+#define UID_TAGNAME "fileuid"
 #define FILEOFFSET_TAGNAME "fileoffset"
 
 /* Functions for writing XML files. See xml_writer_libltfs.c */
-xmlBufferPtr xml_make_label(const char *creator, tape_partition_t partition,
-							const struct ltfs_label *label);
+xmlBufferPtr xml_make_label(const char *creator, tape_partition_t partition, const struct ltfs_label *label);
 xmlBufferPtr xml_make_schema(const char *creator, const struct ltfs_index *idx);
-int xml_schema_to_file(const char *filename, const char *creator,
-					   const char *reason, const struct ltfs_index *idx);
+int xml_schema_to_file(const char *filename, const char *creator, const char *reason, const struct ltfs_index *idx);
 int xml_schema_to_tape(char *reason, struct ltfs_volume *vol);
 
 /* Functions for reading XML files. See xml_reader_libltfs.c */

@@ -46,8 +46,8 @@
 **
 *************************************************************************************
 */
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "ltfssnmp.h"
 
@@ -55,15 +55,16 @@
 #define TABLE_FILE_MODE "rb"
 
 #ifdef ENABLE_SNMP
-#define DEFAULT_DEFFILE LTFS_BASE_DIR "/share/snmp/LtfsSnmpTrapDef.txt"
+#	define DEFAULT_DEFFILE LTFS_BASE_DIR "/share/snmp/LtfsSnmpTrapDef.txt"
 static const oid snmptrap_oid[] = { 1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0 };
 #else
-#define DEFAULT_DEFFILE LTFS_BASE_DIR "LtfsSnmpTrapDef.txt"
+#	define DEFAULT_DEFFILE LTFS_BASE_DIR "LtfsSnmpTrapDef.txt"
 #endif
 
 bool ltfs_snmp_enabled = false;
 
-struct trap_entry {
+struct trap_entry
+{
 	TAILQ_ENTRY(trap_entry) list;
 	char *id;
 };
@@ -78,19 +79,17 @@ int read_trap_def_file(char *deffile)
 {
 	int ret = 0;
 	char line[65536];
-	char *trapfile=DEFAULT_DEFFILE;
+	char *trapfile = DEFAULT_DEFFILE;
 	char *strip_pos, *tok, *saveptr;
 	struct trap_entry *entry;
 	FILE *fp = NULL;
 
 	TAILQ_INIT(&trap_entries);
 
-	if (deffile != NULL)
-		trapfile = deffile;
-
+	if (deffile != NULL) trapfile = deffile;
 
 	arch_fopen(trapfile, TABLE_FILE_MODE, fp);
-	if (! fp) {
+	if (!fp) {
 		ret = -errno;
 		ltfsmsg(LTFS_ERR, 11268E, trapfile, ret);
 		return ret;
@@ -98,7 +97,7 @@ int read_trap_def_file(char *deffile)
 
 	/* Parse the traf definition file */
 	if (!ret) {
-		while(fgets(line, 65536, fp) != NULL) {
+		while (fgets(line, 65536, fp) != NULL) {
 			if (strlen(line) == 65535) {
 				ltfsmsg(LTFS_ERR, 11269E);
 				ret = -LTFS_CONFIG_INVALID;
@@ -106,19 +105,17 @@ int read_trap_def_file(char *deffile)
 			}
 			/* Ignore comments and trailing whitespace */
 			strip_pos = strstr(line, "#");
-			if (! strip_pos)
-				strip_pos = line + strlen(line);
+			if (!strip_pos) strip_pos = line + strlen(line);
 
-			while (strip_pos > line &&
-				(*(strip_pos - 1) == ' ' || *(strip_pos - 1) == '\t' ||
-				 *(strip_pos - 1) == '\r' || *(strip_pos - 1) == '\n'))
+			while (strip_pos > line && (*(strip_pos - 1) == ' ' || *(strip_pos - 1) == '\t' || *(strip_pos - 1) == '\r' ||
+																	*(strip_pos - 1) == '\n'))
 				--strip_pos;
 			*strip_pos = '\0';
 
 			tok = strtok_r(line, " \t\r\n", &saveptr);
 			if (tok) {
-				entry = (struct trap_entry *) calloc(1, sizeof(struct trap_entry));
-				if (! entry) {
+				entry = (struct trap_entry *)calloc(1, sizeof(struct trap_entry));
+				if (!entry) {
 					ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 					return -LTFS_NO_MEMORY;
 				}
@@ -134,12 +131,11 @@ int read_trap_def_file(char *deffile)
 bool is_snmp_trapid(const char *id)
 {
 	struct trap_entry *entry = NULL;
-	if (id == NULL)
-		return false;
+	if (id == NULL) return false;
 
-	TAILQ_FOREACH(entry, &trap_entries, list) {
-		if (! strcmp(entry->id, id))
-			return true;
+	TAILQ_FOREACH(entry, &trap_entries, list)
+	{
+		if (!strcmp(entry->id, id)) return true;
 	}
 	return false;
 }
@@ -160,7 +156,7 @@ int ltfs_snmp_finish()
 {
 	struct trap_entry *entry = NULL;
 	TAILQ_FOREACH(entry, &trap_entries, list)
-		free(entry->id);
+	free(entry->id);
 #ifdef ENABLE_SNMP
 	send_ltfsStopTrap();
 	snmp_shutdown(AGENT);
@@ -176,10 +172,11 @@ int send_ltfsStartTrap(void)
 
 	/* Set the snmpTrapOid.0 value */
 	snmp_varlist_add_variable(&var_list,
-		snmptrap_oid, OID_LENGTH(snmptrap_oid),
-		ASN_OBJECT_ID,
-		(const u_char *)ltfsStartTrap_oid,
-		sizeof(ltfsStartTrap_oid));
+														snmptrap_oid,
+														OID_LENGTH(snmptrap_oid),
+														ASN_OBJECT_ID,
+														(const u_char *)ltfsStartTrap_oid,
+														sizeof(ltfsStartTrap_oid));
 
 	/* Send the trap to the list of configured destinations and clean up */
 	send_v2trap(var_list);
@@ -198,10 +195,11 @@ int send_ltfsStopTrap(void)
 
 	/* Set the snmpTrapOid.0 value */
 	snmp_varlist_add_variable(&var_list,
-		snmptrap_oid, OID_LENGTH(snmptrap_oid),
-		ASN_OBJECT_ID,
-		(const u_char *)ltfsStopTrap_oid,
-		sizeof(ltfsStopTrap_oid));
+														snmptrap_oid,
+														OID_LENGTH(snmptrap_oid),
+														ASN_OBJECT_ID,
+														(const u_char *)ltfsStopTrap_oid,
+														sizeof(ltfsStopTrap_oid));
 
 	/* Send the trap to the list of configured destinations and clean up */
 	send_v2trap(var_list);
@@ -221,18 +219,15 @@ int send_ltfsInfoTrap(char *str)
 
 	/* Set the snmpTrapOid.0 value */
 	snmp_varlist_add_variable(&var_list,
-		snmptrap_oid, OID_LENGTH(snmptrap_oid),
-		ASN_OBJECT_ID,
-		(const u_char *)ltfsInfoTrap_oid,
-		sizeof(ltfsInfoTrap_oid));
+														snmptrap_oid,
+														OID_LENGTH(snmptrap_oid),
+														ASN_OBJECT_ID,
+														(const u_char *)ltfsInfoTrap_oid,
+														sizeof(ltfsInfoTrap_oid));
 
 	/* Add any objects from the trap definition */
-	snmp_varlist_add_variable(&var_list,
-		ltfsTrapInfo_oid,
-		OID_LENGTH(ltfsTrapInfo_oid),
-		ASN_OCTET_STR,
-		(const u_char *)str,
-		strlen(str));
+	snmp_varlist_add_variable(
+			&var_list, ltfsTrapInfo_oid, OID_LENGTH(ltfsTrapInfo_oid), ASN_OCTET_STR, (const u_char *)str, strlen(str));
 
 	/* Send the trap to the list of configured destinations and clean up */
 	send_v2trap(var_list);
@@ -252,18 +247,15 @@ int send_ltfsErrorTrap(char *str)
 
 	/* Set the snmpTrapOid.0 value */
 	snmp_varlist_add_variable(&var_list,
-		snmptrap_oid, OID_LENGTH(snmptrap_oid),
-		ASN_OBJECT_ID,
-		(const u_char *)ltfsErrorTrap_oid,
-		sizeof(ltfsErrorTrap_oid));
+														snmptrap_oid,
+														OID_LENGTH(snmptrap_oid),
+														ASN_OBJECT_ID,
+														(const u_char *)ltfsErrorTrap_oid,
+														sizeof(ltfsErrorTrap_oid));
 
 	/* Add any objects from the trap definition */
-	snmp_varlist_add_variable(&var_list,
-		ltfsTrapInfo_oid,
-		OID_LENGTH(ltfsTrapInfo_oid),
-		ASN_OCTET_STR,
-		(const u_char *)str,
-		strlen(str));
+	snmp_varlist_add_variable(
+			&var_list, ltfsTrapInfo_oid, OID_LENGTH(ltfsTrapInfo_oid), ASN_OCTET_STR, (const u_char *)str, strlen(str));
 
 	/* Send the trap to the list of configured destinations and clean up */
 	send_v2trap(var_list);

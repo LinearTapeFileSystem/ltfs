@@ -49,7 +49,7 @@
 
 #ifndef mingw_PLATFORM
 
-#include <uuid/uuid.h>
+#	include <uuid/uuid.h>
 
 void gen_uuid_unix(char *uuid_str)
 {
@@ -59,4 +59,3 @@ void gen_uuid_unix(char *uuid_str)
 }
 
 #endif
-

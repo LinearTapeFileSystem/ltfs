@@ -98,8 +98,12 @@ int ltfs_fsraw_close(struct dentry *d);
  *    - -LTFS_BAD_ARG if repetitions > 1 and count is not a multiple of vol->label->blocksize
  *    - Another negative value if an internal error occurred or if writing to the device failed
  */
-int ltfs_fsraw_write_data(char partition, const char *buf, size_t count, uint64_t repetitions,
-	tape_block_t *startblock, struct ltfs_volume *vol);
+int ltfs_fsraw_write_data(char partition,
+													const char *buf,
+													size_t count,
+													uint64_t repetitions,
+													tape_block_t *startblock,
+													struct ltfs_volume *vol);
 
 /**
  * Save a new extent to a file, updating the file size and times as appropriate.
@@ -116,8 +120,7 @@ int ltfs_fsraw_write_data(char partition, const char *buf, size_t count, uint64_
  *    - -LTFS_NO_MEMORY if allocating memory for a new extent failed
  *    - Another negative value if an internal error occurs
  */
-int ltfs_fsraw_add_extent(struct dentry *d, struct extent_info *ext, bool update_time,
-	struct ltfs_volume *vol);
+int ltfs_fsraw_add_extent(struct dentry *d, struct extent_info *ext, bool update_time, struct ltfs_volume *vol);
 
 /**
  * Remove extent which is written beyond the write perm error position.
@@ -129,7 +132,10 @@ int ltfs_fsraw_add_extent(struct dentry *d, struct extent_info *ext, bool update
  *    - 0 on success
  *    - Negative value if an internal error occurs
  */
-int ltfs_fsraw_cleanup_extent(struct dentry *d, struct tc_position err_pos, unsigned long blocksize, struct ltfs_volume *vol);
+int ltfs_fsraw_cleanup_extent(struct dentry *d,
+															struct tc_position err_pos,
+															unsigned long blocksize,
+															struct ltfs_volume *vol);
 
 /**
  * Write data to a file without buffering.
@@ -148,8 +154,13 @@ int ltfs_fsraw_cleanup_extent(struct dentry *d, struct tc_position err_pos, unsi
  *    - -LTFS_BAD_PARTNUM if 'partition' is not a valid partition ID
  *    - Another negative value if an internal error occurs or if writing to the device fails
  */
-int ltfs_fsraw_write(struct dentry *d, const char *buf, size_t count, off_t offset, char partition,
-	bool update_time, struct ltfs_volume *vol);
+int ltfs_fsraw_write(struct dentry *d,
+										 const char *buf,
+										 size_t count,
+										 off_t offset,
+										 char partition,
+										 bool update_time,
+										 struct ltfs_volume *vol);
 
 /**
  * Read data from a file without using the I/O scheduler.
@@ -165,8 +176,7 @@ int ltfs_fsraw_write(struct dentry *d, const char *buf, size_t count, off_t offs
  *    - -LTFS_NULL_ARG if any of the input arguments are NULL
  *    - Another negative value if an internal error or device error occurred
  */
-ssize_t ltfs_fsraw_read(struct dentry *d, char *buf, size_t count, off_t offset,
-	struct ltfs_volume *vol);
+ssize_t ltfs_fsraw_read(struct dentry *d, char *buf, size_t count, off_t offset, struct ltfs_volume *vol);
 
 /**
  * Truncate a file to shorten it or extend it with zeros.
@@ -195,4 +205,3 @@ struct dentry *ltfs_fsraw_get_dentry(struct dentry *d, struct ltfs_volume *vol);
  * @param vol LTFS volume.
  */
 void ltfs_fsraw_put_dentry(struct dentry *d, struct ltfs_volume *vol);
-

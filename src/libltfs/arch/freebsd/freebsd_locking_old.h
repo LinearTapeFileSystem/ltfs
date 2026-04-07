@@ -60,20 +60,17 @@
 
 typedef pthread_rwlock_t MultiReaderSingleWriter;
 
-static inline int
-init_mrsw(MultiReaderSingleWriter *mrsw)
+static inline int init_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	return (pthread_rwlock_init(mrsw, NULL));
 }
 
-static inline void
-destroy_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void destroy_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	pthread_rwlock_destroy(mrsw);
 }
 
-static inline bool
-try_acquirewrite_mrsw(MultiReaderSingleWriter *mrsw)
+static inline bool try_acquirewrite_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	int err;
 
@@ -84,33 +81,28 @@ try_acquirewrite_mrsw(MultiReaderSingleWriter *mrsw)
 		return true;
 }
 
-static inline void
-acquirewrite_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void acquirewrite_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	pthread_rwlock_wrlock(mrsw);
 }
 
-static inline void
-acquirewrite_mrsw_long(MultiReaderSingleWriter *mrsw)
+static inline void acquirewrite_mrsw_long(MultiReaderSingleWriter *mrsw)
 {
 	/* XXX KDM long lock? */
 	pthread_rwlock_wrlock(mrsw);
 }
 
-static inline void
-releasewrite_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void releasewrite_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	pthread_rwlock_unlock(mrsw);
 }
 
-static inline void
-acquireread_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void acquireread_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	pthread_rwlock_rdlock(mrsw);
 }
 
-static inline int
-acquireread_mrsw_short(MultiReaderSingleWriter *mrsw)
+static inline int acquireread_mrsw_short(MultiReaderSingleWriter *mrsw)
 {
 	int ret = 0;
 
@@ -121,21 +113,18 @@ acquireread_mrsw_short(MultiReaderSingleWriter *mrsw)
 		return 0;
 }
 
-static inline void
-releaseread_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void releaseread_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	pthread_rwlock_unlock(mrsw);
 }
 
-static inline void
-release_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void release_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	pthread_rwlock_unlock(mrsw);
 }
 
 //downgrades a write lock to a read lock
-static inline void
-writetoread_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void writetoread_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	/*
 	 * The original intent of this function was to downgrade from write lock

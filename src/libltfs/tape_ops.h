@@ -60,42 +60,44 @@
 #ifndef __tape_ops_h
 #define __tape_ops_h
 
-#include <stdint.h>
-#include <stdbool.h>
 #include <libltfs/ltfs_types.h>
+#include <stdbool.h>
+#include <stdint.h>
 
-#define VENDOR_ID_LENGTH           (8)
-#define PRODUCT_ID_LENGTH          (16)
-#define PRODUCT_REV_LENGTH         (4)
-#define PRODUCT_NAME_LENGTH        (PRODUCT_ID_LENGTH + 5) /* " [PRODUCT_ID]" */
+#define VENDOR_ID_LENGTH (8)
+#define PRODUCT_ID_LENGTH (16)
+#define PRODUCT_REV_LENGTH (4)
+#define PRODUCT_NAME_LENGTH (PRODUCT_ID_LENGTH + 5) /* " [PRODUCT_ID]" */
 #define PRODUCT_NAME_REPORT_LENGTH (15)
 
-#define UNIT_SERIAL_LENGTH         (255)
+#define UNIT_SERIAL_LENGTH (255)
 
-#define TAPE_MODEL_NAME_LEN_MAX     (16)
-#define TAPE_VENDOR_NAME_LEN_MAX    (8)
-#define TAPE_REVISION_CODE_LEN_MAX  (4)
+#define TAPE_MODEL_NAME_LEN_MAX (16)
+#define TAPE_VENDOR_NAME_LEN_MAX (8)
+#define TAPE_REVISION_CODE_LEN_MAX (4)
 #define TAPE_VENDORUNQ_DATA_LEN_MAX (20)
-#define TAPE_DEVNAME_LEN_MAX        (1023)
-#define TAPE_SERIAL_LEN_MAX         (32)
+#define TAPE_DEVNAME_LEN_MAX (1023)
+#define TAPE_SERIAL_LEN_MAX (32)
 
-struct tc_drive_info {
-	char name[TAPE_DEVNAME_LEN_MAX + 1];         /**< Device name like "/dev/IBMtape0" */
-	char vendor[TAPE_VENDOR_NAME_LEN_MAX + 1];   /**< Vendor code "IBM" */
-	char model[TAPE_MODEL_NAME_LEN_MAX + 1];     /**< Device identifier */
+struct tc_drive_info
+{
+	char name[TAPE_DEVNAME_LEN_MAX + 1];				 /**< Device name like "/dev/IBMtape0" */
+	char vendor[TAPE_VENDOR_NAME_LEN_MAX + 1];	 /**< Vendor code "IBM" */
+	char model[TAPE_MODEL_NAME_LEN_MAX + 1];		 /**< Device identifier */
 	char serial_number[TAPE_SERIAL_LEN_MAX + 1]; /**< Serial number of the drvice */
-	char product_name[PRODUCT_NAME_LENGTH + 1];  /**< Product name like " [ULTRIUM-TD5]" */
-	char product_rev[PRODUCT_REV_LENGTH + 1];    /**< Firmware revision */
-	char host;                                   /**< SCSI host */
-	char channel;                                /**< SCSI channel */
-	char target;                                 /**< SCSI target ID */
-	char lun;                                    /**< SCSI LUN */
+	char product_name[PRODUCT_NAME_LENGTH + 1];	 /**< Product name like " [ULTRIUM-TD5]" */
+	char product_rev[PRODUCT_REV_LENGTH + 1];		 /**< Firmware revision */
+	char host;																	 /**< SCSI host */
+	char channel;																 /**< SCSI channel */
+	char target;																 /**< SCSI target ID */
+	char lun;																		 /**< SCSI LUN */
 };
 
 typedef uint64_t tape_filemarks_t;
 
-typedef struct tc_position {
-	tape_block_t     block;
+typedef struct tc_position
+{
+	tape_block_t block;
 	tape_filemarks_t filemarks;
 	tape_partition_t partition;
 	bool early_warning;
@@ -104,92 +106,100 @@ typedef struct tc_position {
 
 #define TAPE_BLOCK_MAX (0xFFFFFFFFFFFFFFFFLL)
 
-struct tc_inq {
-	unsigned int  devicetype;
-	bool          cmdque;
+struct tc_inq
+{
+	unsigned int devicetype;
+	bool cmdque;
 	unsigned char vid[8 + 1];
 	unsigned char pid[16 + 1];
 	unsigned char revision[4 + 1];
 	unsigned char vendor[20 + 1];
 };
 
-struct tc_inq_page {
+struct tc_inq_page
+{
 	unsigned char page_code;
 	unsigned char data[255];
 };
 
 #define TC_INQ_PAGE_DRVSERIAL (0x80)
 
-struct tc_drive_param {
+struct tc_drive_param
+{
 	/* Parameters for tape drive*/
-	unsigned int  max_blksize;           /* Maximum block size */
+	unsigned int max_blksize; /* Maximum block size */
 
 	/* Parameters for current loaded tape */
-	unsigned char cart_type;             /* Cartridge type in CM like TC_MP_JB */
-	unsigned char density;               /* Current density code */
-	unsigned int  write_protect;         /* Write protect status of the tape (use bit field of volumelock_status) */
-	unsigned int  logical_write_protect; /* Logical Write Protect */
+	unsigned char cart_type;						/* Cartridge type in CM like TC_MP_JB */
+	unsigned char density;							/* Current density code */
+	unsigned int write_protect;					/* Write protect status of the tape (use bit field of volumelock_status) */
+	unsigned int logical_write_protect; /* Logical Write Protect */
 	/* TODO: Following field shall be handled by backend but currently they are not implemented yet */
 	//bool          is_encrypted;          /* Is encrypted tape ? */
 	//bool          is_worm;               /* Is worm tape? */
 };
 
 /* Changed to uint64_t while fixing cp problems on OS X. This appears to make a difference for unknown reasons. */
-struct tc_remaining_cap {
-	uint64_t remaining_p0;   /* Remaining capacity of partition 0 */
-	uint64_t remaining_p1;   /* Remaining capacity of partition 1 */
-	uint64_t max_p0;         /* Maxmum capacity of partition 0 */
-	uint64_t max_p1;         /* Maxmum capacity of partition 1 */
+struct tc_remaining_cap
+{
+	uint64_t remaining_p0; /* Remaining capacity of partition 0 */
+	uint64_t remaining_p1; /* Remaining capacity of partition 1 */
+	uint64_t max_p0;			 /* Maxmum capacity of partition 0 */
+	uint64_t max_p1;			 /* Maxmum capacity of partition 1 */
 };
 
 /* Density codes of LTO */
-enum {
+enum
+{
 	TC_DC_UNKNOWN = 0x00,
-	TC_DC_LTO1    = 0x40,
-	TC_DC_LTO2    = 0x42,
-	TC_DC_LTO3    = 0x44,
-	TC_DC_LTO4    = 0x46,
-	TC_DC_LTO5    = 0x58,
-	TC_DC_LTO6    = 0x5A,
-	TC_DC_LTO7    = 0x5C,
-	TC_DC_LTOM8   = 0x5D,
-	TC_DC_LTO8    = 0x5E,
-	TC_DC_LTO9    = 0x60,
-	TC_DC_LTO10    = 0x62,
-	TC_DC_LTOP10   = 0x63,
+	TC_DC_LTO1 = 0x40,
+	TC_DC_LTO2 = 0x42,
+	TC_DC_LTO3 = 0x44,
+	TC_DC_LTO4 = 0x46,
+	TC_DC_LTO5 = 0x58,
+	TC_DC_LTO6 = 0x5A,
+	TC_DC_LTO7 = 0x5C,
+	TC_DC_LTOM8 = 0x5D,
+	TC_DC_LTO8 = 0x5E,
+	TC_DC_LTO9 = 0x60,
+	TC_DC_LTO10 = 0x62,
+	TC_DC_LTOP10 = 0x63,
 };
 
 /* Density codes of TS11x0 */
-enum {
-	TC_DC_JAG1    = 0x51,
-	TC_DC_JAG2    = 0x52,
-	TC_DC_JAG3    = 0x53,
-	TC_DC_JAG4    = 0x54,
-	TC_DC_JAG5    = 0x55,
-	TC_DC_JAG5A   = 0x56,
-	TC_DC_JAG6    = 0x57,
-	TC_DC_JAG7    = 0x59,
-	TC_DC_JAG1E   = 0x71,
-	TC_DC_JAG2E   = 0x72,
-	TC_DC_JAG3E   = 0x73,
-	TC_DC_JAG4E   = 0x74,
-	TC_DC_JAG5E   = 0x75,
-	TC_DC_JAG5AE  = 0x76,
-	TC_DC_JAG6E   = 0x77,
-	TC_DC_JAG7E   = 0x79,
+enum
+{
+	TC_DC_JAG1 = 0x51,
+	TC_DC_JAG2 = 0x52,
+	TC_DC_JAG3 = 0x53,
+	TC_DC_JAG4 = 0x54,
+	TC_DC_JAG5 = 0x55,
+	TC_DC_JAG5A = 0x56,
+	TC_DC_JAG6 = 0x57,
+	TC_DC_JAG7 = 0x59,
+	TC_DC_JAG1E = 0x71,
+	TC_DC_JAG2E = 0x72,
+	TC_DC_JAG3E = 0x73,
+	TC_DC_JAG4E = 0x74,
+	TC_DC_JAG5E = 0x75,
+	TC_DC_JAG5AE = 0x76,
+	TC_DC_JAG6E = 0x77,
+	TC_DC_JAG7E = 0x79,
 };
 
-#define ALL_MEDIA_DENSITY      0
-#define CURRENT_MEDIA_DENSITY  1
+#define ALL_MEDIA_DENSITY 0
+#define CURRENT_MEDIA_DENSITY 1
 
 #define TC_MAX_DENSITY_REPORTS (8)
 
-struct tc_density_code {
+struct tc_density_code
+{
 	unsigned char primary;
 	unsigned char secondary;
 };
 
-struct tc_density_report {
+struct tc_density_report
+{
 	int size;
 	struct tc_density_code density[TC_MAX_DENSITY_REPORTS];
 };
@@ -197,63 +207,66 @@ struct tc_density_report {
 #define TEST_CRYPTO (0x20)
 #define MASK_CRYPTO (~0x20)
 
-typedef enum {
-	TC_SPACE_EOD,   /* Space EOD          */
-	TC_SPACE_FM_F,  /* Space FM Forward   */
-	TC_SPACE_FM_B,  /* Space FM Backword  */
-	TC_SPACE_F,     /* Space Rec Forward  */
-	TC_SPACE_B,     /* Space Rec Backword */
-} TC_SPACE_TYPE;    /* Space command operations */
+typedef enum
+{
+	TC_SPACE_EOD,	 /* Space EOD          */
+	TC_SPACE_FM_F, /* Space FM Forward   */
+	TC_SPACE_FM_B, /* Space FM Backword  */
+	TC_SPACE_F,		 /* Space Rec Forward  */
+	TC_SPACE_B,		 /* Space Rec Backword */
+} TC_SPACE_TYPE; /* Space command operations */
 
-typedef enum {
-	TC_FORMAT_DEFAULT   = 0x00,   /* Make 1 partition medium */
-	TC_FORMAT_PARTITION = 0x01,   /* Make 2 partition medium */
-	TC_FORMAT_DEST_PART = 0x02,   /* Destroy all data and make 2 partition medium */
-	TC_FORMAT_MAX       = 0x03
-} TC_FORMAT_TYPE;    /* Space command operations */
+typedef enum
+{
+	TC_FORMAT_DEFAULT = 0x00,		/* Make 1 partition medium */
+	TC_FORMAT_PARTITION = 0x01, /* Make 2 partition medium */
+	TC_FORMAT_DEST_PART = 0x02, /* Destroy all data and make 2 partition medium */
+	TC_FORMAT_MAX = 0x03
+} TC_FORMAT_TYPE;							/* Space command operations */
 
-typedef enum {
-	TC_MP_PC_CURRENT    = 0x00,    /* Get current value           */
-	TC_MP_PC_CHANGEABLE = 0x40,    /* Get changeable bitmap       */
-	TC_MP_PC_DEFAULT    = 0x80,    /* Get default(power-on) value */
-	TC_MP_PC_SAVED      = 0xC0,    /* Get saved value             */
-} TC_MP_PC_TYPE;    /* Page control (PC) value for ModePage */
+typedef enum
+{
+	TC_MP_PC_CURRENT = 0x00,							 /* Get current value           */
+	TC_MP_PC_CHANGEABLE = 0x40,						 /* Get changeable bitmap       */
+	TC_MP_PC_DEFAULT = 0x80,							 /* Get default(power-on) value */
+	TC_MP_PC_SAVED = 0xC0,								 /* Get saved value             */
+} TC_MP_PC_TYPE;												 /* Page control (PC) value for ModePage */
 
-#define TC_MP_DEV_CONFIG_EXT        (0x10) // ModePage 0x10 (Device Configuration Extension Page)
-#define TC_MP_SUB_DEV_CONFIG_EXT    (0x01) // ModePage SubPage 0x01 (Device Configuration Extension Page)
-#define TC_MP_DEV_CONFIG_EXT_SIZE   (48)
+#define TC_MP_DEV_CONFIG_EXT (0x10)			 // ModePage 0x10 (Device Configuration Extension Page)
+#define TC_MP_SUB_DEV_CONFIG_EXT (0x01)	 // ModePage SubPage 0x01 (Device Configuration Extension Page)
+#define TC_MP_DEV_CONFIG_EXT_SIZE (48)
 
-#define TC_MP_CTRL                  (0x0A) // ModePage 0x0A (Control Page)
-#define TC_MP_SUB_DP_CTRL           (0xF0) // ModePage Subpage 0xF0 (Control Data Protection Page)
-#define TC_MP_SUB_DP_CTRL_SIZE      (48)
+#define TC_MP_CTRL (0x0A)					// ModePage 0x0A (Control Page)
+#define TC_MP_SUB_DP_CTRL (0xF0)	// ModePage Subpage 0xF0 (Control Data Protection Page)
+#define TC_MP_SUB_DP_CTRL_SIZE (48)
 
-#define TC_MP_COMPRESSION           (0x0F) // ModePage 0x0F (Data Compression Page)
-#define TC_MP_COMPRESSION_SIZE      (32)
+#define TC_MP_COMPRESSION (0x0F)	// ModePage 0x0F (Data Compression Page)
+#define TC_MP_COMPRESSION_SIZE (32)
 
-#define TC_MP_MEDIUM_PARTITION      (0x11) // ModePage 0x11 (Medium Partiton Page)
+#define TC_MP_MEDIUM_PARTITION (0x11)	 // ModePage 0x11 (Medium Partiton Page)
 #define TC_MP_MEDIUM_PARTITION_SIZE (28)
 
-#define TC_MP_MEDIUM_SENSE          (0x23) // ModePage 0x23 (Medium Sense Page)
-#define TC_MP_MEDIUM_SENSE_SIZE     (76)
+#define TC_MP_MEDIUM_SENSE (0x23)	 // ModePage 0x23 (Medium Sense Page)
+#define TC_MP_MEDIUM_SENSE_SIZE (76)
 
-#define TC_MP_INIT_EXT              (0x24) // ModePage 0x24 (Initator-Specific Extentions)
-#define TC_MP_INIT_EXT_SIZE         (40)
+#define TC_MP_INIT_EXT (0x24)	 // ModePage 0x24 (Initator-Specific Extentions)
+#define TC_MP_INIT_EXT_SIZE (40)
 
-#define TC_MP_READ_WRITE_CTRL       (0x25) // ModePage 0x25 (Read/Write Control Page)
-#define TC_MP_READ_WRITE_CTRL_SIZE  (48)
+#define TC_MP_READ_WRITE_CTRL (0x25)	// ModePage 0x25 (Read/Write Control Page)
+#define TC_MP_READ_WRITE_CTRL_SIZE (48)
 
-#define TC_MP_SUPPORTEDPAGE         (0x3F) // ModePage 0x3F (Supported Page Info)
-#define TC_MP_SUPPORTEDPAGE_SIZE    (0xFF)
+#define TC_MP_SUPPORTEDPAGE (0x3F)	// ModePage 0x3F (Supported Page Info)
+#define TC_MP_SUPPORTEDPAGE_SIZE (0xFF)
 
-#define TC_MAM_PAGE_HEADER_SIZE    (0x5)
-#define TC_MAM_PAGE_VCR            (0x0009) /* Page code of Volume Change Reference */
-#define TC_MAM_PAGE_VCR_SIZE       (0x4)    /* Size of Volume Change Reference */
-#define TC_MAM_PAGE_COHERENCY      (0x080C)
+#define TC_MAM_PAGE_HEADER_SIZE (0x5)
+#define TC_MAM_PAGE_VCR (0x0009)	 /* Page code of Volume Change Reference */
+#define TC_MAM_PAGE_VCR_SIZE (0x4) /* Size of Volume Change Reference */
+#define TC_MAM_PAGE_COHERENCY (0x080C)
 #define TC_MAM_PAGE_COHERENCY_SIZE (0x46)
 
-#define TC_MAM_APP_VENDER          (0x0800)
-#define TC_MAM_APP_VENDER_SIZE     (0x8)
-#define TC_MAM_APP_NAME  (0x0801)
+#define TC_MAM_APP_VENDER (0x0800)
+#define TC_MAM_APP_VENDER_SIZE (0x8)
+#define TC_MAM_APP_NAME (0x0801)
 #define TC_MAM_APP_NAME_SIZE (0x20)
 #define TC_MAM_APP_VERSION (0x0802)
 #define TC_MAM_APP_VERSION_SIZE (0x8)
@@ -278,16 +291,19 @@ typedef enum {
 #define TEXT_LOCALIZATION_IDENTIFIER_ASCII (0x0)
 #define TEXT_LOCALIZATION_IDENTIFIER_UTF8 (0x81)
 
-#define TC_MAM_PAGE_ATTRIBUTE_ALL   0 /* Page code for all the attribute passed
+#define TC_MAM_PAGE_ATTRIBUTE_ALL \
+	0 /* Page code for all the attribute passed
 while formatting and mounting the volume */
 
-enum eod_status {
-	EOD_GOOD        = 0x00,
-	EOD_MISSING     = 0x01,
-	EOD_UNKNOWN     = 0x02
+enum eod_status
+{
+	EOD_GOOD = 0x00,
+	EOD_MISSING = 0x01,
+	EOD_UNKNOWN = 0x02
 };
 
-enum {
+enum
+{
 	MEDIUM_UNKNOWN = 0,
 	MEDIUM_PERFECT_MATCH,
 	MEDIUM_WRITABLE,
@@ -297,7 +313,8 @@ enum {
 };
 
 /* Structure of tape operations */
-struct tape_ops {
+struct tape_ops
+{
 	/**
 	 * Open a device.
 	 * @param devname Name of the device to open. The format of this string is
@@ -325,14 +342,14 @@ struct tape_ops {
 	 *               and will not be reused after this function is called.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*close)(void *device);
+	int (*close)(void *device);
 
 	/**
 	 * Close only file descriptor
 	 * @param device a pointer to the ibmtape backend
 	 * @return 0 on success or a negative value on error
 	 */
-	int   (*close_raw)(void *device);
+	int (*close_raw)(void *device);
 
 	/**
 	 * Verify if a tape device is connected to the host.
@@ -340,7 +357,7 @@ struct tape_ops {
 	 *                used in the open() operation.
 	 * @return 0 to indicate that the tape device is connected and a negative value otherwise.
 	 */
-	int   (*is_connected)(const char *devname);
+	int (*is_connected)(const char *devname);
 
 	/**
 	 * Retrieve inquiry data from a device.
@@ -352,7 +369,7 @@ struct tape_ops {
 	 *            are zero-filled.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*inquiry)(void *device, struct tc_inq *inq);
+	int (*inquiry)(void *device, struct tc_inq *inq);
 
 	/**
 	 * Retrieve inquiry data from a specific page.
@@ -362,7 +379,7 @@ struct tape_ops {
 	 *            be filled using data from the device.
 	 * @return 0 on success or negative value on error
 	 */
-	int   (*inquiry_page)(void *device, unsigned char page, struct tc_inq_page *inq);
+	int (*inquiry_page)(void *device, unsigned char page, struct tc_inq_page *inq);
 
 	/**
 	 * Check whether a device is ready to accept commands.
@@ -371,7 +388,7 @@ struct tape_ops {
 	 * @param device Device handle returned by the backend's open().
 	 * @return 0 if the device is ready, or a negative value otherwise.
 	 */
-	int   (*test_unit_ready)(void *device);
+	int (*test_unit_ready)(void *device);
 
 	/**
 	 * Read exactly one block from a device, of at most the specified size.
@@ -391,7 +408,7 @@ struct tape_ops {
 	 *         encountered during reading, this function must return 0 and position the device
 	 *         immediately after the file mark.
 	 */
-	int   (*read)(void *device, char *buf, size_t count, struct tc_position *pos, const bool unusual_size);
+	int (*read)(void *device, char *buf, size_t count, struct tc_position *pos, const bool unusual_size);
 
 	/**
 	 * Write the given bytes to a device in exactly one logical block.
@@ -461,7 +478,7 @@ struct tape_ops {
 	 *            the final logical block position of the device, even on error.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*rewind)(void *device, struct tc_position *pos);
+	int (*rewind)(void *device, struct tc_position *pos);
 
 	/**
 	 * Seek to the specified position on a device.
@@ -522,7 +539,7 @@ struct tape_ops {
 	 * @param long_erase   Set long bit and immed bit ON
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*erase)(void *device, struct tc_position *pos, bool long_erase);
+	int (*erase)(void *device, struct tc_position *pos, bool long_erase);
 
 	/**
 	 * Load medium into a device.
@@ -537,7 +554,7 @@ struct tape_ops {
 	 *         If the medium is unsupported (for example, does not support two partitions),
 	 *         the backend should return -LTFS_UNSUPPORTED_MEDIUM.
 	 */
-	int   (*load)(void *device, struct tc_position *pos);
+	int (*load)(void *device, struct tc_position *pos);
 
 	/**
 	 * Eject medium from a device.
@@ -547,7 +564,7 @@ struct tape_ops {
 	 *            block position of the device.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*unload)(void *device, struct tc_position *pos);
+	int (*unload)(void *device, struct tc_position *pos);
 
 	/**
 	 * Read logical position (partition and logical block) from a device.
@@ -557,7 +574,7 @@ struct tape_ops {
 	 *            its contents must be unchanged.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*readpos)(void *device, struct tc_position *pos);
+	int (*readpos)(void *device, struct tc_position *pos);
 
 	/**
 	 * Set the capacity proportion of the medium.
@@ -566,7 +583,7 @@ struct tape_ops {
 	 * @param proportion Number to specify the proportion from 0 to 0xFFFF. 0xFFFF is for full capacity.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*setcap)(void *device, uint16_t proportion);
+	int (*setcap)(void *device, uint16_t proportion);
 
 	/**
 	 * Format a device.
@@ -580,8 +597,8 @@ struct tape_ops {
 	 * @param vol_mam_uuid Volume UUID, unused by libtlfs (HPE extension)
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*format)(void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid);
-
+	int (*format)(
+			void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid);
 
 	/**
 	 * Get capacity data from a device.
@@ -591,7 +608,7 @@ struct tape_ops {
 	 *            capacity values of the two partitions on the medium, in units of 1048576 bytes.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*remaining_capacity)(void *device, struct tc_remaining_cap *cap);
+	int (*remaining_capacity)(void *device, struct tc_remaining_cap *cap);
 
 	/**
 	 * Send a SCSI Log Sense command to a device.
@@ -604,8 +621,7 @@ struct tape_ops {
 	 * @return Page length on success or a negative value on error. Backends for which Log Sense is
 	 *         meaningless should return -1.
 	 */
-	int   (*logsense)(void *device, const uint8_t page, const uint8_t subpage,
-					  unsigned char *buf, const size_t size);
+	int (*logsense)(void *device, const uint8_t page, const uint8_t subpage, unsigned char *buf, const size_t size);
 
 	/**
 	 * Send a SCSI Mode Sense(10) command to a device.
@@ -620,7 +636,12 @@ struct tape_ops {
 	 * @return positive value or 0 on success or a negative value on error. Backend can return 0
 	 *         on success or positive value on success as transfered length.
 	 */
-	int   (*modesense)(void *device, const uint8_t page, const TC_MP_PC_TYPE pc, const uint8_t subpage, unsigned char *buf, const size_t size);
+	int (*modesense)(void *device,
+									 const uint8_t page,
+									 const TC_MP_PC_TYPE pc,
+									 const uint8_t subpage,
+									 unsigned char *buf,
+									 const size_t size);
 
 	/**
 	 * Send a SCSI Mode Select(10) command to a device.
@@ -631,7 +652,7 @@ struct tape_ops {
 	 * @return 0 on success or a negative value on error. Backends for which Mode Select is
 	 *         meaningless should return 0.
 	 */
-	int   (*modeselect)(void *device, unsigned char *buf, const size_t size);
+	int (*modeselect)(void *device, unsigned char *buf, const size_t size);
 
 	/**
 	 * Send a SCSI Reserve Unit command to a device.
@@ -640,7 +661,7 @@ struct tape_ops {
 	 * @param device Device handle returned by the backend's open().
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*reserve_unit)(void *device);
+	int (*reserve_unit)(void *device);
 
 	/**
 	 * Send a SCSI Release Unit command to a device.
@@ -649,7 +670,7 @@ struct tape_ops {
 	 * @param device Device handle returned by the backend's open().
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*release_unit)(void *device);
+	int (*release_unit)(void *device);
 
 	/**
 	 * Lock the medium in a device, preventing manual removal.
@@ -657,14 +678,14 @@ struct tape_ops {
 	 * @param device Device handle returned by the backend's open().
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*prevent_medium_removal)(void *device);
+	int (*prevent_medium_removal)(void *device);
 
 	/**
 	 * Unlock the medium in a device, allowing manual removal.
 	 * @param device Device handle returned by the backend's open().
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*allow_medium_removal)(void *device);
+	int (*allow_medium_removal)(void *device);
 
 	/**
 	 * Read a MAM parameter from a device.
@@ -682,7 +703,8 @@ struct tape_ops {
 	 * @return 0 on success or a negative value on error. A backend which does not implement
 	 *         MAM parameters must zero the output buffer and return a negative value.
 	 */
-	int   (*read_attribute)(void *device, const tape_partition_t part, const uint16_t id, unsigned char *buf, const size_t size);
+	int (*read_attribute)(
+			void *device, const tape_partition_t part, const uint16_t id, unsigned char *buf, const size_t size);
 
 	/**
 	 * Write a MAM parameter to a device.
@@ -697,7 +719,7 @@ struct tape_ops {
 	 * @return 0 on success or a negative value on error. A backend which does not implement
 	 *         MAM parameters should return a negative value.
 	 */
-	int   (*write_attribute)(void *device, const tape_partition_t part, const unsigned char *buf, const size_t size);
+	int (*write_attribute)(void *device, const tape_partition_t part, const unsigned char *buf, const size_t size);
 
 	/**
 	 * Set append point to the device.
@@ -707,7 +729,7 @@ struct tape_ops {
 	 * @param pos position to accept write command
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*allow_overwrite)(void *device, const struct tc_position pos);
+	int (*allow_overwrite)(void *device, const struct tc_position pos);
 
 	/**
 	 * Enable or disable compression on a device.
@@ -718,7 +740,7 @@ struct tape_ops {
 	 * @return 0 on success or a negative value on error. If the underlying device does not
 	 *         support transparent compression, the backend should always return 0.
 	 */
-	int   (*set_compression)(void *device, const bool enable_compression, struct tc_position *pos);
+	int (*set_compression)(void *device, const bool enable_compression, struct tc_position *pos);
 
 	/**
 	 * Set up any required default parameters for a device.
@@ -728,7 +750,7 @@ struct tape_ops {
 	 * @param device Device handle returned by the backend's open().
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*set_default)(void *device);
+	int (*set_default)(void *device);
 
 	/**
 	 * Get cartridge health data from the drive
@@ -737,7 +759,7 @@ struct tape_ops {
 	 *                    "-1" shows the unsupported value except tape alert.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*get_cartridge_health)(void *device, struct tc_cartridge_health *cart_health);
+	int (*get_cartridge_health)(void *device, struct tc_cartridge_health *cart_health);
 
 	/**
 	 * Get tape alert from the drive this value shall be latched by backends and shall be cleard by
@@ -747,7 +769,7 @@ struct tape_ops {
 	 *                    "-1" shows the unsupported value except tape alert.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*get_tape_alert)(void *device, uint64_t *tape_alert);
+	int (*get_tape_alert)(void *device, uint64_t *tape_alert);
 
 	/**
 	 * clear latched tape alert from the drive
@@ -755,7 +777,7 @@ struct tape_ops {
 	 * @param tape_alert value to clear tape alert. Backend shall be clear the specicied bits in this value.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*clear_tape_alert)(void *device, uint64_t tape_alert);
+	int (*clear_tape_alert)(void *device, uint64_t tape_alert);
 
 	/**
 	 * Get vendor unique backend xattr
@@ -764,7 +786,7 @@ struct tape_ops {
 	 * @param buf    On success, the backend must fill this value with the pointer of data buffer for xattr
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*get_xattr)(void *device, const char *name, char **buf);
+	int (*get_xattr)(void *device, const char *name, char **buf);
 
 	/**
 	 * Get vendor unique backend xattr
@@ -774,7 +796,7 @@ struct tape_ops {
 	 * @param size   Length of data buffer
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*set_xattr)(void *device, const char *name, const char *buf, size_t size);
+	int (*set_xattr)(void *device, const char *name, const char *buf, size_t size);
 
 	/**
 	 * Get operational parameters of a device. These parameters include such things as the
@@ -784,7 +806,7 @@ struct tape_ops {
 	 *                    parameters.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*get_parameters)(void *device, struct tc_drive_param *params);
+	int (*get_parameters)(void *device, struct tc_drive_param *params);
 
 	/**
 	 * Get EOD status of a partition.
@@ -794,8 +816,7 @@ struct tape_ops {
 	 *            the final logical block position of the device, even on error.
 	 * @return enum eod_status or UNSUPPORTED_FUNCTION if not supported.
 	 */
-	int   (*get_eod_status)(void *device, int part);
-
+	int (*get_eod_status)(void *device, int part);
 
 	/**
 	 * Get a list of available tape devices for LTFS found in the host. The caller is
@@ -807,7 +828,7 @@ struct tape_ops {
 	 * @param count size of array in buf.
 	 * @return on success, available device count on this system or a negative value on error.
 	 */
-	int   (*get_device_list)(struct tc_drive_info *buf, int count);
+	int (*get_device_list)(struct tc_drive_info *buf, int count);
 
 	/**
 	 * Print a help message for the backend.
@@ -815,7 +836,7 @@ struct tape_ops {
 	 * backends print their default device names.
 	 * @param progname The program name
 	 */
-	void  (*help_message)(const char *progname);
+	void (*help_message)(const char *progname);
 
 	/**
 	 * Parse backend-specific options.
@@ -826,7 +847,7 @@ struct tape_ops {
 	 *                 fuse_opt_parse(). See the file backend for an example of argument parsing.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*parse_opts)(void *device, void *opt_args);
+	int (*parse_opts)(void *device, void *opt_args);
 
 	/**
 	 * Get the default device name for the backend.
@@ -843,7 +864,7 @@ struct tape_ops {
 	 * @param key A pointer to Data Key (DK). DK is 32 bytes binary data.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*set_key)(void *device, const unsigned char *keyalias, const unsigned char *key);
+	int (*set_key)(void *device, const unsigned char *keyalias, const unsigned char *key);
 
 	/**
 	 * Get the key alias of the next block for application-managed encryption.
@@ -852,14 +873,14 @@ struct tape_ops {
 	 *                      DKi compounded from 3 bytes ASCII characters and 9 bytes binary data.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*get_keyalias)(void *device, unsigned char **keyalias);
+	int (*get_keyalias)(void *device, unsigned char **keyalias);
 
 	/**
 	 * Take a dump from the tape drive.
 	 * @param device Device handle returned by the backend's open().
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*takedump_drive)(void *device, bool capture_unforced);
+	int (*takedump_drive)(void *device, bool capture_unforced);
 
 	/**
 	 * Check if the tape drive can mount the medium.
@@ -877,10 +898,7 @@ struct tape_ops {
 	 *         JC cartridge which never be loaded yet (no density_code information) and
 	 *         the drive is TS1140
 	 */
-	int   (*is_mountable)(void *device,
-						  const char *barcode,
-						  const unsigned char cart_type,
-						  const unsigned char density);
+	int (*is_mountable)(void *device, const char *barcode, const unsigned char cart_type, const unsigned char density);
 
 	/**
 	 * Check if the loaded carridge is WORM.
@@ -888,7 +906,7 @@ struct tape_ops {
 	 * @param is_worm Pointer to worm status.
 	 * @return 0 on success or a negative value on error.
 	 */
-	int   (*get_worm_status)(void *device, bool *is_worm);
+	int (*get_worm_status)(void *device, bool *is_worm);
 
 	/**
 	 * Get the tape device's serial number
@@ -898,7 +916,7 @@ struct tape_ops {
 	 *                    once it's been used.
 	 * @return 0 on success or a negative value on error
 	 */
-	int   (*get_serialnumber)(void *device, char **result);
+	int (*get_serialnumber)(void *device, char **result);
 
 	/**
 	 * Get the tape device's information
@@ -907,7 +925,7 @@ struct tape_ops {
 	 * @param[out] info On success, contains device information.
 	 * @return 0 on success or a negative value on error
 	 */
-	int   (*get_info)(void *device, struct tc_drive_info *info);
+	int (*get_info)(void *device, struct tc_drive_info *info);
 
 	/**
 	 * Enable profiler function
@@ -916,7 +934,7 @@ struct tape_ops {
 	 * @paran enable enable or disable profiler function of this backend
 	 * @return 0 on success or a negative value on error
 	 */
-	int   (*set_profiler)(void *device, char *work_dir, bool enable);
+	int (*set_profiler)(void *device, char *work_dir, bool enable);
 
 	/**
 	 * Get first block number which is not transferred to the medium yet in the buffer
@@ -924,13 +942,13 @@ struct tape_ops {
 	 * @param pos Position of the record that is not transferred yet in the buffer
 	 * @return 0 on success or a negative value on error
 	 */
-	int   (*get_next_block_to_xfer)(void *device, struct tc_position *pos);
+	int (*get_next_block_to_xfer)(void *device, struct tc_position *pos);
 
 	/**
 	 * Check if the generation of tape drive and the current loaded cartridge is read-only combination
 	 * @param device Device handle returned by the backend's open().
 	 */
-	bool   (*is_readonly)(void *device);
+	bool (*is_readonly)(void *device);
 
 	/**
 	 * Submit the GRAO (Generate Recommended Access Order) command.
@@ -940,7 +958,7 @@ struct tape_ops {
 	 * @param len Length of the buffer
 	 * @return 0 on success or a negative value on error
 	 */
-	int   (*grao)(void *device, unsigned char *buf, const uint32_t len);
+	int (*grao)(void *device, unsigned char *buf, const uint32_t len);
 
 	/**
 	 * Submit the RRAO (Receive Recommended Access Order) command.
@@ -951,7 +969,7 @@ struct tape_ops {
 	 * @param[out] out_size size of valid data returned from the device
 	 * @return 0 on success or a negative value on error
 	 */
-	int   (*rrao)(void *device, unsigned char *buf, const uint32_t len, size_t *out_size);
+	int (*rrao)(void *device, unsigned char *buf, const uint32_t len, size_t *out_size);
 };
 
 /**
@@ -1018,62 +1036,62 @@ const char *tape_dev_get_message_bundle_name(void **message_data);
  * Request type definisions for LTFS request profile
  */
 
-#define REQ_TC_OPEN        0000	/**< open: Unused */
-#define REQ_TC_REOPEN      0001	/**< reopen: Unused */
-#define REQ_TC_CLOSE       0002	/**< close */
-#define REQ_TC_CLOSERAW    0003	/**< close_raw */
-#define REQ_TC_ISCONNECTED 0004	/**< is_connected: Unused*/
-#define REQ_TC_INQUIRY     0005	/**< inquiry */
-#define REQ_TC_INQUIRYPAGE 0006	/**< inquiry_page */
-#define REQ_TC_TUR         0007	/**< test_unit_ready */
-#define REQ_TC_READ        0008	/**< read */
-#define REQ_TC_WRITE       0009	/**< write */
-#define REQ_TC_WRITEFM     000a	/**< writefm */
-#define REQ_TC_REWIND      000b	/**< rewind */
-#define REQ_TC_LOCATE      000c	/**< locate */
-#define REQ_TC_SPACE       000d	/**< space */
-#define REQ_TC_ERASE       000e	/**< erase */
-#define REQ_TC_LOAD        000f	/**< load */
-#define REQ_TC_UNLOAD      0010	/**< unload */
-#define REQ_TC_READPOS     0011	/**< readpos */
-#define REQ_TC_SETCAP      0012	/**< setcap*/
-#define REQ_TC_FORMAT      0013	/**< format */
-#define REQ_TC_REMAINCAP   0014	/**< remaining_capacity */
-#define REQ_TC_LOGSENSE    0015	/**< logsense */
-#define REQ_TC_MODESENSE   0016	/**< modesense */
-#define REQ_TC_MODESELECT  0017	/**< modeselect */
-#define REQ_TC_RESERVEUNIT 0018	/**< reserve_unit */
-#define REQ_TC_RELEASEUNIT 0019	/**< release_unit */
-#define REQ_TC_PREVENTM    001a	/**< prevent_medium_removal */
-#define REQ_TC_ALLOWMREM   001b	/**< allow_medium_removal */
-#define REQ_TC_READATTR    001c	/**< read_attribute */
-#define REQ_TC_WRITEATTR   001d	/**< write_attribute */
-#define REQ_TC_ALLOWOVERW  001e	/**< allow_overwrite */
-#define REQ_TC_REPDENSITY  001f	/**< report_density */
-#define REQ_TC_SETCOMPRS   0020	/**< set_compression */
-#define REQ_TC_SETDEFAULT  0021	/**< set_default */
-#define REQ_TC_GETCARTHLTH 0022	/**< get_cartridge_health */
-#define REQ_TC_GETTAPEALT  0023	/**< get_tape_alert */
-#define REQ_TC_CLRTAPEALT  0024	/**< clear_tape_alert */
-#define REQ_TC_GETXATTR    0025	/**< getxattr */
-#define REQ_TC_SETXATTR    0026	/**< setxattr */
-#define REQ_TC_GETPARAM    0027	/**< get_parameters */
-#define REQ_TC_GETEODSTAT  0028	/**< get_eod_status */
-#define REQ_TC_GETDLIST    0029	/**< get_device_list: Unused */
-#define REQ_TC_HELPMSG     002a	/**< help_message: Unused */
-#define REQ_TC_PARSEOPTS   002b	/**< parse_opts: Unused */
-#define REQ_TC_DEFDEVNAME  002c	/**< default_device_name: Unused */
-#define REQ_TC_SETKEY      002d	/**< set_key */
-#define REQ_TC_GETKEYALIAS 002e	/**< get_keyalias */
-#define REQ_TC_TAKEDUMPDRV 002f	/**< takedump_drive */
-#define REQ_TC_ISMOUNTABLE 0030	/**< is_mountable */
-#define REQ_TC_GETWORMSTAT 0031	/**< get_worm_status */
+#define REQ_TC_OPEN 0000				/**< open: Unused */
+#define REQ_TC_REOPEN 0001			/**< reopen: Unused */
+#define REQ_TC_CLOSE 0002				/**< close */
+#define REQ_TC_CLOSERAW 0003		/**< close_raw */
+#define REQ_TC_ISCONNECTED 0004 /**< is_connected: Unused*/
+#define REQ_TC_INQUIRY 0005			/**< inquiry */
+#define REQ_TC_INQUIRYPAGE 0006 /**< inquiry_page */
+#define REQ_TC_TUR 0007					/**< test_unit_ready */
+#define REQ_TC_READ 0008				/**< read */
+#define REQ_TC_WRITE 0009				/**< write */
+#define REQ_TC_WRITEFM 000a			/**< writefm */
+#define REQ_TC_REWIND 000b			/**< rewind */
+#define REQ_TC_LOCATE 000c			/**< locate */
+#define REQ_TC_SPACE 000d				/**< space */
+#define REQ_TC_ERASE 000e				/**< erase */
+#define REQ_TC_LOAD 000f				/**< load */
+#define REQ_TC_UNLOAD 0010			/**< unload */
+#define REQ_TC_READPOS 0011			/**< readpos */
+#define REQ_TC_SETCAP 0012			/**< setcap*/
+#define REQ_TC_FORMAT 0013			/**< format */
+#define REQ_TC_REMAINCAP 0014		/**< remaining_capacity */
+#define REQ_TC_LOGSENSE 0015		/**< logsense */
+#define REQ_TC_MODESENSE 0016		/**< modesense */
+#define REQ_TC_MODESELECT 0017	/**< modeselect */
+#define REQ_TC_RESERVEUNIT 0018 /**< reserve_unit */
+#define REQ_TC_RELEASEUNIT 0019 /**< release_unit */
+#define REQ_TC_PREVENTM 001a		/**< prevent_medium_removal */
+#define REQ_TC_ALLOWMREM 001b		/**< allow_medium_removal */
+#define REQ_TC_READATTR 001c		/**< read_attribute */
+#define REQ_TC_WRITEATTR 001d		/**< write_attribute */
+#define REQ_TC_ALLOWOVERW 001e	/**< allow_overwrite */
+#define REQ_TC_REPDENSITY 001f	/**< report_density */
+#define REQ_TC_SETCOMPRS 0020		/**< set_compression */
+#define REQ_TC_SETDEFAULT 0021	/**< set_default */
+#define REQ_TC_GETCARTHLTH 0022 /**< get_cartridge_health */
+#define REQ_TC_GETTAPEALT 0023	/**< get_tape_alert */
+#define REQ_TC_CLRTAPEALT 0024	/**< clear_tape_alert */
+#define REQ_TC_GETXATTR 0025		/**< getxattr */
+#define REQ_TC_SETXATTR 0026		/**< setxattr */
+#define REQ_TC_GETPARAM 0027		/**< get_parameters */
+#define REQ_TC_GETEODSTAT 0028	/**< get_eod_status */
+#define REQ_TC_GETDLIST 0029		/**< get_device_list: Unused */
+#define REQ_TC_HELPMSG 002a			/**< help_message: Unused */
+#define REQ_TC_PARSEOPTS 002b		/**< parse_opts: Unused */
+#define REQ_TC_DEFDEVNAME 002c	/**< default_device_name: Unused */
+#define REQ_TC_SETKEY 002d			/**< set_key */
+#define REQ_TC_GETKEYALIAS 002e /**< get_keyalias */
+#define REQ_TC_TAKEDUMPDRV 002f /**< takedump_drive */
+#define REQ_TC_ISMOUNTABLE 0030 /**< is_mountable */
+#define REQ_TC_GETWORMSTAT 0031 /**< get_worm_status */
 
-#define REQ_TC_GETSLOTS    0032	/**< getslots */
-#define REQ_TC_INVENTORY   0033	/**< inventory */
-#define REQ_TC_MOVEMEDIA   0034	/**< movemedia */
-#define REQ_TC_GETDMAP     0035	/**< get_devmap */
-#define REQ_TC_GETSER      0036	/**< get_serialnumber */
-#define REQ_TC_SETSUPCHG   0037	/**< set_supported_changers: Unused */
+#define REQ_TC_GETSLOTS 0032		/**< getslots */
+#define REQ_TC_INVENTORY 0033		/**< inventory */
+#define REQ_TC_MOVEMEDIA 0034		/**< movemedia */
+#define REQ_TC_GETDMAP 0035			/**< get_devmap */
+#define REQ_TC_GETSER 0036			/**< get_serialnumber */
+#define REQ_TC_SETSUPCHG 0037		/**< set_supported_changers: Unused */
 
-#endif /* __tape_ops_h */
+#endif													/* __tape_ops_h */

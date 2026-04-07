@@ -53,25 +53,28 @@
 #define __LTFS_LOCKING_NEW_H__
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #ifdef mingw_PLATFORM
-	#error "New locking system is required on Windows"
-#else /* ! mingw_PLATFORM */
+#	error "New locking system is required on Windows"
+#else										/* ! mingw_PLATFORM */
 
-#include <pthread.h>
-#include <execinfo.h> /* For backtrace() */
-#include <unistd.h>
+#	include <execinfo.h> /* For backtrace() */
+#	include <pthread.h>
+#	include <unistd.h>
 
 /* Use struct for checking wrong usage of ltfs_mutex and ltfs_thread_mutex by compliter */
-typedef struct {
+typedef struct
+{
 	pthread_mutex_t lock;
 } ltfs_mutex_t;
 
 typedef pthread_mutexattr_t ltfs_mutexattr_t;
 
-enum {
+enum
+{
 	LTFS_THREAD_PROCESS_SHARED = PTHREAD_PROCESS_SHARED,
 	LTFS_THREAD_PROCESS_PRIVATE = PTHREAD_PROCESS_PRIVATE
 };
@@ -83,9 +86,9 @@ static inline void backtrace_info(void)
 	size_t back_num, i;
 
 	back_num = backtrace(address, 50);
-	funcs = backtrace_symbols( address, back_num);
+	funcs = backtrace_symbols(address, back_num);
 
-	for(i = 0; i < back_num; ++i)  {
+	for (i = 0; i < back_num; ++i) {
 		if (funcs && funcs[i])
 			ltfsmsg(LTFS_INFO, 17193I, (int)i, address[i], funcs[i]);
 		else
@@ -137,33 +140,31 @@ static inline int ltfs_mutexattr_destroy(ltfs_mutexattr_t *attr)
 	return pthread_mutexattr_destroy(attr);
 }
 
-static inline int ltfs_mutexattr_setpshared(ltfs_mutexattr_t *attr,
-											int pshared)
+static inline int ltfs_mutexattr_setpshared(ltfs_mutexattr_t *attr, int pshared)
 {
-#ifdef __NetBSD__
+#	ifdef __NetBSD__
 	abort(); /* Not implemented */
-#else
+#	else
 	return pthread_mutexattr_setpshared(attr, pshared);
-#endif
+#	endif
 }
 
-typedef struct MultiReaderSingleWriter {
-	ltfs_mutex_t     exclusive_mutex;
+typedef struct MultiReaderSingleWriter
+{
+	ltfs_mutex_t exclusive_mutex;
 	pthread_rwlock_t rw_lock;
-	uint32_t         writer; //if there is a write lock acquired
-	uint32_t         long_lock;
+	uint32_t writer;	//if there is a write lock acquired
+	uint32_t long_lock;
 } MultiReaderSingleWriter;
 
-static inline int
-init_mrsw(MultiReaderSingleWriter *mrsw)
+static inline int init_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	int ret;
 
 	mrsw->writer = 0;
 	mrsw->long_lock = 0;
 	ret = ltfs_mutex_init(&mrsw->exclusive_mutex);
-	if (ret)
-		return -ret;
+	if (ret) return -ret;
 
 	ret = pthread_rwlock_init(&mrsw->rw_lock, NULL);
 	if (ret) {
@@ -174,82 +175,71 @@ init_mrsw(MultiReaderSingleWriter *mrsw)
 	return 0;
 }
 
-static inline void
-destroy_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void destroy_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	pthread_rwlock_destroy(&mrsw->rw_lock);
 	ltfs_mutex_destroy(&mrsw->exclusive_mutex);
 }
 
-static inline bool
-try_acquirewrite_mrsw(MultiReaderSingleWriter *mrsw)
+static inline bool try_acquirewrite_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	int err;
 	err = ltfs_mutex_trylock(&mrsw->exclusive_mutex);
-	if (err)
-		return false;
+	if (err) return false;
 
 	err = pthread_rwlock_trywrlock(&mrsw->rw_lock);
 	if (err) {
 		ltfs_mutex_unlock(&mrsw->exclusive_mutex);
 		return false;
 	}
-	mrsw->writer=1;
+	mrsw->writer = 1;
 	return true;
 }
 
-static inline void
-acquirewrite_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void acquirewrite_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	ltfs_mutex_lock(&mrsw->exclusive_mutex);
 	pthread_rwlock_wrlock(&mrsw->rw_lock);
-	mrsw->writer=1;
-	mrsw->long_lock=0;
+	mrsw->writer = 1;
+	mrsw->long_lock = 0;
 }
 
-static inline void
-acquirewrite_mrsw_long(MultiReaderSingleWriter *mrsw)
+static inline void acquirewrite_mrsw_long(MultiReaderSingleWriter *mrsw)
 {
 	ltfs_mutex_lock(&mrsw->exclusive_mutex);
 	pthread_rwlock_wrlock(&mrsw->rw_lock);
-	mrsw->writer=1;
-	mrsw->long_lock=1;
+	mrsw->writer = 1;
+	mrsw->long_lock = 1;
 }
 
-static inline void
-releasewrite_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void releasewrite_mrsw(MultiReaderSingleWriter *mrsw)
 {
-	mrsw->writer=0;
-	mrsw->long_lock=0;
+	mrsw->writer = 0;
+	mrsw->long_lock = 0;
 	pthread_rwlock_unlock(&mrsw->rw_lock);
 	ltfs_mutex_unlock(&mrsw->exclusive_mutex);
 }
 
-static inline void
-acquireread_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void acquireread_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	ltfs_mutex_lock(&mrsw->exclusive_mutex);
-	mrsw->long_lock=0;
+	mrsw->long_lock = 0;
 	ltfs_mutex_unlock(&mrsw->exclusive_mutex);
 
 	pthread_rwlock_rdlock(&mrsw->rw_lock);
 }
 
-static inline int
-acquireread_mrsw_short(MultiReaderSingleWriter *mrsw)
+static inline int acquireread_mrsw_short(MultiReaderSingleWriter *mrsw)
 {
 	int ret = 0;
 	//struct timespec tv = {0, 100000000};
 
-	if (mrsw->long_lock)
-		return -1;
+	if (mrsw->long_lock) return -1;
 
-	while(1) {
+	while (1) {
 		ret = ltfs_mutex_trylock(&mrsw->exclusive_mutex);
-		if (! ret)
-			break;
-		if (mrsw->long_lock)
-			return -1;
+		if (!ret) break;
+		if (mrsw->long_lock) return -1;
 		/*
 		 * Wait 1 sec to avoid busy loop.
 		 * This kind of busy loop consumes CPU resource
@@ -263,16 +253,14 @@ acquireread_mrsw_short(MultiReaderSingleWriter *mrsw)
 	return 0;
 }
 
-static inline void
-releaseread_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void releaseread_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	pthread_rwlock_unlock(&mrsw->rw_lock);
 }
 
-static inline void
-release_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void release_mrsw(MultiReaderSingleWriter *mrsw)
 {
-	if(mrsw->writer) {
+	if (mrsw->writer) {
 		//If there is a writer, and we hold a lock, we must be the writer.
 		releasewrite_mrsw(mrsw);
 	} else {
@@ -281,8 +269,7 @@ release_mrsw(MultiReaderSingleWriter *mrsw)
 }
 
 //downgrades a write lock to a read lock
-static inline void
-writetoread_mrsw(MultiReaderSingleWriter *mrsw)
+static inline void writetoread_mrsw(MultiReaderSingleWriter *mrsw)
 {
 	// This thread owns write protection meaning that
 	// there are no threads that own read protection.

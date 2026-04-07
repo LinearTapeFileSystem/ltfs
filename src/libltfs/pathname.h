@@ -55,37 +55,37 @@
 #define __PATHNAME_H__
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
-
 
 #ifdef mingw_PLATFORM
-	#include <uchar.h>
-#include <minwindef.h>
+#	include <minwindef.h>
+#	include <uchar.h>
 #else
-	#ifdef __APPLE_MAKEFILE__
-		#include <ICU/unicode/utypes.h>
-	#else
-		#include <unicode/utypes.h>
-	#endif
+#	ifdef __APPLE_MAKEFILE__
+#		include <ICU/unicode/utypes.h>
+#	else
+#		include <unicode/utypes.h>
+#	endif
 #endif
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include <unicode/ustring.h>
 
-int pathname_format(const char *name, char **new_name, bool validate, bool path);
-int pathname_unformat(const char *name, char **new_name);
-int pathname_caseless_match(const char *name1, const char *name2, int *result);
-int pathname_prepare_caseless(const char *name, UChar **new_name, bool use_nfc);
-int pathname_normalize(const char *name, char **new_name);
-int pathname_validate_file(const char *name);
-int pathname_validate_target(const char *name);
-int pathname_validate_xattr_name(const char *name);
-int pathname_validate_xattr_value(const char *name, size_t size);
-int pathname_strlen(const char *name);
-int pathname_truncate(char *name, size_t size);
-int pathname_nfd_normalize(const char *name, char **new_name);
+	int pathname_format(const char *name, char **new_name, bool validate, bool path);
+	int pathname_unformat(const char *name, char **new_name);
+	int pathname_caseless_match(const char *name1, const char *name2, int *result);
+	int pathname_prepare_caseless(const char *name, UChar **new_name, bool use_nfc);
+	int pathname_normalize(const char *name, char **new_name);
+	int pathname_validate_file(const char *name);
+	int pathname_validate_target(const char *name);
+	int pathname_validate_xattr_name(const char *name);
+	int pathname_validate_xattr_value(const char *name, size_t size);
+	int pathname_strlen(const char *name);
+	int pathname_truncate(char *name, size_t size);
+	int pathname_nfd_normalize(const char *name, char **new_name);
 #ifdef __cplusplus
 }
 #endif

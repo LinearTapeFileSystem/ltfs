@@ -50,15 +50,16 @@
 **
 *************************************************************************************
 */
-#include "ltfs_fuse.h"
-#include "ltfs.h"
 #include "iosched.h"
+#include "ltfs.h"
+#include "ltfs_fuse.h"
 
-struct iosched_priv {
-	void *dlopen_handle;           /**< Handle returned from dlopen */
+struct iosched_priv
+{
+	void *dlopen_handle;					 /**< Handle returned from dlopen */
 	struct libltfs_plugin *plugin; /**< Reference to the plugin */
-	struct iosched_ops *ops;       /**< I/O scheduler operations */
-	void *backend_handle;          /**< Backend private data */
+	struct iosched_ops *ops;			 /**< I/O scheduler operations */
+	void *backend_handle;					 /**< Backend private data */
 };
 
 /**
@@ -77,7 +78,7 @@ int iosched_init(struct libltfs_plugin *plugin, struct ltfs_volume *vol)
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	priv = calloc(1, sizeof(struct iosched_priv));
-	if (! priv) {
+	if (!priv) {
 		ltfsmsg(LTFS_ERR, 10001E, "iosched_init: private data");
 		return -LTFS_NO_MEMORY;
 	}
@@ -86,7 +87,7 @@ int iosched_init(struct libltfs_plugin *plugin, struct ltfs_volume *vol)
 	priv->ops = plugin->ops;
 
 	/* Verify that backend implements all required operations */
-	for (i=0; i<sizeof(struct iosched_ops)/sizeof(void *); ++i) {
+	for (i = 0; i < sizeof(struct iosched_ops) / sizeof(void *); ++i) {
 		if (((void **)(priv->ops))[i] == NULL) {
 			ltfsmsg(LTFS_ERR, 13003E);
 			free(priv);
@@ -95,7 +96,7 @@ int iosched_init(struct libltfs_plugin *plugin, struct ltfs_volume *vol)
 	}
 
 	priv->backend_handle = priv->ops->init(vol);
-	if (! priv->backend_handle) {
+	if (!priv->backend_handle) {
 		free(priv);
 		return -1;
 	}
@@ -111,7 +112,7 @@ int iosched_init(struct libltfs_plugin *plugin, struct ltfs_volume *vol)
  */
 int iosched_destroy(struct ltfs_volume *vol)
 {
-	struct iosched_priv *priv = (struct iosched_priv *) vol ? vol->iosched_handle : NULL;
+	struct iosched_priv *priv = (struct iosched_priv *)vol ? vol->iosched_handle : NULL;
 	int ret;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -136,7 +137,7 @@ int iosched_destroy(struct ltfs_volume *vol)
  */
 int iosched_open(const char *path, bool open_write, struct dentry **dentry, struct ltfs_volume *vol)
 {
-	struct iosched_priv *priv = (struct iosched_priv *) vol ? vol->iosched_handle : NULL;
+	struct iosched_priv *priv = (struct iosched_priv *)vol ? vol->iosched_handle : NULL;
 	int ret;
 
 	CHECK_ARG_NULL(path, -LTFS_NULL_ARG);
@@ -159,7 +160,7 @@ int iosched_open(const char *path, bool open_write, struct dentry **dentry, stru
  */
 int iosched_close(struct dentry *d, bool flush, struct ltfs_volume *vol)
 {
-	struct iosched_priv *priv = (struct iosched_priv *) vol ? vol->iosched_handle : NULL;
+	struct iosched_priv *priv = (struct iosched_priv *)vol ? vol->iosched_handle : NULL;
 	int ret;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
@@ -195,7 +196,7 @@ bool iosched_initialized(struct ltfs_volume *vol)
 ssize_t iosched_read(struct dentry *d, char *buf, size_t size, off_t offset, struct ltfs_volume *vol)
 {
 	ssize_t ret;
-	struct iosched_priv *priv = (struct iosched_priv *) vol ? vol->iosched_handle : NULL;
+	struct iosched_priv *priv = (struct iosched_priv *)vol ? vol->iosched_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
@@ -217,11 +218,11 @@ ssize_t iosched_read(struct dentry *d, char *buf, size_t size, off_t offset, str
  * @param vol LTFS volume
  * @return 0 on success or a negative value on error.
  */
-ssize_t iosched_write(struct dentry *d, const char *buf, size_t size, off_t offset,
-	bool isupdatetime, struct ltfs_volume *vol)
+ssize_t
+iosched_write(struct dentry *d, const char *buf, size_t size, off_t offset, bool isupdatetime, struct ltfs_volume *vol)
 {
 	ssize_t ret;
-	struct iosched_priv *priv = (struct iosched_priv *) vol ? vol->iosched_handle : NULL;
+	struct iosched_priv *priv = (struct iosched_priv *)vol ? vol->iosched_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
@@ -230,8 +231,7 @@ ssize_t iosched_write(struct dentry *d, const char *buf, size_t size, off_t offs
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 
 	ret = priv->ops->write(d, buf, size, offset, isupdatetime, priv->backend_handle);
-	if (ret > 0 && (size_t) ret > size)
-		ret = size;
+	if (ret > 0 && (size_t)ret > size) ret = size;
 
 	return ret;
 }
@@ -246,7 +246,7 @@ ssize_t iosched_write(struct dentry *d, const char *buf, size_t size, off_t offs
 int iosched_flush(struct dentry *d, bool closeflag, struct ltfs_volume *vol)
 {
 	int ret;
-	struct iosched_priv *priv = (struct iosched_priv *) vol ? vol->iosched_handle : NULL;
+	struct iosched_priv *priv = (struct iosched_priv *)vol ? vol->iosched_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
@@ -267,7 +267,7 @@ int iosched_flush(struct dentry *d, bool closeflag, struct ltfs_volume *vol)
 int iosched_truncate(struct dentry *d, off_t length, struct ltfs_volume *vol)
 {
 	int ret;
-	struct iosched_priv *priv = (struct iosched_priv *) vol ? vol->iosched_handle : NULL;
+	struct iosched_priv *priv = (struct iosched_priv *)vol ? vol->iosched_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
@@ -290,7 +290,7 @@ int iosched_truncate(struct dentry *d, off_t length, struct ltfs_volume *vol)
 uint64_t iosched_get_filesize(struct dentry *d, struct ltfs_volume *vol)
 {
 	uint64_t ret;
-	struct iosched_priv *priv = (struct iosched_priv *) vol ? vol->iosched_handle : NULL;
+	struct iosched_priv *priv = (struct iosched_priv *)vol ? vol->iosched_handle : NULL;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(priv, -LTFS_NULL_ARG);
@@ -311,7 +311,7 @@ uint64_t iosched_get_filesize(struct dentry *d, struct ltfs_volume *vol)
 int iosched_update_data_placement(struct dentry *d, struct ltfs_volume *vol)
 {
 	int ret;
-	struct iosched_priv *priv = (struct iosched_priv *) vol ? vol->iosched_handle : NULL;
+	struct iosched_priv *priv = (struct iosched_priv *)vol ? vol->iosched_handle : NULL;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
@@ -330,10 +330,10 @@ int iosched_update_data_placement(struct dentry *d, struct ltfs_volume *vol)
  * @param vol LTFS volume
  * @return 0 on succe	ss or a negative value on error
  */
-int iosched_set_profiler(char* work_dir, bool enable, struct ltfs_volume *vol)
+int iosched_set_profiler(char *work_dir, bool enable, struct ltfs_volume *vol)
 {
 	int ret = 0;
-	struct iosched_priv *priv = (struct iosched_priv *) vol ? vol->iosched_handle : NULL;
+	struct iosched_priv *priv = (struct iosched_priv *)vol ? vol->iosched_handle : NULL;
 
 	CHECK_ARG_NULL(work_dir, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);

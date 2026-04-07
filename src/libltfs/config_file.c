@@ -56,40 +56,42 @@
 */
 
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
+#	include "arch/win/win_util.h"
 #endif
-#include <unistd.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <errno.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
-#include "libltfs/arch/ltfs_arch_ops.h"
-#include "libltfs/ltfslogging.h"
-#include "libltfs/ltfs_error.h"
 #include "config_file.h"
+#include "libltfs/arch/ltfs_arch_ops.h"
+#include "libltfs/ltfs_error.h"
+#include "libltfs/ltfslogging.h"
 
-
-struct plugin_entry {
+struct plugin_entry
+{
 	TAILQ_ENTRY(plugin_entry) list;
 	char *type;
 	char *name;
 	char *library;
 };
 
-struct option_entry {
+struct option_entry
+{
 	TAILQ_ENTRY(option_entry) list;
 	char *type;
 	char *option;
 };
 
-struct config_file {
-	TAILQ_HEAD(plugin_struct, plugin_entry) plugins;          /**< Available plugins */
+struct config_file
+{
+	TAILQ_HEAD(plugin_struct, plugin_entry) plugins;					/**< Available plugins */
 	TAILQ_HEAD(default_struct, plugin_entry) default_plugins; /**< Default plugins */
-	TAILQ_HEAD(mount_struct, option_entry) mount_options;     /**< Mount options */
+	TAILQ_HEAD(mount_struct, option_entry) mount_options;			/**< Mount options */
 };
 
 int _config_file_parse(const char *path, bool ignore_error, struct config_file *config);
@@ -101,18 +103,16 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config);
 int _config_file_remove_plugin(char *saveptr, struct config_file *config);
 int _config_file_parse_option(const char *line, char *saveptr, struct option_entry **out);
 
-
 int config_file_load(const char *path, struct config_file **config)
 {
 	int ret;
 
 	CHECK_ARG_NULL(config, -LTFS_NULL_ARG);
 
-	if (! path)
-		path = LTFS_CONFIG_FILE;
+	if (!path) path = LTFS_CONFIG_FILE;
 
 	*config = calloc(1, sizeof(struct config_file));
-	if (! (*config)) {
+	if (!(*config)) {
 		ltfsmsg(LTFS_ERR, 10001E, "config_file_load: config structure");
 		return -LTFS_NO_MEMORY;
 	}
@@ -121,8 +121,7 @@ int config_file_load(const char *path, struct config_file **config)
 	TAILQ_INIT(&(*config)->mount_options);
 
 	ret = _config_file_parse(path, false, *config);
-	if (ret < 0)
-		goto out;
+	if (ret < 0) goto out;
 
 	ret = _config_file_validate(*config);
 
@@ -140,19 +139,22 @@ void config_file_free(struct config_file *config)
 	struct option_entry *opt_entry, *opt_aux;
 
 	if (config) {
-		TAILQ_FOREACH_SAFE(plug_entry, &config->plugins, list, plug_aux) {
+		TAILQ_FOREACH_SAFE(plug_entry, &config->plugins, list, plug_aux)
+		{
 			free(plug_entry->type);
 			free(plug_entry->name);
 			free(plug_entry->library);
 			free(plug_entry);
 		}
-		TAILQ_FOREACH_SAFE(plug_entry, &config->default_plugins, list, plug_aux) {
+		TAILQ_FOREACH_SAFE(plug_entry, &config->default_plugins, list, plug_aux)
+		{
 			free(plug_entry->type);
 			free(plug_entry->name);
 			/* plug_entry->library is always NULL */
 			free(plug_entry);
 		}
-		TAILQ_FOREACH_SAFE(opt_entry, &config->mount_options, list, opt_aux) {
+		TAILQ_FOREACH_SAFE(opt_entry, &config->mount_options, list, opt_aux)
+		{
 			free(opt_entry->type);
 			free(opt_entry->option);
 			free(opt_entry);
@@ -168,9 +170,9 @@ const char *config_file_get_default_plugin(const char *type, struct config_file 
 	CHECK_ARG_NULL(type, NULL);
 	CHECK_ARG_NULL(config, NULL);
 
-	TAILQ_FOREACH(entry, &config->default_plugins, list) {
-		if (! strcmp(entry->type, type))
-			return entry->name;
+	TAILQ_FOREACH(entry, &config->default_plugins, list)
+	{
+		if (!strcmp(entry->type, type)) return entry->name;
 	}
 
 	return NULL;
@@ -184,9 +186,9 @@ const char *config_file_get_lib(const char *type, const char *name, struct confi
 	CHECK_ARG_NULL(name, NULL);
 	CHECK_ARG_NULL(config, NULL);
 
-	TAILQ_FOREACH(entry, &config->plugins, list) {
-		if (! strcmp(entry->type, type) && ! strcmp(entry->name, name))
-			return entry->library;
+	TAILQ_FOREACH(entry, &config->plugins, list)
+	{
+		if (!strcmp(entry->type, type) && !strcmp(entry->name, name)) return entry->library;
 	}
 
 	ltfsmsg(LTFS_ERR, 11267E, type, name);
@@ -201,21 +203,21 @@ char **config_file_get_plugins(const char *type, struct config_file *config)
 	struct plugin_entry *entry;
 
 	TAILQ_FOREACH(entry, &config->plugins, list)
-		if (! strcmp(entry->type, type))
-			++count;
+	if (!strcmp(entry->type, type)) ++count;
 
 	list = calloc(count + 1, sizeof(char *));
-	if (! list) {
+	if (!list) {
 		ltfsmsg(LTFS_ERR, 10001E, "config_file_get_plugins: pointer list");
 		return NULL;
 	}
 
-	TAILQ_FOREACH(entry, &config->plugins, list) {
-		if (! strcmp(entry->type, type)) {
+	TAILQ_FOREACH(entry, &config->plugins, list)
+	{
+		if (!strcmp(entry->type, type)) {
 			list[pos] = arch_strdup(entry->name);
-			if (! list[pos]) {
+			if (!list[pos]) {
 				ltfsmsg(LTFS_ERR, 10001E, "config_file_get_plugins: list entry");
-				for (count=0; count<pos; ++count)
+				for (count = 0; count < pos; ++count)
 					free(list[pos]);
 				free(list);
 				return NULL;
@@ -234,19 +236,19 @@ char **config_file_get_options(const char *type, struct config_file *config)
 	struct option_entry *entry;
 
 	TAILQ_FOREACH(entry, &config->mount_options, list)
-		if (! strcmp(entry->type, type))
-			++count;
+	if (!strcmp(entry->type, type)) ++count;
 
 	list = calloc(count + 1, sizeof(char *));
-	if (! list) {
+	if (!list) {
 		ltfsmsg(LTFS_ERR, 10001E, "config_file_get_options: pointer list");
 		return NULL;
 	}
 
-	TAILQ_FOREACH(entry, &config->mount_options, list) {
-		if (! strcmp(entry->type, type)) {
+	TAILQ_FOREACH(entry, &config->mount_options, list)
+	{
+		if (!strcmp(entry->type, type)) {
 			list[pos] = arch_strdup(entry->option);
-			if (! list[pos]) {
+			if (!list[pos]) {
 				ltfsmsg(LTFS_ERR, 10001E, "config_file_get_options: list entry");
 				goto out_free;
 			}
@@ -257,7 +259,7 @@ char **config_file_get_options(const char *type, struct config_file *config)
 	return list;
 
 out_free:
-	for (count=0; count<pos; ++count)
+	for (count = 0; count < pos; ++count)
 		free(list[pos]);
 	free(list);
 	return NULL;
@@ -278,7 +280,7 @@ int _config_file_parse(const char *path, bool ignore_error, struct config_file *
 	struct option_entry *ol;
 	int ret, offset;
 	arch_fopen(path, "rb", conf_file);
-	if (! conf_file) {
+	if (!conf_file) {
 		if (!ignore_error) {
 			ret = -errno;
 			ltfsmsg(LTFS_ERR, 11268E, path, ret);
@@ -297,16 +299,14 @@ int _config_file_parse(const char *path, bool ignore_error, struct config_file *
 
 		/* Ignore comments and trailing whitespace */
 		strip_pos = strstr(line, "#");
-		if (! strip_pos)
-			strip_pos = line + strlen(line);
-		while (strip_pos > line &&
-				   (*(strip_pos - 1) == ' ' || *(strip_pos - 1) == '\t' ||
-				    *(strip_pos - 1) == '\r' || *(strip_pos - 1) == '\n'))
-				--strip_pos;
+		if (!strip_pos) strip_pos = line + strlen(line);
+		while (strip_pos > line && (*(strip_pos - 1) == ' ' || *(strip_pos - 1) == '\t' || *(strip_pos - 1) == '\r' ||
+																*(strip_pos - 1) == '\n'))
+			--strip_pos;
 		*strip_pos = '\0';
 
 		saveline = arch_strdup(line);
-		if (! saveline) {
+		if (!saveline) {
 			ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse: saveline");
 			ret = -LTFS_NO_MEMORY;
 			goto out;
@@ -315,50 +315,42 @@ int _config_file_parse(const char *path, bool ignore_error, struct config_file *
 		/* Parse the configuration directive */
 		tok = strtok_r(line, " \t\r\n", &saveptr);
 		if (tok) {
-			if (! strcmp(tok, "plugin")) {
+			if (!strcmp(tok, "plugin")) {
 				ret = _config_file_parse_plugin(saveptr, config);
-				if (ret < 0)
-					goto out;
+				if (ret < 0) goto out;
 
-			} else if (! strcmp(tok, "default")) {
+			} else if (!strcmp(tok, "default")) {
 				ret = _config_file_parse_default(saveptr, config);
-				if (ret < 0)
-					goto out;
+				if (ret < 0) goto out;
 
-			} else if (! strcmp(tok, "option")) {
+			} else if (!strcmp(tok, "option")) {
 				offset = tok - line + strlen(tok) + 1;
 				ret = _config_file_parse_option(&saveline[offset], saveptr, &ol);
-				if (ret < 0)
-					goto out;
+				if (ret < 0) goto out;
 				TAILQ_INSERT_TAIL(&config->mount_options, ol, list);
 
-			} else if (! strcmp(tok, "include")) {
+			} else if (!strcmp(tok, "include")) {
 				ret = _config_file_parse_name("include", "include file", saveptr, &include_file);
-				if (ret < 0)
-					goto out;
+				if (ret < 0) goto out;
 				ret = _config_file_parse(include_file, false, config);
 				free(include_file);
 				include_file = NULL;
-				if (ret < 0)
-					goto out;
+				if (ret < 0) goto out;
 
-			} else if (! strcmp(tok, "include_noerror")) {
+			} else if (!strcmp(tok, "include_noerror")) {
 				ret = _config_file_parse_name("include", "include file", saveptr, &include_file);
-				if (ret < 0)
-					goto out;
+				if (ret < 0) goto out;
 				ret = _config_file_parse(include_file, true, config);
 				free(include_file);
 				include_file = NULL;
 
-			} else if (! strcmp(tok, "-default")) {
+			} else if (!strcmp(tok, "-default")) {
 				ret = _config_file_remove_default(saveptr, config);
-				if (ret < 0)
-					goto out;
+				if (ret < 0) goto out;
 
-			} else if (! strcmp(tok, "-plugin")) {
+			} else if (!strcmp(tok, "-plugin")) {
 				ret = _config_file_remove_plugin(saveptr, config);
-				if (ret < 0)
-					goto out;
+				if (ret < 0) goto out;
 
 			} else
 				ltfsmsg(LTFS_WARN, 11276W, tok);
@@ -371,8 +363,7 @@ int _config_file_parse(const char *path, bool ignore_error, struct config_file *
 	ret = 0;
 
 out:
-	if (saveline)
-		free(saveline);
+	if (saveline) free(saveline);
 	fclose(conf_file);
 	return ret;
 }
@@ -390,22 +381,23 @@ int _config_file_validate(struct config_file *config)
 
 	/* Validate plugin configuration. For each configured plugin, return an error if the configured
 	 * default plugin is not in	the list of known plugins. */
-	TAILQ_FOREACH(de, &config->default_plugins, list) {
+	TAILQ_FOREACH(de, &config->default_plugins, list)
+	{
 		found = false;
-		TAILQ_FOREACH(pe, &config->plugins, list) {
-			if (! strcmp(de->type, pe->type) && ! strcmp(de->name, pe->name))
-				found = true;
+		TAILQ_FOREACH(pe, &config->plugins, list)
+		{
+			if (!strcmp(de->type, pe->type) && !strcmp(de->name, pe->name)) found = true;
 		}
-		if (! found && strcmp(de->name, "none")) {
+		if (!found && strcmp(de->name, "none")) {
 			ltfsmsg(LTFS_ERR, 11280E, de->type, de->name);
 			return -LTFS_CONFIG_INVALID;
 		}
 	}
 
 	/* Emit a warning if plugin library does not exist. */
-	TAILQ_FOREACH(pe, &config->plugins, list) {
-		if (stat(pe->library, &st) < 0)
-			ltfsmsg(LTFS_WARN, 11277W, pe->type, pe->name, pe->library);
+	TAILQ_FOREACH(pe, &config->plugins, list)
+	{
+		if (stat(pe->library, &st) < 0) ltfsmsg(LTFS_WARN, 11277W, pe->type, pe->name, pe->library);
 	}
 
 	return 0;
@@ -435,12 +427,12 @@ int _config_file_parse_name(const char *directive, const char *name_desc, char *
 #else
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
 #endif
-	if (! tok) {
+	if (!tok) {
 		ltfsmsg(LTFS_ERR, 11273E, directive, name_desc);
 		return -LTFS_CONFIG_INVALID;
 	}
 	*out = arch_strdup(tok);
-	if (! (*out)) {
+	if (!(*out)) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
@@ -471,27 +463,27 @@ int _config_file_parse_default(char *saveptr, struct config_file *config)
 
 	/* Read the plugin type */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
-	if (! tok) {
+	if (!tok) {
 		ltfsmsg(LTFS_ERR, 11265E);
 		return -LTFS_CONFIG_INVALID;
 	}
 
 	type = arch_strdup(tok);
-	if (! type) {
+	if (!type) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_default: plugin type");
 		return -LTFS_NO_MEMORY;
 	}
 
 	/* Read the plugin name */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
-	if (! tok) {
+	if (!tok) {
 		ltfsmsg(LTFS_ERR, 11265E);
 		free(type);
 		return -LTFS_CONFIG_INVALID;
 	}
 
 	name = arch_strdup(tok);
-	if (! name) {
+	if (!name) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_default: plugin name");
 		free(type);
 		return -LTFS_NO_MEMORY;
@@ -507,8 +499,9 @@ int _config_file_parse_default(char *saveptr, struct config_file *config)
 	}
 
 	/* Store the default */
-	TAILQ_FOREACH(entry, &config->default_plugins, list) {
-		if (! strcmp(entry->type, type)) {
+	TAILQ_FOREACH(entry, &config->default_plugins, list)
+	{
+		if (!strcmp(entry->type, type)) {
 			free(entry->name);
 			entry->name = name;
 			free(entry->type);
@@ -518,7 +511,7 @@ int _config_file_parse_default(char *saveptr, struct config_file *config)
 	}
 	if (!found) {
 		entry = calloc(1, sizeof(struct plugin_entry));
-		if (! entry) {
+		if (!entry) {
 			ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_default: plugin entry");
 			free(name);
 			free(type);
@@ -547,13 +540,13 @@ int _config_file_remove_default(char *saveptr, struct config_file *config)
 
 	/* Read the plugin type */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
-	if (! tok) {
+	if (!tok) {
 		ltfsmsg(LTFS_ERR, 11270E);
 		return -LTFS_CONFIG_INVALID;
 	}
 
 	type = arch_strdup(tok);
-	if (! type) {
+	if (!type) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_remove_default: plugin type");
 		return -LTFS_NO_MEMORY;
 	}
@@ -567,8 +560,9 @@ int _config_file_remove_default(char *saveptr, struct config_file *config)
 	}
 
 	/* Remove the specified default value */
-	TAILQ_FOREACH_SAFE(pl, &config->default_plugins, list, aux) {
-		if (! strcmp(pl->type, type)) {
+	TAILQ_FOREACH_SAFE(pl, &config->default_plugins, list, aux)
+	{
+		if (!strcmp(pl->type, type)) {
 			TAILQ_REMOVE(&config->default_plugins, pl, list);
 			free(pl->type);
 			free(pl->name);
@@ -602,14 +596,14 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config)
 
 	/* Get the plugin type */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
-	if (! tok) {
+	if (!tok) {
 		ltfsmsg(LTFS_ERR, 11275E);
 		ret = -LTFS_CONFIG_INVALID;
 		goto out_free;
 	}
 
 	type = arch_strdup(tok);
-	if (! type) {
+	if (!type) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin type");
 		ret = -LTFS_NO_MEMORY;
 		goto out_free;
@@ -617,14 +611,14 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config)
 
 	/* Get the driver name */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
-	if (! tok) {
+	if (!tok) {
 		ltfsmsg(LTFS_ERR, 11275E);
 		ret = -LTFS_CONFIG_INVALID;
 		goto out_free;
 	}
 
 	name = arch_strdup(tok);
-	if (! name) {
+	if (!name) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin name");
 		ret = -LTFS_NO_MEMORY;
 		goto out_free;
@@ -632,21 +626,22 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config)
 
 	/* Get the driver path */
 	tok = strtok_r(NULL, "\r\n", &saveptr);
-	if (! tok) {
+	if (!tok) {
 		ltfsmsg(LTFS_ERR, 11275E);
 		ret = -LTFS_CONFIG_INVALID;
 		goto out_free;
 	}
 
 	library = arch_strdup(tok);
-	if (! library) {
+	if (!library) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin path");
 		ret = -LTFS_NO_MEMORY;
 		goto out_free;
 	}
 
-	TAILQ_FOREACH(entry, &config->plugins, list) {
-		if (! strcmp(entry->type, type) && ! strcmp(entry->name, name)) {
+	TAILQ_FOREACH(entry, &config->plugins, list)
+	{
+		if (!strcmp(entry->type, type) && !strcmp(entry->name, name)) {
 			free(type);
 			free(name);
 			free(entry->library);
@@ -656,7 +651,7 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config)
 	}
 	if (!found) {
 		entry = calloc(1, sizeof(struct plugin_entry));
-		if (! entry) {
+		if (!entry) {
 			ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin entry");
 			ret = -LTFS_NO_MEMORY;
 			goto out_free;
@@ -670,12 +665,9 @@ int _config_file_parse_plugin(char *saveptr, struct config_file *config)
 	return 0;
 
 out_free:
-	if (type)
-		free(type);
-	if (name)
-		free(name);
-	if (library)
-		free(library);
+	if (type) free(type);
+	if (name) free(name);
+	if (library) free(library);
 
 	return ret;
 }
@@ -694,27 +686,27 @@ int _config_file_remove_plugin(char *saveptr, struct config_file *config)
 
 	/* Read the plugin type */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
-	if (! tok) {
+	if (!tok) {
 		ltfsmsg(LTFS_ERR, 11309E);
 		return -LTFS_CONFIG_INVALID;
 	}
 
 	type = arch_strdup(tok);
-	if (! type) {
+	if (!type) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_remove_plugin: plugin type");
 		return -LTFS_NO_MEMORY;
 	}
 
 	/* Read the plugin name */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
-	if (! tok) {
+	if (!tok) {
 		ltfsmsg(LTFS_ERR, 11309E);
 		free(type);
 		return -LTFS_CONFIG_INVALID;
 	}
 
 	name = arch_strdup(tok);
-	if (! name) {
+	if (!name) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_remove_plugin: plugin name");
 		free(type);
 		return -LTFS_NO_MEMORY;
@@ -730,8 +722,9 @@ int _config_file_remove_plugin(char *saveptr, struct config_file *config)
 	}
 
 	/* Remove the specified plugin value */
-	TAILQ_FOREACH_SAFE(pl, &config->plugins, list, aux) {
-		if (! strcmp(pl->type, type) && ! strcmp(pl->name, name)) {
+	TAILQ_FOREACH_SAFE(pl, &config->plugins, list, aux)
+	{
+		if (!strcmp(pl->type, type) && !strcmp(pl->name, name)) {
 			TAILQ_REMOVE(&config->plugins, pl, list);
 			free(pl->type);
 			free(pl->name);
@@ -766,7 +759,7 @@ int _config_file_parse_option(const char *line, char *saveptr, struct option_ent
 
 	/* Read the option type */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
-	if (! tok) {
+	if (!tok) {
 		/* Cannot parse configuration file: \'option\' directive must be followed
 		 * by a option type and LTFS mount option */
 		ltfsmsg(LTFS_ERR, 11272E);
@@ -775,23 +768,23 @@ int _config_file_parse_option(const char *line, char *saveptr, struct option_ent
 	start = tok;
 
 	type = arch_strdup(tok);
-	if (! type) {
+	if (!type) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_mount_option: option");
 		return -LTFS_NO_MEMORY;
 	}
 
-	if (! strcmp(type, "adminservice"))
+	if (!strcmp(type, "adminservice"))
 		is_admin_service = true;
-	else if (! strcmp(type, "dcache"))
+	else if (!strcmp(type, "dcache"))
 		is_dcache = true;
-	else if (! strcmp(type, "startup"))
+	else if (!strcmp(type, "startup"))
 		is_startup = true;
-	else if (! strcmp(type, "snmp"))
+	else if (!strcmp(type, "snmp"))
 		is_snmp = true;
 
 	/* Read the option */
 	tok = strtok_r(NULL, " \t\r\n", &saveptr);
-	if (! tok) {
+	if (!tok) {
 		/* Cannot parse configuration file: \'option\' directive must be followed
 		 * by a LTFS mount option */
 		ltfsmsg(LTFS_ERR, 11272E);
@@ -799,10 +792,10 @@ int _config_file_parse_option(const char *line, char *saveptr, struct option_ent
 		return -LTFS_CONFIG_INVALID;
 	}
 
-	if (is_admin_service || is_dcache || is_startup || line[tok-start] == '-' || is_snmp)
-		ret = asprintf(&option, "%s", &line[tok-start]);
+	if (is_admin_service || is_dcache || is_startup || line[tok - start] == '-' || is_snmp)
+		ret = asprintf(&option, "%s", &line[tok - start]);
 	else
-		ret = asprintf(&option, "-o%s", &line[tok-start]);
+		ret = asprintf(&option, "-o%s", &line[tok - start]);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_mount_option: option");
 		free(type);
@@ -810,7 +803,7 @@ int _config_file_parse_option(const char *line, char *saveptr, struct option_ent
 	}
 
 	*out = calloc(1, sizeof(struct option_entry));
-	if (! (*out)) {
+	if (!(*out)) {
 		ltfsmsg(LTFS_ERR, 10001E, "_config_file_parse_plugin: plugin structure");
 		free(type);
 		free(option);

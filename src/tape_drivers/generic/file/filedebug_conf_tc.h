@@ -50,32 +50,33 @@
 #define __filedebug_conf_tc_h
 
 #ifdef mingw_PLATFORM
-#include "xml.h"
+#	include "xml.h"
 #else
-#include <libltfs/xml.h>
+#	include <libltfs/xml.h>
 #endif
 #define DEFAULT_CAPACITY_MB (3 * (GB / MB))
 
 /* emulation of delays due to tape seeks */
-#define DEFAULT_WRAPS            (40)       /* 40 wraps (76MB/wrap by default) */
-#define DEFAULT_EOT_TO_BOT       (12)       /* time to seek from begin of tape to end of tape, in seconds */
-#define DEFAULT_CHANGE_DIRECTION (2000000)  /* time to change tape direction, in microseconds */
-#define DEFAULT_CHANGE_TRACK     (10000)    /* time to change track, in microseconds */
-#define DEFAULT_THREADING        (12)       /* time to threading/unthreading in sec */
+#define DEFAULT_WRAPS (40)								 /* 40 wraps (76MB/wrap by default) */
+#define DEFAULT_EOT_TO_BOT (12)						 /* time to seek from begin of tape to end of tape, in seconds */
+#define DEFAULT_CHANGE_DIRECTION (2000000) /* time to change tape direction, in microseconds */
+#define DEFAULT_CHANGE_TRACK (10000)			 /* time to change track, in microseconds */
+#define DEFAULT_THREADING (12)						 /* time to threading/unthreading in sec */
 
-enum {
+enum
+{
 	DELAY_NONE = 0, /**< No delay emulation */
-	DELAY_CALC,     /**< Only calculate delay time, no wait */
-	DELAY_EMULATE   /**< Calculate delay time and wait */
+	DELAY_CALC,			/**< Only calculate delay time, no wait */
+	DELAY_EMULATE		/**< Calculate delay time and wait */
 };
 
 struct filedebug_conf_tc
 {
-	bool          dummy_io;            /**< Dummy IO mode to evaliate upper layer performance */
-	bool          emulate_readonly;    /**< True to emulate a cartridge in read-only mode */
-	uint64_t      capacity_mb;         /**< Configure cartridge capacity */
-	unsigned char cart_type;           /**< Cartridge type defined in tape_drivers.h */
-	unsigned char density_code;        /**< Density code */
+	bool dummy_io;							/**< Dummy IO mode to evaliate upper layer performance */
+	bool emulate_readonly;			/**< True to emulate a cartridge in read-only mode */
+	uint64_t capacity_mb;				/**< Configure cartridge capacity */
+	unsigned char cart_type;		/**< Cartridge type defined in tape_drivers.h */
+	unsigned char density_code; /**< Density code */
 	/*
 	 * TODO: Following improvement is needed for delay emulation
 	 *
@@ -84,12 +85,12 @@ struct filedebug_conf_tc
 	 *  3. Improve locate within the drive buffer
 	 *  4. Support back hitch emulation
 	 */
-	int       delay_mode;          /**< Emulated delay mode */
-	uint64_t  wraps;               /**< Number of wraps */
-	uint64_t  eot_to_bot_sec;      /**< Locate time to BOT to EOT for emulate delay */
-	uint64_t  change_direction_us; /**< Time to change direction for emulate delay */
-	uint64_t  change_track_us;     /**< Time to change track for emulate delay */
-	uint64_t  threading_sec;       /**< Time to mechanical threading/unthreading */
+	int delay_mode;								/**< Emulated delay mode */
+	uint64_t wraps;								/**< Number of wraps */
+	uint64_t eot_to_bot_sec;			/**< Locate time to BOT to EOT for emulate delay */
+	uint64_t change_direction_us; /**< Time to change direction for emulate delay */
+	uint64_t change_track_us;			/**< Time to change track for emulate delay */
+	uint64_t threading_sec;				/**< Time to mechanical threading/unthreading */
 };
 
 int filedebug_conf_tc_write_xml(char *filename, const struct filedebug_conf_tc *conf);

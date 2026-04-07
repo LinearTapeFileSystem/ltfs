@@ -52,45 +52,47 @@
 #define __spc_op_codes_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #define XCOPY COPY_OPERATION_ABORT
 
-enum spc_codes {
-	CHANGE_DEFINITION          = 0x40,
-	XCOPY                      = 0x83,
-	INQUIRY                    = 0x12,
-	LOG_SELECT                 = 0x4C,
-	LOG_SENSE                  = 0x4D,
-	MODE_SELECT6               = 0x15,
-	MODE_SELECT10              = 0x55,
-	MODE_SENSE6                = 0x1A,
-	MODE_SENSE10               = 0x5A,
-	PERSISTENT_RESERVE_IN      = 0x5E,
-	PERSISTENT_RESERVE_OUT     = 0x5F,
-	READ_ATTRIBUTE             = 0x8C,
-	READ_BUFFER                = 0x3C,
-	RECEIVE_DIAGNOSTIC_RESULTS = 0x1C,
-	RELEASE_UNIT6              = 0x17,
-	RELEASE_UNIT10             = 0x57,
-	REPORT_LUNS                = 0xA0,
-	REQUEST_SENSE              = 0x03,
-	RESERVE_UNIT6              = 0x16,
-	RESERVE_UNIT10             = 0x56,
-	SPIN                       = 0xA2,
-	SPOUT                      = 0xB5,
-	SEND_DIAGNOSTIC            = 0x1D,
-	TEST_UNIT_READY            = 0x00,
-	WRITE_ATTRIBUTE            = 0x8D,
-	WRITE_BUFFER               = 0x3B,
-	THIRD_PARTY_COPY_IN        = 0x84,
-	MAINTENANCE_IN             = 0xA3,
-	MAINTENANCE_OUT            = 0xA4,
-};
+	enum spc_codes
+	{
+		CHANGE_DEFINITION = 0x40,
+		XCOPY = 0x83,
+		INQUIRY = 0x12,
+		LOG_SELECT = 0x4C,
+		LOG_SENSE = 0x4D,
+		MODE_SELECT6 = 0x15,
+		MODE_SELECT10 = 0x55,
+		MODE_SENSE6 = 0x1A,
+		MODE_SENSE10 = 0x5A,
+		PERSISTENT_RESERVE_IN = 0x5E,
+		PERSISTENT_RESERVE_OUT = 0x5F,
+		READ_ATTRIBUTE = 0x8C,
+		READ_BUFFER = 0x3C,
+		RECEIVE_DIAGNOSTIC_RESULTS = 0x1C,
+		RELEASE_UNIT6 = 0x17,
+		RELEASE_UNIT10 = 0x57,
+		REPORT_LUNS = 0xA0,
+		REQUEST_SENSE = 0x03,
+		RESERVE_UNIT6 = 0x16,
+		RESERVE_UNIT10 = 0x56,
+		SPIN = 0xA2,
+		SPOUT = 0xB5,
+		SEND_DIAGNOSTIC = 0x1D,
+		TEST_UNIT_READY = 0x00,
+		WRITE_ATTRIBUTE = 0x8D,
+		WRITE_BUFFER = 0x3B,
+		THIRD_PARTY_COPY_IN = 0x84,
+		MAINTENANCE_IN = 0xA3,
+		MAINTENANCE_OUT = 0xA4,
+	};
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __spc_op_codes_h
+#endif	// __spc_op_codes_h

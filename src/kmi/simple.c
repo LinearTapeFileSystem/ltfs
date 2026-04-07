@@ -47,35 +47,34 @@
 *************************************************************************************
 */
 
+#include "key_format_ltfs.h"
 #include "libltfs/kmi_ops.h"
 #include "libltfs/ltfs_fuse_version.h"
-#include "key_format_ltfs.h"
 #include <fuse.h>
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
+#	include "arch/win/win_util.h"
 
 #endif
 
-struct kmi_simple_options_data {
-	unsigned char *dk;             /**< Data key */
-	unsigned char *dki;            /**< Data key identifier */
-	unsigned char *dk_for_format;  /**< Data key for formatting a volume */
+struct kmi_simple_options_data
+{
+	unsigned char *dk;						 /**< Data key */
+	unsigned char *dki;						 /**< Data key identifier */
+	unsigned char *dk_for_format;	 /**< Data key for formatting a volume */
 	unsigned char *dki_for_format; /**< Data key identifier for formatting a volume */
-	unsigned char *dk_list;        /**< DK and DKi pairs' list */
+	unsigned char *dk_list;				 /**< DK and DKi pairs' list */
 };
 
 static struct kmi_simple_options_data priv;
 
-#define KMI_SIMPLE_OPT(templ,offset,value) { templ, offsetof(struct kmi_simple_options_data, offset), value }
+#define KMI_SIMPLE_OPT(templ, offset, value) { templ, offsetof(struct kmi_simple_options_data, offset), value }
 
-static struct fuse_opt kmi_simple_options[] = {
-	KMI_SIMPLE_OPT("kmi_dk=%s",             dk,             0),
-	KMI_SIMPLE_OPT("kmi_dki=%s",            dki,            0),
-	KMI_SIMPLE_OPT("kmi_dk_for_format=%s",  dk_for_format,  0),
-	KMI_SIMPLE_OPT("kmi_dki_for_format=%s", dki_for_format, 0),
-	KMI_SIMPLE_OPT("kmi_dk_list=%s",        dk_list,        0),
-	FUSE_OPT_END
-};
+static struct fuse_opt kmi_simple_options[] = { KMI_SIMPLE_OPT("kmi_dk=%s", dk, 0),
+																								KMI_SIMPLE_OPT("kmi_dki=%s", dki, 0),
+																								KMI_SIMPLE_OPT("kmi_dk_for_format=%s", dk_for_format, 0),
+																								KMI_SIMPLE_OPT("kmi_dki_for_format=%s", dki_for_format, 0),
+																								KMI_SIMPLE_OPT("kmi_dk_list=%s", dk_list, 0),
+																								FUSE_OPT_END };
 
 /**
  * Initialize the simple key manager interface plugin.
@@ -84,11 +83,10 @@ static struct fuse_opt kmi_simple_options[] = {
  */
 void *simple_init(struct ltfs_volume *vol)
 {
-	void* km;
+	void *km;
 
 	km = key_format_ltfs_init(vol);
-	if (km)
-		ltfsmsg(LTFS_DEBUG, 15500D);
+	if (km) ltfsmsg(LTFS_DEBUG, 15500D);
 
 	return km;
 }
@@ -98,7 +96,7 @@ void *simple_init(struct ltfs_volume *vol)
  * @param kmi_handle the key manager interface handle
  * @return 0 on success or a negative value on error.
  */
-int simple_destroy(void * const kmi_handle)
+int simple_destroy(void *const kmi_handle)
 {
 	int ret;
 
@@ -115,7 +113,7 @@ int simple_destroy(void * const kmi_handle)
  * @param kmi_handle the key manager interface handle
  * @return 0 on success or a negative value on error.
  */
-int simple_get_key(unsigned char **keyalias, unsigned char **key, void * const kmi_handle)
+int simple_get_key(unsigned char **keyalias, unsigned char **key, void *const kmi_handle)
 {
 	return key_format_ltfs_get_key(keyalias, key, kmi_handle, priv.dk_list, priv.dki_for_format);
 }
@@ -143,7 +141,7 @@ static int null_parser(void *priv, const char *arg, int key, struct fuse_args *o
  */
 int simple_parse_opts(void *opt_args)
 {
-	struct fuse_args *args = (struct fuse_args *) opt_args;
+	struct fuse_args *args = (struct fuse_args *)opt_args;
 	int ret;
 
 #ifdef mingw_PLATFORM
@@ -173,51 +171,51 @@ int simple_parse_opts(void *opt_args)
 	}
 
 	if (priv.dk != NULL && priv.dki != NULL && priv.dk_for_format != NULL && priv.dki_for_format != NULL) {
-		if ((strcmp((char *) priv.dk, (char *) priv.dk_for_format) == 0) ^ (strcmp((char *) priv.dki, (char *) priv.dki_for_format) == 0)) {
+		if ((strcmp((char *)priv.dk, (char *)priv.dk_for_format) == 0) ^
+				(strcmp((char *)priv.dki, (char *)priv.dki_for_format) == 0)) {
 			ltfsmsg(LTFS_ERR, 15504E, 1);
 			return -1;
 		}
 	}
 
-	struct {
+	struct
+	{
 		unsigned char *dk;
 		unsigned char *dki;
 	} key[] = { { priv.dk, priv.dki }, { priv.dk_for_format, priv.dki_for_format } };
 
 	for (unsigned int i = 0; i < sizeof(key) / sizeof(key[0]); ++i) {
-		if (key[i].dk == NULL)
-			continue;
+		if (key[i].dk == NULL) continue;
 
-		const size_t original_dk_list_len = (priv.dk_list ? strlen((char *) priv.dk_list) : 0);
-		const size_t dk_list_len = (priv.dk_list ? strlen((char *) priv.dk_list) + strlen("/") : 0)
-			+ strlen((char *) key[i].dk) + strlen(":") + strlen((char *) key[i].dki) + 1;
+		const size_t original_dk_list_len = (priv.dk_list ? strlen((char *)priv.dk_list) : 0);
+		const size_t dk_list_len = (priv.dk_list ? strlen((char *)priv.dk_list) + strlen("/") : 0) +
+															 strlen((char *)key[i].dk) + strlen(":") + strlen((char *)key[i].dki) + 1;
 
 		if (priv.dk_list)
-			priv.dk_list = (unsigned char*)realloc(priv.dk_list, dk_list_len);
+			priv.dk_list = (unsigned char *)realloc(priv.dk_list, dk_list_len);
 		else
-			priv.dk_list = (unsigned char*)calloc(dk_list_len, sizeof(unsigned char));
+			priv.dk_list = (unsigned char *)calloc(dk_list_len, sizeof(unsigned char));
 		if (priv.dk_list == NULL) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 			return -LTFS_NO_MEMORY;
 		}
 		*(priv.dk_list + original_dk_list_len) = '\0';
 
-		if (original_dk_list_len)
-			arch_strcat((char *) priv.dk_list, dk_list_len, "/");
-		arch_strcat((char *) priv.dk_list, dk_list_len,(char *) key[i].dk);
-		arch_strcat((char *) priv.dk_list, dk_list_len, ":");
-		arch_strcat((char *) priv.dk_list, dk_list_len,(char *) key[i].dki);
+		if (original_dk_list_len) arch_strcat((char *)priv.dk_list, dk_list_len, "/");
+		arch_strcat((char *)priv.dk_list, dk_list_len, (char *)key[i].dk);
+		arch_strcat((char *)priv.dk_list, dk_list_len, ":");
+		arch_strcat((char *)priv.dk_list, dk_list_len, (char *)key[i].dki);
 	}
 
 	return 0;
 }
 
 struct kmi_ops simple_ops = {
-	.init         = simple_init,
-	.destroy      = simple_destroy,
-	.get_key      = simple_get_key,
+	.init = simple_init,
+	.destroy = simple_destroy,
+	.get_key = simple_get_key,
 	.help_message = simple_help_message,
-	.parse_opts   = simple_parse_opts,
+	.parse_opts = simple_parse_opts,
 };
 
 struct kmi_ops *kmi_get_ops(void)
@@ -229,7 +227,7 @@ struct kmi_ops *kmi_get_ops(void)
 extern char kmi_simple_dat[];
 #endif
 
-const char *kmi_get_message_bundle_name(void ** const message_data)
+const char *kmi_get_message_bundle_name(void **const message_data)
 {
 #ifndef mingw_PLATFORM
 	*message_data = kmi_simple_dat;

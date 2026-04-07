@@ -47,20 +47,20 @@
 *************************************************************************************
 */
 
-#include "ltfs.h"
 #include "ltfs_internal.h"
-#include "libltfs/ltfslogging.h"
-#include "tape.h"
-#include "fs.h"
-#include "xml_libltfs.h"
-#include "label.h"
-#include "dcache.h"
-#include "index_criteria.h"
 #include "arch/time_internal.h"
-#include "libltfs/arch/osx/osx_string.h"
+#include "dcache.h"
+#include "fs.h"
+#include "index_criteria.h"
 #include "iosched.h"
+#include "label.h"
+#include "libltfs/arch/osx/osx_string.h"
+#include "libltfs/ltfslogging.h"
+#include "ltfs.h"
 #include "ltfs_fsops.h"
+#include "tape.h"
 #include "xattr.h"
+#include "xml_libltfs.h"
 
 /**
  * Allocate an empty LTFS index.
@@ -111,7 +111,7 @@ int ltfs_index_alloc(struct ltfs_index **index, struct ltfs_volume *vol)
 	newindex->version = LTFS_INDEX_VERSION;
 
 	newindex->root = fs_allocate_dentry(NULL, "/", NULL, true, false, false, newindex);
-	if (! newindex->root) {
+	if (!newindex->root) {
 		ltfsmsg(LTFS_ERR, 11168E);
 		ltfs_index_free(&newindex);
 		return -LTFS_NO_MEMORY;
@@ -130,8 +130,7 @@ void _ltfs_index_free(bool force, struct ltfs_index **index)
 {
 	size_t i;
 
-	if (! index || ! *index)
-		return;
+	if (!index || !*index) return;
 
 	ltfs_mutex_lock(&(*index)->refcount_lock);
 	(*index)->refcount--;
@@ -139,26 +138,21 @@ void _ltfs_index_free(bool force, struct ltfs_index **index)
 		ltfs_mutex_unlock(&(*index)->refcount_lock);
 		ltfs_mutex_destroy(&(*index)->refcount_lock);
 
-		if ((*index)->root)
-			fs_release_dentry((*index)->root);
+		if ((*index)->root) fs_release_dentry((*index)->root);
 		ltfs_mutex_destroy(&(*index)->dirty_lock);
 		ltfs_mutex_destroy(&(*index)->rename_lock);
 
 		if ((*index)->tag_count > 0) {
-			for (i=0; i<(*index)->tag_count; ++i)
+			for (i = 0; i < (*index)->tag_count; ++i)
 				free((*index)->preserved_tags[i]);
 			free((*index)->preserved_tags);
 		}
 		index_criteria_free(&((*index)->original_criteria));
 		index_criteria_free(&((*index)->index_criteria));
-		if ((*index)->commit_message)
-			free((*index)->commit_message);
-		if ((*index)->volume_name.name)
-			free((*index)->volume_name.name);
-		if ((*index)->creator)
-			free((*index)->creator);
-		if ((*index)->symerr_count > 0)
-			free((*index)->symlink_conflict);
+		if ((*index)->commit_message) free((*index)->commit_message);
+		if ((*index)->volume_name.name) free((*index)->volume_name.name);
+		if ((*index)->creator) free((*index)->creator);
+		if ((*index)->symerr_count > 0) free((*index)->symlink_conflict);
 		free(*index);
 		*index = NULL;
 	} else
@@ -190,28 +184,24 @@ int ltfs_read_labels(bool trial, struct ltfs_volume *vol)
 
 	ret = ltfs_read_one_label(0, label0, vol);
 	if (ret < 0) {
-		if (! trial || ret != -LTFS_LABEL_INVALID)
-			ltfsmsg(LTFS_ERR, 11170E, ret);
+		if (!trial || ret != -LTFS_LABEL_INVALID) ltfsmsg(LTFS_ERR, 11170E, ret);
 		goto out_free;
 	}
 	ret = ltfs_read_one_label(1, label1, vol);
 	if (ret < 0) {
-		if (! trial || ret != -LTFS_LABEL_INVALID)
-			ltfsmsg(LTFS_ERR, 11171E, ret);
+		if (!trial || ret != -LTFS_LABEL_INVALID) ltfsmsg(LTFS_ERR, 11171E, ret);
 		goto out_free;
 	}
 
 	/* Check labels for consistency */
 	ret = label_compare(label0, label1);
 	if (ret < 0) {
-		if (! trial || ret != -LTFS_LABEL_MISMATCH)
-			ltfsmsg(LTFS_ERR, 11172E, ret);
+		if (!trial || ret != -LTFS_LABEL_MISMATCH) ltfsmsg(LTFS_ERR, 11172E, ret);
 		goto out_free;
 	}
 
 	/* Clear label */
-	if (vol->label->creator)
-		free(vol->label->creator);
+	if (vol->label->creator) free(vol->label->creator);
 
 	/* Store label data in the supplied volume */
 	vol->label->creator = label0->creator;
@@ -230,10 +220,8 @@ int ltfs_read_labels(bool trial, struct ltfs_volume *vol)
 	vol->label->version = label0->version;
 
 out_free:
-	if (label0)
-		label_free(&label0);
-	if (label1)
-		label_free(&label1);
+	if (label0) label_free(&label0);
+	if (label1) label_free(&label1);
 
 	return ret;
 }
@@ -244,8 +232,7 @@ out_free:
  * @param label structure to populate with label contents
  * @param vol LTFS volume
  */
-int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
-	struct ltfs_volume *vol)
+int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label, struct ltfs_volume *vol)
 {
 	int ret;
 	char *buf = NULL;
@@ -282,8 +269,7 @@ int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
 		/* Simple heuristic to detect an unpartitioned tape: seeking to partition 1 fails.
 		 * Note that the seek may fail for other reasons, which can't currently be distinguished
 		 * by looking at the backend return codes. */
-		if (ret <= -LTFS_ERR_MIN && partition == 1)
-			ret = -LTFS_NOT_PARTITIONED;
+		if (ret <= -LTFS_ERR_MIN && partition == 1) ret = -LTFS_NOT_PARTITIONED;
 		goto out_free;
 	}
 
@@ -306,11 +292,11 @@ int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
 		too_long = true;
 	}
 
-	memcpy(label->barcode, buf+4, 6);
+	memcpy(label->barcode, buf + 4, 6);
 	label->barcode[6] = 0x00;
 
 	/* check for LTFS signature */
-	memcpy(ansi_sig, buf+24, 4);
+	memcpy(ansi_sig, buf + 24, 4);
 	ansi_sig[4] = '\0';
 	if (strcmp(ansi_sig, "LTFS")) {
 		ltfsmsg(LTFS_ERR, 11176E);
@@ -372,8 +358,7 @@ int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
 out_free:
 	free(buf);
 
-	if (ret && too_long && ansi_valid)
-		return -LTFS_LABEL_POSSIBLE_VALID;
+	if (ret && too_long && ansi_valid) return -LTFS_LABEL_POSSIBLE_VALID;
 
 	return ret;
 }
@@ -411,9 +396,9 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *
 
 	/* Parse and validate the schema */
 	ret = xml_schema_from_tape(eod_pos, vol);
-	if ( vol->index->symerr_count ) {
-		if ( recover_symlink ) {
-			ret_sym = ltfs_split_symlink( vol );
+	if (vol->index->symerr_count) {
+		if (recover_symlink) {
+			ret_sym = ltfs_split_symlink(vol);
 			if (ret_sym < 0) {
 				ret = ret_sym;
 			} else if (ret == -LTFS_SYMLINK_CONFLICT) {
@@ -422,7 +407,7 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *
 		} else {
 			ltfsmsg(LTFS_ERR, 11321E);
 		}
-		free( vol->index->symlink_conflict );
+		free(vol->index->symlink_conflict);
 		vol->index->symerr_count = 0;
 	}
 
@@ -440,20 +425,18 @@ int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *
 
 	/* check self pointer */
 	if (vol->index->selfptr.partition != vol->label->part_num2id[pos.partition] ||
-		vol->index->selfptr.block != pos.block) {
+			vol->index->selfptr.block != pos.block) {
 		ltfsmsg(LTFS_WARN, 11196W);
 		return -LTFS_INDEX_INVALID;
 	}
 
 	/* basic back pointer checks */
-	if (vol->index->backptr.partition != 0 &&
-		vol->index->backptr.partition != vol->label->partid_dp) {
+	if (vol->index->backptr.partition != 0 && vol->index->backptr.partition != vol->label->partid_dp) {
 		ltfsmsg(LTFS_ERR, 11197E);
 		return -LTFS_INDEX_INVALID;
-	} else if (vol->index->backptr.partition == vol->index->selfptr.partition &&
-		vol->index->selfptr.block != 5 &&
-		vol->index->backptr.block != vol->index->selfptr.block &&
-		vol->index->backptr.block >= vol->index->selfptr.block - 2 ) {
+	} else if (vol->index->backptr.partition == vol->index->selfptr.partition && vol->index->selfptr.block != 5 &&
+						 vol->index->backptr.block != vol->index->selfptr.block &&
+						 vol->index->backptr.block >= vol->index->selfptr.block - 2) {
 		ltfsmsg(LTFS_ERR, 11197E);
 		return -LTFS_INDEX_INVALID;
 	} else if (vol->index->backptr.partition != 0 && vol->index->backptr.block < 5) {
@@ -482,12 +465,12 @@ bool ltfs_is_valid_partid(char id)
 }
 
 #define check_err(cmd, msgid, label) \
-	do { \
-		ret = (cmd); \
-		if (ret < 0) { \
+	do {                               \
+		ret = (cmd);                     \
+		if (ret < 0) {                   \
 			ltfsmsg(LTFS_ERR, msgid, ret); \
-			goto label; \
-		} \
+			goto label;                    \
+		}                                \
 	} while (0)
 
 /**
@@ -502,8 +485,13 @@ bool ltfs_is_valid_partid(char id)
  * @param vol LTFS volume
  * @return 0 on success, 1 if no index was found, or a negative value on error.
  */
-int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_end_pos,
-	bool *fm_after, bool *blocks_after, bool recover_symlink, struct ltfs_volume *vol)
+int ltfs_seek_index(char partition,
+										tape_block_t *eod_pos,
+										tape_block_t *index_end_pos,
+										bool *fm_after,
+										bool *blocks_after,
+										bool recover_symlink,
+										struct ltfs_volume *vol)
 {
 	int ret;
 	struct tc_position eod, pos;
@@ -531,7 +519,7 @@ int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_e
 	} else if (pos.block == eod.block - 1)
 		check_err(tape_spacefm(vol->device, -1), 11201E, out);
 
-	while (! have_index) {
+	while (!have_index) {
 		/* did we reach the end of the partition label? */
 		check_err(tape_get_position(vol->device, &pos), 11200E, out);
 		if (pos.block == 3) {
@@ -555,8 +543,7 @@ int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_e
 					break;
 				/* Keep seeking index when ignoring wring version index */
 				case -LTFS_UNSUPPORTED_INDEX_VERSION:
-					if (vol->ignore_wrong_version)
-						keep_seeking = true;
+					if (vol->ignore_wrong_version) keep_seeking = true;
 					break;
 				/* Otherwise keep seeking index */
 				default:
@@ -574,7 +561,7 @@ int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_e
 			*fm_after = (ret == 0);
 			check_err(tape_get_position(vol->device, &pos), 11200E, out);
 			*index_end_pos = pos.block;
-			*blocks_after = ! (pos.block == eod.block);
+			*blocks_after = !(pos.block == eod.block);
 		} else {
 			/* Unexpected return codes */
 			/* TODO: Need to add a message */
@@ -609,8 +596,7 @@ out:
  * @param vol LTFS volume. The label field must be populated with a block size and partition map.
  * @return 0 on success or a negative value on error.
  */
-int _ltfs_check_extents(struct dentry *d, tape_block_t ip_eod, tape_block_t dp_eod,
-	struct ltfs_volume *vol)
+int _ltfs_check_extents(struct dentry *d, tape_block_t ip_eod, tape_block_t dp_eod, struct ltfs_volume *vol)
 {
 	int ret;
 	struct extent_info *ext;
@@ -618,20 +604,20 @@ int _ltfs_check_extents(struct dentry *d, tape_block_t ip_eod, tape_block_t dp_e
 	struct name_list *list, *tmp;
 
 	if (d->isdir && HASH_COUNT(d->child_list) != 0) {
-		HASH_ITER(hh, d->child_list, list, tmp) {
+		HASH_ITER(hh, d->child_list, list, tmp)
+		{
 			ret = _ltfs_check_extents(list->d, ip_eod, dp_eod, vol);
-			if (ret < 0)
-				return ret;
+			if (ret < 0) return ret;
 		}
 
-	} else if (! TAILQ_EMPTY(&d->extentlist)) {
-		TAILQ_FOREACH(ext, &d->extentlist, list) {
+	} else if (!TAILQ_EMPTY(&d->extentlist)) {
+		TAILQ_FOREACH(ext, &d->extentlist, list)
+		{
 			ext_lastblock = ext->start.block + ext->bytecount / vol->label->blocksize;
 			ext_lastblock += (ext->bytecount % vol->label->blocksize > 0) ? 1 : 0;
-			if (ext->start.block < 4)
-				return -LTFS_INDEX_INVALID;
+			if (ext->start.block < 4) return -LTFS_INDEX_INVALID;
 			if ((ext->start.partition == vol->label->partid_ip && ext_lastblock >= ip_eod) ||
-				(ext->start.partition == vol->label->partid_dp && ext_lastblock >= dp_eod))
+					(ext->start.partition == vol->label->partid_dp && ext_lastblock >= dp_eod))
 				return -LTFS_INDEX_INVALID;
 		}
 	}
@@ -652,14 +638,13 @@ int _ltfs_check_extents(struct dentry *d, tape_block_t ip_eod, tape_block_t dp_e
  * @return 0 if IP index file is newer, 1 if DP index file is newer, 2 if both index files
  *         are NULL, or a negative value on error.
  */
-int _ltfs_check_pointers(struct ltfs_index *ip_index, struct ltfs_index *dp_index,
-	struct ltfs_volume *vol)
+int _ltfs_check_pointers(struct ltfs_index *ip_index, struct ltfs_index *dp_index, struct ltfs_volume *vol)
 {
 	int ret;
 	tape_block_t ip_backptr, dp_backptr;
 	struct tc_position seekpos;
 
-	if (! ip_index) {
+	if (!ip_index) {
 		if (dp_index) {
 			/* DP index file is newer */
 			return 1;
@@ -669,7 +654,7 @@ int _ltfs_check_pointers(struct ltfs_index *ip_index, struct ltfs_index *dp_inde
 		}
 	}
 
-	if (! dp_index) {
+	if (!dp_index) {
 		if (ip_index->backptr.partition != 0) {
 			/* IP backpointer to nonexistent DP index file */
 			ltfsmsg(LTFS_ERR, 11205E);
@@ -679,19 +664,17 @@ int _ltfs_check_pointers(struct ltfs_index *ip_index, struct ltfs_index *dp_inde
 			return 0;
 		}
 
-	/* have both index files */
+		/* have both index files */
 	} else {
-		if (ip_index->generation >= dp_index->generation &&
-			ip_index->backptr.partition == dp_index->selfptr.partition &&
-			ip_index->backptr.block == dp_index->selfptr.block) {
+		if (ip_index->generation >= dp_index->generation && ip_index->backptr.partition == dp_index->selfptr.partition &&
+				ip_index->backptr.block == dp_index->selfptr.block) {
 			/* IP index file is newer */
 			return 0;
 		} else if (ip_index->generation > dp_index->generation) {
 			/* IP backpointer doesn't match DP index file */
 			ltfsmsg(LTFS_ERR, 11206E);
 			return -LTFS_INDEX_INVALID;
-		} else if (ip_index->generation == dp_index->generation &&
-				   ip_index->backptr.partition == 0) {
+		} else if (ip_index->generation == dp_index->generation && ip_index->backptr.partition == 0) {
 			/* DP index file is newer */
 			return 1;
 		} else {
@@ -702,14 +685,11 @@ int _ltfs_check_pointers(struct ltfs_index *ip_index, struct ltfs_index *dp_inde
 			if (dp_backptr > ip_backptr) {
 				seekpos.block = dp_backptr;
 				ret = tape_seek(vol->device, &seekpos);
-				if (ret < 0)
-					return ret;
+				if (ret < 0) return ret;
 				ret = ltfs_read_index(0, false, vol);
-				if (ret < 0)
-					return ret;
+				if (ret < 0) return ret;
 				dp_backptr = vol->index->backptr.block;
-				if (ip_index->backptr.partition == 0 &&
-					vol->index->generation < ip_index->generation) {
+				if (ip_index->backptr.partition == 0 && vol->index->generation < ip_index->generation) {
 					/* IP index file is missing its back pointer */
 					ltfsmsg(LTFS_ERR, 11207E);
 					ltfs_index_free(&vol->index);
@@ -723,20 +703,21 @@ int _ltfs_check_pointers(struct ltfs_index *ip_index, struct ltfs_index *dp_inde
 	}
 }
 
-void _ltfs_last_ref(struct dentry *d, tape_block_t *dp_last, tape_block_t *ip_last,
-	struct ltfs_volume *vol)
+void _ltfs_last_ref(struct dentry *d, tape_block_t *dp_last, tape_block_t *ip_last, struct ltfs_volume *vol)
 {
 	struct extent_info *ext;
 	tape_block_t ext_lastblock;
 	struct name_list *list, *tmp;
 
 	if (d->isdir && HASH_COUNT(d->child_list) != 0) {
-		HASH_ITER(hh, d->child_list, list, tmp) {
+		HASH_ITER(hh, d->child_list, list, tmp)
+		{
 			_ltfs_last_ref(list->d, dp_last, ip_last, vol);
 		}
 
-	} else if (! TAILQ_EMPTY(&d->extentlist)) {
-		TAILQ_FOREACH(ext, &d->extentlist, list) {
+	} else if (!TAILQ_EMPTY(&d->extentlist)) {
+		TAILQ_FOREACH(ext, &d->extentlist, list)
+		{
 			ext_lastblock = ext->start.block + ext->bytecount / vol->label->blocksize;
 			ext_lastblock += (ext->bytecount % vol->label->blocksize > 0) ? 1 : 0;
 			if (ext->start.partition == vol->label->partid_ip && ext_lastblock > *ip_last)
@@ -753,8 +734,7 @@ void _ltfs_last_ref(struct dentry *d, tape_block_t *dp_last, tape_block_t *ip_la
  * where the extent starts.
  * @return 0 on success or a negative value on error.
  */
-int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
-	tape_block_t part_eod, struct ltfs_volume *vol)
+int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref, tape_block_t part_eod, struct ltfs_volume *vol)
 {
 	int err, ret = 0;
 	char *buf;
@@ -771,19 +751,18 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 
 	if (dcache_enabled) {
 		err = dcache_open("/", &root, vol);
-		if (err < 0)
-			return ret;
+		if (err < 0) return ret;
 		err = dcache_openat("/", root, LTFS_LOSTANDFOUND_DIR, &lf_dir, vol);
 		if (err < 0) {
 			dcache_close(root, true, true, vol);
 			return err;
-		} else if (! lf_dir) {
+		} else if (!lf_dir) {
 			err = dcache_create(LTFS_LOSTANDFOUND_DIR, root, vol);
 			if (err < 0) {
 				dcache_close(root, true, true, vol);
 				return err;
 			}
-			err = dcache_open("/"LTFS_LOSTANDFOUND_DIR, &lf_dir, vol);
+			err = dcache_open("/" LTFS_LOSTANDFOUND_DIR, &lf_dir, vol);
 			if (err < 0) {
 				dcache_close(root, true, true, vol);
 				return err;
@@ -792,11 +771,10 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 			lfdir_descend = true;
 		}
 	} else {
-		ret = fs_path_lookup("/"LTFS_LOSTANDFOUND_DIR, 0, &lf_dir, vol->index);
+		ret = fs_path_lookup("/" LTFS_LOSTANDFOUND_DIR, 0, &lf_dir, vol->index);
 		if (ret == -LTFS_NO_DENTRY) {
-			lf_dir = fs_allocate_dentry(vol->index->root, LTFS_LOSTANDFOUND_DIR, NULL, true, false, true,
-					vol->index);
-			if (! lf_dir) {
+			lf_dir = fs_allocate_dentry(vol->index->root, LTFS_LOSTANDFOUND_DIR, NULL, true, false, true, vol->index);
+			if (!lf_dir) {
 				ltfsmsg(LTFS_ERR, 11209E);
 				return -LTFS_NO_MEMORY;
 			}
@@ -816,7 +794,7 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 	}
 
 	buf = malloc(vol->label->blocksize + LTFS_CRC_SIZE);
-	if (! buf) {
+	if (!buf) {
 		ltfsmsg(LTFS_ERR, 10001E, "_ltfs_populate_lost_found: buffer");
 		if (dcache_enabled)
 			dcache_close(lf_dir, true, lfdir_descend, vol);
@@ -843,8 +821,12 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 			ltfsmsg(LTFS_WARN, 11210W, (unsigned long)seekpos.partition);
 		} else {
 			/* generate a descriptive-but-probably-not-helpful filename */
-			ret = asprintf(&fname_path, "/%s/partition%"PRIu32"_block%"PRIu64"_%zdbytes",
-				LTFS_LOSTANDFOUND_DIR, seekpos.partition, seekpos.block, nr);
+			ret = asprintf(&fname_path,
+										 "/%s/partition%" PRIu32 "_block%" PRIu64 "_%zdbytes",
+										 LTFS_LOSTANDFOUND_DIR,
+										 seekpos.partition,
+										 seekpos.block,
+										 nr);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 10001E, "_ltfs_populate_lost_found: file name");
 				ret = -LTFS_NO_MEMORY;
@@ -853,12 +835,9 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 			fname = strstr(&fname_path[1], "/") + 1;
 
 			/* create a file containing this extent */
-			ret = dcache_enabled ?
-				dcache_open(fname_path, &file, vol) :
-				fs_directory_lookup(lf_dir, fname, &file);
-			if (ret < 0)
-				goto out_free;
-			if (! file) {
+			ret = dcache_enabled ? dcache_open(fname_path, &file, vol) : fs_directory_lookup(lf_dir, fname, &file);
+			if (ret < 0) goto out_free;
+			if (!file) {
 				if (dcache_enabled) {
 					ret = dcache_create(fname, lf_dir, vol);
 					if (ret < 0) {
@@ -875,7 +854,7 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 				} else {
 					file = fs_allocate_dentry(lf_dir, fname, NULL, false, true, true, vol->index);
 					free(fname_path);
-					if (! file) {
+					if (!file) {
 						/* Cannot populate lost and found directory: failed to allocate file data */
 						ltfsmsg(LTFS_ERR, 11211E);
 						ret = -LTFS_NO_MEMORY;
@@ -884,7 +863,7 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 				}
 
 				ext = calloc(1, sizeof(struct extent_info));
-				if (! ext) {
+				if (!ext) {
 					ltfsmsg(LTFS_ERR, 10001E, "_ltfs_populate_lost_found: extent");
 					ret = -LTFS_NO_MEMORY;
 					goto out_free;
@@ -892,8 +871,7 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 
 				acquirewrite_mrsw(&file->contents_lock);
 				acquirewrite_mrsw(&file->meta_lock);
-				if (! dcache_enabled)
-					++file->numhandles;
+				if (!dcache_enabled) ++file->numhandles;
 				get_current_timespec(&file->creation_time);
 				file->modify_time = file->creation_time;
 				file->access_time = file->creation_time;
@@ -936,10 +914,8 @@ int _ltfs_populate_lost_found(char partition, tape_block_t part_lastref,
 
 out_free:
 	if (dcache_enabled) {
-		if (root)
-			dcache_close(root, true, true, vol);
-		if (lf_dir)
-			dcache_close(lf_dir, true, lfdir_descend, vol);
+		if (root) dcache_close(root, true, true, vol);
+		if (lf_dir) dcache_close(lf_dir, true, lfdir_descend, vol);
 	} else
 		fs_release_dentry(lf_dir);
 	free(buf);
@@ -950,8 +926,11 @@ out_free:
  * Recover extra (unreferenced) blocks from the tape by creating a "lost and found" directory
  * with one file for each extra extent found at the end of each partition.
  */
-int _ltfs_make_lost_found(tape_block_t ip_eod, tape_block_t dp_eod,
-	tape_block_t ip_endofidx, tape_block_t dp_endofidx, struct ltfs_volume *vol)
+int _ltfs_make_lost_found(tape_block_t ip_eod,
+													tape_block_t dp_eod,
+													tape_block_t ip_endofidx,
+													tape_block_t dp_endofidx,
+													struct ltfs_volume *vol)
 {
 	int ret;
 	tape_block_t lastblock_d = 0, lastblock_i = 0;
@@ -965,8 +944,7 @@ int _ltfs_make_lost_found(tape_block_t ip_eod, tape_block_t dp_eod,
 			ret = _ltfs_populate_lost_found(ltfs_ip_id(vol), lastblock_i + 1, ip_eod, vol);
 		else
 			ret = _ltfs_populate_lost_found(ltfs_ip_id(vol), ip_endofidx, ip_eod, vol);
-		if (ret < 0)
-			return ret;
+		if (ret < 0) return ret;
 	}
 
 	if (dp_endofidx < dp_eod) {
@@ -974,8 +952,7 @@ int _ltfs_make_lost_found(tape_block_t ip_eod, tape_block_t dp_eod,
 			ret = _ltfs_populate_lost_found(ltfs_dp_id(vol), lastblock_d + 1, dp_eod, vol);
 		else
 			ret = _ltfs_populate_lost_found(ltfs_dp_id(vol), dp_endofidx, dp_eod, vol);
-		if (ret < 0)
-			return ret;
+		if (ret < 0) return ret;
 	}
 
 	ltfs_set_index_dirty(true, false, vol->index);
@@ -1013,7 +990,8 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 	tape_block_t dp_eod, ip_eod, dp_endofidx = 0, ip_endofidx = 0;
 	tape_block_t lastblock_d = 0, lastblock_i = 0;
 	tape_partition_t ip_num, dp_num;
-	struct ltfs_index *dp_index = NULL, *ip_index = NULL;;
+	struct ltfs_index *dp_index = NULL, *ip_index = NULL;
+	;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
@@ -1021,16 +999,20 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 	dp_num = ltfs_part_id2num(ltfs_dp_id(vol), vol);
 
 	/* look for index files */
-	check_err(ltfs_seek_index(vol->label->partid_ip, &ip_eod, &ip_endofidx, &ip_fm_after,
-		&ip_blocks_after, recover_symlink, vol), 11214E, out_unlock);
+	check_err(ltfs_seek_index(
+								vol->label->partid_ip, &ip_eod, &ip_endofidx, &ip_fm_after, &ip_blocks_after, recover_symlink, vol),
+						11214E,
+						out_unlock);
 	ip_have_index = (ret == 0);
 	if (ip_have_index) {
 		ip_index = vol->index;
 		vol->index = NULL;
 	}
 
-	check_err(ltfs_seek_index(vol->label->partid_dp, &dp_eod, &dp_endofidx, &dp_fm_after,
-		&dp_blocks_after, recover_symlink, vol), 11213E, out_unlock);
+	check_err(ltfs_seek_index(
+								vol->label->partid_dp, &dp_eod, &dp_endofidx, &dp_fm_after, &dp_blocks_after, recover_symlink, vol),
+						11213E,
+						out_unlock);
 	dp_have_index = (ret == 0);
 	if (dp_have_index) {
 		dp_index = vol->index;
@@ -1038,26 +1020,24 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 	}
 
 	/* TODO: print more detailed diagnostic data here */
-	if (! ip_have_index && ! dp_have_index) {
+	if (!ip_have_index && !dp_have_index) {
 		ltfsmsg(LTFS_ERR, 11253E);
 		ret = -LTFS_NO_INDEX;
 		goto out_unlock;
 	}
 
-	if (! ip_have_index)
-		ltfsmsg(LTFS_INFO, 11257I);
-	if (! dp_have_index)
-		ltfsmsg(LTFS_INFO, 11258I);
+	if (!ip_have_index) ltfsmsg(LTFS_INFO, 11257I);
+	if (!dp_have_index) ltfsmsg(LTFS_INFO, 11258I);
 
 	/* fill in missing file marks if necessary */
-	if (dp_have_index && ! dp_blocks_after && ! dp_fm_after) {
+	if (dp_have_index && !dp_blocks_after && !dp_fm_after) {
 		ltfsmsg(LTFS_INFO, 11255I);
 		check_err(tape_seek_eod(vol->device, dp_num), 11215E, out_unlock);
 		check_err(tape_write_filemark(vol->device, 1, true, true, false), 11217E, out_unlock);
 		dp_fm_after = true;
 		++dp_eod;
 	}
-	if (ip_have_index && ! ip_blocks_after && ! ip_fm_after) {
+	if (ip_have_index && !ip_blocks_after && !ip_fm_after) {
 		ltfsmsg(LTFS_INFO, 11256I);
 		check_err(tape_seek_eod(vol->device, ip_num), 11216E, out_unlock);
 		check_err(tape_write_filemark(vol->device, 1, true, true, false), 11218E, out_unlock);
@@ -1065,11 +1045,10 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 		++ip_eod;
 	}
 
-	extra_blocks =
-		(dp_have_index && dp_blocks_after) || (! dp_have_index && dp_eod != 4) ||
-		(ip_have_index && ip_blocks_after) || (! ip_have_index && ip_eod != 4);
+	extra_blocks = (dp_have_index && dp_blocks_after) || (!dp_have_index && dp_eod != 4) ||
+								 (ip_have_index && ip_blocks_after) || (!ip_have_index && ip_eod != 4);
 
-	if (! deep && extra_blocks) {
+	if (!deep && extra_blocks) {
 		ltfsmsg(LTFS_ERR, 11220E);
 		ret = -LTFS_INCONSISTENT;
 		goto out_unlock;
@@ -1078,7 +1057,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 	/* Verify sanity of back/self pointers and Decide which index file to use. */
 	check_err(_ltfs_check_pointers(ip_index, dp_index, vol), 11219E, out_unlock);
 
-	if (! dp_have_index && ! ip_have_index) {
+	if (!dp_have_index && !ip_have_index) {
 		/* no index file on the tape. set up an empty index. */
 		ltfs_index_free(&dp_index);
 		ltfs_index_free(&ip_index);
@@ -1093,7 +1072,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 		ltfs_set_index_dirty(true, false, vol->index);
 		ret = 0;
 
-	} else if (! ip_have_index || ! dp_have_index) {
+	} else if (!ip_have_index || !dp_have_index) {
 		/* one partition is empty. check extent list for bad references. */
 		if (ip_have_index)
 			ret = _ltfs_check_extents(ip_index->root, ip_eod, dp_eod, vol);
@@ -1118,13 +1097,11 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 		}
 		ret = 0;
 	}
-	if (ret < 0)
-		goto out_unlock;
+	if (ret < 0) goto out_unlock;
 
 	/* Set append position for index partition. */
-	if (ip_have_index && ! ip_blocks_after) {
-		check_err(tape_set_append_position(vol->device, ip_num, ip_index->selfptr.block - 1),
-			11222E, out_unlock);
+	if (ip_have_index && !ip_blocks_after) {
+		check_err(tape_set_append_position(vol->device, ip_num, ip_index->selfptr.block - 1), 11222E, out_unlock);
 	}
 
 	/* Recover extra blocks or schedule them to be erased. */
@@ -1143,14 +1120,12 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 			if (ip_have_index && ip_blocks_after) {
 				if (lastblock_i >= ip_endofidx && lastblock_i < ip_eod) {
 					ltfsmsg(LTFS_INFO, 11226I);
-					check_err(tape_set_append_position(vol->device, ip_num, lastblock_i),
-						11229E, out_unlock);
+					check_err(tape_set_append_position(vol->device, ip_num, lastblock_i), 11229E, out_unlock);
 				} else if (lastblock_i < ip_endofidx) {
 					ltfsmsg(LTFS_INFO, 11226I);
-					check_err(tape_set_append_position(vol->device, ip_num,
-						ip_index->selfptr.block - 1), 11229E, out_unlock);
+					check_err(tape_set_append_position(vol->device, ip_num, ip_index->selfptr.block - 1), 11229E, out_unlock);
 				}
-			} else if (! ip_have_index && ip_eod > 4) {
+			} else if (!ip_have_index && ip_eod > 4) {
 				ltfsmsg(LTFS_INFO, 11226I);
 				check_err(tape_set_append_position(vol->device, ip_num, 4), 11229E, out_unlock);
 			}
@@ -1159,7 +1134,7 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 			if (dp_have_index && dp_blocks_after) {
 				ltfsmsg(LTFS_INFO, 11227I, (unsigned long long)dp_eod);
 				check_err(tape_set_append_position(vol->device, dp_num, dp_eod), 11228E, out_unlock);
-			} else if (! dp_have_index && dp_eod > 4) {
+			} else if (!dp_have_index && dp_eod > 4) {
 				ltfsmsg(LTFS_INFO, 11227I, (unsigned long long)dp_eod);
 				check_err(tape_set_append_position(vol->device, dp_num, dp_eod), 11228E, out_unlock);
 			}
@@ -1168,10 +1143,8 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 		ltfs_set_index_dirty(true, false, vol->index);
 	}
 
-	if (ip_have_index && ! ip_blocks_after)
-		vol->ip_index_file_end = true;
-	if (dp_have_index && ! dp_blocks_after)
-		vol->dp_index_file_end = true;
+	if (ip_have_index && !ip_blocks_after) vol->ip_index_file_end = true;
+	if (dp_have_index && !dp_blocks_after) vol->dp_index_file_end = true;
 
 	/* If necessary, restore consistency by writing index files. */
 	if (vol->index->dirty) {
@@ -1184,13 +1157,17 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 			_ltfs_last_ref(vol->index->root, &lastblock_d, &lastblock_i, vol);
 			if (vol->device->append_pos[dp_num] != 0) {
 				if (lastblock_d > vol->device->append_pos[dp_num]) {
-					ltfsmsg(LTFS_ERR, 11329E, (unsigned long long)lastblock_d, (unsigned long long)vol->device->append_pos[dp_num], dp_num);
+					ltfsmsg(LTFS_ERR,
+									11329E,
+									(unsigned long long)lastblock_d,
+									(unsigned long long)vol->device->append_pos[dp_num],
+									dp_num);
 					ret = -LTFS_INDEX_INVALID;
 					goto out_unlock;
 				}
 			}
 			/* write to data partition if it doesn't end in an index file */
-			if (! dp_have_index || dp_blocks_after) {
+			if (!dp_have_index || dp_blocks_after) {
 				ltfsmsg(LTFS_INFO, 17259I, "DP", vol->index->selfptr.partition, (unsigned long long)vol->index->selfptr.block);
 				ret = ltfs_write_index(vol->label->partid_dp, SYNC_RECOVERY, vol);
 			}
@@ -1210,10 +1187,8 @@ int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_syml
 	}
 
 out_unlock:
-	if (ip_have_index && vol->index != ip_index)
-		ltfs_index_free(&ip_index);
-	if (dp_have_index && vol->index != dp_index)
-		ltfs_index_free(&dp_index);
+	if (ip_have_index && vol->index != ip_index) ltfs_index_free(&ip_index);
+	if (dp_have_index && vol->index != dp_index) ltfs_index_free(&dp_index);
 
 	return ret;
 }
@@ -1227,8 +1202,7 @@ int ltfs_update_cart_coherency(struct ltfs_volume *vol)
 	tape_get_volume_change_reference(vol->device, &current_vcr);
 
 	/* If the VCR is invalid, can't use MAM parameters */
-	if (current_vcr == 0 || current_vcr == 0xffffffffffffffff)
-		return 0;
+	if (current_vcr == 0 || current_vcr == 0xffffffffffffffff) return 0;
 
 	if (vol->ip_index_file_end) {
 		if (vol->index->selfptr.partition == ltfs_ip_id(vol)) {
@@ -1237,10 +1211,8 @@ int ltfs_update_cart_coherency(struct ltfs_volume *vol)
 		}
 		vol->ip_coh.version = 1; /* From PGA2 */
 		vol->ip_coh.volume_change_ref = current_vcr;
-		if (vol->ip_coh.uuid[0] == '\0')
-			arch_strcpy_auto(vol->ip_coh.uuid, vol->label->vol_uuid);
-		tape_set_cart_coherency(vol->device, ltfs_part_id2num(ltfs_ip_id(vol), vol),
-			&vol->ip_coh);
+		if (vol->ip_coh.uuid[0] == '\0') arch_strcpy_auto(vol->ip_coh.uuid, vol->label->vol_uuid);
+		tape_set_cart_coherency(vol->device, ltfs_part_id2num(ltfs_ip_id(vol), vol), &vol->ip_coh);
 	}
 
 	if (vol->dp_index_file_end) {
@@ -1250,10 +1222,8 @@ int ltfs_update_cart_coherency(struct ltfs_volume *vol)
 		}
 		vol->dp_coh.version = 1; /* From PGA2 */
 		vol->dp_coh.volume_change_ref = current_vcr;
-		if (vol->dp_coh.uuid[0] == '\0')
-			arch_strcpy_auto(vol->dp_coh.uuid, vol->label->vol_uuid);
-		tape_set_cart_coherency(vol->device, ltfs_part_id2num(ltfs_dp_id(vol), vol),
-			&vol->dp_coh);
+		if (vol->dp_coh.uuid[0] == '\0') arch_strcpy_auto(vol->dp_coh.uuid, vol->label->vol_uuid);
+		tape_set_cart_coherency(vol->device, ltfs_part_id2num(ltfs_dp_id(vol), vol), &vol->dp_coh);
 	}
 
 	return 0;
@@ -1274,11 +1244,10 @@ int ltfs_write_index_conditional(char partition, struct ltfs_volume *vol)
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
-	if (partition == ltfs_ip_id(vol) && ! vol->ip_index_file_end)
+	if (partition == ltfs_ip_id(vol) && !vol->ip_index_file_end)
 		ret = ltfs_write_index(partition, SYNC_CASCHE_PRESSURE, vol);
 	else if (partition == ltfs_dp_id(vol) &&
-	         (! vol->dp_index_file_end ||
-	          (vol->ip_index_file_end && vol->index->selfptr.partition == ltfs_ip_id(vol))))
+					 (!vol->dp_index_file_end || (vol->ip_index_file_end && vol->index->selfptr.partition == ltfs_ip_id(vol))))
 		ret = ltfs_write_index(partition, SYNC_CASCHE_PRESSURE, vol);
 
 	return ret;
@@ -1288,103 +1257,95 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 {
 	size_t i, size;
 	struct dentry *d, *workd;
-	int ret=0;
+	int ret = 0;
 	char *name, *lfdir, *path, *tok, *next_tok;
-	bool basedir=true, use_iosche=false;
+	bool basedir = true, use_iosche = false;
 	char value[32];
 	ltfs_file_id id;
 
-	if ( iosched_initialized(vol) ) use_iosche=true;
+	if (iosched_initialized(vol)) use_iosche = true;
 
 	/* check lost_and_found directory and make if it doesn't exist */
-	int pathsize = asprintf( &lfdir, "/%s", LTFS_LOSTANDFOUND_DIR );
+	int pathsize = asprintf(&lfdir, "/%s", LTFS_LOSTANDFOUND_DIR);
 	ret = fs_path_lookup(lfdir, 0, &workd, vol->index);
-	if ( ret==-LTFS_NO_DENTRY  ) {
-		ret = ltfs_fsops_create( lfdir, true, false, false, &workd, vol);
-		if ( ret<0 ) {
+	if (ret == -LTFS_NO_DENTRY) {
+		ret = ltfs_fsops_create(lfdir, true, false, false, &workd, vol);
+		if (ret < 0) {
 			free(lfdir);
 			return ret;
 		} else {
-			basedir=false;
+			basedir = false;
 		}
-	} else if ( ret<0 ) {
+	} else if (ret < 0) {
 		free(lfdir);
 		return ret;
 	}
-	ret = ltfs_fsops_close( workd, true, true, use_iosche, vol);
-	path=arch_strdup(lfdir);
+	ret = ltfs_fsops_close(workd, true, true, use_iosche, vol);
+	path = arch_strdup(lfdir);
 
 	/* loop for conflicted files */
-	for( i=0; i<(vol->index->symerr_count); i++ ){
-		d = *(vol->index->symlink_conflict+i);
+	for (i = 0; i < (vol->index->symerr_count); i++) {
+		d = *(vol->index->symlink_conflict + i);
 
 		ret = fs_dentry_lookup(d, &name);
-		if (ret<0) goto out_func;
+		if (ret < 0) goto out_func;
 
 		char *contextVal = NULL;
-		tok = arch_strtok( name+1, "/", contextVal);
-		next_tok = arch_strtok( NULL, "/" , contextVal);
+		tok = arch_strtok(name + 1, "/", contextVal);
+		next_tok = arch_strtok(NULL, "/", contextVal);
 
 		/* check directory path and make if it doesn't exist */
-		while( next_tok ){
-			asprintf( &path, "%s/%s", path, tok );
-			if ( basedir ) {
+		while (next_tok) {
+			asprintf(&path, "%s/%s", path, tok);
+			if (basedir) {
 				ret = fs_path_lookup(path, 0, &workd, vol->index);
-				if ( ret==-LTFS_NO_DENTRY  )
-					basedir=false;
-				else if ( ret<0 )
+				if (ret == -LTFS_NO_DENTRY)
+					basedir = false;
+				else if (ret < 0)
 					goto err_out_func;
 			}
 
-			if( !basedir ) {
-				ret = ltfs_fsops_create( path, true, false, false, &workd, vol);
-				if ( ret<0 )
-					goto err_out_func;
-
+			if (!basedir) {
+				ret = ltfs_fsops_create(path, true, false, false, &workd, vol);
+				if (ret < 0) goto err_out_func;
 			}
-			ret = ltfs_fsops_close( workd, true, true, use_iosche, vol);
+			ret = ltfs_fsops_close(workd, true, true, use_iosche, vol);
 			tok = next_tok;
-			next_tok = arch_strtok( NULL, "/", contextVal);
+			next_tok = arch_strtok(NULL, "/", contextVal);
 		}
 		/* Make filename with path in lost_and_found */
-		asprintf( &path, "%s/%s", path, tok);
+		asprintf(&path, "%s/%s", path, tok);
 		ret = fs_path_lookup(path, 0, &workd, vol->index);
-		if ( ret == 0 ) {
+		if (ret == 0) {
 			/* delete same name old symlink */
-			ret = ltfs_fsops_unlink( path, &id, vol);
-			if (ret<0)
-				goto err_out_func;
-		} else if ( ret != -LTFS_NO_DENTRY )
+			ret = ltfs_fsops_unlink(path, &id, vol);
+			if (ret < 0) goto err_out_func;
+		} else if (ret != -LTFS_NO_DENTRY)
 			goto err_out_func;
 
-		ret = ltfs_fsops_symlink_path( (const char*)d->target.name, (const char*)path, &id, vol );
-		if (ret<0)
-			goto err_out_func;
+		ret = ltfs_fsops_symlink_path((const char *)d->target.name, (const char *)path, &id, vol);
+		if (ret < 0) goto err_out_func;
 
 		/* get old file's EA info then store it in the new file*/
-		memset( value, 0, sizeof(value));
+		memset(value, 0, sizeof(value));
 		ret = xattr_get(d, LTFS_LIVELINK_EA_NAME, value, sizeof(value), vol);
-		if (ret>0) {
+		if (ret > 0) {
 			size = ret;
 			ret = fs_path_lookup(path, 0, &workd, vol->index);
-			if (ret<0)
-				goto err_out_func;
-			ret = xattr_set_mountpoint_length( workd, value, size );
-			if (ret<0)
-				goto err_out_func;
+			if (ret < 0) goto err_out_func;
+			ret = xattr_set_mountpoint_length(workd, value, size);
+			if (ret < 0) goto err_out_func;
 			ret = xattr_do_remove(d, LTFS_LIVELINK_EA_NAME, true, vol);
-			if (ret<0)
-				goto err_out_func;
-			ret = ltfs_fsops_close( workd, true, true, use_iosche, vol);
-			if (ret<0)
-				goto err_out_func;
+			if (ret < 0) goto err_out_func;
+			ret = ltfs_fsops_close(workd, true, true, use_iosche, vol);
+			if (ret < 0) goto err_out_func;
 		}
 
 		d->isslink = false;
 		free(d->target.name);
 		free(name);
-		arch_strcpy(path, pathsize,lfdir);
-		basedir=true;
+		arch_strcpy(path, pathsize, lfdir);
+		basedir = true;
 	}
 	goto out_func;
 

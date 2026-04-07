@@ -50,31 +50,29 @@
 #define __iosched_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-#include "plugin.h"
 #include "iosched_ops.h"
+#include "plugin.h"
 
-int iosched_init(struct libltfs_plugin *plugin, struct ltfs_volume *vol);
-int iosched_destroy(struct ltfs_volume *vol);
-int iosched_open(const char *path, bool open_write, struct dentry **dentry,
-	struct ltfs_volume *vol);
-int iosched_close(struct dentry *d, bool flush, struct ltfs_volume *vol);
-bool iosched_initialized(struct ltfs_volume *vol);
-ssize_t iosched_read(struct dentry *d, char *buf, size_t size, off_t offset,
-		struct ltfs_volume *vol);
-ssize_t iosched_write(struct dentry *d, const char *buf, size_t size, off_t offset,
-	bool isupdatetime, struct ltfs_volume *vol);
-int iosched_flush(struct dentry *d, bool closeflag, struct ltfs_volume *vol);
-int iosched_truncate(struct dentry *d, off_t length, struct ltfs_volume *vol);
-uint64_t iosched_get_filesize(struct dentry *d, struct ltfs_volume *vol);
-int iosched_update_data_placement(struct dentry *d, struct ltfs_volume *vol);
-int iosched_set_profiler(char* work_dir, bool enable, struct ltfs_volume *vol);
+	int iosched_init(struct libltfs_plugin *plugin, struct ltfs_volume *vol);
+	int iosched_destroy(struct ltfs_volume *vol);
+	int iosched_open(const char *path, bool open_write, struct dentry **dentry, struct ltfs_volume *vol);
+	int iosched_close(struct dentry *d, bool flush, struct ltfs_volume *vol);
+	bool iosched_initialized(struct ltfs_volume *vol);
+	ssize_t iosched_read(struct dentry *d, char *buf, size_t size, off_t offset, struct ltfs_volume *vol);
+	ssize_t iosched_write(
+			struct dentry *d, const char *buf, size_t size, off_t offset, bool isupdatetime, struct ltfs_volume *vol);
+	int iosched_flush(struct dentry *d, bool closeflag, struct ltfs_volume *vol);
+	int iosched_truncate(struct dentry *d, off_t length, struct ltfs_volume *vol);
+	uint64_t iosched_get_filesize(struct dentry *d, struct ltfs_volume *vol);
+	int iosched_update_data_placement(struct dentry *d, struct ltfs_volume *vol);
+	int iosched_set_profiler(char *work_dir, bool enable, struct ltfs_volume *vol);
 
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif /* __iosched_h */

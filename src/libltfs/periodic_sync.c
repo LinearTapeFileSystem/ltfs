@@ -50,8 +50,9 @@
 #include "ltfs_fsops.h"
 
 #ifdef mingw_PLATFORM
-#include <WinSock2.h>
-int gettimeofday(struct timeval* tv, struct timezone* tz) {
+#	include <WinSock2.h>
+int gettimeofday(struct timeval *tv, struct timezone *tz)
+{
 	LARGE_INTEGER freq, count;
 	QueryPerformanceFrequency(&freq);
 	QueryPerformanceCounter(&count);
@@ -59,20 +60,21 @@ int gettimeofday(struct timeval* tv, struct timezone* tz) {
 	tv->tv_sec = count.QuadPart / freq.QuadPart;
 	tv->tv_usec = (count.QuadPart % freq.QuadPart) * 1000000 / freq.QuadPart;
 
-	return 0; // success
+	return 0;	 // success
 }
 #endif
 
 /**
  * Periodic sync scheduler private data structure.
  */
-struct periodic_sync_data {
-	ltfs_thread_cond_t   periodic_sync_thread_cond;  /**< Used to wake up the periodic sync thread */
-	ltfs_thread_mutex_t  periodic_sync_thread_mutex; /**< Used to handle the periodic sync thread */
-	ltfs_thread_t        periodic_sync_thread_id;    /**< Thread id of the periodic sync thread */
-	bool             keepalive;                  /**< Used to terminate the background thread */
-	int              period_sec;                 /**< Period between sync (sec) */
-	struct ltfs_volume *vol;                     /**< A reference to the LTFS volume structure */
+struct periodic_sync_data
+{
+	ltfs_thread_cond_t periodic_sync_thread_cond;		/**< Used to wake up the periodic sync thread */
+	ltfs_thread_mutex_t periodic_sync_thread_mutex; /**< Used to handle the periodic sync thread */
+	ltfs_thread_t periodic_sync_thread_id;					/**< Thread id of the periodic sync thread */
+	bool keepalive;																	/**< Used to terminate the background thread */
+	int period_sec;																	/**< Period between sync (sec) */
+	struct ltfs_volume *vol;												/**< A reference to the LTFS volume structure */
 };
 
 /**
@@ -80,24 +82,21 @@ struct periodic_sync_data {
  * @param data Periodic sync private data
  * @return NULL.
  */
-#define FUSE_REQ_ENTER(r)   REQ_NUMBER(REQ_STAT_ENTER, REQ_FUSE, r)
-#define FUSE_REQ_EXIT(r)    REQ_NUMBER(REQ_STAT_EXIT,  REQ_FUSE, r)
+#define FUSE_REQ_ENTER(r) REQ_NUMBER(REQ_STAT_ENTER, REQ_FUSE, r)
+#define FUSE_REQ_EXIT(r) REQ_NUMBER(REQ_STAT_EXIT, REQ_FUSE, r)
 
-#define REQ_SYNC        fffe
+#define REQ_SYNC fffe
 
-ltfs_thread_return periodic_sync_thread(void* data)
+ltfs_thread_return periodic_sync_thread(void *data)
 {
-	struct periodic_sync_data *priv = (struct periodic_sync_data *) data;
+	struct periodic_sync_data *priv = (struct periodic_sync_data *)data;
 	struct timeval now;
 	int ret;
 
 	ltfs_thread_mutex_lock(&priv->periodic_sync_thread_mutex);
 	while (priv->keepalive && gettimeofday(&now, NULL) == 0) {
-		ltfs_thread_cond_timedwait(&priv->periodic_sync_thread_cond,
-								   &priv->periodic_sync_thread_mutex,
-								   priv->period_sec);
-		if (! priv->keepalive)
-			break;
+		ltfs_thread_cond_timedwait(&priv->periodic_sync_thread_cond, &priv->periodic_sync_thread_mutex, priv->period_sec);
+		if (!priv->keepalive) break;
 
 		ltfs_request_trace(FUSE_REQ_ENTER(REQ_SYNC), 0, 0);
 
@@ -157,7 +156,7 @@ int periodic_sync_thread_init(int sec, struct ltfs_volume *vol)
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	priv = calloc(1, sizeof(struct periodic_sync_data));
-	if (! priv) {
+	if (!priv) {
 		ltfsmsg(LTFS_ERR, 10001E, "periodic_sync_thread_init: periodic sync data");
 		return -LTFS_NO_MEMORY;
 	}

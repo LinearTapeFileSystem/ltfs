@@ -48,25 +48,25 @@
 */
 
 #ifdef __APPLE_MAKEFILE__
-#include <ICU/unicode/ubrk.h>
-#include <ICU/unicode/ustring.h>
+#	include <ICU/unicode/ubrk.h>
+#	include <ICU/unicode/ustring.h>
 #else
-#include <unicode/ubrk.h>
-#include <unicode/ustring.h>
+#	include <unicode/ubrk.h>
+#	include <unicode/ustring.h>
 #endif
-
 
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
+#	include "arch/win/win_util.h"
 #endif
 
-#include "ltfs.h"
-#include "libltfs/ltfslogging.h"
-#include "libltfs/fs.h"
 #include "index_criteria.h"
+#include "libltfs/fs.h"
+#include "libltfs/ltfslogging.h"
+#include "ltfs.h"
 #include "pathname.h"
 
-typedef struct ustack {
+typedef struct ustack
+{
 	int32_t cr_bnd[3];
 	int32_t fi_bnd[3];
 	struct ustack *next;
@@ -74,8 +74,7 @@ typedef struct ustack {
 
 /* Forward declaration of private functions */
 int _prepare_glob_cache(struct index_criteria *ic);
-int _matches_name_criteria_caseless(const UChar *criteria, int32_t cr_len,
-	const UChar *filename, int32_t fi_len);
+int _matches_name_criteria_caseless(const UChar *criteria, int32_t cr_len, const UChar *filename, int32_t fi_len);
 void _next_char(const UChar *str, UBreakIterator *it, int32_t *pos);
 int _char_compare(const UChar *str1, int32_t *pos1, const UChar *str2, int32_t *pos2);
 void _destroy_ustack(filename_ustack_t **stack);
@@ -96,7 +95,7 @@ bool index_criteria_contains_invalid_options(const char *str)
 	bool error = true;
 	int i;
 
-	if (! str)
+	if (!str)
 		return !error;
 	else if (strlen(str) < 5) {
 		ltfsmsg(LTFS_ERR, 11146E, str);
@@ -104,28 +103,27 @@ bool index_criteria_contains_invalid_options(const char *str)
 	}
 
 	/* Check the beginning of the string */
-	for (valid_option = false, i=0; options[i]; ++i)
-		if (! strncmp(options[i], str, strlen(options[i]))) {
+	for (valid_option = false, i = 0; options[i]; ++i)
+		if (!strncmp(options[i], str, strlen(options[i]))) {
 			valid_option = true;
 			break;
 		}
-	if (! valid_option) {
+	if (!valid_option) {
 		ltfsmsg(LTFS_ERR, 11146E, str);
 		return error;
 	}
 
 	/* Check which options come after each separator */
 	while (true) {
-		ptr = strstr(ptr+1, "/");
-		if (! ptr)
-			break;
-		for (valid_option = false, i=0; options[i]; ++i)
-			if (!strncmp(options[i], ptr+1, strlen(options[i]))) {
+		ptr = strstr(ptr + 1, "/");
+		if (!ptr) break;
+		for (valid_option = false, i = 0; options[i]; ++i)
+			if (!strncmp(options[i], ptr + 1, strlen(options[i]))) {
 				valid_option = true;
 				break;
 			}
-		if (! valid_option) {
-			ltfsmsg(LTFS_ERR, 11146E, ptr+1);
+		if (!valid_option) {
+			ltfsmsg(LTFS_ERR, 11146E, ptr + 1);
 			return error;
 		}
 	}
@@ -141,16 +139,14 @@ bool index_criteria_contains_invalid_options(const char *str)
  * @param error output flag if a syntax error was found while parsing the options
  * @return true on success or false if the option could not be found
  */
-bool index_criteria_find_option(const char *str, const char *substr,
-	const char **start, const char **end, bool *error)
+bool index_criteria_find_option(const char *str, const char *substr, const char **start, const char **end, bool *error)
 {
 	const char *str_start = NULL, *str_end = NULL;
 	const char *next_start = NULL, *next_end = NULL;
 	int substr_len = strlen(substr);
 	bool next_error, found = false;
 
-	if (strlen(str) < 5)
-		return false;
+	if (strlen(str) < 5) return false;
 
 	if (!strncmp(str, substr, substr_len)) {
 		/* Match at the start of the string */
@@ -159,23 +155,21 @@ bool index_criteria_find_option(const char *str, const char *substr,
 		/* Need to walk the string to find the first valid match */
 		str_start = str + 1;
 		found = false;
-		while (! found) {
+		while (!found) {
 			str_start = strcasestr(str_start, substr);
-			if (! str_start)
+			if (!str_start)
 				break;
-			else if (*(str_start-1) == '/')
+			else if (*(str_start - 1) == '/')
 				found = true;
 			else
 				++str_start;
 		}
-		if (! found)
-			return false;
+		if (!found) return false;
 	}
 
 	/* Find end of option */
-	for (str_end=str_start; *str_end; ++str_end) {
-		if (*str_end == '/')
-			break;
+	for (str_end = str_start; *str_end; ++str_end) {
+		if (*str_end == '/') break;
 	}
 
 	if (index_criteria_find_option(str_end, substr, &next_start, &next_end, &next_error) == true) {
@@ -185,7 +179,7 @@ bool index_criteria_find_option(const char *str, const char *substr,
 	}
 
 	*start = str_start;
-	*end   = str_end;
+	*end = str_end;
 	*error = false;
 	return true;
 }
@@ -203,7 +197,7 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 	size_t sizelen = 0;
 	char *rule = NULL, last, *ptr;
 	int lenrule = (sizeof(char) * (int)(len + 1));
-	rule = (char*)calloc(lenrule,sizeof(char));
+	rule = (char *)calloc(lenrule, sizeof(char));
 	if (rule == NULL) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
@@ -217,13 +211,13 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 
 	snprintf(rule, len - sizelen, "%s", param);
 
-	for (ptr=&rule[0]; *ptr; ptr++) {
-		if (isalpha(*ptr) && *(ptr+1) && isalpha(*(ptr+1))) {
+	for (ptr = &rule[0]; *ptr; ptr++) {
+		if (isalpha(*ptr) && *(ptr + 1) && isalpha(*(ptr + 1))) {
 			ltfsmsg(LTFS_ERR, 11148E);
 			return -LTFS_POLICY_INVALID;
 		}
 	}
-	last = (rule[strlen(rule)-1]);
+	last = (rule[strlen(rule) - 1]);
 
 	if (isalpha(last)) {
 		if (last == 'k' || last == 'K')
@@ -237,7 +231,7 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 			arch_safe_free(rule);
 			return -LTFS_POLICY_INVALID;
 		}
-		rule[strlen(rule)-1] = '\0';
+		rule[strlen(rule) - 1] = '\0';
 	}
 
 	if (strlen(rule) == 0) {
@@ -264,9 +258,8 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 int index_criteria_parse_name(const char *criteria, size_t len, struct index_criteria *ic)
 {
 	char *delim, *rule, *rulebuf = NULL;
-	rulebuf = (char*)malloc(sizeof(char) * (len + 1));
-	if (rulebuf == NULL)
-	{
+	rulebuf = (char *)malloc(sizeof(char) * (len + 1));
+	if (rulebuf == NULL) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
@@ -283,9 +276,9 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 		arch_safe_free(rulebuf);
 		return -LTFS_POLICY_EMPTY_RULE;
 	}
-	for (delim=rule+6; *delim; delim++) {
+	for (delim = rule + 6; *delim; delim++) {
 		if (*delim == ':') {
-			if (*(delim-1) == ':' || *(delim+1) == '\0') {
+			if (*(delim - 1) == ':' || *(delim + 1) == '\0') {
 				ltfsmsg(LTFS_ERR, 11305E, rule);
 				arch_safe_free(rulebuf);
 				return -LTFS_POLICY_EMPTY_RULE;
@@ -294,8 +287,8 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 		}
 	}
 
-	ic->glob_patterns = calloc(num_names+1, sizeof(struct ltfs_name));
-	if (! ic->glob_patterns) {
+	ic->glob_patterns = calloc(num_names + 1, sizeof(struct ltfs_name));
+	if (!ic->glob_patterns) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		arch_safe_free(rulebuf);
 		return -LTFS_NO_MEMORY;
@@ -303,20 +296,20 @@ int index_criteria_parse_name(const char *criteria, size_t len, struct index_cri
 	rule_ptr = ic->glob_patterns;
 
 	/* Assign rules to the glob_patterns[] array */
-	rule = rule+5;
+	rule = rule + 5;
 	for (delim = rule; *delim; delim++) {
 		if (*delim == ':') {
 			*delim = '\0';
 			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
 			rule_ptr->name = arch_strdup(rule);
 			rule_ptr++;
-			rule = delim+1;
+			rule = delim + 1;
 		} else if (*delim == '/') {
 			*delim = '\0';
 			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
 			rule_ptr->name = arch_strdup(rule);
 			rule_ptr++;
-		} else if (*(delim+1) == '\0') {
+		} else if (*(delim + 1) == '\0') {
 			rule_ptr->percent_encode = fs_is_percent_encode_required(rule);
 			rule_ptr->name = arch_strdup(rule);
 			rule_ptr++;
@@ -361,7 +354,7 @@ int index_criteria_parse(const char *filterrules, struct ltfs_volume *vol)
 	int ret = 0;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
-	if (! filterrules) {
+	if (!filterrules) {
 		vol->index->index_criteria.have_criteria = false;
 		return 0;
 	}
@@ -378,7 +371,7 @@ int index_criteria_parse(const char *filterrules, struct ltfs_volume *vol)
 
 	/* Process name= criteria */
 	if (index_criteria_find_option(filterrules, "name=", &start, &end, &error)) {
-		ret = index_criteria_parse_name(start, end-start+1, ic);
+		ret = index_criteria_parse_name(start, end - start + 1, ic);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 11153E, ret);
 			return ret;
@@ -392,7 +385,7 @@ int index_criteria_parse(const char *filterrules, struct ltfs_volume *vol)
 	/* Process size= criteria */
 	ic->max_filesize_criteria = 0;
 	if (index_criteria_find_option(filterrules, "size=", &start, &end, &error)) {
-		ret = index_criteria_parse_size(start, end-start+1, ic);
+		ret = index_criteria_parse_size(start, end - start + 1, ic);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 11155E, ret);
 			return ret;
@@ -445,8 +438,8 @@ int index_criteria_dup_rules(struct index_criteria *dest_ic, struct index_criter
 		while (src_ic->glob_patterns[counter].name)
 			counter++;
 
-		dest_ic->glob_patterns = calloc(counter+1, sizeof(struct ltfs_name));
-		if (! dest_ic->glob_patterns) {
+		dest_ic->glob_patterns = calloc(counter + 1, sizeof(struct ltfs_name));
+		if (!dest_ic->glob_patterns) {
 			ltfsmsg(LTFS_ERR, 10001E, "index_criteria_dup_rules: glob pattern array");
 			return -LTFS_NO_MEMORY;
 		}
@@ -457,7 +450,7 @@ int index_criteria_dup_rules(struct index_criteria *dest_ic, struct index_criter
 		for (i = 0; i < counter; ++i) {
 			dst_gp->percent_encode = src_gp->percent_encode;
 			dst_gp->name = arch_strdup(src_gp->name);
-			if (! dst_gp->name) {
+			if (!dst_gp->name) {
 				ltfsmsg(LTFS_ERR, 10001E, "index_criteria_dup_rules: glob pattern");
 				while (--i >= 0) {
 					--dst_gp;
@@ -480,10 +473,10 @@ int index_criteria_dup_rules(struct index_criteria *dest_ic, struct index_criter
  */
 void index_criteria_free(struct index_criteria *ic)
 {
-	if (! ic) {
+	if (!ic) {
 		ltfsmsg(LTFS_WARN, 10006W, "ic", __FUNCTION__);
 		return;
-	} else if (! ic->have_criteria)
+	} else if (!ic->have_criteria)
 		return;
 
 	if (ic->glob_patterns) {
@@ -541,11 +534,10 @@ const char **index_criteria_get_glob_patterns(struct ltfs_volume *vol)
 
 	ic = &vol->index->index_criteria;
 	if (ic->have_criteria)
-		return (const char **) ic->glob_patterns;
+		return (const char **)ic->glob_patterns;
 	else
 		return NULL; /* if no policy specified, don't store anything on the index partition */
 }
-
 
 /**
  * Returns true if a given file name matches the criteria set in the index file or false if not.
@@ -568,15 +560,15 @@ bool index_criteria_match(struct dentry *d, struct ltfs_volume *vol)
 	CHECK_ARG_NULL(d, false);
 
 	ic = &vol->index->index_criteria;
-	if (! ic->have_criteria || ic->max_filesize_criteria == 0) {
+	if (!ic->have_criteria || ic->max_filesize_criteria == 0) {
 		/* Disable writing to the index partition if not bound by a maximum cache size */
 		return false;
-	} else if (! ic->glob_patterns) {
+	} else if (!ic->glob_patterns) {
 		/* Criteria is set on file size only */
 		return true;
 	}
 
-	if (! ic->glob_cache) {
+	if (!ic->glob_cache) {
 		ret = _prepare_glob_cache(ic);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 11158E, ret);
@@ -593,7 +585,7 @@ bool index_criteria_match(struct dentry *d, struct ltfs_volume *vol)
 	}
 	dname_len = u_strlen(dname);
 
-	for (i=0; glob_cache[i]; ++i) {
+	for (i = 0; glob_cache[i]; ++i) {
 		glob_len = u_strlen(glob_cache[i]);
 		match = _matches_name_criteria_caseless(glob_cache[i], glob_len, dname, dname_len);
 		if (match > 0) {
@@ -630,11 +622,11 @@ int _prepare_glob_cache(struct index_criteria *ic)
 		++num_patterns;
 
 	ic->glob_cache = calloc(num_patterns + 1, sizeof(UChar *));
-	if (! ic->glob_cache) {
+	if (!ic->glob_cache) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
-	for (i=0; ic->glob_patterns[i].name; ++i) {
+	for (i = 0; ic->glob_patterns[i].name; ++i) {
 		ret = pathname_prepare_caseless(ic->glob_patterns[i].name, &ic->glob_cache[i], false);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 11160E, ret);
@@ -650,12 +642,11 @@ int _prepare_glob_cache(struct index_criteria *ic)
  * filename globbing ("*" and "?" are supported), and it is performed by grapheme cluster
  * rather than by code point.
  */
-int _matches_name_criteria_caseless(const UChar *criteria, int32_t cr_len,
-	const UChar *filename, int32_t fi_len)
+int _matches_name_criteria_caseless(const UChar *criteria, int32_t cr_len, const UChar *filename, int32_t fi_len)
 {
 	UBreakIterator *ub_criteria, *ub_filename;
 	UErrorCode err = U_ZERO_ERROR;
-	int32_t cr_bnd[3] = {0, 0, 0}, fi_bnd[3] = {0, 0, 0};
+	int32_t cr_bnd[3] = { 0, 0, 0 }, fi_bnd[3] = { 0, 0, 0 };
 	filename_ustack_t *stack = NULL, *element;
 	bool acceptany, have_asterisk;
 	int match;
@@ -688,7 +679,6 @@ int _matches_name_criteria_caseless(const UChar *criteria, int32_t cr_len,
 	have_asterisk = false;
 	for (;;) {
 		while (cr_bnd[0] != cr_bnd[1]) {
-
 			/* Consume sequential asterisks. */
 			while (criteria[cr_bnd[0]] == 0x2a && cr_bnd[2] == 1) {
 				_next_char(criteria, ub_criteria, cr_bnd);
@@ -702,8 +692,7 @@ int _matches_name_criteria_caseless(const UChar *criteria, int32_t cr_len,
 
 			/* If we got this far, the file name is done and the pattern doesn't end with
 			 * an asterisk. No match. */
-			if (fi_bnd[0] == fi_bnd[1])
-				break;
+			if (fi_bnd[0] == fi_bnd[1]) break;
 
 			/* Question mark: accept any character. */
 			if (criteria[cr_bnd[0]] == 0x3f && cr_bnd[2] == 1)
@@ -713,16 +702,16 @@ int _matches_name_criteria_caseless(const UChar *criteria, int32_t cr_len,
 
 			/* Try to consume a file name character. */
 			if (have_asterisk) {
-				if (acceptany || ! _char_compare(criteria, cr_bnd, filename, fi_bnd)) {
+				if (acceptany || !_char_compare(criteria, cr_bnd, filename, fi_bnd)) {
 					/* Push this position onto the stack and consume the character. */
-					element = (filename_ustack_t *) calloc(1, sizeof(filename_ustack_t));
-					if (! element) {
+					element = (filename_ustack_t *)calloc(1, sizeof(filename_ustack_t));
+					if (!element) {
 						ltfsmsg(LTFS_ERR, 10001E, "_matches_name_criteria_caseless: filename stack");
 						match = 0;
 						goto out;
 					}
-					memcpy(element->cr_bnd, cr_bnd, 3*sizeof(int32_t));
-					memcpy(element->fi_bnd, fi_bnd, 3*sizeof(int32_t));
+					memcpy(element->cr_bnd, cr_bnd, 3 * sizeof(int32_t));
+					memcpy(element->fi_bnd, fi_bnd, 3 * sizeof(int32_t));
 					_push_ustack(&stack, element);
 					_next_char(criteria, ub_criteria, cr_bnd);
 					_next_char(filename, ub_filename, fi_bnd);
@@ -731,7 +720,7 @@ int _matches_name_criteria_caseless(const UChar *criteria, int32_t cr_len,
 					/* This character must be subsumed by the asterisk. */
 					_next_char(filename, ub_filename, fi_bnd);
 				}
-			} else if (acceptany || ! _char_compare(criteria, cr_bnd, filename, fi_bnd)) {
+			} else if (acceptany || !_char_compare(criteria, cr_bnd, filename, fi_bnd)) {
 				_next_char(criteria, ub_criteria, cr_bnd);
 				_next_char(filename, ub_filename, fi_bnd);
 			} else {
@@ -741,8 +730,8 @@ int _matches_name_criteria_caseless(const UChar *criteria, int32_t cr_len,
 					goto out;
 				} else {
 					element = _pop_ustack(&stack);
-					memcpy(cr_bnd, element->cr_bnd, 3*sizeof(int32_t));
-					memcpy(fi_bnd, element->fi_bnd, 3*sizeof(int32_t));
+					memcpy(cr_bnd, element->cr_bnd, 3 * sizeof(int32_t));
+					memcpy(fi_bnd, element->fi_bnd, 3 * sizeof(int32_t));
 					free(element);
 					ubrk_following(ub_criteria, cr_bnd[0]);
 					ubrk_following(ub_filename, fi_bnd[0]);
@@ -762,8 +751,8 @@ int _matches_name_criteria_caseless(const UChar *criteria, int32_t cr_len,
 		} else {
 			/* Pop an element off the stack. */
 			element = _pop_ustack(&stack);
-			memcpy(cr_bnd, element->cr_bnd, 3*sizeof(int32_t));
-			memcpy(fi_bnd, element->fi_bnd, 3*sizeof(int32_t));
+			memcpy(cr_bnd, element->cr_bnd, 3 * sizeof(int32_t));
+			memcpy(fi_bnd, element->fi_bnd, 3 * sizeof(int32_t));
 			free(element);
 			ubrk_following(ub_criteria, cr_bnd[0]);
 			ubrk_following(ub_filename, fi_bnd[0]);
@@ -788,7 +777,7 @@ void _next_char(const UChar *str, UBreakIterator *it, int32_t *pos)
 	pos[1] = ubrk_next(it);
 	if (pos[1] == -1) {
 		pos[1] = pos[0];
-		while(str[pos[1]] != 0)
+		while (str[pos[1]] != 0)
 			++pos[1];
 	}
 	pos[2] = pos[1] - pos[0];
@@ -800,14 +789,12 @@ void _next_char(const UChar *str, UBreakIterator *it, int32_t *pos)
 int _char_compare(const UChar *str1, int32_t *pos1, const UChar *str2, int32_t *pos2)
 {
 	const UChar *c1, *c1_end, *c2;
-	if (pos1[2] != pos2[2])
-		return 1;
+	if (pos1[2] != pos2[2]) return 1;
 	c1 = str1 + pos1[0];
 	c1_end = str1 + pos1[1];
 	c2 = str2 + pos2[0];
 	while (c1 < c1_end) {
-		if (*c1 != *c2)
-			return 1;
+		if (*c1 != *c2) return 1;
 		++c1;
 		++c2;
 	}
@@ -817,8 +804,7 @@ int _char_compare(const UChar *str1, int32_t *pos1, const UChar *str2, int32_t *
 void _destroy_ustack(filename_ustack_t **stack)
 {
 	filename_ustack_t *ptr, *next;
-	if (! stack)
-		return;
+	if (!stack) return;
 	ptr = *stack;
 	while (ptr) {
 		next = ptr->next;
@@ -829,11 +815,11 @@ void _destroy_ustack(filename_ustack_t **stack)
 
 int _push_ustack(filename_ustack_t **stack, filename_ustack_t *element)
 {
-	if (! stack) {
+	if (!stack) {
 		ltfsmsg(LTFS_ERR, 11164E);
 		return -1;
 	}
-	if (! *stack)
+	if (!*stack)
 		*stack = element;
 	else
 		(*stack)->next = element;
@@ -844,13 +830,13 @@ int _push_ustack(filename_ustack_t **stack, filename_ustack_t *element)
 filename_ustack_t *_pop_ustack(filename_ustack_t **stack)
 {
 	filename_ustack_t *prev = NULL, *top;
-	if (! stack) {
+	if (!stack) {
 		ltfsmsg(LTFS_ERR, 11165E);
 		return NULL;
 	}
-	for (top=*stack; top->next; top=top->next)
+	for (top = *stack; top->next; top = top->next)
 		prev = top;
-	if (! prev) {
+	if (!prev) {
 		/* Removing base */
 		*stack = NULL;
 		return top;
@@ -861,7 +847,6 @@ filename_ustack_t *_pop_ustack(filename_ustack_t **stack)
 
 bool _ustack_empty(filename_ustack_t *stack)
 {
-	if (! stack)
-		return true;
+	if (!stack) return true;
 	return false;
 }

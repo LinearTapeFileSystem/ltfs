@@ -49,23 +49,28 @@
 #ifndef __fs_helper_h
 #define __fs_helper_h
 
-#include "ltfs.h"
 #include "arch/filename_handling.h"
+#include "ltfs.h"
 
 /* Lock requests that can be passed to fs_path_lookup */
 #define LOCK_PARENT_CONTENTS_R (1)
 #define LOCK_PARENT_CONTENTS_W (1 << 1)
-#define LOCK_PARENT_META_R     (1 << 2)
-#define LOCK_PARENT_META_W     (1 << 3)
+#define LOCK_PARENT_META_R (1 << 2)
+#define LOCK_PARENT_META_W (1 << 3)
 #define LOCK_DENTRY_CONTENTS_R (1 << 4)
 #define LOCK_DENTRY_CONTENTS_W (1 << 5)
-#define LOCK_DENTRY_META_R     (1 << 6)
-#define LOCK_DENTRY_META_W     (1 << 7)
+#define LOCK_DENTRY_META_R (1 << 6)
+#define LOCK_DENTRY_META_W (1 << 7)
 
-struct dentry *fs_allocate_dentry(struct dentry *parent, const char *name, const char * platform_safe_name,
-	bool dir, bool readonly, bool allocate_uid, struct ltfs_index *idx);
+struct dentry *fs_allocate_dentry(struct dentry *parent,
+																	const char *name,
+																	const char *platform_safe_name,
+																	bool dir,
+																	bool readonly,
+																	bool allocate_uid,
+																	struct ltfs_index *idx);
 uint64_t fs_allocate_uid(struct ltfs_index *idx);
-int fs_update_platform_safe_names(struct dentry* basedir, struct ltfs_index *idx, struct name_list *list);
+int fs_update_platform_safe_names(struct dentry *basedir, struct ltfs_index *idx, struct name_list *list);
 bool fs_is_predecessor(struct dentry *d1, struct dentry *d2);
 uint64_t fs_get_used_blocks(struct dentry *d);
 void fs_dump_tree(struct dentry *root);
@@ -73,8 +78,8 @@ void fs_increment_file_count(struct ltfs_index *idx);
 void fs_decrement_file_count(struct ltfs_index *idx);
 int fs_init_inode(void);
 int fs_hash_sort_by_uid(struct name_list *a, struct name_list *b);
-struct name_list* fs_add_key_to_hash_table(struct name_list *list, struct dentry *add_entry, int *rc);
-struct name_list* fs_find_key_from_hash_table(struct name_list *list, const char *name, int *rc);
+struct name_list *fs_add_key_to_hash_table(struct name_list *list, struct dentry *add_entry, int *rc);
+struct name_list *fs_find_key_from_hash_table(struct name_list *list, const char *name, int *rc);
 void fs_gc_dentry(struct dentry *d);
 bool fs_is_percent_encode_required(const char *name);
 void fs_set_nametype(struct ltfs_name *name, char *str);

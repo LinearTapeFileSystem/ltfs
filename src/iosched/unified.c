@@ -55,13 +55,13 @@
  *************************************************************************************
  */
 
-#include "libltfs/ltfs.h"
-#include "libltfs/tape.h"
-#include "libltfs/ltfs_fsops_raw.h"
+#include "cache_manager.h"
+#include "libltfs/arch/time_internal.h"
 #include "libltfs/index_criteria.h"
 #include "libltfs/iosched_ops.h"
-#include "libltfs/arch/time_internal.h"
-#include "cache_manager.h"
+#include "libltfs/ltfs.h"
+#include "libltfs/ltfs_fsops_raw.h"
+#include "libltfs/tape.h"
 
 /**
  * Maximum number of requests targeting the Index Partition to keep before flushing
@@ -72,42 +72,46 @@
 /**
  * Each outstanding write request is in one of the following states.
  */
-enum request_state {
-	REQUEST_PARTIAL,  /**< Partially filled request, will not normally be written until full */
-	REQUEST_DP,       /**< Full request, ready to be written to the medium */
-	REQUEST_IP        /**< A request already written to the DP, waiting to be written to the IP */
+enum request_state
+{
+	REQUEST_PARTIAL, /**< Partially filled request, will not normally be written until full */
+	REQUEST_DP,			 /**< Full request, ready to be written to the medium */
+	REQUEST_IP			 /**< A request already written to the DP, waiting to be written to the IP */
 };
 
 /**
  * A read request. These are used internally by unified_read to queue up read requests and issue
  * them after releasing the dentry's iosched_lock.
  */
-struct read_request {
+struct read_request
+{
 	TAILQ_ENTRY(read_request) list; /**< Pointers for linked list of requests */
-	uint64_t offset;                /**< File offset for the read request */
-	char *buf;                      /**< Buffer which will receive data */
-	size_t count;                   /**< Number of bytes to read */
+	uint64_t offset;								/**< File offset for the read request */
+	char *buf;											/**< Buffer which will receive data */
+	size_t count;										/**< Number of bytes to read */
 };
 
 /**
  * A write request.
  */
-struct write_request {
+struct write_request
+{
 	TAILQ_ENTRY(write_request) list; /**< Pointers for linked list of requests */
-	uint64_t offset;                 /**< Starting file offset for this request */
-	size_t count;                    /**< Current request length, always <= cache block size */
-	void *write_cache;               /**< Cache block containing this request's data */
-	enum request_state state;        /**< Current state of the request */
+	uint64_t offset;								 /**< Starting file offset for this request */
+	size_t count;										 /**< Current request length, always <= cache block size */
+	void *write_cache;							 /**< Cache block containing this request's data */
+	enum request_state state;				 /**< Current state of the request */
 };
 
 /**
  * Per-dentry private data structure. It records a list of outstanding write requests
  * and associated data.
  */
-struct dentry_priv {
-	struct dentry *dentry;   /**< Dentry associated with this request list */
-	ltfs_mutex_t io_lock; /**< Lock controlling file I/O to this dentry */
-	uint64_t file_size;      /**< Real file size, including outstanding write requests */
+struct dentry_priv
+{
+	struct dentry *dentry; /**< Dentry associated with this request list */
+	ltfs_mutex_t io_lock;	 /**< Lock controlling file I/O to this dentry */
+	uint64_t file_size;		 /**< Real file size, including outstanding write requests */
 
 	/**
 	 * Index partition write flag. This is set if the file's name and size match the volume's
@@ -159,7 +163,8 @@ struct dentry_priv {
 /**
  * Main scheduler data structure. Each scheduler instance has exactly one of these.
  */
-struct unified_data {
+struct unified_data
+{
 	/**
 	 * Global scheduler lock. Any thread working on scheduler data structures must take this lock
 	 * for read. Taking this lock for write will stop all other scheduler activity, which
@@ -176,10 +181,10 @@ struct unified_data {
 	 * while holding this lock.
 	 */
 	ltfs_thread_mutex_t cache_lock;
-	ltfs_thread_cond_t  cache_cond; /**< Signal this variable when a cache block becomes available */
-	uint32_t cache_requests;   /**< Number of threads waiting for a cache block */
-	size_t cache_size;         /**< Size of each cache block */
-	size_t cache_blocks;       /**< Maximum cache block count */
+	ltfs_thread_cond_t cache_cond; /**< Signal this variable when a cache block becomes available */
+	uint32_t cache_requests;			 /**< Number of threads waiting for a cache block */
+	size_t cache_size;						 /**< Size of each cache block */
+	size_t cache_blocks;					 /**< Maximum cache block count */
 
 	/**
 	 * dentry_priv queue lock.
@@ -188,14 +193,14 @@ struct unified_data {
 	 * while holding this lock.
 	 */
 	ltfs_thread_mutex_t queue_lock;
-	ltfs_thread_cond_t  queue_cond; /**< Signal this variable when the dentry_priv lists are modified */
+	ltfs_thread_cond_t queue_cond; /**< Signal this variable when the dentry_priv lists are modified */
 
 	/* Lists of dentry_priv structures. Note that each dentry_priv may be in more than one of
 	 * these lists. */
 	TAILQ_HEAD(workingset_struct, dentry_priv) working_set; /**< Files with partial requests */
-	TAILQ_HEAD(writequeue_struct, dentry_priv) dp_queue;    /**< Files with full (DP) requests */
-	TAILQ_HEAD(indexqueue_struct, dentry_priv) ip_queue;    /**< Files with IP requests */
-	TAILQ_HEAD(extqueue_struct, dentry_priv) ext_queue;     /**< Files with dirty IP extents */
+	TAILQ_HEAD(writequeue_struct, dentry_priv) dp_queue;		/**< Files with full (DP) requests */
+	TAILQ_HEAD(indexqueue_struct, dentry_priv) ip_queue;		/**< Files with IP requests */
+	TAILQ_HEAD(extqueue_struct, dentry_priv) ext_queue;			/**< Files with dirty IP extents */
 
 	/* Queue lengths. These variables count the number of dentry_privs in each queue, not the
 	 * number of requests in each state.
@@ -207,50 +212,61 @@ struct unified_data {
 	/* Counters for various types of requests.
 	 * NOTE: these variables count write_requests, not dentry_priv structures, so they
 	 * DO NOT equal the lengths of the working_set/dp_queue/ip_queue lists! */
-	uint32_t ws_request_count; /**< Number of requests in REQUEST_PARTIAL state */
-	uint32_t dp_request_count; /**< Number of requests in REQUEST_DP state which will NOT change to IP state */
-	uint32_t ip_request_count; /**< Number of requests in REQUEST_IP state */
+	uint32_t ws_request_count;	 /**< Number of requests in REQUEST_PARTIAL state */
+	uint32_t dp_request_count;	 /**< Number of requests in REQUEST_DP state which will NOT change to IP state */
+	uint32_t ip_request_count;	 /**< Number of requests in REQUEST_IP state */
 
 	ltfs_thread_t writer_thread; /**< Background writer thread ID */
-	bool writer_keepalive;   /**< Used to terminate the background writer thread */
-	void *pool;              /**< Handle to the cache manager */
-	struct ltfs_volume *vol; /**< Each scheduler instance is associated with a single LTFS volume */
+	bool writer_keepalive;			 /**< Used to terminate the background writer thread */
+	void *pool;									 /**< Handle to the cache manager */
+	struct ltfs_volume *vol;		 /**< Each scheduler instance is associated with a single LTFS volume */
 
 	ltfs_mutex_t proflock;
-	FILE* profiler; /**< The file pointer for profiler */
+	FILE *profiler; /**< The file pointer for profiler */
 };
 
-
 /* Prototypes */
-int  _unified_get_dentry_priv(struct dentry *d, struct dentry_priv **dentry_priv,
-	struct unified_data *priv);
+int _unified_get_dentry_priv(struct dentry *d, struct dentry_priv **dentry_priv, struct unified_data *priv);
 ltfs_thread_return _unified_writer_thread(void *iosched_handle);
 void _unified_process_queue(enum request_state queue, struct unified_data *priv);
 void _unified_process_index_queue(struct unified_data *priv);
 void _unified_process_data_queue(enum request_state queue, struct unified_data *priv);
 void _unified_free_request(struct write_request *req, struct unified_data *priv);
-void _unified_update_alt_extentlist(struct extent_info *newext, struct dentry_priv *dpr,
-	struct unified_data *priv);
+void _unified_update_alt_extentlist(struct extent_info *newext, struct dentry_priv *dpr, struct unified_data *priv);
 void _unified_clear_alt_extentlist(bool save, struct dentry_priv *dpr, struct unified_data *priv);
-int  _unified_update_queue_membership(bool add, bool all, enum request_state queue,
-	 struct dentry_priv *dentry_priv, struct unified_data *priv);
+int _unified_update_queue_membership(
+		bool add, bool all, enum request_state queue, struct dentry_priv *dentry_priv, struct unified_data *priv);
 int _unified_cache_alloc(void **cache, struct dentry *d, struct unified_data *priv);
 void _unified_cache_free(void *cache, size_t count, struct unified_data *priv);
-ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count, void **cache,
-	bool ip_state, struct write_request *req, struct dentry *d, struct unified_data *priv);
-size_t _unified_update_request(const char *buf, off_t offset, size_t size,
-	struct dentry_priv *dpr, struct write_request *req, struct unified_data *priv);
-int _unified_merge_requests(struct write_request *dest, struct write_request *src,
-	void **spare_cache, struct dentry_priv *dpr, struct unified_data *priv);
+ssize_t _unified_insert_new_request(const char *buf,
+																		off_t offset,
+																		size_t count,
+																		void **cache,
+																		bool ip_state,
+																		struct write_request *req,
+																		struct dentry *d,
+																		struct unified_data *priv);
+size_t _unified_update_request(const char *buf,
+															 off_t offset,
+															 size_t size,
+															 struct dentry_priv *dpr,
+															 struct write_request *req,
+															 struct unified_data *priv);
+int _unified_merge_requests(struct write_request *dest,
+														struct write_request *src,
+														void **spare_cache,
+														struct dentry_priv *dpr,
+														struct unified_data *priv);
 int _unified_flush_unlocked(struct dentry *d, struct unified_data *priv);
 int _unified_flush_all(struct unified_data *priv);
-void _unified_free_dentry_priv_conditional(struct dentry *d, uint32_t target_handles,
-	struct unified_data *priv);
+void _unified_free_dentry_priv_conditional(struct dentry *d, uint32_t target_handles, struct unified_data *priv);
 void _unified_free_dentry_priv(struct dentry *d, struct unified_data *priv);
 void _unified_set_write_ip(struct dentry_priv *dpr, struct unified_data *priv);
 void _unified_unset_write_ip(struct dentry_priv *dpr, struct unified_data *priv);
-void _unified_handle_write_error(ssize_t write_ret, struct write_request *req,
-	struct dentry_priv *dpr, struct unified_data *priv);
+void _unified_handle_write_error(ssize_t write_ret,
+																 struct write_request *req,
+																 struct dentry_priv *dpr,
+																 struct unified_data *priv);
 int _unified_get_write_error(struct dentry_priv *dpr);
 int _unified_write_index_after_perm(int write_ret, struct unified_data *priv);
 
@@ -271,8 +287,8 @@ void *unified_init(struct ltfs_volume *vol)
 	pool_size = (ltfs_min_cache_size(vol) * 1024LL * 1024LL) / cache_size;
 	max_pool_size = (ltfs_max_cache_size(vol) * 1024LL * 1024LL) / cache_size;
 
-	priv = (struct unified_data *) calloc(1, sizeof(struct unified_data));
-	if (! priv) {
+	priv = (struct unified_data *)calloc(1, sizeof(struct unified_data));
+	if (!priv) {
 		ltfsmsg(LTFS_ERR, 10001E, "unified_init: scheduler private data");
 		return NULL;
 	}
@@ -281,7 +297,7 @@ void *unified_init(struct ltfs_volume *vol)
 	priv->cache_size = cache_size;
 	priv->cache_blocks = max_pool_size;
 	priv->pool = cache_manager_init(cache_size, pool_size, max_pool_size);
-	if (! priv->pool) {
+	if (!priv->pool) {
 		/* Cannot initialize scheduler: failed to initialize cache manager */
 		ltfsmsg(LTFS_ERR, 13005E);
 		free(priv);
@@ -376,7 +392,7 @@ void *unified_init(struct ltfs_volume *vol)
  */
 int unified_destroy(void *iosched_handle)
 {
-	struct unified_data *priv = (struct unified_data *) iosched_handle;
+	struct unified_data *priv = (struct unified_data *)iosched_handle;
 	struct dentry_priv *dpr, *aux;
 
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
@@ -391,9 +407,9 @@ int unified_destroy(void *iosched_handle)
 	ltfs_thread_join(priv->writer_thread);
 
 	/* Push IP extents to libltfs and free remaining dentry_priv structures */
-	if (! TAILQ_EMPTY(&priv->ext_queue)) {
+	if (!TAILQ_EMPTY(&priv->ext_queue)) {
 		TAILQ_FOREACH_SAFE(dpr, &priv->ext_queue, ext_queue, aux)
-			_unified_free_dentry_priv(dpr->dentry, priv);
+		_unified_free_dentry_priv(dpr->dentry, priv);
 	}
 
 	/* Free data structures */
@@ -457,8 +473,7 @@ int unified_close(struct dentry *d, bool flush, void *iosched_handle)
 
 	acquireread_mrsw(&priv->lock);
 	ltfs_mutex_lock(&d->iosched_lock);
-	if (flush)
-		ret = _unified_flush_unlocked(d, priv);
+	if (flush) ret = _unified_flush_unlocked(d, priv);
 	write_error = _unified_get_write_error(d->iosched_priv);
 	_unified_free_dentry_priv_conditional(d, 3, priv);
 	ltfs_mutex_unlock(&d->iosched_lock);
@@ -510,13 +525,12 @@ ssize_t unified_read(struct dentry *d, char *buf, size_t size, off_t offset, voi
 
 	acquireread_mrsw(&priv->lock);
 	ret = ltfs_get_volume_lock(false, priv->vol);
-	if (ret < 0)
-		goto out;
+	if (ret < 0) goto out;
 	releaseread_mrsw(&priv->vol->lock);
 
 	ltfs_mutex_lock(&d->iosched_lock);
 	dpr = d->iosched_priv;
-	if (! dpr) {
+	if (!dpr) {
 		ltfs_mutex_unlock(&d->iosched_lock);
 		ret = ltfs_fsraw_read(d, buf, size, offset, priv->vol);
 		goto out;
@@ -533,16 +547,16 @@ ssize_t unified_read(struct dentry *d, char *buf, size_t size, off_t offset, voi
 
 	/* Check for cached write data, queueing up read requests for any holes in the write
 	 * request queue. */
-	TAILQ_FOREACH(req, &dpr->requests, list) {
+	TAILQ_FOREACH(req, &dpr->requests, list)
+	{
 		/* Need to get more bytes before looking at this request? */
 		if ((uint64_t)offset < req->offset) {
 			to_read = req->offset - offset;
-			if (to_read > size)
-				to_read = size;
+			if (to_read > size) to_read = size;
 
 			/* Queue up a tape read */
 			rreq = malloc(sizeof(struct read_request));
-			if (! rreq) {
+			if (!rreq) {
 				ltfsmsg(LTFS_ERR, 10001E, "unified_read: read request");
 				ltfs_mutex_unlock(&d->iosched_lock);
 				ret = -LTFS_NO_MEMORY;
@@ -558,15 +572,13 @@ ssize_t unified_read(struct dentry *d, char *buf, size_t size, off_t offset, voi
 			size -= to_read;
 
 			/* Are we done? */
-			if (size == 0)
-				break;
+			if (size == 0) break;
 		}
 
 		/* Use some bytes from this request? */
 		if ((uint64_t)offset < req->offset + req->count) {
 			to_read = req->offset + req->count - offset;
-			if (to_read > size)
-				to_read = size;
+			if (to_read > size) to_read = size;
 			cache_obj = cache_manager_get_object_data(req->write_cache);
 			memcpy(buf, &cache_obj[offset - req->offset], to_read);
 			buf += to_read;
@@ -575,23 +587,23 @@ ssize_t unified_read(struct dentry *d, char *buf, size_t size, off_t offset, voi
 			size -= to_read;
 
 			/* Are we done? */
-			if (size == 0)
-				break;
+			if (size == 0) break;
 		}
 	}
 
 	/* Issue any queued reads down to libltfs */
-	if (! TAILQ_EMPTY(&requests)) {
+	if (!TAILQ_EMPTY(&requests)) {
 		ltfs_mutex_lock(&dpr->io_lock);
 		ltfs_mutex_unlock(&d->iosched_lock);
 		have_io_lock = true;
 
-		TAILQ_FOREACH_SAFE(rreq, &requests, list, rreq_aux) {
+		TAILQ_FOREACH_SAFE(rreq, &requests, list, rreq_aux)
+		{
 			to_read = rreq->count;
 			nread = 0;
 
 			/* Read from tape */
-			if (! past_eof) {
+			if (!past_eof) {
 				nread = ltfs_fsraw_read(d, rreq->buf, to_read, rreq->offset, priv->vol);
 				if (nread < 0) {
 					ltfs_mutex_unlock(&dpr->io_lock);
@@ -609,8 +621,7 @@ ssize_t unified_read(struct dentry *d, char *buf, size_t size, off_t offset, voi
 			 * write request. If libltfs didn't return rreq->count bytes, then that outstanding
 			 * write is past libltfs' EOF. In that case, the file will eventually be truncated
 			 * out, so fill any unused portion of this read request with zeros. */
-			if (to_read > 0)
-				memset(rreq->buf + nread, 0, to_read);
+			if (to_read > 0) memset(rreq->buf + nread, 0, to_read);
 
 			free(rreq);
 		}
@@ -620,7 +631,7 @@ ssize_t unified_read(struct dentry *d, char *buf, size_t size, off_t offset, voi
 	 * before or within the file offset range covered by the request list. Still need to
 	 * handle the part of the read request that lies past the end of the request list. */
 	if (size > 0) {
-		if (! have_io_lock) {
+		if (!have_io_lock) {
 			ltfs_mutex_lock(&dpr->io_lock);
 			ltfs_mutex_unlock(&d->iosched_lock);
 		}
@@ -658,8 +669,8 @@ out:
  *         this function is a bug. In the future, the scheduler write interface may change to
  *         return 0 on success.
  */
-ssize_t unified_write(struct dentry *d, const char *buf, size_t size, off_t offset,
-	bool isupdatetime, void *iosched_handle)
+ssize_t
+unified_write(struct dentry *d, const char *buf, size_t size, off_t offset, bool isupdatetime, void *iosched_handle)
 {
 	ssize_t ret = 0;
 	struct unified_data *priv = iosched_handle;
@@ -678,8 +689,7 @@ ssize_t unified_write(struct dentry *d, const char *buf, size_t size, off_t offs
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
 
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_ENTER(REQ_IOS_WRITE));
-	if (size == 0)
-		return 0;
+	if (size == 0) return 0;
 
 	acquireread_mrsw(&priv->lock);
 	ret = ltfs_get_volume_lock(false, priv->vol);
@@ -712,7 +722,7 @@ write_start:
 	}
 
 	/* Disallow writes if the medium is read-only */
-	if (! checked_readonly) {
+	if (!checked_readonly) {
 		ret = ltfs_get_tape_readonly(priv->vol);
 		if (ret < 0) {
 			ltfs_mutex_unlock(&d->iosched_lock);
@@ -726,8 +736,8 @@ write_start:
 	/* Update data placement based on file size */
 	{
 		const int readonly = ltfs_get_partition_readonly(ltfs_ip_id(priv->vol), priv->vol);
-		if (dpr->write_ip && ((offset + size) > index_criteria_get_max_filesize(priv->vol) ||
-			                  readonly == -LTFS_NO_SPACE || readonly == -LTFS_LESS_SPACE))
+		if (dpr->write_ip && ((offset + size) > index_criteria_get_max_filesize(priv->vol) || readonly == -LTFS_NO_SPACE ||
+													readonly == -LTFS_LESS_SPACE))
 			_unified_unset_write_ip(dpr, priv);
 	}
 
@@ -745,8 +755,7 @@ do_append:
 	 * This makes sequential writes O(1). */
 	if (offset >= last_offset) {
 		/* Try to append data to an existing request buffer */
-		if (req && req->count < priv->cache_size && offset == last_offset &&
-			req->state != REQUEST_IP) {
+		if (req && req->count < priv->cache_size && offset == last_offset && req->state != REQUEST_IP) {
 			copy_count = _unified_update_request(buf, offset, size, dpr, req, priv);
 			buf += copy_count;
 			offset += copy_count;
@@ -755,8 +764,7 @@ do_append:
 
 		/* Append new request(s) to the end of the queue */
 		while (size > 0) {
-			ret = _unified_insert_new_request(buf, offset, size, &spare_cache, false,
-				NULL, d, priv);
+			ret = _unified_insert_new_request(buf, offset, size, &spare_cache, false, NULL, d, priv);
 			if (ret < 0)
 				goto out;
 			else if (ret == 0)
@@ -771,13 +779,13 @@ do_append:
 
 	/* Not a simple append; need to traverse the request list */
 	prev_req = NULL;
-	TAILQ_FOREACH_SAFE(req, &dpr->requests, list, aux) {
+	TAILQ_FOREACH_SAFE(req, &dpr->requests, list, aux)
+	{
 		/* Skip this request the new write belongs farther down the queue */
-		if ((uint64_t)offset > req->offset + req->count)
-			continue;
+		if ((uint64_t)offset > req->offset + req->count) continue;
 
 		/* Insert request(s) before the current one */
-do_insert_before:
+	do_insert_before:
 		while (size > 0 && (uint64_t)offset < req->offset) {
 			ret = _unified_insert_new_request(buf, offset, size, &spare_cache, false, req, d, priv);
 			if (ret < 0)
@@ -794,8 +802,7 @@ do_insert_before:
 		/* Merge the current request into the previous one. Resolve any overlap between
 		 * the requests using bytes from the previous request. */
 		did_merge = _unified_merge_requests(prev_req, req, &spare_cache, dpr, priv);
-		if (did_merge == 2)
-			continue; /* req was freed */
+		if (did_merge == 2) continue; /* req was freed */
 
 		/* Handle overlaps between the new write and the current request. If the current request
 		 * is targeted at the DP, update it with new bytes. If the current request is targeted
@@ -808,8 +815,9 @@ do_insert_before:
 				goto do_insert_before;
 			}
 
-			if (req->state != REQUEST_IP && ((uint64_t)offset < req->offset + req->count ||
-				((uint64_t)offset == req->offset + req->count && req->count < priv->cache_size))) {
+			if (req->state != REQUEST_IP &&
+					((uint64_t)offset < req->offset + req->count ||
+					 ((uint64_t)offset == req->offset + req->count && req->count < priv->cache_size))) {
 				/* Update this request with bytes from the new write */
 				did_merge = true; /* Force another iteration, merge check might be needed */
 				copy_count = _unified_update_request(buf, offset, size, dpr, req, priv);
@@ -841,8 +849,13 @@ do_insert_before:
 					/* Split */
 					copy_offset = (offset - req->offset) + size;
 					ret = _unified_insert_new_request(req_cache + copy_offset,
-						req->offset + copy_offset, req->count - copy_offset,
-						&spare_cache, true, aux, d, priv);
+																						req->offset + copy_offset,
+																						req->count - copy_offset,
+																						&spare_cache,
+																						true,
+																						aux,
+																						d,
+																						priv);
 					if (ret < 0)
 						goto out;
 					else if (ret == 0)
@@ -856,12 +869,10 @@ do_insert_before:
 
 		prev_req = req;
 
-		if (size == 0 && ! did_merge)
-			goto out;
+		if (size == 0 && !did_merge) goto out;
 	}
 
-	if (size > 0)
-		goto do_append;
+	if (size > 0) goto do_append;
 
 out:
 	if (ret >= 0) {
@@ -869,19 +880,18 @@ out:
 		/* It's undesirable to fail the write here, as we have no way to roll back the cache
 		 * to its previous state. There's no harm in ignoring revalidation errors at this point. */
 		if (err == 0) {
-            if (isupdatetime) {
-                acquirewrite_mrsw(&d->meta_lock);
-                get_current_timespec(&d->modify_time);
-                d->change_time = d->modify_time;
-                releasewrite_mrsw(&d->meta_lock);
-            }
+			if (isupdatetime) {
+				acquirewrite_mrsw(&d->meta_lock);
+				get_current_timespec(&d->modify_time);
+				d->change_time = d->modify_time;
+				releasewrite_mrsw(&d->meta_lock);
+			}
 			/* Don't set index dirty flag here. Will be set later by ltfs_fsraw_add_extent. */
 			releaseread_mrsw(&priv->vol->lock);
 		}
 	}
 	ltfs_mutex_unlock(&d->iosched_lock);
-	if (spare_cache)
-		_unified_cache_free(spare_cache, 0, priv);
+	if (spare_cache) _unified_cache_free(spare_cache, 0, priv);
 	releaseread_mrsw(&priv->lock);
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_WRITE));
 	return (ret < 0) ? ret : (ssize_t)original_size;
@@ -950,8 +960,9 @@ int unified_truncate(struct dentry *d, off_t length, void *iosched_handle)
 	dpr = d->iosched_priv;
 	if (dpr) {
 		if ((uint64_t)length < dpr->file_size) {
-			if (! TAILQ_EMPTY(&dpr->requests)) {
-				TAILQ_FOREACH_REVERSE_SAFE(req, &dpr->requests, req_struct, list, aux) {
+			if (!TAILQ_EMPTY(&dpr->requests)) {
+				TAILQ_FOREACH_REVERSE_SAFE(req, &dpr->requests, req_struct, list, aux)
+				{
 					if (req->offset >= (uint64_t)length) {
 						TAILQ_REMOVE(&dpr->requests, req, list);
 						_unified_update_queue_membership(false, false, req->state, dpr, priv);
@@ -963,8 +974,9 @@ int unified_truncate(struct dentry *d, off_t length, void *iosched_handle)
 				}
 			}
 
-			if (! TAILQ_EMPTY(&dpr->alt_extentlist)) {
-				TAILQ_FOREACH_SAFE(ext, &dpr->alt_extentlist, list, ext_aux) {
+			if (!TAILQ_EMPTY(&dpr->alt_extentlist)) {
+				TAILQ_FOREACH_SAFE(ext, &dpr->alt_extentlist, list, ext_aux)
+				{
 					if (ext->fileoffset >= (uint64_t)length) {
 						TAILQ_REMOVE(&dpr->alt_extentlist, ext, list);
 						free(ext);
@@ -985,11 +997,9 @@ int unified_truncate(struct dentry *d, off_t length, void *iosched_handle)
 
 		/* Only reset write_ip if the new size is 0 (complete rewrite) to avoid interleaving
 		 * DP and IP extents in a single file. */
-		if (! dpr->write_ip && max_filesize > 0 && length == 0
-			&& matches_name_criteria && ! deleted)
+		if (!dpr->write_ip && max_filesize > 0 && length == 0 && matches_name_criteria && !deleted)
 			_unified_set_write_ip(dpr, priv);
-		else if (dpr->write_ip
-			&& (dpr->file_size > max_filesize || ! matches_name_criteria || deleted))
+		else if (dpr->write_ip && (dpr->file_size > max_filesize || !matches_name_criteria || deleted))
 			_unified_unset_write_ip(dpr, priv);
 
 		/* Tell libltfs about the truncate request */
@@ -1001,8 +1011,7 @@ int unified_truncate(struct dentry *d, off_t length, void *iosched_handle)
 	ltfs_mutex_unlock(&d->iosched_lock);
 	releaseread_mrsw(&priv->lock);
 
-	if (! dpr)
-		ret = ltfs_fsraw_truncate(d, length, priv->vol);
+	if (!dpr) ret = ltfs_fsraw_truncate(d, length, priv->vol);
 
 	ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EXIT(REQ_IOS_TRUNCATE));
 	return ret;
@@ -1028,14 +1037,13 @@ uint64_t unified_get_filesize(struct dentry *d, void *iosched_handle)
 	/* Try to get the file size from the dentry_priv */
 	acquireread_mrsw(&priv->lock);
 	ltfs_mutex_lock(&d->iosched_lock);
-	dentry_priv = (struct dentry_priv *) d->iosched_priv;
-	if (dentry_priv)
-		size = dentry_priv->file_size;
+	dentry_priv = (struct dentry_priv *)d->iosched_priv;
+	if (dentry_priv) size = dentry_priv->file_size;
 	ltfs_mutex_unlock(&d->iosched_lock);
 	releaseread_mrsw(&priv->lock);
 
 	/* If there was no dentry_priv, return file size as stored in the dentry structure */
-	if (! dentry_priv) {
+	if (!dentry_priv) {
 		acquireread_mrsw(&d->meta_lock);
 		size = d->size;
 		releaseread_mrsw(&d->meta_lock);
@@ -1058,7 +1066,7 @@ uint64_t unified_get_filesize(struct dentry *d, void *iosched_handle)
  */
 int unified_update_data_placement(struct dentry *d, void *iosched_handle)
 {
-	struct unified_data *priv = (struct unified_data *) iosched_handle;
+	struct unified_data *priv = (struct unified_data *)iosched_handle;
 	struct dentry_priv *dpr;
 	uint64_t filesize, max_filesize;
 	bool matches_name_criteria, deleted;
@@ -1071,8 +1079,7 @@ int unified_update_data_placement(struct dentry *d, void *iosched_handle)
 	ltfs_mutex_lock(&d->iosched_lock);
 
 	dpr = d->iosched_priv;
-	if (! dpr)
-		goto out;
+	if (!dpr) goto out;
 
 	filesize = dpr->file_size;
 	max_filesize = index_criteria_get_max_filesize(priv->vol);
@@ -1082,10 +1089,9 @@ int unified_update_data_placement(struct dentry *d, void *iosched_handle)
 	deleted = d->deleted;
 	releaseread_mrsw(&d->meta_lock);
 
-	if (! dpr->write_ip && max_filesize > 0 && filesize <= max_filesize && matches_name_criteria
-		&& ! deleted)
+	if (!dpr->write_ip && max_filesize > 0 && filesize <= max_filesize && matches_name_criteria && !deleted)
 		_unified_set_write_ip(dpr, priv);
-	else if (dpr->write_ip && (filesize > max_filesize || ! matches_name_criteria || deleted))
+	else if (dpr->write_ip && (filesize > max_filesize || !matches_name_criteria || deleted))
 		_unified_unset_write_ip(dpr, priv);
 
 out:
@@ -1106,7 +1112,7 @@ out:
  */
 ltfs_thread_return _unified_writer_thread(void *iosched_handle)
 {
-	struct unified_data *priv = (struct unified_data *) iosched_handle;
+	struct unified_data *priv = (struct unified_data *)iosched_handle;
 
 	while (true) {
 		ltfs_thread_mutex_lock(&priv->queue_lock);
@@ -1115,7 +1121,7 @@ ltfs_thread_return _unified_writer_thread(void *iosched_handle)
 			ltfs_thread_cond_wait(&priv->queue_cond, &priv->queue_lock);
 
 		ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_ENTER(REQ_IOS_IOSCHED));
-		if (! priv->writer_keepalive) {
+		if (!priv->writer_keepalive) {
 			ltfs_thread_mutex_unlock(&priv->queue_lock);
 			_unified_flush_all(priv);
 			_unified_process_queue(REQUEST_IP, priv);
@@ -1146,13 +1152,12 @@ ltfs_thread_return _unified_writer_thread(void *iosched_handle)
 
 void _unified_process_queue(enum request_state queue, struct unified_data *priv)
 {
-	if (! priv) {
+	if (!priv) {
 		ltfsmsg(LTFS_ERR, 10005E, "priv", __FUNCTION__);
 		return;
 	}
 
-	if (queue == REQUEST_IP)
-		/* Process Index Partition queue */
+	if (queue == REQUEST_IP) /* Process Index Partition queue */
 		_unified_process_index_queue(priv);
 	else
 		/* Process Data Partition / Working Set queue */
@@ -1169,23 +1174,24 @@ void _unified_process_index_queue(struct unified_data *priv)
 	partition_id = ltfs_ip_id(priv->vol);
 
 	acquirewrite_mrsw(&priv->lock);
-	TAILQ_FOREACH_SAFE(dentry_priv, &priv->ip_queue, ip_queue, dpr_aux) {
+	TAILQ_FOREACH_SAFE(dentry_priv, &priv->ip_queue, ip_queue, dpr_aux)
+	{
 		/* Remove dentry_priv from the IP queue, process its IP requests,
 		 * then free it if the request list is empty. */
 		_unified_update_queue_membership(false, true, REQUEST_IP, dentry_priv, priv);
 
-		TAILQ_FOREACH_SAFE(req, &dentry_priv->requests, list, req_aux) {
+		TAILQ_FOREACH_SAFE(req, &dentry_priv->requests, list, req_aux)
+		{
 			if (req->state == REQUEST_IP) {
 				char *cache_obj = cache_manager_get_object_data(req->write_cache);
 				struct extent_info *extent = calloc(1, sizeof(struct extent_info));
-				if (! extent) {
+				if (!extent) {
 					ltfsmsg(LTFS_ERR, 10001E, "_unified_process_index_queue: extent");
 					_unified_handle_write_error(-ENOMEM, req, dentry_priv, priv);
 					break;
 				}
 
-				ret = ltfs_fsraw_write_data(partition_id, cache_obj, req->count, 1,
-					&extent->start.block, priv->vol);
+				ret = ltfs_fsraw_write_data(partition_id, cache_obj, req->count, 1, &extent->start.block, priv->vol);
 				if (ret < 0) {
 					/* Index partition writer: failed to write data to the tape (%d) */
 					ltfsmsg(LTFS_WARN, 13013W, (int)ret);
@@ -1229,16 +1235,16 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 	 * Process only the 'count' entries that are known to be in the queue.
 	 * This is needed to guarantee a limited runtime.
 	 */
-	for (i=0; i<count; ++i) {
+	for (i = 0; i < count; ++i) {
 		struct dentry *dentry;
 		struct dentry_priv *dentry_priv;
 		struct req_struct local_req_list;
 		struct write_request *req, *req_aux;
 
 		ltfs_thread_mutex_lock(&priv->queue_lock);
-		if (! TAILQ_EMPTY(dq))
+		if (!TAILQ_EMPTY(dq))
 			dentry_priv = TAILQ_FIRST(dq);
-		else if (queue == REQUEST_PARTIAL && ! TAILQ_EMPTY(ws))
+		else if (queue == REQUEST_PARTIAL && !TAILQ_EMPTY(ws))
 			dentry_priv = TAILQ_FIRST(ws);
 		else {
 			ltfs_thread_mutex_unlock(&priv->queue_lock);
@@ -1247,7 +1253,7 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 		dentry = dentry_priv->dentry;
 		ltfs_thread_mutex_unlock(&priv->queue_lock);
 
-		if (! dentry) {
+		if (!dentry) {
 			/* Invalid backpointer to the dentry in the dentry_priv structure */
 			/* Note: this can only happen if there is a bug elsewhere. */
 			ltfsmsg(LTFS_ERR, 13011E);
@@ -1256,7 +1262,7 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 
 		ltfs_mutex_lock(&dentry->iosched_lock);
 		dentry_priv = dentry->iosched_priv;
-		if (! dentry_priv) {
+		if (!dentry_priv) {
 			/* Someone else took care of this dentry */
 			ltfs_mutex_unlock(&dentry->iosched_lock);
 			continue;
@@ -1264,22 +1270,20 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 
 		/* Remove dentry_priv from the DP queue, also from the working set if requested */
 		_unified_update_queue_membership(false, true, queue, dentry_priv, priv);
-		if (queue == REQUEST_PARTIAL)
-			_unified_update_queue_membership(false, true, REQUEST_DP, dentry_priv, priv);
+		if (queue == REQUEST_PARTIAL) _unified_update_queue_membership(false, true, REQUEST_DP, dentry_priv, priv);
 
 		/* Move entries to be processed into a private list */
 		TAILQ_INIT(&local_req_list);
 		ltfs_mutex_lock(&dentry_priv->io_lock);
-		TAILQ_FOREACH_SAFE(req, &dentry_priv->requests, list, req_aux) {
+		TAILQ_FOREACH_SAFE(req, &dentry_priv->requests, list, req_aux)
+		{
 			if (req->state == REQUEST_IP) {
-				_unified_merge_requests(TAILQ_PREV(req, req_struct, list), req, NULL,
-					dentry_priv, priv);
+				_unified_merge_requests(TAILQ_PREV(req, req_struct, list), req, NULL, dentry_priv, priv);
 
 			} else if (req->state == REQUEST_DP || queue == REQUEST_PARTIAL) {
 				if (dentry_priv->write_ip) {
 					char *cache_obj = cache_manager_get_object_data(req->write_cache);
-					ret = ltfs_fsraw_write(dentry, cache_obj, req->count, req->offset,
-						partition_id, false, priv->vol);
+					ret = ltfs_fsraw_write(dentry, cache_obj, req->count, req->offset, partition_id, false, priv->vol);
 					if (ret < 0) {
 						/* Data partition writer: failed to write data to the tape (%d) */
 						ltfsmsg(LTFS_WARN, 13014W, (int)ret);
@@ -1288,10 +1292,8 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 						break;
 					} else {
 						req->state = REQUEST_IP;
-						_unified_update_queue_membership(true, false, REQUEST_IP,
-							dentry_priv, priv);
-						_unified_merge_requests(TAILQ_PREV(req, req_struct, list), req, NULL,
-							dentry_priv, priv);
+						_unified_update_queue_membership(true, false, REQUEST_IP, dentry_priv, priv);
+						_unified_merge_requests(TAILQ_PREV(req, req_struct, list), req, NULL, dentry_priv, priv);
 					}
 
 				} else {
@@ -1306,11 +1308,11 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 		ltfs_mutex_unlock(&dentry->iosched_lock);
 
 		/* Send requests to tape */
-		if (! TAILQ_EMPTY(&local_req_list)) {
-			TAILQ_FOREACH_SAFE(req, &local_req_list, list, req_aux) {
+		if (!TAILQ_EMPTY(&local_req_list)) {
+			TAILQ_FOREACH_SAFE(req, &local_req_list, list, req_aux)
+			{
 				char *cache_obj = cache_manager_get_object_data(req->write_cache);
-				ret = ltfs_fsraw_write(dentry, cache_obj, req->count, req->offset,
-					partition_id, false, priv->vol);
+				ret = ltfs_fsraw_write(dentry, cache_obj, req->count, req->offset, partition_id, false, priv->vol);
 				if (ret < 0) {
 					/* Data partition writer: failed to write data to the tape (%d) */
 					ltfsmsg(LTFS_WARN, 13014W, (int)ret);
@@ -1323,7 +1325,7 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 			}
 
 			/* If there are requests left, then a write error (ret) occurred */
-			if (! TAILQ_EMPTY(&local_req_list)) {
+			if (!TAILQ_EMPTY(&local_req_list)) {
 				ltfs_mutex_unlock(&dentry_priv->io_lock);
 				ltfs_mutex_lock(&dentry->iosched_lock);
 				if (dentry->iosched_priv) {
@@ -1334,15 +1336,15 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 					dentry_priv = NULL;
 				ltfs_mutex_unlock(&dentry->iosched_lock);
 
-				TAILQ_FOREACH_SAFE(req, &local_req_list, list, req_aux) {
+				TAILQ_FOREACH_SAFE(req, &local_req_list, list, req_aux)
+				{
 					TAILQ_REMOVE(&local_req_list, req, list);
 					_unified_free_request(req, priv);
 				}
 			}
 		}
 
-		if (dentry_priv)
-			ltfs_mutex_unlock(&dentry_priv->io_lock);
+		if (dentry_priv) ltfs_mutex_unlock(&dentry_priv->io_lock);
 	}
 
 	releaseread_mrsw(&priv->lock);
@@ -1359,8 +1361,7 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
  * @return 0 on success or a negative value on error. This function always succeeds
  *         if alloc is false.
  */
-int _unified_get_dentry_priv(struct dentry *d, struct dentry_priv **dentry_priv,
-	struct unified_data *priv)
+int _unified_get_dentry_priv(struct dentry *d, struct dentry_priv **dentry_priv, struct unified_data *priv)
 {
 	int ret;
 	size_t max_filesize;
@@ -1372,7 +1373,7 @@ int _unified_get_dentry_priv(struct dentry *d, struct dentry_priv **dentry_priv,
 	}
 
 	dpr = calloc(1, sizeof(struct dentry_priv));
-	if (! dpr) {
+	if (!dpr) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
@@ -1403,8 +1404,7 @@ int _unified_get_dentry_priv(struct dentry *d, struct dentry_priv **dentry_priv,
 	dpr->write_ip = d->matches_name_criteria;
 	releaseread_mrsw(&d->meta_lock);
 	max_filesize = index_criteria_get_max_filesize(priv->vol);
-	if (max_filesize == 0 || dpr->file_size > max_filesize)
-		dpr->write_ip = false;
+	if (max_filesize == 0 || dpr->file_size > max_filesize) dpr->write_ip = false;
 
 	d->iosched_priv = dpr;
 	ltfs_fsraw_get_dentry(d, priv->vol);
@@ -1420,8 +1420,7 @@ int _unified_get_dentry_priv(struct dentry *d, struct dentry_priv **dentry_priv,
  * @param dpr Dentry_priv to modify.
  * @param priv I/O scheduler private data.
  */
-void _unified_update_alt_extentlist(struct extent_info *newext, struct dentry_priv *dpr,
-	struct unified_data *priv)
+void _unified_update_alt_extentlist(struct extent_info *newext, struct dentry_priv *dpr, struct unified_data *priv)
 {
 	bool newext_used = false, free_newext = false;
 	uint64_t newext_fileoffset_end, entry_fileoffset_end, fileoffset_diff;
@@ -1442,10 +1441,11 @@ void _unified_update_alt_extentlist(struct extent_info *newext, struct dentry_pr
 	blocksize = priv->vol->label->blocksize;
 
 	newext_fileoffset_end = newext->fileoffset + newext->bytecount;
-	TAILQ_FOREACH_SAFE(entry, &dpr->alt_extentlist, list, aux) {
+	TAILQ_FOREACH_SAFE(entry, &dpr->alt_extentlist, list, aux)
+	{
 		entry_fileoffset_end = entry->fileoffset + entry->bytecount;
 
-		if (! newext_used && newext->fileoffset <= entry->fileoffset) {
+		if (!newext_used && newext->fileoffset <= entry->fileoffset) {
 			TAILQ_INSERT_BEFORE(entry, newext, list);
 			newext_used = true;
 		}
@@ -1458,8 +1458,7 @@ void _unified_update_alt_extentlist(struct extent_info *newext, struct dentry_pr
 			entry_byteoffset_end = entry->byteoffset + entry->bytecount;
 			entry_blockcount = entry_byteoffset_end / blocksize;
 			if (newext->byteoffset == 0 && /* NOTE: assuming all extents are in the IP */
-				entry_byteoffset_end % blocksize == 0 &&
-				entry->start.block + entry_blockcount == newext->start.block) {
+					entry_byteoffset_end % blocksize == 0 && entry->start.block + entry_blockcount == newext->start.block) {
 				/* Append newext's bytes to this extent */
 				entry->bytecount += newext->bytecount;
 				newext_used = true;
@@ -1499,11 +1498,9 @@ void _unified_update_alt_extentlist(struct extent_info *newext, struct dentry_pr
 		}
 	}
 
-	if (! newext_used)
-		TAILQ_INSERT_TAIL(&dpr->alt_extentlist, newext, list);
+	if (!newext_used) TAILQ_INSERT_TAIL(&dpr->alt_extentlist, newext, list);
 
-	if (free_newext)
-		free(newext);
+	if (free_newext) free(newext);
 }
 
 /**
@@ -1517,17 +1514,18 @@ void _unified_clear_alt_extentlist(bool save, struct dentry_priv *dpr, struct un
 	int ret;
 	struct extent_info *ext, *aux;
 
-	if (! TAILQ_EMPTY(&dpr->alt_extentlist)) {
+	if (!TAILQ_EMPTY(&dpr->alt_extentlist)) {
 		if (save) {
-			TAILQ_FOREACH_SAFE(ext, &dpr->alt_extentlist, list, aux) {
+			TAILQ_FOREACH_SAFE(ext, &dpr->alt_extentlist, list, aux)
+			{
 				TAILQ_REMOVE(&dpr->alt_extentlist, ext, list);
 				ret = ltfs_fsraw_add_extent(dpr->dentry, ext, false, priv->vol);
-				if (ret < 0)
-					ltfsmsg(LTFS_WARN, 13021W, ret);
+				if (ret < 0) ltfsmsg(LTFS_WARN, 13021W, ret);
 				free(ext);
 			}
 		} else {
-			TAILQ_FOREACH_SAFE(ext, &dpr->alt_extentlist, list, aux) {
+			TAILQ_FOREACH_SAFE(ext, &dpr->alt_extentlist, list, aux)
+			{
 				TAILQ_REMOVE(&dpr->alt_extentlist, ext, list);
 				free(ext);
 			}
@@ -1551,8 +1549,8 @@ void _unified_clear_alt_extentlist(bool save, struct dentry_priv *dpr, struct un
  * @param priv Handle to the I/O scheduler data.
  * @return 0 on success or a negative value on error.
  */
-int _unified_update_queue_membership(bool add, bool all, enum request_state queue,
-	struct dentry_priv *dentry_priv, struct unified_data *priv)
+int _unified_update_queue_membership(
+		bool add, bool all, enum request_state queue, struct dentry_priv *dentry_priv, struct unified_data *priv)
 {
 	int ret = 0;
 
@@ -1564,7 +1562,7 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
 	switch (queue) {
 		case REQUEST_PARTIAL:
 			if (add) {
-				if (! dentry_priv->in_working_set) {
+				if (!dentry_priv->in_working_set) {
 					TAILQ_INSERT_TAIL(&priv->working_set, dentry_priv, working_set);
 					++priv->ws_count;
 				}
@@ -1587,14 +1585,13 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
 
 		case REQUEST_DP:
 			if (add) {
-				if (! dentry_priv->in_dp_queue) {
+				if (!dentry_priv->in_dp_queue) {
 					TAILQ_INSERT_TAIL(&priv->dp_queue, dentry_priv, dp_queue);
 					++priv->dp_count;
 					/* Tell background thread a write request is ready */
 					ltfs_thread_cond_signal(&priv->queue_cond);
 				}
-				if (! dentry_priv->write_ip)
-					++priv->dp_request_count;
+				if (!dentry_priv->write_ip) ++priv->dp_request_count;
 				++dentry_priv->in_dp_queue;
 				ltfs_profiler_add_entry(priv->profiler, &priv->proflock, IOSCHED_REQ_EVENT(REQ_IOS_ENQUEUE_DP));
 			} else {
@@ -1603,12 +1600,10 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
 					--priv->dp_count;
 				}
 				if (all) {
-					if (! dentry_priv->write_ip)
-						priv->dp_request_count -= dentry_priv->in_dp_queue;
+					if (!dentry_priv->write_ip) priv->dp_request_count -= dentry_priv->in_dp_queue;
 					dentry_priv->in_dp_queue = 0;
 				} else if (dentry_priv->in_dp_queue) {
-					if (! dentry_priv->write_ip)
-						--priv->dp_request_count;
+					if (!dentry_priv->write_ip) --priv->dp_request_count;
 					--dentry_priv->in_dp_queue;
 				}
 			}
@@ -1616,7 +1611,7 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
 
 		case REQUEST_IP:
 			if (add) {
-				if (! dentry_priv->in_ip_queue) {
+				if (!dentry_priv->in_ip_queue) {
 					TAILQ_INSERT_TAIL(&priv->ip_queue, dentry_priv, ip_queue);
 					++priv->ip_count;
 				}
@@ -1656,8 +1651,7 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
  */
 void _unified_free_request(struct write_request *req, struct unified_data *priv)
 {
-	if (req->write_cache)
-		_unified_cache_free(req->write_cache, req->count, priv);
+	if (req->write_cache) _unified_cache_free(req->write_cache, req->count, priv);
 	free(req);
 }
 
@@ -1703,7 +1697,7 @@ int _unified_cache_alloc(void **cache, struct dentry *d, struct unified_data *pr
 	++priv->cache_requests;
 	ltfs_thread_mutex_unlock(&priv->queue_lock);
 	releaseread_mrsw(&priv->lock);
-	while (! (*cache)) {
+	while (!(*cache)) {
 		ltfs_thread_cond_wait(&priv->cache_cond, &priv->cache_lock);
 		*cache = cache_manager_allocate_object(priv->pool);
 	}
@@ -1737,15 +1731,21 @@ int _unified_cache_alloc(void **cache, struct dentry *d, struct unified_data *pr
  *         or a negative value on error. d->iosched_lock is released if the function returns 0;
  *         all locks are released on error.
  */
-ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count, void **cache,
-	bool ip_state, struct write_request *req, struct dentry *d, struct unified_data *priv)
+ssize_t _unified_insert_new_request(const char *buf,
+																		off_t offset,
+																		size_t count,
+																		void **cache,
+																		bool ip_state,
+																		struct write_request *req,
+																		struct dentry *d,
+																		struct unified_data *priv)
 {
 	int ret;
 	struct dentry_priv *dpr = d->iosched_priv;
 	struct write_request *new_req = NULL;
 	size_t copy_count;
 
-	if (! (*cache)) {
+	if (!(*cache)) {
 		ret = _unified_cache_alloc(cache, d, priv);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 13017E, (int)ret);
@@ -1759,13 +1759,12 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
 
 	/* Copy data to the spare cache block */
 	copy_count = count;
-	if (copy_count > priv->cache_size)
-		copy_count = priv->cache_size;
+	if (copy_count > priv->cache_size) copy_count = priv->cache_size;
 	memcpy(cache_manager_get_object_data(*cache), buf, copy_count);
 
 	/* Store new write request */
-	new_req = (struct write_request*)calloc(1, sizeof(struct write_request));
-	if (! new_req) {
+	new_req = (struct write_request *)calloc(1, sizeof(struct write_request));
+	if (!new_req) {
 		ltfsmsg(LTFS_ERR, 13018E);
 		_unified_cache_free(*cache, 0, priv);
 		ltfs_mutex_unlock(&d->iosched_lock);
@@ -1787,8 +1786,7 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
 	_unified_update_queue_membership(true, false, new_req->state, dpr, priv);
 
 	/* Update file size */
-	if (new_req->offset + new_req->count > dpr->file_size)
-		dpr->file_size = new_req->offset + new_req->count;
+	if (new_req->offset + new_req->count > dpr->file_size) dpr->file_size = new_req->offset + new_req->count;
 
 	return (ssize_t)count;
 }
@@ -1808,30 +1806,32 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
  * @return Number of bytes written to req->write_cache from the beginning of buf.
  *         This function does not fail.
  */
-size_t _unified_update_request(const char *buf, off_t offset, size_t size,
-	struct dentry_priv *dpr, struct write_request *req, struct unified_data *priv)
+size_t _unified_update_request(const char *buf,
+															 off_t offset,
+															 size_t size,
+															 struct dentry_priv *dpr,
+															 struct write_request *req,
+															 struct unified_data *priv)
 {
 	size_t copy_offset; /* Offset into req->write_cache */
 	size_t copy_count;
 	char *req_cache;
 	struct write_request *w_req;
 
-	if (size == 0)
-		return 0;
+	if (size == 0) return 0;
 
 	req_cache = cache_manager_get_object_data(req->write_cache);
 
 	copy_offset = offset - req->offset;
 	copy_count = (req->offset + priv->cache_size) - offset;
-	if (copy_count > size)
-		copy_count = size;
+	if (copy_count > size) copy_count = size;
 
 	memcpy(req_cache + copy_offset, buf, copy_count);
-	if (copy_offset + copy_count > req->count)
-		req->count = copy_offset + copy_count;
+	if (copy_offset + copy_count > req->count) req->count = copy_offset + copy_count;
 
 	if (req->state == REQUEST_PARTIAL && req->count == priv->cache_size) {
-		TAILQ_FOREACH(w_req, &dpr->requests, list) {
+		TAILQ_FOREACH(w_req, &dpr->requests, list)
+		{
 			if (w_req->state == REQUEST_PARTIAL && w_req->offset <= (uint64_t)offset) {
 				_unified_update_queue_membership(false, false, REQUEST_PARTIAL, dpr, priv);
 				w_req->state = REQUEST_DP;
@@ -1841,8 +1841,7 @@ size_t _unified_update_request(const char *buf, off_t offset, size_t size,
 	}
 
 	/* Update file size */
-	if (req->offset + req->count > dpr->file_size)
-		dpr->file_size = req->offset + req->count;
+	if (req->offset + req->count > dpr->file_size) dpr->file_size = req->offset + req->count;
 
 	return copy_count;
 }
@@ -1861,15 +1860,17 @@ size_t _unified_update_request(const char *buf, off_t offset, size_t size,
  * @param priv I/O scheduler private data.
  * @return 2 if src was freed, 1 if it was modified, 0 otherwise.
  */
-int _unified_merge_requests(struct write_request *dest, struct write_request *src,
-	void **spare_cache, struct dentry_priv *dpr, struct unified_data *priv)
+int _unified_merge_requests(struct write_request *dest,
+														struct write_request *src,
+														void **spare_cache,
+														struct dentry_priv *dpr,
+														struct unified_data *priv)
 {
 	int ret = 0;
 	char *src_cache;
 	size_t copy_offset, copy_count;
 
-	if (! dest || src->offset > dest->offset + dest->count)
-		return 0;
+	if (!dest || src->offset > dest->offset + dest->count) return 0;
 
 	src_cache = cache_manager_get_object_data(src->write_cache);
 	copy_offset = (dest->offset + dest->count) - src->offset;
@@ -1880,8 +1881,8 @@ int _unified_merge_requests(struct write_request *dest, struct write_request *sr
 	if (dest->state != src->state && (dest->state == REQUEST_IP || src->state == REQUEST_IP))
 		copy_count = 0;
 	else if (dest->count < priv->cache_size && src->count > copy_offset)
-		copy_count = _unified_update_request(src_cache + copy_offset,
-			src->offset + copy_offset, src->count - copy_offset, dpr, dest, priv);
+		copy_count = _unified_update_request(
+				src_cache + copy_offset, src->offset + copy_offset, src->count - copy_offset, dpr, dest, priv);
 	else
 		copy_count = 0;
 
@@ -1902,7 +1903,7 @@ int _unified_merge_requests(struct write_request *dest, struct write_request *sr
 			ret = 2;
 			TAILQ_REMOVE(&dpr->requests, src, list);
 			_unified_update_queue_membership(false, false, src->state, dpr, priv);
-			if (! spare_cache || *spare_cache)
+			if (!spare_cache || *spare_cache)
 				_unified_free_request(src, priv);
 			else {
 				*spare_cache = src->write_cache;
@@ -1936,16 +1937,13 @@ int _unified_flush_unlocked(struct dentry *d, struct unified_data *priv)
 	dp_id = ltfs_dp_id(priv->vol);
 
 	dpr = d->iosched_priv;
-	if (! dpr)
-		return 0;
+	if (!dpr) return 0;
 
 	/* Check for previous write errors */
 	ret = _unified_get_write_error(dpr);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
-	if (TAILQ_EMPTY(&dpr->requests))
-		return 0;
+	if (TAILQ_EMPTY(&dpr->requests)) return 0;
 
 	/* Remove dpr from the DP queue and working set */
 	_unified_update_queue_membership(false, true, REQUEST_DP, dpr, priv);
@@ -1953,7 +1951,8 @@ int _unified_flush_unlocked(struct dentry *d, struct unified_data *priv)
 
 	ltfs_mutex_lock(&dpr->io_lock);
 
-	TAILQ_FOREACH_SAFE(req, &dpr->requests, list, aux) {
+	TAILQ_FOREACH_SAFE(req, &dpr->requests, list, aux)
+	{
 		if (req->state == REQUEST_IP)
 			_unified_merge_requests(TAILQ_PREV(req, req_struct, list), req, NULL, dpr, priv);
 		else {
@@ -1996,8 +1995,9 @@ int _unified_flush_all(struct unified_data *priv)
 
 	acquirewrite_mrsw(&priv->lock);
 
-	if (! TAILQ_EMPTY(&priv->dp_queue)) {
-		TAILQ_FOREACH_SAFE(dpr, &priv->dp_queue, dp_queue, aux) {
+	if (!TAILQ_EMPTY(&priv->dp_queue)) {
+		TAILQ_FOREACH_SAFE(dpr, &priv->dp_queue, dp_queue, aux)
+		{
 			ret = _unified_flush_unlocked(dpr->dentry, priv);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 13020E, dpr->dentry->platform_safe_name, ret);
@@ -2007,8 +2007,9 @@ int _unified_flush_all(struct unified_data *priv)
 		}
 	}
 
-	if (! TAILQ_EMPTY(&priv->working_set)) {
-		TAILQ_FOREACH_SAFE(dpr, &priv->working_set, working_set, aux) {
+	if (!TAILQ_EMPTY(&priv->working_set)) {
+		TAILQ_FOREACH_SAFE(dpr, &priv->working_set, working_set, aux)
+		{
 			ret = _unified_flush_unlocked(dpr->dentry, priv);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 13020E, dpr->dentry->platform_safe_name, ret);
@@ -2033,8 +2034,7 @@ int _unified_flush_all(struct unified_data *priv)
  * @param target_handles Only free the dentry_priv if the dentry has this many handles or fewer.
  * @param priv I/O scheduler private data.
  */
-void _unified_free_dentry_priv_conditional(struct dentry *d, uint32_t target_handles,
-	struct unified_data *priv)
+void _unified_free_dentry_priv_conditional(struct dentry *d, uint32_t target_handles, struct unified_data *priv)
 {
 	uint32_t numhandles;
 	struct dentry_priv *dpr;
@@ -2044,8 +2044,7 @@ void _unified_free_dentry_priv_conditional(struct dentry *d, uint32_t target_han
 	releaseread_mrsw(&d->meta_lock);
 
 	dpr = d->iosched_priv;
-	if (dpr && numhandles <= target_handles && TAILQ_EMPTY(&dpr->requests) &&
-		TAILQ_EMPTY(&dpr->alt_extentlist)) {
+	if (dpr && numhandles <= target_handles && TAILQ_EMPTY(&dpr->requests) && TAILQ_EMPTY(&dpr->alt_extentlist)) {
 		/* Take I/O lock first. The background thread could be processing this dentry */
 		ltfs_mutex_lock(&dpr->io_lock);
 		ltfs_mutex_unlock(&dpr->io_lock);
@@ -2070,19 +2069,16 @@ void _unified_free_dentry_priv(struct dentry *d, struct unified_data *priv)
 {
 	struct dentry_priv *dpr = d->iosched_priv;
 
-	if (! dpr)
-		return;
+	if (!dpr) return;
 
-	if (! TAILQ_EMPTY(&dpr->requests))
-		ltfsmsg(LTFS_WARN, 13022W);
+	if (!TAILQ_EMPTY(&dpr->requests)) ltfsmsg(LTFS_WARN, 13022W);
 
 	/* Wait for background thread to finish flushing requests */
 	ltfs_mutex_lock(&dpr->io_lock);
 	ltfs_mutex_unlock(&dpr->io_lock);
 
 	/* Sent alt_extentlist to libltfs */
-	if (dpr->write_ip && ! TAILQ_EMPTY(&dpr->alt_extentlist))
-		_unified_clear_alt_extentlist(true, dpr, priv);
+	if (dpr->write_ip && !TAILQ_EMPTY(&dpr->alt_extentlist)) _unified_clear_alt_extentlist(true, dpr, priv);
 
 	ltfs_mutex_destroy(&dpr->write_error_lock);
 	ltfs_mutex_destroy(&dpr->io_lock);
@@ -2127,7 +2123,8 @@ void _unified_unset_write_ip(struct dentry_priv *dpr, struct unified_data *priv)
 
 	/* Remove dentry_priv from the ip_queue */
 	if (dpr->in_ip_queue) {
-		TAILQ_FOREACH_SAFE(req, &dpr->requests, list, req_aux) {
+		TAILQ_FOREACH_SAFE(req, &dpr->requests, list, req_aux)
+		{
 			if (req->state == REQUEST_IP) {
 				TAILQ_REMOVE(&dpr->requests, req, list);
 				_unified_free_request(req, priv);
@@ -2147,8 +2144,7 @@ void _unified_unset_write_ip(struct dentry_priv *dpr, struct unified_data *priv)
 	}
 
 	/* Clear the alt_extentlist */
-	if (! TAILQ_EMPTY(&dpr->alt_extentlist))
-		_unified_clear_alt_extentlist(false, dpr, priv);
+	if (!TAILQ_EMPTY(&dpr->alt_extentlist)) _unified_clear_alt_extentlist(false, dpr, priv);
 }
 
 /**
@@ -2167,8 +2163,10 @@ void _unified_unset_write_ip(struct dentry_priv *dpr, struct unified_data *priv)
  * @param priv I/O scheduler data.
  * @return true if the error was fatal, false otherwise.
  */
-void _unified_handle_write_error(ssize_t write_ret, struct write_request *failed_req,
-	struct dentry_priv *dpr, struct unified_data *priv)
+void _unified_handle_write_error(ssize_t write_ret,
+																 struct write_request *failed_req,
+																 struct dentry_priv *dpr,
+																 struct unified_data *priv)
 {
 	struct write_request *req, *aux;
 	bool clear_dp = false, clear_ip = false;
@@ -2177,10 +2175,9 @@ void _unified_handle_write_error(ssize_t write_ret, struct write_request *failed
 	 * an out of space error. That is not a hard failure, as the data is known to be on the DP
 	 * at that point. Other IP errors are worth reporting because they may affect LTFS' ability
 	 * to make the volume consistent. */
-	if (! (failed_req->state == REQUEST_IP && (write_ret == -LTFS_NO_SPACE || write_ret == -LTFS_LESS_SPACE))) {
+	if (!(failed_req->state == REQUEST_IP && (write_ret == -LTFS_NO_SPACE || write_ret == -LTFS_LESS_SPACE))) {
 		ltfs_mutex_lock(&dpr->write_error_lock);
-		if (dpr->write_error == 0)
-			dpr->write_error = write_ret;
+		if (dpr->write_error == 0) dpr->write_error = write_ret;
 		ltfs_mutex_unlock(&dpr->write_error_lock);
 	}
 
@@ -2190,13 +2187,13 @@ void _unified_handle_write_error(ssize_t write_ret, struct write_request *failed
 	if (failed_req->state == REQUEST_IP) {
 		clear_ip = true;
 		if ((write_ret != -LTFS_NO_SPACE && write_ret != -LTFS_LESS_SPACE) ||
-			ltfs_get_partition_readonly(ltfs_dp_id(priv->vol), priv->vol) < 0) {
+				ltfs_get_partition_readonly(ltfs_dp_id(priv->vol), priv->vol) < 0) {
 			clear_dp = true;
 		}
 	} else {
 		clear_dp = true;
 		if ((write_ret != -LTFS_NO_SPACE && write_ret != -LTFS_LESS_SPACE) ||
-			ltfs_get_partition_readonly(ltfs_ip_id(priv->vol), priv->vol) < 0) {
+				ltfs_get_partition_readonly(ltfs_ip_id(priv->vol), priv->vol) < 0) {
 			clear_ip = true;
 		}
 	}
@@ -2207,14 +2204,14 @@ void _unified_handle_write_error(ssize_t write_ret, struct write_request *failed
 	releaseread_mrsw(&dpr->dentry->meta_lock);
 
 	/* Remove requests from the selected partitions */
-	if (! TAILQ_EMPTY(&dpr->requests)) {
+	if (!TAILQ_EMPTY(&dpr->requests)) {
 		if (clear_dp) {
 			_unified_update_queue_membership(false, true, REQUEST_DP, dpr, priv);
 			_unified_update_queue_membership(false, true, REQUEST_PARTIAL, dpr, priv);
 		}
-		if (clear_ip)
-			_unified_update_queue_membership(false, true, REQUEST_IP, dpr, priv);
-		TAILQ_FOREACH_SAFE(req, &dpr->requests, list, aux) {
+		if (clear_ip) _unified_update_queue_membership(false, true, REQUEST_IP, dpr, priv);
+		TAILQ_FOREACH_SAFE(req, &dpr->requests, list, aux)
+		{
 			if ((req->state == REQUEST_IP && clear_ip) || (req->state != REQUEST_IP && clear_dp)) {
 				TAILQ_REMOVE(&dpr->requests, req, list);
 				_unified_free_request(req, priv);
@@ -2260,8 +2257,7 @@ int _unified_write_index_after_perm(int write_ret, struct unified_data *priv)
 
 	ltfsmsg(LTFS_INFO, 13024I, write_ret);
 	ret = tape_set_cart_volume_lock_status(priv->vol, PWE_MAM_DP);
-	if (ret < 0)
-		ltfsmsg(LTFS_ERR, 13026E, "update MAM", ret);
+	if (ret < 0) ltfsmsg(LTFS_ERR, 13026E, "update MAM", ret);
 
 	blocksize = ltfs_get_blocksize(priv->vol);
 
@@ -2279,8 +2275,11 @@ int _unified_write_index_after_perm(int write_ret, struct unified_data *priv)
 	}
 
 	if (last_index_pos > err_pos.block) {
-		ltfsmsg(LTFS_INFO, 13027I, (int)err_pos.partition,
-				(unsigned long long)err_pos.block, (unsigned long long)last_index_pos);
+		ltfsmsg(LTFS_INFO,
+						13027I,
+						(int)err_pos.partition,
+						(unsigned long long)err_pos.block,
+						(unsigned long long)last_index_pos);
 		err_pos.block = last_index_pos + 1;
 	}
 
@@ -2307,33 +2306,30 @@ int unified_set_profiler(char *work_dir, bool enable, void *iosched_handle)
 {
 	int rc = 0;
 	char *path;
-	FILE * p = NULL;
+	FILE *p = NULL;
 	struct timer_info timerinfo;
 	struct unified_data *priv = iosched_handle;
 
 	if (enable) {
-		if (priv->profiler)
-			return 0;
+		if (priv->profiler) return 0;
 
-		if(!work_dir)
-			return -LTFS_BAD_ARG;
+		if (!work_dir) return -LTFS_BAD_ARG;
 
-		rc = asprintf(&path, "%s/%s%s%s", work_dir, IOSCHED_PROFILER_BASE,
-					  priv->vol->label->vol_uuid, PROFILER_EXTENSION);
+		rc = asprintf(&path, "%s/%s%s%s", work_dir, IOSCHED_PROFILER_BASE, priv->vol->label->vol_uuid, PROFILER_EXTENSION);
 		if (rc < 0) {
 			ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 			return -LTFS_NO_MEMORY;
 		}
 
-		arch_fopen(path, PROFILER_FILE_MODE,p);
+		arch_fopen(path, PROFILER_FILE_MODE, p);
 
 		free(path);
 
-		if (! p)
+		if (!p)
 			rc = -LTFS_FILE_ERR;
 		else {
 			get_timer_info(&timerinfo);
-			fwrite((void*)&timerinfo, sizeof(timerinfo), 1, p);
+			fwrite((void *)&timerinfo, sizeof(timerinfo), 1, p);
 			priv->profiler = p;
 			rc = 0;
 		}
@@ -2348,14 +2344,14 @@ int unified_set_profiler(char *work_dir, bool enable, void *iosched_handle)
 }
 
 struct iosched_ops unified_ops = {
-	.init         = unified_init,
-	.destroy      = unified_destroy,
-	.open         = unified_open,
-	.close        = unified_close,
-	.read         = unified_read,
-	.write        = unified_write,
-	.flush        = unified_flush,
-	.truncate     = unified_truncate,
+	.init = unified_init,
+	.destroy = unified_destroy,
+	.open = unified_open,
+	.close = unified_close,
+	.read = unified_read,
+	.write = unified_write,
+	.flush = unified_flush,
+	.truncate = unified_truncate,
 	.get_filesize = unified_get_filesize,
 	.update_data_placement = unified_update_data_placement,
 	.set_profiler = unified_set_profiler,

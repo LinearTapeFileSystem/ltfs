@@ -49,12 +49,13 @@
 #define __periodic_sync_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-int periodic_sync_thread_init(int sec, struct ltfs_volume *vol);
-int periodic_sync_thread_destroy(void* syncer_handle);
-bool periodic_sync_thread_initialized(void* syncer_handle);
+	int periodic_sync_thread_init(int sec, struct ltfs_volume *vol);
+	int periodic_sync_thread_destroy(void *syncer_handle);
+	bool periodic_sync_thread_initialized(void *syncer_handle);
 
 #ifdef __cplusplus
 }

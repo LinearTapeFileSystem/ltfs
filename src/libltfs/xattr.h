@@ -59,11 +59,12 @@
 #define __xattr_h__
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #ifdef __FreeBSD__
-#include "libltfs/arch/freebsd/xattr.h"
+#	include "libltfs/arch/freebsd/xattr.h"
 #endif
 
 #include "fuse.h"
@@ -71,24 +72,21 @@ extern "C" {
 
 #define LTFS_PRIVATE_PREFIX "ltfs."
 
-/* Explicitly export functions as utility */
-int xattr_get_string(const char *val, char **outval, const char *msg);
-int xattr_get_u64(uint64_t val, char **outval, const char *msg);
+	/* Explicitly export functions as utility */
+	int xattr_get_string(const char *val, char **outval, const char *msg);
+	int xattr_get_u64(uint64_t val, char **outval, const char *msg);
 
-/* Official functions to export */
-int xattr_set(struct dentry *d, const char *name, const char *value, size_t size, int flags,
-	struct ltfs_volume *vol);
-int xattr_get(struct dentry *d, const char *name, char *value, size_t size,
-	struct ltfs_volume *vol);
-int xattr_list(struct dentry *d, char *list, size_t size, struct ltfs_volume *vol);
-int xattr_remove(struct dentry *d, const char *name, struct ltfs_volume *vol);
+	/* Official functions to export */
+	int xattr_set(struct dentry *d, const char *name, const char *value, size_t size, int flags, struct ltfs_volume *vol);
+	int xattr_get(struct dentry *d, const char *name, char *value, size_t size, struct ltfs_volume *vol);
+	int xattr_list(struct dentry *d, char *list, size_t size, struct ltfs_volume *vol);
+	int xattr_remove(struct dentry *d, const char *name, struct ltfs_volume *vol);
 
-/** For internal use only */
-int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t size,
-	struct xattr_info *xattr);
-int xattr_do_remove(struct dentry *d, const char *name, bool force, struct ltfs_volume *vol);
-const char *xattr_strip_name(const char *name);
-int xattr_set_mountpoint_length(struct dentry *d, const char* value, size_t size);
+	/** For internal use only */
+	int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t size, struct xattr_info *xattr);
+	int xattr_do_remove(struct dentry *d, const char *name, bool force, struct ltfs_volume *vol);
+	const char *xattr_strip_name(const char *name);
+	int xattr_set_mountpoint_length(struct dentry *d, const char *value, size_t size);
 
 #ifdef __cplusplus
 }

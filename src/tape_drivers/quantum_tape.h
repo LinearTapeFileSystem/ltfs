@@ -47,34 +47,35 @@
 *************************************************************************************
 */
 
-#include <stdlib.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #include "tape_drivers/spc_op_codes.h"
 #include "tape_drivers/ssc_op_codes.h"
 #include "tape_drivers/tape_drivers.h"
 
-#include "libltfs/ltfslogging.h"
 #include "libltfs/ltfs_error.h"
+#include "libltfs/ltfslogging.h"
 
 #ifndef __quantum_tape_h
 
-#define __quantum_tape_h
+#	define __quantum_tape_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#	ifdef __cplusplus
+extern "C"
+{
+#	endif
 
-#define QUANTUM_VENDOR_ID "QUANTUM"
+#	define QUANTUM_VENDOR_ID "QUANTUM"
 
-extern struct error_table quantum_tape_errors[];
+	extern struct error_table quantum_tape_errors[];
 
-int quantum_tape_init_timeout(struct timeout_tape** table, int type);
+	int quantum_tape_init_timeout(struct timeout_tape **table, int type);
 
-extern struct supported_device *quantum_supported_drives[];
+	extern struct supported_device *quantum_supported_drives[];
 
-#ifdef __cplusplus
+#	ifdef __cplusplus
 }
-#endif
+#	endif
 
-#endif // __quantum_tape_h
+#endif	// __quantum_tape_h

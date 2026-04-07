@@ -52,24 +52,23 @@
 */
 
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
+#	include "arch/win/win_util.h"
 #endif
 #include <stdlib.h>
 #include <string.h>
 #ifndef mingw_PLATFORM
-#include <dlfcn.h>
+#	include <dlfcn.h>
 #endif
 #include <errno.h>
 
+#include "config_file.h"
+#include "kmi.h"
 #include "libltfs/ltfs_error.h"
 #include "libltfs/ltfslogging.h"
-#include "config_file.h"
 #include "plugin.h"
 #include "tape.h"
-#include "kmi.h"
 
-int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
-	struct config_file *config)
+int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name, struct config_file *config)
 {
 	int ret;
 	const char *lib_path, *message_bundle_name;
@@ -85,21 +84,21 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 	memset(pl, 0, sizeof(*pl));
 
 	lib_path = config_file_get_lib(type, name, config);
-	if (! lib_path) {
+	if (!lib_path) {
 		ltfsmsg(LTFS_ERR, 11260E, name);
 		return -LTFS_NO_PLUGIN;
 	}
 
 	pl->lib_handle = dlopen(lib_path, RTLD_NOW);
-	if (! pl->lib_handle) {
-#ifdef _MSC_VER	
+	if (!pl->lib_handle) {
+#ifdef _MSC_VER
 		char *err = dlerror();
-		ltfsmsg(LTFS_ERR, 11261E,err);
+		ltfsmsg(LTFS_ERR, 11261E, err);
 		free(err);
 #else
 		ltfsmsg(LTFS_ERR, 11261E, dlerror());
 
-#endif // _MSC_VER
+#endif	// _MSC_VER
 		return -LTFS_PLUGIN_LOAD;
 	}
 
@@ -107,58 +106,58 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 	ltfsmsg(LTFS_INFO, 17085I, name, type);
 
 	/* Make sure the plugin knows how to describe its supported operations */
-	if (! strcmp(type, "iosched"))
+	if (!strcmp(type, "iosched"))
 		get_ops = dlsym(pl->lib_handle, "iosched_get_ops");
-	else if (! strcmp(type, "tape"))
+	else if (!strcmp(type, "tape"))
 		get_ops = dlsym(pl->lib_handle, "tape_dev_get_ops");
-	else if (! strcmp(type, "changer"))
+	else if (!strcmp(type, "changer"))
 		get_ops = dlsym(pl->lib_handle, "changer_get_ops");
-	else if (! strcmp(type, "dcache"))
+	else if (!strcmp(type, "dcache"))
 		get_ops = dlsym(pl->lib_handle, "dcache_get_ops");
-	else if (! strcmp(type, "kmi"))
+	else if (!strcmp(type, "kmi"))
 		get_ops = dlsym(pl->lib_handle, "kmi_get_ops");
-	else if (! strcmp(type, "crepos"))
+	else if (!strcmp(type, "crepos"))
 		get_ops = dlsym(pl->lib_handle, "crepos_get_ops");
 	/* config_file_get_lib already verified that "type" contains one of the values above */
 
-	if (! get_ops) {
-#ifdef _MSC_VER	
+	if (!get_ops) {
+#ifdef _MSC_VER
 		char *err = dlerror();
 		ltfsmsg(LTFS_ERR, 11263E, err);
 		free(err);
 #else
 		ltfsmsg(LTFS_ERR, 11263E, dlerror());
 
-#endif // _MSC_VER
+#endif	// _MSC_VER
 		dlclose(pl->lib_handle);
 		pl->lib_handle = NULL;
 		return -LTFS_PLUGIN_LOAD;
 	}
 
 	/* Make sure the plugin knows how to describe its message bundle (if any) */
-	if (! strcmp(type, "iosched"))
+	if (!strcmp(type, "iosched"))
 		get_messages = dlsym(pl->lib_handle, "iosched_get_message_bundle_name");
-	else if (! strcmp(type, "tape"))
+	else if (!strcmp(type, "tape"))
 		get_messages = dlsym(pl->lib_handle, "tape_dev_get_message_bundle_name");
-	else if (! strcmp(type, "changer"))
+	else if (!strcmp(type, "changer"))
 		get_messages = dlsym(pl->lib_handle, "changer_get_message_bundle_name");
-	else if (! strcmp(type, "dcache"))
+	else if (!strcmp(type, "dcache"))
 		get_messages = dlsym(pl->lib_handle, "dcache_get_message_bundle_name");
-	else if (! strcmp(type, "kmi"))
+	else if (!strcmp(type, "kmi"))
 		get_messages = dlsym(pl->lib_handle, "kmi_get_message_bundle_name");
-	else if (! strcmp(type, "crepos"))
+	else if (!strcmp(type, "crepos"))
 		get_messages = dlsym(pl->lib_handle, "crepos_get_message_bundle_name");
 	/* config_file_get_lib already verified that "type" contains one of the values above */
 
-	if (! get_messages) {
-#ifdef _MSC_VER	
+	if (!get_messages) {
+#ifdef _MSC_VER
 		char *err = dlerror();
 		ltfsmsg(LTFS_ERR, 11284E, err);
 		free(err);
 #else
 		ltfsmsg(LTFS_ERR, 11263E, dlerror());
 
-#endif // _MSC_VER
+#endif	// _MSC_VER
 		dlclose(pl->lib_handle);
 		pl->lib_handle = NULL;
 		return -LTFS_PLUGIN_LOAD;
@@ -166,7 +165,7 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 
 	/* Ask the plugin what operations and messages it provides */
 	pl->ops = get_ops();
-	if (! pl->ops) {
+	if (!pl->ops) {
 		ltfsmsg(LTFS_ERR, 11264E);
 		dlclose(pl->lib_handle);
 		pl->lib_handle = NULL;
@@ -187,21 +186,20 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 
 int plugin_unload(struct libltfs_plugin *pl)
 {
-	if (! pl || ! pl->lib_handle)
-		return 0;
+	if (!pl || !pl->lib_handle) return 0;
 	ltfsprintf_unload_plugin(pl->messages);
 
 #ifndef VALGRIND_FRIENDLY
 	/* Valgrind cannot resolve function name after closing shared library */
 	if (dlclose(pl->lib_handle)) {
-#ifdef _MSC_VER	
+#	ifdef _MSC_VER
 		char *err = dlerror();
 		ltfsmsg(LTFS_ERR, 11262E, err);
 		free(err);
-#else
+#	else
 		ltfsmsg(LTFS_ERR, 11262E, dlerror());
 
-#endif // _MSC_VER
+#	endif	// _MSC_VER
 		return -LTFS_PLUGIN_UNLOAD;
 	}
 #endif
@@ -217,41 +215,39 @@ int plugin_unload(struct libltfs_plugin *pl)
  * @param ops tape operations for the backend
  * @param type Plugin type, must be "iosched", "kmi" or "driver"
  */
-static void print_help_message(const char *progname, void *ops, const char * const type)
+static void print_help_message(const char *progname, void *ops, const char *const type)
 {
-	if (! ops) {
+	if (!ops) {
 		ltfsmsg(LTFS_WARN, 10006W, "ops", __FUNCTION__);
 		return;
 	}
 
-	if (! strcmp(type, "kmi")) {
+	if (!strcmp(type, "kmi")) {
 		int ret = kmi_print_help_message(ops);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 11316E);
 		}
-	} else if (! strcmp(type, "tape"))
+	} else if (!strcmp(type, "tape"))
 		tape_print_help_message(progname, ops);
 	else
 		ltfsmsg(LTFS_ERR, 11317E, type);
 }
 
-void plugin_usage(const char* progname, const char *type, struct config_file *config)
+void plugin_usage(const char *progname, const char *type, struct config_file *config)
 {
-	struct libltfs_plugin pl = {0};
+	struct libltfs_plugin pl = { 0 };
 	char **backends;
 	int ret, i;
 
 	backends = config_file_get_plugins(type, config);
-	if (! backends) {
-		if (! strcmp(type, "driver"))
-			ltfsresult(14403I); /* -o devname=<dev> */
+	if (!backends) {
+		if (!strcmp(type, "driver")) ltfsresult(14403I); /* -o devname=<dev> */
 		return;
 	}
 
 	for (i = 0; backends[i] != NULL; ++i) {
 		ret = plugin_load(&pl, type, backends[i], config);
-		if (ret < 0)
-			continue;
+		if (ret < 0) continue;
 		print_help_message(progname, pl.ops, type);
 		plugin_unload(&pl);
 	}

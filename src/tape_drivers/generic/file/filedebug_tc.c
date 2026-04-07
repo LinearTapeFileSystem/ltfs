@@ -51,41 +51,42 @@
 *************************************************************************************
 */
 #ifdef mingw_PLATFORM
-#include "arch/win/win_util.h"
+#	include "arch/win/win_util.h"
 
 #else
-#include <libgen.h>
+#	include <libgen.h>
 #endif
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <inttypes.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <errno.h>
-#include <string.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-#include <dirent.h>
 #include "libltfs/arch/ltfs_arch_ops.h"
+#include <dirent.h>
 
 #ifdef _WIN32
-char *my_basename(char *path) {
+char *my_basename(char *path)
+{
 	char *base = strrchr(path, '\\');
 	return base ? base + 1 : path;
 }
 
-char *my_dirname(char *path) {
+char *my_dirname(char *path)
+{
 	static char buffer[256];
 	arch_strcpy_auto(buffer, path);
 	char *last_slash = strrchr(buffer, '\\');
 	if (last_slash) {
 		*last_slash = '\0';
-	}
-	else {
+	} else {
 		arch_strcpy_auto(buffer, ".");
 	}
 	return buffer;
@@ -97,11 +98,11 @@ char *my_dirname(char *path) {
 #include "libltfs/ltfs_fuse_version.h"
 #include <fuse.h>
 
-#include "ltfs_copyright.h"
-#include "libltfs/ltfslogging.h"
 #include "libltfs/ltfs_endian.h"
-#include "libltfs/tape_ops.h"
 #include "libltfs/ltfs_error.h"
+#include "libltfs/ltfslogging.h"
+#include "libltfs/tape_ops.h"
+#include "ltfs_copyright.h"
 
 #include "tape_drivers/tape_drivers.h"
 #include "tape_drivers/vendor_compat.h"
@@ -109,10 +110,9 @@ char *my_dirname(char *path) {
 #include "filedebug_conf_tc.h"
 
 #ifdef _MSC_VER
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
-LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
-#endif // !_MSC_VER
-
+volatile char *copyright = LTFS_COPYRIGHT_0 "\n" LTFS_COPYRIGHT_1 "\n" LTFS_COPYRIGHT_2 "\n" LTFS_COPYRIGHT_3
+																						"\n" LTFS_COPYRIGHT_4 "\n" LTFS_COPYRIGHT_5 "\n";
+#endif	// !_MSC_VER
 
 /* Default directory where the emulated tape contents go to */
 #ifdef mingw_PLATFORM
@@ -122,71 +122,73 @@ const char *filedebug_default_device = "/tmp/ltfs/tape";
 #endif
 
 #define MAX_PARTITIONS 2
-#define KB   (1024)
-#define MB   (KB * 1024)
-#define GB   (MB * 1024)
+#define KB (1024)
+#define MB (KB * 1024)
+#define GB (MB * 1024)
 #define FILE_DEBUG_MAX_BLOCK_SIZE (4 * MB)
 
 /* O_BINARY is defined only in MinGW */
 #ifndef O_BINARY
-#define O_BINARY 0
+#	define O_BINARY 0
 #endif
 
-#define MISSING_EOD      (0xFFFFFFFFFFFFFFFFLL)
-#define CARTRIDGE_CONFIG  "filedebug_tc_conf.xml"
+#define MISSING_EOD (0xFFFFFFFFFFFFFFFFLL)
+#define CARTRIDGE_CONFIG "filedebug_tc_conf.xml"
 
 /* For drive link feature */
 #ifdef mingw_PLATFORM
-#define DRIVE_LIST_DIR    "ltfs"
+#	define DRIVE_LIST_DIR "ltfs"
 #else
-#define DRIVE_LIST_DIR    "/tmp"
+#	define DRIVE_LIST_DIR "/tmp"
 #endif
 
-#define NANOSECONDS(x)  ((x) * 1000000000)
-#define MICROSECONDS(x)    ((x) * 1000000)
+#define NANOSECONDS(x) ((x) * 1000000000)
+#define MICROSECONDS(x) ((x) * 1000000)
 
 /**
  * Emulator-specific data structures, used in lieu of a file descriptor
  */
-struct filedebug_data {
-	int      fd;                           /**< File descriptor to contain the pointer to directory where blocks reside */
-	char     *dirbase;                     /**< Base directory for searcing directoty from the pointer */
-	char     *dirname;                     /**< Directory where blocks reside */
-	bool     device_reserved;              /**< True when the device has been successfully reserved */
-	bool     medium_locked;                /**< True when preventing medium removal by the user */
-	bool     null_backend;                 /**< True when runiing on null backend_mode */
-	struct   tc_position current_position; /**< Current tape position (partition, block) */
-	uint32_t max_block_size;               /**< Maximum block size, in bytes */
-	bool     ready;                        /**< Is the "tape" loaded? */
-	bool     is_readonly;                  /**< Is read-only tape loaded? */
-	bool     is_worm;                      /**< Is WORM tape loaded ? */
-	bool     unsupported_tape;             /**< Is supported tape in this drive ? */
-	bool     unsupported_format;           /**< Is supported format in this drive ? */
-	uint64_t last_block[MAX_PARTITIONS];   /**< Last positions for all partitions */
-	uint64_t eod[MAX_PARTITIONS];          /**< Append positions (1 + last block) for all partitions */
-	int      partitions;                   /**< Number of available partitions */
-	uint64_t write_pass_prev;              /**< Previous write Pass */
-	uint64_t write_pass;                   /**< Current write Pass of LTO drive for consistency check*/
-	struct   timespec accumulated_delay;   /**< How much time has been spent doing seeks */
-	unsigned p0_warning;                   /**< Nonzero to provide early warning on partition 0 */
-	unsigned p1_warning;                   /**< Nonzero to provide early warning on partition 1 */
-	unsigned p0_p_warning;                 /**< Nonzero to provide programmable early warning on partition 0 */
-	unsigned p1_p_warning;                 /**< Nonzero to provide programmable early warning on partition 1 */
-	bool     clear_by_pc;                  /**< clear pseudo write perm by partition change */
-	uint64_t force_writeperm;              /**< pseudo write perm threshold */
-	uint64_t force_readperm;               /**< pseudo read perm threashold */
-	uint64_t write_counter;                /**< write call counter for pseudo write perm */
-	uint64_t read_counter;                 /**< read call counter for pseudo write perm */
-	int      force_errortype;              /**< 0 is R/W Perm, otherwise no sense */
-	int      drive_type;                   /**< drive type defined by ltfs */
-	char     *serial_number;               /**< Serial number of this dummy tape device */
-	struct tc_drive_info info;             /**< Device informaton (DUMMY) */
-	char     *product_id;                  /**< Product ID of this dummy tape device */
-	struct   filedebug_conf_tc conf;       /**< Bahavior option for this instance */
+struct filedebug_data
+{
+	int fd;															 /**< File descriptor to contain the pointer to directory where blocks reside */
+	char *dirbase;											 /**< Base directory for searcing directoty from the pointer */
+	char *dirname;											 /**< Directory where blocks reside */
+	bool device_reserved;								 /**< True when the device has been successfully reserved */
+	bool medium_locked;									 /**< True when preventing medium removal by the user */
+	bool null_backend;									 /**< True when runiing on null backend_mode */
+	struct tc_position current_position; /**< Current tape position (partition, block) */
+	uint32_t max_block_size;						 /**< Maximum block size, in bytes */
+	bool ready;													 /**< Is the "tape" loaded? */
+	bool is_readonly;										 /**< Is read-only tape loaded? */
+	bool is_worm;												 /**< Is WORM tape loaded ? */
+	bool unsupported_tape;							 /**< Is supported tape in this drive ? */
+	bool unsupported_format;						 /**< Is supported format in this drive ? */
+	uint64_t last_block[MAX_PARTITIONS]; /**< Last positions for all partitions */
+	uint64_t eod[MAX_PARTITIONS];				 /**< Append positions (1 + last block) for all partitions */
+	int partitions;											 /**< Number of available partitions */
+	uint64_t write_pass_prev;						 /**< Previous write Pass */
+	uint64_t write_pass;								 /**< Current write Pass of LTO drive for consistency check*/
+	struct timespec accumulated_delay;	 /**< How much time has been spent doing seeks */
+	unsigned p0_warning;								 /**< Nonzero to provide early warning on partition 0 */
+	unsigned p1_warning;								 /**< Nonzero to provide early warning on partition 1 */
+	unsigned p0_p_warning;							 /**< Nonzero to provide programmable early warning on partition 0 */
+	unsigned p1_p_warning;							 /**< Nonzero to provide programmable early warning on partition 1 */
+	bool clear_by_pc;										 /**< clear pseudo write perm by partition change */
+	uint64_t force_writeperm;						 /**< pseudo write perm threshold */
+	uint64_t force_readperm;						 /**< pseudo read perm threashold */
+	uint64_t write_counter;							 /**< write call counter for pseudo write perm */
+	uint64_t read_counter;							 /**< read call counter for pseudo write perm */
+	int force_errortype;								 /**< 0 is R/W Perm, otherwise no sense */
+	int drive_type;											 /**< drive type defined by ltfs */
+	char *serial_number;								 /**< Serial number of this dummy tape device */
+	struct tc_drive_info info;					 /**< Device informaton (DUMMY) */
+	char *product_id;										 /**< Product ID of this dummy tape device */
+	struct filedebug_conf_tc conf;			 /**< Bahavior option for this instance */
 };
 
-struct filedebug_global_data {
-	unsigned          strict_drive;      /**< Is bar code length checked strictly? */
+struct filedebug_global_data
+{
+	unsigned strict_drive; /**< Is bar code length checked strictly? */
 };
 
 struct filedebug_global_data global_data;
@@ -194,9 +196,9 @@ struct filedebug_global_data global_data;
 /* record suffixes for data block, filemark, EOD indicator */
 long original_pid = 0;
 static const char *rec_suffixes = "RFE";
-#define SUFFIX_RECORD   (0)
+#define SUFFIX_RECORD (0)
 #define SUFFIX_FILEMARK (1)
-#define SUFFIX_EOD      (2)
+#define SUFFIX_EOD (2)
 
 /* Forward reference */
 int filedebug_get_device_list(struct tc_drive_info *buf, int count);
@@ -206,24 +208,22 @@ int filedebug_search_eod(struct filedebug_data *state, int partition);
 int _filedebug_write_eod(struct filedebug_data *state);
 int _filedebug_check_file(const char *fname);
 char *_filedebug_make_current_filename(const struct filedebug_data *state, char type);
-char *_filedebug_make_filename(const struct filedebug_data *state,
-	int part, uint64_t pos, char type);
+char *_filedebug_make_filename(const struct filedebug_data *state, int part, uint64_t pos, char type);
 char *_filedebug_make_attrname(const struct filedebug_data *state, int part, int id);
 int _filedebug_remove_current_record(const struct filedebug_data *state);
-int _filedebug_remove_record(const struct filedebug_data *state,
-	int partition, uint64_t blknum);
+int _filedebug_remove_record(const struct filedebug_data *state, int partition, uint64_t blknum);
 int _filedebug_space_fm(struct filedebug_data *state, uint64_t count, bool back);
 int _filedebug_space_rec(struct filedebug_data *state, uint64_t count, bool back);
 int _get_wp(struct filedebug_data *state, uint64_t *wp);
 int _set_wp(struct filedebug_data *state, uint64_t wp);
 
 /* Command-line options recognized by this module */
-#define FILEDEBUG_OPT(templ,offset,value) { templ, offsetof(struct filedebug_global_data, offset), value }
+#define FILEDEBUG_OPT(templ, offset, value) { templ, offsetof(struct filedebug_global_data, offset), value }
 
 static inline uint64_t calc_p0_cap(struct filedebug_data *state)
 {
 	/* 5% of total capacity */
-	return (state->conf.capacity_mb * 5 /100);
+	return (state->conf.capacity_mb * 5 / 100);
 }
 
 static inline uint64_t calc_p0_remaining(struct filedebug_data *state)
@@ -243,11 +243,9 @@ static inline uint64_t calc_p1_remaining(struct filedebug_data *state)
 	return (calc_p1_cap(state) - state->eod[1] / 2);
 }
 
-static struct fuse_opt filedebug_opts[] = {
-	FILEDEBUG_OPT("strict_drive",   strict_drive, 1),
-	FILEDEBUG_OPT("nostrict_drive", strict_drive, 0),
-	FUSE_OPT_END
-};
+static struct fuse_opt filedebug_opts[] = { FILEDEBUG_OPT("strict_drive", strict_drive, 1),
+																						FILEDEBUG_OPT("nostrict_drive", strict_drive, 0),
+																						FUSE_OPT_END };
 
 int null_parser(void *state, const char *arg, int key, struct fuse_args *outargs)
 {
@@ -256,30 +254,27 @@ int null_parser(void *state, const char *arg, int key, struct fuse_args *outargs
 
 int filedebug_parse_opts(void *device, void *opt_args)
 {
-	struct filedebug_data *state = (struct filedebug_data *) device;
-	struct fuse_args *args = (struct fuse_args *) opt_args;
+	struct filedebug_data *state = (struct filedebug_data *)device;
+	struct fuse_args *args = (struct fuse_args *)opt_args;
 	int ret;
 
 	/* fuse_opt_parse can handle a NULL device parameter just fine */
 	ret = fuse_opt_parse(args, state, filedebug_opts, null_parser);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) return ret;
 
 	return 0;
 }
 
 static void emulate_threading_wait(struct filedebug_data *state)
 {
-	if (!state->conf.delay_mode)
-		return;
+	if (!state->conf.delay_mode) return;
 
 	struct timespec t;
-	t.tv_sec  = state->conf.threading_sec;
+	t.tv_sec = state->conf.threading_sec;
 	t.tv_nsec = 0;
 
 	/* TODO: Need to handle interrupted sleep */
-	if (state->conf.delay_mode == DELAY_EMULATE)
-		nanosleep(&t, NULL);
+	if (state->conf.delay_mode == DELAY_EMULATE) nanosleep(&t, NULL);
 
 	state->accumulated_delay.tv_sec += t.tv_sec;
 	state->accumulated_delay.tv_nsec += t.tv_nsec;
@@ -296,28 +291,25 @@ static inline uint64_t calc_wrap(struct filedebug_data *state, struct tc_positio
 	uint64_t wrap = pos->block / blocks_per_wrap;
 
 	/* 2 wraps for partition 0, 2 guard wraps, other wraps are for partition 1 */
-	if (pos->partition)
-		wrap += 4;
+	if (pos->partition) wrap += 4;
 
 	return wrap;
 }
 
 static void emulate_seek_wait(struct filedebug_data *state, struct tc_position *dest)
 {
-	if (!state->conf.delay_mode)
-		return;
+	if (!state->conf.delay_mode) return;
 
 	uint64_t blocks_per_wrap = (state->conf.capacity_mb / state->conf.wraps) * 2;
 
 	uint64_t current_wrap = calc_wrap(state, &state->current_position);
-	uint64_t current_dist_from_bot = current_wrap % 2 == 0 ?
-		state->current_position.block % blocks_per_wrap :
-		blocks_per_wrap - (state->current_position.block % blocks_per_wrap);
+	uint64_t current_dist_from_bot = current_wrap % 2 == 0
+																			 ? state->current_position.block % blocks_per_wrap
+																			 : blocks_per_wrap - (state->current_position.block % blocks_per_wrap);
 
 	uint64_t target_wrap = calc_wrap(state, dest);
-	uint64_t target_dist_from_bot = target_wrap % 2 == 0 ?
-		dest->block % blocks_per_wrap :
-		blocks_per_wrap - (dest->block % blocks_per_wrap);
+	uint64_t target_dist_from_bot =
+			target_wrap % 2 == 0 ? dest->block % blocks_per_wrap : blocks_per_wrap - (dest->block % blocks_per_wrap);
 
 	uint64_t distance;
 	if (target_dist_from_bot > current_dist_from_bot)
@@ -325,7 +317,7 @@ static void emulate_seek_wait(struct filedebug_data *state, struct tc_position *
 	else
 		distance = current_dist_from_bot - target_dist_from_bot;
 
-	float cost = ((float) state->conf.eot_to_bot_sec / blocks_per_wrap) * (distance-1.0);
+	float cost = ((float)state->conf.eot_to_bot_sec / blocks_per_wrap) * (distance - 1.0);
 	time_t delay_us = 0;
 
 	if (dest->partition != state->current_position.partition) {
@@ -355,12 +347,11 @@ static void emulate_seek_wait(struct filedebug_data *state, struct tc_position *
 
 	if (delay_us) {
 		struct timespec t;
-		t.tv_sec  = (delay_us / MICROSECONDS(1));
+		t.tv_sec = (delay_us / MICROSECONDS(1));
 		t.tv_nsec = (delay_us % MICROSECONDS(1)) * 1000;
 
 		/* TODO: Need to handle interrupted sleep */
-		if (state->conf.delay_mode == DELAY_EMULATE)
-			nanosleep(&t, NULL);
+		if (state->conf.delay_mode == DELAY_EMULATE) nanosleep(&t, NULL);
 
 		state->accumulated_delay.tv_sec += t.tv_sec;
 		state->accumulated_delay.tv_nsec += t.tv_nsec;
@@ -375,9 +366,9 @@ static void emulate_load_wait(struct filedebug_data *state)
 {
 	struct tc_position dest;
 
-	dest.block         = 0;
-	dest.filemarks     = 0;
-	dest.partition     = 0;
+	dest.block = 0;
+	dest.filemarks = 0;
+	dest.partition = 0;
 	dest.early_warning = false;
 	dest.programmable_early_warning = false;
 
@@ -388,9 +379,9 @@ static void emulate_rewind_wait(struct filedebug_data *state)
 {
 	struct tc_position dest;
 
-	dest.block         = 0;
-	dest.filemarks     = 0;
-	dest.partition     = state->current_position.partition;
+	dest.block = 0;
+	dest.filemarks = 0;
+	dest.partition = state->current_position.partition;
 	dest.early_warning = false;
 	dest.programmable_early_warning = false;
 
@@ -402,7 +393,8 @@ void filedebug_help_message(const char *progname)
 	ltfsresult(30199I, filedebug_default_device);
 }
 #ifdef mingw_PLATFORM
-char *dirname(char *path) {
+char *dirname(char *path)
+{
 	if (!path || !*path) {
 		return ".";
 	}
@@ -416,20 +408,19 @@ char *dirname(char *path) {
 	// Find the last directory separator
 	char *last_sep = strrchr(copy, '\\');
 	if (!last_sep) {
-		last_sep = strrchr(copy, '/'); // Handle forward slashes
+		last_sep = strrchr(copy, '/');	// Handle forward slashes
 	}
 
 	if (!last_sep) {
 		free(copy);
-		return "."; // No separator found, return current directory
+		return ".";	 // No separator found, return current directory
 	}
 
 	// Remove the trailing component
 	if (last_sep == copy) {
 		// Root directory case (e.g., "/")
 		copy[1] = '\0';
-	}
-	else {
+	} else {
 		*last_sep = '\0';
 	}
 
@@ -455,7 +446,7 @@ int filedebug_open(const char *name, void **handle)
 	CHECK_ARG_NULL(handle, -LTFS_NULL_ARG);
 	*handle = NULL;
 
-	state = (struct filedebug_data *)calloc(1,sizeof(struct filedebug_data));
+	state = (struct filedebug_data *)calloc(1, sizeof(struct filedebug_data));
 	if (!state) {
 		ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: private data");
 		return -EDEV_NO_MEMORY;
@@ -476,7 +467,7 @@ int filedebug_open(const char *name, void **handle)
 		devs = filedebug_get_device_list(NULL, 0);
 		if (devs) {
 			buf = (struct tc_drive_info *)calloc(devs * 2, sizeof(struct tc_drive_info));
-			if (! buf) {
+			if (!buf) {
 				ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 				return -LTFS_NO_MEMORY;
 			}
@@ -484,7 +475,7 @@ int filedebug_open(const char *name, void **handle)
 		}
 
 		for (i = 0; i < info_devs; i++) {
-			if (! strncmp(buf[i].serial_number, name, TAPE_SERIAL_LEN_MAX) ) {
+			if (!strncmp(buf[i].serial_number, name, TAPE_SERIAL_LEN_MAX)) {
 				devname = arch_strdup(buf[i].name);
 				if (!devname) {
 					ltfsmsg(LTFS_ERR, 10001E, "sg_ibmtape_open: devname");
@@ -502,8 +493,7 @@ int filedebug_open(const char *name, void **handle)
 		}
 
 		/* Run on file mode */
-		if (devname == NULL)
-			devname = arch_strdup(name);
+		if (devname == NULL) devname = arch_strdup(name);
 		ltfsmsg(LTFS_INFO, 30001I, devname);
 
 		arch_open(&(state->fd), devname, O_RDWR | O_BINARY, SHARE_FLAG_DENYWR, PERMISSION_READWRITE);
@@ -513,16 +503,15 @@ int filedebug_open(const char *name, void **handle)
 		}
 
 		/* Parse pid and serial from filename */
-		cur = (char*)devname;
+		cur = (char *)devname;
 		cur += strlen(devname) - 1;
 		for (i = 0; i < (int)strlen(devname); i++) {
-			if (*cur == '.')
-				pid = cur + 1;
+			if (*cur == '.') pid = cur + 1;
 			if (*cur == '_') {
 				ser = cur + 1;
 				break;
 			}
-			cur --;
+			cur--;
 		}
 
 		if (pid && ser) {
@@ -536,7 +525,7 @@ int filedebug_open(const char *name, void **handle)
 			for (i = 0; i < (int)strlen(state->serial_number); i++) {
 				if (state->serial_number[i] == '.') {
 					state->serial_number[i] = '\0';
-					state->product_id = &(state->serial_number[i+1]);
+					state->product_id = &(state->serial_number[i + 1]);
 					break;
 				}
 			}
@@ -554,7 +543,7 @@ int filedebug_open(const char *name, void **handle)
 		   that may then be overwritten by subsequent calls to dirname(). */
 		p = dirname(tmp);
 		int len = (strlen(p) + 1) * sizeof(char);
-		state->dirbase = (char*)calloc(strlen(p) + 1, sizeof(char));
+		state->dirbase = (char *)calloc(strlen(p) + 1, sizeof(char));
 		if (!state->dirbase) {
 			ltfsmsg(LTFS_ERR, 10001E, "filedebug_open: dirbase");
 			free(state);
@@ -567,34 +556,34 @@ int filedebug_open(const char *name, void **handle)
 		devname = NULL;
 	}
 
-	state->ready          = false;
+	state->ready = false;
 	state->max_block_size = 16 * MB;
 
 	/* Set default option value */
-	state->conf.dummy_io         = false;
+	state->conf.dummy_io = false;
 	state->conf.emulate_readonly = false;
-	state->conf.capacity_mb      = DEFAULT_CAPACITY_MB;
-	state->conf.cart_type        = TC_MP_LTO5D_CART;
-	state->conf.density_code     = 0x58;
+	state->conf.capacity_mb = DEFAULT_CAPACITY_MB;
+	state->conf.cart_type = TC_MP_LTO5D_CART;
+	state->conf.density_code = 0x58;
 
 	/* Initial setting of force perm */
-	state->clear_by_pc     = false;
+	state->clear_by_pc = false;
 	state->force_writeperm = DEFAULT_WRITEPERM;
-	state->force_readperm  = DEFAULT_READPERM;
+	state->force_readperm = DEFAULT_READPERM;
 	state->force_readperm = DEFAULT_READPERM;
 	state->force_errortype = DEFAULT_ERRORTYPE;
 
-	state->conf.delay_mode          = DELAY_NONE;
-	state->conf.wraps               = DEFAULT_WRAPS;
-	state->conf.eot_to_bot_sec      = DEFAULT_EOT_TO_BOT;
+	state->conf.delay_mode = DELAY_NONE;
+	state->conf.wraps = DEFAULT_WRAPS;
+	state->conf.eot_to_bot_sec = DEFAULT_EOT_TO_BOT;
 	state->conf.change_direction_us = DEFAULT_CHANGE_DIRECTION;
-	state->conf.change_track_us     = DEFAULT_CHANGE_TRACK;
+	state->conf.change_track_us = DEFAULT_CHANGE_TRACK;
 
 	/* Set drive type if it is provided */
 	struct supported_device **d_cur = ibm_supported_drives;
-	while(*d_cur) {
-		if((! strncmp(IBM_VENDOR_ID, (*d_cur)->vendor_id, strlen((*d_cur)->vendor_id)) ) &&
-		   (! strncmp(state->product_id, (*d_cur)->product_id, strlen((*d_cur)->product_id)) ) ) {
+	while (*d_cur) {
+		if ((!strncmp(IBM_VENDOR_ID, (*d_cur)->vendor_id, strlen((*d_cur)->vendor_id))) &&
+				(!strncmp(state->product_id, (*d_cur)->product_id, strlen((*d_cur)->product_id)))) {
 			state->drive_type = (*d_cur)->drive_type;
 			break;
 		}
@@ -608,12 +597,12 @@ int filedebug_open(const char *name, void **handle)
 	snprintf(state->info.product_rev, PRODUCT_REV_LENGTH + 1, "%s", "REVS");
 	snprintf(state->info.product_name, PRODUCT_NAME_LENGTH + 1, "[%s]", state->product_id);
 
-	state->info.host    = 0;
+	state->info.host = 0;
 	state->info.channel = 0;
-	state->info.target  = 0;
-	state->info.lun     = -1;
+	state->info.target = 0;
+	state->info.lun = -1;
 
-	*handle = (void *) state;
+	*handle = (void *)state;
 	return 0;
 }
 
@@ -635,14 +624,10 @@ int filedebug_close(void *device)
 	}
 
 	if (state) {
-		if (state->fd > 0)
-			arch_close(state->fd);
-		if (state->dirbase)
-			free(state->dirbase);
-		if (state->dirname)
-			free(state->dirname);
-		if (state->serial_number)
-			free(state->serial_number);
+		if (state->fd > 0) arch_close(state->fd);
+		if (state->dirbase) free(state->dirbase);
+		if (state->dirname) free(state->dirname);
+		if (state->serial_number) free(state->serial_number);
 		free(state);
 	}
 
@@ -678,13 +663,11 @@ int filedebug_inquiry_page(void *device, unsigned char page, struct tc_inq_page 
 int filedebug_test_unit_ready(void *device)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
-	if (!state->ready)
-		return -EDEV_NEED_INITIALIZE;
+	if (!state->ready) return -EDEV_NEED_INITIALIZE;
 	return DEVICE_GOOD;
 }
 
-int filedebug_read(void *device, char *buf, size_t count, struct tc_position *pos,
-	const bool unusual_size)
+int filedebug_read(void *device, char *buf, size_t count, struct tc_position *pos, const bool unusual_size)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
 	char *fname;
@@ -693,9 +676,12 @@ int filedebug_read(void *device, char *buf, size_t count, struct tc_position *po
 	ssize_t bytes_read;
 	int fd;
 
-	ltfsmsg(LTFS_DEBUG, 30005D, (unsigned int)count, state->current_position.partition,
-		(unsigned long long)state->current_position.block,
-		(unsigned long long)state->current_position.filemarks);
+	ltfsmsg(LTFS_DEBUG,
+					30005D,
+					(unsigned int)count,
+					state->current_position.partition,
+					(unsigned long long)state->current_position.block,
+					(unsigned long long)state->current_position.filemarks);
 
 	if (!state->ready) {
 		ltfsmsg(LTFS_ERR, 30006E);
@@ -724,10 +710,7 @@ int filedebug_read(void *device, char *buf, size_t count, struct tc_position *po
 		return -EDEV_EOD_DETECTED;
 	}
 
-	if (state->conf.dummy_io &&
-		state->current_position.partition &&
-		state->current_position.block > 6) {
-
+	if (state->conf.dummy_io && state->current_position.partition && state->current_position.block > 6) {
 		/*
 		 *  Dummy I/O mode
 		 *  No actual data is written to partition1 (DP), hence we can simply
@@ -740,8 +723,7 @@ int filedebug_read(void *device, char *buf, size_t count, struct tc_position *po
 
 	} else {
 		fname = _filedebug_make_current_filename(state, rec_suffixes[SUFFIX_EOD]);
-		if (!fname)
-			return -EDEV_NO_MEMORY;
+		if (!fname) return -EDEV_NO_MEMORY;
 		fname_len = strlen(fname);
 
 		ret = _filedebug_check_file(fname);
@@ -825,9 +807,12 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 	int fd;
 	ssize_t written;
 
-	ltfsmsg(LTFS_DEBUG, 30016D, (unsigned int)count, state->current_position.partition,
-		(unsigned long long)state->current_position.block,
-		(unsigned long long)state->current_position.filemarks);
+	ltfsmsg(LTFS_DEBUG,
+					30016D,
+					(unsigned int)count,
+					state->current_position.partition,
+					(unsigned long long)state->current_position.block,
+					(unsigned long long)state->current_position.filemarks);
 
 	if (!state->ready) {
 		ltfsmsg(LTFS_ERR, 30017E);
@@ -846,7 +831,7 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 		if (state->conf.emulate_readonly)
 			ret = -EDEV_WRITE_PROTECTED; /* Emulate 07/2700 */
 		else
-			ret = -EDEV_DATA_PROTECT;    /* Emulate 07/3005 */
+			ret = -EDEV_DATA_PROTECT;		 /* Emulate 07/3005 */
 
 		ltfsmsg(LTFS_INFO, 30085I, ret, state->serial_number);
 
@@ -861,7 +846,7 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 
 	/* TODO: It is nicer if we have a append only mode support */
 
-	if (! buf && count > 0) {
+	if (!buf && count > 0) {
 		ltfsmsg(LTFS_ERR, 30018E);
 		ret = -EDEV_INVALID_ARG;
 		return ret;
@@ -870,15 +855,15 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 		return ret;
 	}
 
-	if ( state->force_writeperm ) {
+	if (state->force_writeperm) {
 		state->write_counter++;
-		if ( state->write_counter > state->force_writeperm ) {
+		if (state->write_counter > state->force_writeperm) {
 			ltfsmsg(LTFS_ERR, 30007E, "write");
 			if (state->force_errortype)
 				return -EDEV_NO_SENSE;
 			else
 				return -EDEV_WRITE_PERM;
-		} else if ( state->write_counter > (state->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE) ) {
+		} else if (state->write_counter > (state->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE)) {
 			ltfsmsg(LTFS_INFO, 30019I);
 			++state->current_position.block;
 			pos->block = state->current_position.block;
@@ -892,10 +877,7 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 		return ret;
 	}
 
-	if (state->conf.dummy_io &&
-		state->current_position.partition &&
-		state->current_position.block > 6) {
-
+	if (state->conf.dummy_io && state->current_position.partition && state->current_position.block > 6) {
 		/*
 		 *  Dummy I/O mode
 		 *  Do not write any data on partition1 (DP)
@@ -915,7 +897,7 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 		}
 
 		/* Increment Write Pass for consistency check */
-		if(state->write_pass_prev == state->write_pass){
+		if (state->write_pass_prev == state->write_pass) {
 			ret = _set_wp(device, ++(state->write_pass));
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 30022E, ret);
@@ -963,19 +945,18 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 	}
 
 	ret = written;
-	if (state->p0_warning && state->current_position.partition == 0 &&
-		state->current_position.block >= state->p0_warning)
+	if (state->p0_warning && state->current_position.partition == 0 && state->current_position.block >= state->p0_warning)
 		pos->early_warning = true;
 	else if (state->p1_warning && state->current_position.partition == 1 &&
-		state->current_position.block >= state->p1_warning)
+					 state->current_position.block >= state->p1_warning)
 		pos->early_warning = true;
 	/* Programmable early warning is set only when position moves into
 	   programmable early warning zone in write() method. */
 	if (state->p0_p_warning && state->current_position.partition == 0 &&
-		state->current_position.block == state->p0_p_warning)
+			state->current_position.block == state->p0_p_warning)
 		pos->programmable_early_warning = true;
 	else if (state->p1_p_warning && state->current_position.partition == 1 &&
-		state->current_position.block == state->p1_p_warning)
+					 state->current_position.block == state->p1_p_warning)
 		pos->programmable_early_warning = true;
 	return ret;
 }
@@ -988,9 +969,12 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 	int fd;
 	size_t i;
 
-	ltfsmsg(LTFS_DEBUG, 30028D, (unsigned int)count, state->current_position.partition,
-		(unsigned long long)state->current_position.block,
-		(unsigned long long)state->current_position.filemarks);
+	ltfsmsg(LTFS_DEBUG,
+					30028D,
+					(unsigned int)count,
+					state->current_position.partition,
+					(unsigned long long)state->current_position.block,
+					(unsigned long long)state->current_position.filemarks);
 
 	if (!state->ready) {
 		ltfsmsg(LTFS_ERR, 30029E);
@@ -1003,16 +987,13 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 		return DEVICE_GOOD;
 	}
 
-	if (state->conf.dummy_io &&
-		state->current_position.partition &&
-		state->current_position.block > 6) {
-
+	if (state->conf.dummy_io && state->current_position.partition && state->current_position.block > 6) {
 		/*
 		 *  Dummy I/O mode
 		 *  Do not write any data on partition1 (DP)
 		 */
 
-		for (i=0; i<count; ++i) {
+		for (i = 0; i < count; ++i) {
 			++state->current_position.block;
 			++state->current_position.filemarks;
 			pos->block = state->current_position.block;
@@ -1023,7 +1004,7 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 
 	} else {
 		/* Increment Write Pass for consistency check */
-		if(state->write_pass_prev == state->write_pass){
+		if (state->write_pass_prev == state->write_pass) {
 			ret = _set_wp(device, ++(state->write_pass));
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 30030E, ret);
@@ -1031,7 +1012,7 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 			}
 		}
 
-		for (i=0; i<count; ++i) {
+		for (i = 0; i < count; ++i) {
 			ret = _filedebug_remove_current_record(state);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 30031E, ret);
@@ -1045,9 +1026,7 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 				return ret;
 			}
 
-			arch_open(&fd, fname,
-				O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-				SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
+			arch_open(&fd, fname, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 			if (fd < 0) {
 				ltfsmsg(LTFS_ERR, 30033E, fname, errno);
 				free(fname);
@@ -1057,8 +1036,8 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 
 			ret = arch_close(fd);
 			if (ret < 0) {
-			ltfsmsg(LTFS_ERR, 30034E, errno);
-			return -EDEV_RW_PERM;
+				ltfsmsg(LTFS_ERR, 30034E, errno);
+				return -EDEV_RW_PERM;
 			}
 
 			++state->current_position.block;
@@ -1074,17 +1053,16 @@ int filedebug_writefm(void *device, size_t count, struct tc_position *pos, bool 
 		}
 	}
 
-	if (state->p0_warning && state->current_position.partition == 0 &&
-		state->current_position.block >= state->p0_warning)
+	if (state->p0_warning && state->current_position.partition == 0 && state->current_position.block >= state->p0_warning)
 		pos->early_warning = true;
 	else if (state->p1_warning && state->current_position.partition == 1 &&
-		state->current_position.block >= state->p1_warning)
+					 state->current_position.block >= state->p1_warning)
 		pos->early_warning = true;
 	if (state->p0_p_warning && state->current_position.partition == 0 &&
-		state->current_position.block >= state->p0_p_warning)
+			state->current_position.block >= state->p0_p_warning)
 		pos->programmable_early_warning = true;
 	else if (state->p1_p_warning && state->current_position.partition == 1 &&
-		state->current_position.block >= state->p1_p_warning)
+					 state->current_position.block >= state->p1_p_warning)
 		pos->programmable_early_warning = true;
 	return ret;
 }
@@ -1106,13 +1084,13 @@ int filedebug_rewind(void *device, struct tc_position *pos)
 	emulate_rewind_wait(state);
 
 	/* Does rewinding reset the partition? */
-	state->current_position.block     = 0;
+	state->current_position.block = 0;
 	state->current_position.filemarks = 0;
-	state->clear_by_pc                = false;
-	state->force_writeperm            = DEFAULT_WRITEPERM;
-	state->force_readperm             = DEFAULT_READPERM;
-	state->write_counter              = 0;
-	state->read_counter               = 0;
+	state->clear_by_pc = false;
+	state->force_writeperm = DEFAULT_WRITEPERM;
+	state->force_readperm = DEFAULT_READPERM;
+	state->write_counter = 0;
+	state->read_counter = 0;
 	pos->block = state->current_position.block;
 	pos->filemarks = 0;
 	pos->early_warning = false;
@@ -1126,10 +1104,9 @@ int filedebug_locate(void *device, struct tc_position dest, struct tc_position *
 	int ret = 0;
 	struct filedebug_data *state = (struct filedebug_data *)device;
 	tape_filemarks_t count_fm = 0;
-	tape_block_t     i;
+	tape_block_t i;
 
-	ltfsmsg(LTFS_DEBUG, 30197D, "locate", (unsigned long long)dest.partition,
-		(unsigned long long)dest.block);
+	ltfsmsg(LTFS_DEBUG, 30197D, "locate", (unsigned long long)dest.partition, (unsigned long long)dest.block);
 
 	if (!state->ready) {
 		ltfsmsg(LTFS_ERR, 30037E);
@@ -1151,9 +1128,9 @@ int filedebug_locate(void *device, struct tc_position dest, struct tc_position *
 
 	if (state->current_position.partition != dest.partition) {
 		if (state->clear_by_pc) {
-			state->clear_by_pc     = false;
+			state->clear_by_pc = false;
 			state->force_writeperm = DEFAULT_WRITEPERM;
-			state->force_readperm  = DEFAULT_READPERM;
+			state->force_readperm = DEFAULT_READPERM;
 			state->force_errortype = DEFAULT_ERRORTYPE;
 		}
 	}
@@ -1161,21 +1138,19 @@ int filedebug_locate(void *device, struct tc_position dest, struct tc_position *
 	emulate_seek_wait(state, &dest);
 
 	state->current_position.partition = dest.partition;
-	if (state->eod[dest.partition] == MISSING_EOD &&
-		state->last_block[dest.partition] < dest.block)
-			state->current_position.block = state->last_block[dest.partition] + 1;
+	if (state->eod[dest.partition] == MISSING_EOD && state->last_block[dest.partition] < dest.block)
+		state->current_position.block = state->last_block[dest.partition] + 1;
 	else if (state->eod[dest.partition] < dest.block)
 		state->current_position.block = state->eod[dest.partition];
 	else
 		state->current_position.block = dest.block;
 	pos->partition = state->current_position.partition;
-	pos->block     = state->current_position.block;
+	pos->block = state->current_position.block;
 
-	for(i = 0; i < state->current_position.block; ++i) {
+	for (i = 0; i < state->current_position.block; ++i) {
 		char *fname;
 
-		fname = _filedebug_make_filename(state, state->current_position.partition,
-										 i, rec_suffixes[SUFFIX_FILEMARK]);
+		fname = _filedebug_make_filename(state, state->current_position.partition, i, rec_suffixes[SUFFIX_FILEMARK]);
 		if (!fname) {
 			ltfsmsg(LTFS_ERR, 30039E);
 			ret = -EDEV_NO_MEMORY;
@@ -1183,8 +1158,7 @@ int filedebug_locate(void *device, struct tc_position dest, struct tc_position *
 		}
 
 		ret = _filedebug_check_file(fname);
-		if (ret == 1)
-			++count_fm;
+		if (ret == 1) ++count_fm;
 		free(fname);
 	}
 
@@ -1192,17 +1166,16 @@ int filedebug_locate(void *device, struct tc_position dest, struct tc_position *
 	state->current_position.filemarks = count_fm;
 	pos->filemarks = state->current_position.filemarks;
 
-	if (state->p0_warning && state->current_position.partition == 0 &&
-		state->current_position.block >= state->p0_warning)
+	if (state->p0_warning && state->current_position.partition == 0 && state->current_position.block >= state->p0_warning)
 		pos->early_warning = true;
 	else if (state->p1_warning && state->current_position.partition == 1 &&
-		state->current_position.block >= state->p1_warning)
+					 state->current_position.block >= state->p1_warning)
 		pos->early_warning = true;
 	if (state->p0_p_warning && state->current_position.partition == 0 &&
-		state->current_position.block >= state->p0_p_warning)
+			state->current_position.block >= state->p0_p_warning)
 		pos->programmable_early_warning = true;
 	else if (state->p1_p_warning && state->current_position.partition == 1 &&
-		state->current_position.block >= state->p1_p_warning)
+					 state->current_position.block >= state->p1_p_warning)
 		pos->programmable_early_warning = true;
 	return ret;
 }
@@ -1213,7 +1186,7 @@ int filedebug_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_po
 	struct filedebug_data *state = (struct filedebug_data *)device;
 	int ret_fm;
 	tape_filemarks_t count_fm = 0;
-	tape_block_t     i;
+	tape_block_t i;
 
 	if (!state->ready) {
 		ltfsmsg(LTFS_ERR, 30040E);
@@ -1228,65 +1201,59 @@ int filedebug_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_po
 	}
 
 	switch (type) {
-	case TC_SPACE_EOD:
-		ltfsmsg(LTFS_DEBUG, 30195D, "space to EOD");
-		state->current_position.block = state->eod[state->current_position.partition];
-		if (state->current_position.block == MISSING_EOD) {
-			ret = -EDEV_RW_PERM;
+		case TC_SPACE_EOD:
+			ltfsmsg(LTFS_DEBUG, 30195D, "space to EOD");
+			state->current_position.block = state->eod[state->current_position.partition];
+			if (state->current_position.block == MISSING_EOD) {
+				ret = -EDEV_RW_PERM;
+				return ret;
+			} else
+				ret = 0;
+			break;
+		case TC_SPACE_FM_F:
+			ltfsmsg(LTFS_DEBUG, 30196D, "space forward file marks", (unsigned long long)count);
+			if (state->current_position.block == MISSING_EOD) {
+				ret = -EDEV_RW_PERM;
+				return ret;
+			} else
+				ret = _filedebug_space_fm(state, count, false);
+			break;
+		case TC_SPACE_FM_B:
+			ltfsmsg(LTFS_DEBUG, 30196D, "space back file marks", (unsigned long long)count);
+			if (state->current_position.block == MISSING_EOD) {
+				ret = -EDEV_RW_PERM;
+				return ret;
+			} else
+				ret = _filedebug_space_fm(state, count, true);
+			break;
+		case TC_SPACE_F:
+			ltfsmsg(LTFS_DEBUG, 30196D, "space forward records", (unsigned long long)count);
+			if (state->current_position.block == MISSING_EOD) {
+				ret = -EDEV_RW_PERM;
+				return ret;
+			} else
+				ret = _filedebug_space_rec(state, count, false);
+			break;
+		case TC_SPACE_B:
+			ltfsmsg(LTFS_DEBUG, 30196D, "space back records", (unsigned long long)count);
+			if (state->current_position.block == MISSING_EOD) {
+				ret = -EDEV_RW_PERM;
+				return ret;
+			} else
+				ret = _filedebug_space_rec(state, count, true);
+			break;
+		default:
+			ltfsmsg(LTFS_ERR, 30041E);
+			ret = -EDEV_INVALID_ARG;
 			return ret;
-		}
-		else
-			ret = 0;
-		break;
-	case TC_SPACE_FM_F:
-		ltfsmsg(LTFS_DEBUG, 30196D, "space forward file marks", (unsigned long long)count);
-		if (state->current_position.block == MISSING_EOD) {
-			ret = -EDEV_RW_PERM;
-			return ret;
-		}
-		else
-			ret = _filedebug_space_fm(state, count, false);
-		break;
-	case TC_SPACE_FM_B:
-		ltfsmsg(LTFS_DEBUG, 30196D, "space back file marks", (unsigned long long)count);
-		if (state->current_position.block == MISSING_EOD) {
-			ret = -EDEV_RW_PERM;
-			return ret;
-		}
-		else
-			ret = _filedebug_space_fm(state, count, true);
-		break;
-	case TC_SPACE_F:
-		ltfsmsg(LTFS_DEBUG, 30196D, "space forward records", (unsigned long long)count);
-		if (state->current_position.block == MISSING_EOD) {
-			ret = -EDEV_RW_PERM;
-			return ret;
-		}
-		else
-			ret = _filedebug_space_rec(state, count, false);
-		break;
-	case TC_SPACE_B:
-		ltfsmsg(LTFS_DEBUG, 30196D, "space back records", (unsigned long long)count);
-		if (state->current_position.block == MISSING_EOD) {
-			ret = -EDEV_RW_PERM;
-			return ret;
-		}
-		else
-			ret = _filedebug_space_rec(state, count, true);
-		break;
-	default:
-		ltfsmsg(LTFS_ERR, 30041E);
-		ret = -EDEV_INVALID_ARG;
-		return ret;
 	}
 
 	pos->block = state->current_position.block;
 
-	for(i = 0; i < state->current_position.block; ++i) {
+	for (i = 0; i < state->current_position.block; ++i) {
 		char *fname;
 
-		fname = _filedebug_make_filename(state, state->current_position.partition,
-										 i, rec_suffixes[SUFFIX_FILEMARK]);
+		fname = _filedebug_make_filename(state, state->current_position.partition, i, rec_suffixes[SUFFIX_FILEMARK]);
 		if (!fname) {
 			ltfsmsg(LTFS_ERR, 30042E);
 			ret = -EDEV_NO_MEMORY;
@@ -1294,25 +1261,23 @@ int filedebug_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_po
 		}
 
 		ret_fm = _filedebug_check_file(fname);
-		if (ret_fm == 1)
-			++count_fm;
+		if (ret_fm == 1) ++count_fm;
 		free(fname);
 	}
 
 	state->current_position.filemarks = count_fm;
 	pos->filemarks = state->current_position.filemarks;
 
-	if (state->p0_warning && state->current_position.partition == 0 &&
-		state->current_position.block >= state->p0_warning)
+	if (state->p0_warning && state->current_position.partition == 0 && state->current_position.block >= state->p0_warning)
 		pos->early_warning = true;
 	else if (state->p1_warning && state->current_position.partition == 1 &&
-		state->current_position.block >= state->p1_warning)
+					 state->current_position.block >= state->p1_warning)
 		pos->early_warning = true;
 	if (state->p0_p_warning && state->current_position.partition == 0 &&
-		state->current_position.block >= state->p0_p_warning)
+			state->current_position.block >= state->p0_p_warning)
 		pos->programmable_early_warning = true;
 	else if (state->p1_p_warning && state->current_position.partition == 1 &&
-		state->current_position.block >= state->p1_p_warning)
+					 state->current_position.block >= state->p1_p_warning)
 		pos->programmable_early_warning = true;
 	return ret;
 }
@@ -1333,7 +1298,7 @@ int filedebug_erase(void *device, struct tc_position *pos, bool long_erase)
 	}
 
 	ltfsmsg(LTFS_DEBUG, 30044D, (unsigned long)state->current_position.partition);
-	pos->block     = state->current_position.block;
+	pos->block = state->current_position.block;
 	pos->filemarks = state->current_position.filemarks;
 
 	ret = _filedebug_write_eod(state);
@@ -1421,97 +1386,95 @@ static inline int _sanitize_tape(struct filedebug_data *state)
 				ret = -EDEV_MEDIUM_FORMAT_ERROR;
 				break;
 		}
-	} 
-	else if (gen == DRIVE_GEN_JAG4) {
+	} else if (gen == DRIVE_GEN_JAG4) {
 		switch (state->conf.cart_type) {
-		case TC_MP_JB:
-		case TC_MP_JC:
-		case TC_MP_JK:
-			state->is_worm = false;
-			break;
-		case TC_MP_JX:
-		case TC_MP_JY:
-			state->is_worm = true;
-			break;
-		default:
-			ltfsmsg(LTFS_INFO, 30086I, "TS1140", state->conf.cart_type);
-			state->is_worm = false;
-			state->unsupported_tape = true;
-			ret = -EDEV_MEDIUM_FORMAT_ERROR;
-			break;
+			case TC_MP_JB:
+			case TC_MP_JC:
+			case TC_MP_JK:
+				state->is_worm = false;
+				break;
+			case TC_MP_JX:
+			case TC_MP_JY:
+				state->is_worm = true;
+				break;
+			default:
+				ltfsmsg(LTFS_INFO, 30086I, "TS1140", state->conf.cart_type);
+				state->is_worm = false;
+				state->unsupported_tape = true;
+				ret = -EDEV_MEDIUM_FORMAT_ERROR;
+				break;
 		}
 	} else if (gen == DRIVE_GEN_JAG5A) {
 		switch (state->conf.cart_type) {
-		case TC_MP_JC:
-		case TC_MP_JK:
-		case TC_MP_JD:
-		case TC_MP_JL:
-			state->is_worm = false;
-			break;
-		case TC_MP_JY:
-		case TC_MP_JZ:
-			state->is_worm = true;
-			break;
-		default:
-			ltfsmsg(LTFS_INFO, 30086I, "TS1150", state->conf.cart_type);
-			state->is_worm = false;
-			state->unsupported_tape = true;
-			ret = -EDEV_MEDIUM_FORMAT_ERROR;
-			break;
+			case TC_MP_JC:
+			case TC_MP_JK:
+			case TC_MP_JD:
+			case TC_MP_JL:
+				state->is_worm = false;
+				break;
+			case TC_MP_JY:
+			case TC_MP_JZ:
+				state->is_worm = true;
+				break;
+			default:
+				ltfsmsg(LTFS_INFO, 30086I, "TS1150", state->conf.cart_type);
+				state->is_worm = false;
+				state->unsupported_tape = true;
+				ret = -EDEV_MEDIUM_FORMAT_ERROR;
+				break;
 		}
 	} else if (gen == DRIVE_GEN_JAG6) {
 		switch (state->conf.cart_type) {
-		case TC_MP_JC:
-		case TC_MP_JK:
-		case TC_MP_JD:
-		case TC_MP_JL:
-			state->is_worm = false;
-			break;
-		case TC_MP_JY:
-		case TC_MP_JZ:
-			state->is_worm = true;
-			break;
-		default:
-			ltfsmsg(LTFS_INFO, 30086I, "TS1155", state->conf.cart_type);
-			state->is_worm = false;
-			state->unsupported_tape = true;
-			ret = -EDEV_MEDIUM_FORMAT_ERROR;
-			break;
+			case TC_MP_JC:
+			case TC_MP_JK:
+			case TC_MP_JD:
+			case TC_MP_JL:
+				state->is_worm = false;
+				break;
+			case TC_MP_JY:
+			case TC_MP_JZ:
+				state->is_worm = true;
+				break;
+			default:
+				ltfsmsg(LTFS_INFO, 30086I, "TS1155", state->conf.cart_type);
+				state->is_worm = false;
+				state->unsupported_tape = true;
+				ret = -EDEV_MEDIUM_FORMAT_ERROR;
+				break;
 		}
 	} else if (gen == DRIVE_GEN_JAG7) {
 		switch (state->conf.cart_type) {
-		case TC_MP_JC:
-		case TC_MP_JK:
-		case TC_MP_JD:
-		case TC_MP_JL:
-		case TC_MP_JE:
-		case TC_MP_JM:
-			state->is_worm = false;
-			break;
-		case TC_MP_JY:
-		case TC_MP_JZ:
-		case TC_MP_JV:
-			state->is_worm = true;
-			break;
-		default:
-			ltfsmsg(LTFS_INFO, 30086I, "TS1160", state->conf.cart_type);
-			state->is_worm = false;
-			state->unsupported_tape = true;
-			ret = -EDEV_MEDIUM_FORMAT_ERROR;
-			break;
+			case TC_MP_JC:
+			case TC_MP_JK:
+			case TC_MP_JD:
+			case TC_MP_JL:
+			case TC_MP_JE:
+			case TC_MP_JM:
+				state->is_worm = false;
+				break;
+			case TC_MP_JY:
+			case TC_MP_JZ:
+			case TC_MP_JV:
+				state->is_worm = true;
+				break;
+			default:
+				ltfsmsg(LTFS_INFO, 30086I, "TS1160", state->conf.cart_type);
+				state->is_worm = false;
+				state->unsupported_tape = true;
+				ret = -EDEV_MEDIUM_FORMAT_ERROR;
+				break;
 		}
-	}
-	else if (gen == DRIVE_GEN_JAG7) {
+	} else if (gen == DRIVE_GEN_JAG7) {
 		switch (state->conf.cart_type) {
-		case TC_MP_JF:
-			state->is_worm = false;
-			break;
-		default:
-			ltfsmsg(LTFS_INFO, 30086I, "TS1170", state->conf.cart_type);
-			state->is_worm = false;
-			state->unsupported_tape = true;
-			ret = -EDEV_MEDIUM_FORMAT_ERROR;
-			break;
+			case TC_MP_JF:
+				state->is_worm = false;
+				break;
+			default:
+				ltfsmsg(LTFS_INFO, 30086I, "TS1170", state->conf.cart_type);
+				state->is_worm = false;
+				state->unsupported_tape = true;
+				ret = -EDEV_MEDIUM_FORMAT_ERROR;
+				break;
 		}
 	} else {
 		ltfsmsg(LTFS_INFO, 30086I, "Unexpected Drive", state->conf.cart_type);
@@ -1537,21 +1500,20 @@ int filedebug_load(void *device, struct tc_position *pos)
 	if (state->ready) {
 		emulate_load_wait(state);
 		state->current_position.partition = 0;
-		state->current_position.block     = 0;
+		state->current_position.block = 0;
 		state->current_position.filemarks = 0;
-		state->clear_by_pc                = false;
-		state->force_writeperm            = DEFAULT_WRITEPERM;
-		state->force_readperm             = DEFAULT_READPERM;
-		state->write_counter              = 0;
-		state->read_counter               = 0;
+		state->clear_by_pc = false;
+		state->force_writeperm = DEFAULT_WRITEPERM;
+		state->force_readperm = DEFAULT_READPERM;
+		state->write_counter = 0;
+		state->read_counter = 0;
 		return DEVICE_GOOD; /* already loaded the tape */
 	}
 
 	if (state->fd > 0) {
 		memset(buf, 0, sizeof(buf));
 		ret = lseek(state->fd, 0, SEEK_SET);
-		if (ret < 0)
-			return -EDEV_HARDWARE_ERROR;
+		if (ret < 0) return -EDEV_HARDWARE_ERROR;
 
 		ret = arch_read(state->fd, buf, sizeof(buf));
 		if (ret != sizeof(buf)) {
@@ -1561,15 +1523,14 @@ int filedebug_load(void *device, struct tc_position *pos)
 
 		dirlink = buf;
 
-		if(dirlink[strlen(dirlink) - 1] == '\n')
-			dirlink[strlen(dirlink) - 1] = '\0';
+		if (dirlink[strlen(dirlink) - 1] == '\n') dirlink[strlen(dirlink) - 1] = '\0';
 
-		if(!strcmp(dirlink, "empty")) {
+		if (!strcmp(dirlink, "empty")) {
 			ltfsmsg(LTFS_INFO, 30046I, "");
 			return -EDEV_NO_MEDIUM;
 		}
 
-		if(state->dirname) {
+		if (state->dirname) {
 			free(state->dirname);
 			state->dirname = NULL;
 		}
@@ -1591,14 +1552,14 @@ int filedebug_load(void *device, struct tc_position *pos)
 	ltfsmsg(LTFS_INFO, 30048I, state->dirname);
 
 	/* Load configuration of cartridge */
-	ret = asprintf(&config_file, "%s/%s", state->dirname, CARTRIDGE_CONFIG );
+	ret = asprintf(&config_file, "%s/%s", state->dirname, CARTRIDGE_CONFIG);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 30049E, ret);
 		return -EDEV_INTERNAL_ERROR;
 	}
 
 	ret = stat(config_file, &d);
-	if (! ret && S_ISDIR(d.st_mode)) {
+	if (!ret && S_ISDIR(d.st_mode)) {
 		ltfsmsg(LTFS_ERR, 30050E, ret);
 		free(config_file);
 		return -EDEV_INTERNAL_ERROR;
@@ -1606,7 +1567,7 @@ int filedebug_load(void *device, struct tc_position *pos)
 
 	if (ret < 0 && errno == ENOENT)
 		filedebug_conf_tc_write_xml(config_file, &state->conf);
-	else if (! ret)
+	else if (!ret)
 		filedebug_conf_tc_read_xml(config_file, &state->conf);
 	else {
 		ltfsmsg(LTFS_ERR, 30051E, ret);
@@ -1617,7 +1578,7 @@ int filedebug_load(void *device, struct tc_position *pos)
 	free(config_file);
 	state->ready = true;
 
-	state->unsupported_tape   = false;
+	state->unsupported_tape = false;
 	state->unsupported_format = false;
 
 	/* Sanitize by cartridge type and configure WORM emulation flag */
@@ -1627,12 +1588,8 @@ int filedebug_load(void *device, struct tc_position *pos)
 	}
 
 	/* Configure internal read_only flag */
-	ret = ibm_tape_is_mountable( state->drive_type,
-								NULL,
-								state->conf.cart_type,
-								state->conf.density_code,
-								false);
-	switch(ret) {
+	ret = ibm_tape_is_mountable(state->drive_type, NULL, state->conf.cart_type, state->conf.density_code, false);
+	switch (ret) {
 		case MEDIUM_PERFECT_MATCH:
 		case MEDIUM_WRITABLE:
 			if (state->conf.emulate_readonly)
@@ -1646,8 +1603,7 @@ int filedebug_load(void *device, struct tc_position *pos)
 		case MEDIUM_CANNOT_ACCESS:
 			ltfsmsg(LTFS_INFO, 30088I, state->drive_type, state->conf.density_code);
 			state->unsupported_format = true;
-			if (IS_LTO(state->drive_type))
-				return -EDEV_MEDIUM_FORMAT_ERROR;
+			if (IS_LTO(state->drive_type)) return -EDEV_MEDIUM_FORMAT_ERROR;
 			break;
 		case MEDIUM_UNKNOWN:
 		case MEDIUM_PROBABLY_WRITABLE:
@@ -1657,7 +1613,7 @@ int filedebug_load(void *device, struct tc_position *pos)
 			break;
 	}
 
-	for (i=0; i<MAX_PARTITIONS; ++i) {
+	for (i = 0; i < MAX_PARTITIONS; ++i) {
 		ret = filedebug_search_eod(state, i);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 30052E, i, ret);
@@ -1665,11 +1621,10 @@ int filedebug_load(void *device, struct tc_position *pos)
 		}
 	}
 
-	if (state->conf.dummy_io)
-		_filedebug_remove_record(state, 1, state->eod[1]);
+	if (state->conf.dummy_io) _filedebug_remove_record(state, 1, state->eod[1]);
 
 	state->current_position.partition = 0;
-	state->current_position.block     = 0;
+	state->current_position.block = 0;
 	state->current_position.filemarks = 0;
 	if (state->eod[1] == 0)
 		state->partitions = 1;
@@ -1677,11 +1632,11 @@ int filedebug_load(void *device, struct tc_position *pos)
 		state->partitions = MAX_PARTITIONS;
 
 	pos->partition = state->current_position.partition;
-	pos->block     = state->current_position.block;
+	pos->block = state->current_position.block;
 	pos->filemarks = state->current_position.filemarks;
 
 	wp = 0;
-	if(_get_wp(device, &wp) != 0) {
+	if (_get_wp(device, &wp) != 0) {
 		ltfsmsg(LTFS_ERR, 30053E);
 		return -EDEV_INTERNAL_ERROR;
 	}
@@ -1725,20 +1680,20 @@ int filedebug_unload(void *device, struct tc_position *pos)
 
 	state->ready = false;
 	state->current_position.partition = 0;
-	state->current_position.block     = 0;
+	state->current_position.block = 0;
 	state->current_position.filemarks = 0;
-	state->clear_by_pc                = false;
-	state->force_writeperm            = DEFAULT_WRITEPERM;
-	state->force_readperm             = DEFAULT_READPERM;
-	state->write_counter              = 0;
-	state->read_counter               = 0;
+	state->clear_by_pc = false;
+	state->force_writeperm = DEFAULT_WRITEPERM;
+	state->force_readperm = DEFAULT_READPERM;
+	state->write_counter = 0;
+	state->read_counter = 0;
 
 	pos->partition = state->current_position.partition;
-	pos->block     = state->current_position.block;
+	pos->block = state->current_position.block;
 	pos->filemarks = state->current_position.filemarks;
 
 	/* Save configuration of cartridge */
-	ret = asprintf(&config_file, "%s/%s", state->dirname, CARTRIDGE_CONFIG );
+	ret = asprintf(&config_file, "%s/%s", state->dirname, CARTRIDGE_CONFIG);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 30049E, ret);
 		return -EDEV_INTERNAL_ERROR;
@@ -1746,8 +1701,7 @@ int filedebug_unload(void *device, struct tc_position *pos)
 
 	filedebug_conf_tc_write_xml(config_file, &state->conf);
 
-	if (config_file)
-		free(config_file);
+	if (config_file) free(config_file);
 
 	emulate_threading_wait(state);
 
@@ -1764,12 +1718,15 @@ int filedebug_readpos(void *device, struct tc_position *pos)
 	}
 
 	pos->partition = state->current_position.partition;
-	pos->block     = state->current_position.block;
+	pos->block = state->current_position.block;
 	pos->filemarks = state->current_position.filemarks;
 
-	ltfsmsg(LTFS_DEBUG, 30198D, "readpos", (unsigned long long)state->current_position.partition,
-		(unsigned long long)state->current_position.block,
-		(unsigned long long)state->current_position.filemarks);
+	ltfsmsg(LTFS_DEBUG,
+					30198D,
+					"readpos",
+					(unsigned long long)state->current_position.partition,
+					(unsigned long long)state->current_position.block,
+					(unsigned long long)state->current_position.filemarks);
 	return DEVICE_GOOD;
 }
 
@@ -1778,9 +1735,7 @@ int filedebug_setcap(void *device, uint16_t proportion)
 	struct filedebug_data *state = (struct filedebug_data *)device;
 	struct tc_position pos;
 
-	if(state->current_position.partition != 0 ||
-		state->current_position.block != 0)
-	{
+	if (state->current_position.partition != 0 || state->current_position.block != 0) {
 		ltfsmsg(LTFS_ERR, 30055E);
 		return -EDEV_ILLEGAL_REQUEST;
 	}
@@ -1798,23 +1753,22 @@ int filedebug_setcap(void *device, uint16_t proportion)
 	return DEVICE_GOOD;
 }
 
-int filedebug_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid)
+int filedebug_format(
+		void *device, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, const char *vol_mam_uuid)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
 	struct tc_position pos;
 	int ret = 0;
 
-	if(state->current_position.partition != 0 ||
-		state->current_position.block != 0)
-	{
+	if (state->current_position.partition != 0 || state->current_position.block != 0) {
 		ltfsmsg(LTFS_ERR, 30056E);
 		return -EDEV_ILLEGAL_REQUEST;
 	}
 
 	/* Emulate WORM */
-	if (state->is_worm &&
-		(state->eod[0] != 0 || state->eod[1] != 0) ) {
-		return -EDEV_WRITE_PROTECTED_WORM;;
+	if (state->is_worm && (state->eod[0] != 0 || state->eod[1] != 0)) {
+		return -EDEV_WRITE_PROTECTED_WORM;
+		;
 	}
 
 	/* Emulate read-only tape and write protected tape */
@@ -1822,14 +1776,14 @@ int filedebug_format(void *device, TC_FORMAT_TYPE format, const char *vol_name, 
 		if (state->conf.emulate_readonly)
 			ret = -EDEV_WRITE_PROTECTED; /* Emulate 07/2700 */
 		else
-			ret = -EDEV_DATA_PROTECT;    /* Emulate 07/3005 */
+			ret = -EDEV_DATA_PROTECT;		 /* Emulate 07/3005 */
 
 		ltfsmsg(LTFS_INFO, 30085I, ret, state->serial_number);
 
 		return ret;
 	}
 
-	switch(format){
+	switch (format) {
 		case TC_FORMAT_DEFAULT:
 			state->partitions = 1;
 			break;
@@ -1876,15 +1830,15 @@ int filedebug_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 		return DEVICE_GOOD;
 	}
 
-	if(state->partitions == 2) {
-		cap->max_p0       = calc_p0_cap(state);
+	if (state->partitions == 2) {
+		cap->max_p0 = calc_p0_cap(state);
 		cap->remaining_p0 = calc_p0_remaining(state);
-		cap->max_p1       = calc_p1_cap(state);
+		cap->max_p1 = calc_p1_cap(state);
 		cap->remaining_p1 = calc_p1_remaining(state);
 	} else {
-		cap->max_p0       = state->conf.capacity_mb;
+		cap->max_p0 = state->conf.capacity_mb;
 		cap->remaining_p0 = 0;
-		cap->max_p1       = 0;
+		cap->max_p1 = 0;
 		cap->remaining_p1 = 0;
 	}
 
@@ -1893,20 +1847,20 @@ int filedebug_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 
 int filedebug_get_cartridge_health(void *device, struct tc_cartridge_health *cart_health)
 {
-	cart_health->mounts           = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->written_ds       = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->write_temps      = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->write_perms      = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->read_ds          = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->read_temps       = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->read_perms       = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->mounts = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->written_ds = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->write_temps = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->write_perms = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->read_ds = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->read_temps = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->read_perms = UNSUPPORTED_CARTRIDGE_HEALTH;
 	cart_health->write_perms_prev = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->read_perms_prev  = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->written_mbytes   = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->read_mbytes      = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->passes_begin     = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->passes_middle    = UNSUPPORTED_CARTRIDGE_HEALTH;
-	cart_health->tape_efficiency  = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->read_perms_prev = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->written_mbytes = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->read_mbytes = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->passes_begin = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->passes_middle = UNSUPPORTED_CARTRIDGE_HEALTH;
+	cart_health->tape_efficiency = UNSUPPORTED_CARTRIDGE_HEALTH;
 
 	return DEVICE_GOOD;
 }
@@ -1924,13 +1878,11 @@ int filedebug_clear_tape_alert(void *device, uint64_t tape_alert)
 
 int filedebug_get_xattr(void *device, const char *name, char **buf)
 {
-	struct filedebug_data *state = (struct filedebug_data *) device;
+	struct filedebug_data *state = (struct filedebug_data *)device;
 	int ret = -LTFS_NO_XATTR;
 
 	if (!strcmp(name, "ltfs.vendor.IBM.seekLatency")) {
-		ret = asprintf(buf, "%lds%ldns",
-			state->accumulated_delay.tv_sec,
-			state->accumulated_delay.tv_nsec);
+		ret = asprintf(buf, "%lds%ldns", state->accumulated_delay.tv_sec, state->accumulated_delay.tv_nsec);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 10001E, "get_xattr buffer");
 			ret = -LTFS_NO_MEMORY;
@@ -1943,45 +1895,44 @@ int filedebug_get_xattr(void *device, const char *name, char **buf)
 
 int filedebug_set_xattr(void *device, const char *name, const char *buf, size_t size)
 {
-	struct filedebug_data *state = (struct filedebug_data *) device;
+	struct filedebug_data *state = (struct filedebug_data *)device;
 	int ret = -LTFS_NO_XATTR;
 	uint64_t attr_val;
 	char *null_terminated;
 	int64_t perm_count = 0;
 
-	if (!size)
-		return -LTFS_BAD_ARG;
+	if (!size) return -LTFS_BAD_ARG;
 
 	null_terminated = calloc(1, size + 1);
-	if (! null_terminated) {
+	if (!null_terminated) {
 		ltfsmsg(LTFS_ERR, 10001E, "ibmtape_set_xattr: null_term");
 		return -LTFS_NO_MEMORY;
 	}
 	memcpy(null_terminated, buf, size);
 
-	if (! strcmp(name, "ltfs.vendor.IBM.forceErrorWrite")) {
+	if (!strcmp(name, "ltfs.vendor.IBM.forceErrorWrite")) {
 		perm_count = strtoll(null_terminated, NULL, 0);
 		if (perm_count < 0) {
 			state->force_writeperm = -perm_count;
-			state->clear_by_pc     = true;
+			state->clear_by_pc = true;
 		} else {
 			state->force_writeperm = perm_count;
-			state->clear_by_pc     = false;
+			state->clear_by_pc = false;
 		}
 
 		state->write_counter = 0;
 		ret = DEVICE_GOOD;
-	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
+	} else if (!strcmp(name, "ltfs.vendor.IBM.forceErrorType")) {
 		state->force_errortype = strtol(null_terminated, NULL, 0);
 		ret = DEVICE_GOOD;
-	} else if (! strcmp(name, "ltfs.vendor.IBM.forceErrorRead")) {
+	} else if (!strcmp(name, "ltfs.vendor.IBM.forceErrorRead")) {
 		perm_count = strtoll(null_terminated, NULL, 0);
 		if (perm_count < 0) {
 			state->force_readperm = -perm_count;
-			state->clear_by_pc    = true;
+			state->clear_by_pc = true;
 		} else {
 			state->force_readperm = perm_count;
-			state->clear_by_pc    = false;
+			state->clear_by_pc = false;
 		}
 		state->read_counter = 0;
 		ret = DEVICE_GOOD;
@@ -2007,7 +1958,12 @@ int filedebug_logsense(void *device, const uint8_t page, const uint8_t subpage, 
 	return -EDEV_UNSUPPORTED_FUNCTION;
 }
 
-int filedebug_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc, const uint8_t subpage, unsigned char *buf, const size_t size)
+int filedebug_modesense(void *device,
+												const uint8_t page,
+												const TC_MP_PC_TYPE pc,
+												const uint8_t subpage,
+												unsigned char *buf,
+												const size_t size)
 {
 	uint16_t pews = 0;
 	struct filedebug_data *state = (struct filedebug_data *)device;
@@ -2025,7 +1981,7 @@ int filedebug_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc
 		pews = calc_p0_cap(state) / 2;
 		buf[17] = subpage;
 		buf[22] = (uint8_t)(pews >> 8 & 0xFF);
-		buf[23] = (uint8_t)(pews      & 0xFF);
+		buf[23] = (uint8_t)(pews & 0xFF);
 	}
 
 	return DEVICE_GOOD;
@@ -2043,12 +1999,8 @@ int filedebug_modeselect(void *device, unsigned char *buf, const size_t size)
 		/* TODO: Create a function to update state for read-only handling */
 		/* Recalculate read-only condition */
 		state->unsupported_format = false;
-		ret = ibm_tape_is_mountable( state->drive_type,
-									 NULL,
-									 state->conf.cart_type,
-									 state->conf.density_code,
-									 false);
-		switch(ret) {
+		ret = ibm_tape_is_mountable(state->drive_type, NULL, state->conf.cart_type, state->conf.density_code, false);
+		switch (ret) {
 			case MEDIUM_PERFECT_MATCH:
 			case MEDIUM_WRITABLE:
 				if (state->conf.emulate_readonly)
@@ -2062,8 +2014,7 @@ int filedebug_modeselect(void *device, unsigned char *buf, const size_t size)
 			case MEDIUM_CANNOT_ACCESS:
 				ltfsmsg(LTFS_INFO, 30088I, state->drive_type, state->conf.density_code);
 				state->unsupported_format = true;
-				if (IS_LTO(state->drive_type))
-					return -EDEV_MEDIUM_FORMAT_ERROR;
+				if (IS_LTO(state->drive_type)) return -EDEV_MEDIUM_FORMAT_ERROR;
 				break;
 			case MEDIUM_UNKNOWN:
 			case MEDIUM_PROBABLY_WRITABLE:
@@ -2117,8 +2068,8 @@ int filedebug_allow_medium_removal(void *device)
 	return DEVICE_GOOD;
 }
 
-int filedebug_read_attribute(void *device, const tape_partition_t part, const uint16_t id
-							 , unsigned char *buf, const size_t size)
+int filedebug_read_attribute(
+		void *device, const tape_partition_t part, const uint16_t id, unsigned char *buf, const size_t size)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
 	char *fname;
@@ -2129,8 +2080,7 @@ int filedebug_read_attribute(void *device, const tape_partition_t part, const ui
 
 	/* Open attribute record */
 	fname = _filedebug_make_attrname(state, part, id);
-	if (!fname)
-		return -EDEV_NO_MEMORY;
+	if (!fname) return -EDEV_NO_MEMORY;
 	arch_open(&fd, fname, O_RDONLY | O_BINARY, SHARE_FLAG_DENYNO, PERMISSION_READ);
 	free(fname);
 	if (fd < 0) {
@@ -2154,8 +2104,7 @@ int filedebug_read_attribute(void *device, const tape_partition_t part, const ui
 	return DEVICE_GOOD;
 }
 
-int filedebug_write_attribute(void *device, const tape_partition_t part
-							  , const unsigned char *buf, const size_t size)
+int filedebug_write_attribute(void *device, const tape_partition_t part, const unsigned char *buf, const size_t size)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
 	char *fname;
@@ -2164,8 +2113,7 @@ int filedebug_write_attribute(void *device, const tape_partition_t part
 	uint16_t id, attr_size;
 	size_t i = 0;
 
-	while(size > i)
-	{
+	while (size > i) {
 		id = ltfs_betou16(buf + i);
 		attr_size = ltfs_betou16(buf + (i + 3));
 
@@ -2177,10 +2125,7 @@ int filedebug_write_attribute(void *device, const tape_partition_t part
 			ltfsmsg(LTFS_ERR, 30064E);
 			return -EDEV_NO_MEMORY;
 		}
-		arch_open(&fd, fname,
-			O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-			SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
-
+		arch_open(&fd, fname, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 
 		free(fname);
 		if (fd < 0) {
@@ -2230,7 +2175,7 @@ int filedebug_get_eod_status(void *device, int partition)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
 
-	if(state->eod[partition] == MISSING_EOD)
+	if (state->eod[partition] == MISSING_EOD)
 		return EOD_MISSING;
 	else
 		return EOD_GOOD;
@@ -2257,14 +2202,13 @@ int filedebug_get_parameters(void *device, struct tc_drive_param *params)
 {
 	struct filedebug_data *state = (struct filedebug_data *)device;
 
-	params->max_blksize           = FILE_DEBUG_MAX_BLOCK_SIZE;
+	params->max_blksize = FILE_DEBUG_MAX_BLOCK_SIZE;
 
-	params->cart_type             = state->conf.cart_type;
-	params->density               = state->conf.density_code;
+	params->cart_type = state->conf.cart_type;
+	params->density = state->conf.density_code;
 
-	params->write_protect       = 0;
-	if ( state->conf.emulate_readonly )
-			params->write_protect |= VOL_PHYSICAL_WP;
+	params->write_protect = 0;
+	if (state->conf.emulate_readonly) params->write_protect |= VOL_PHYSICAL_WP;
 
 	/* TODO: Following field shall be implemented in the future */
 	//params->is_encrypted          = false;
@@ -2296,7 +2240,7 @@ int filedebug_search_eod(struct filedebug_data *state, int partition)
 	struct dirent *entry;
 
 	state->current_position.partition = partition;
-	state->current_position.block     = 0;
+	state->current_position.block = 0;
 
 	/* loop until an EOD mark is found or no record is found */
 	while ((f[0] || f[1]) && !f[2]) {
@@ -2323,18 +2267,18 @@ int filedebug_search_eod(struct filedebug_data *state, int partition)
 	}
 	--state->current_position.block;
 
-	if(!f[2] && state->current_position.block != 0) {
+	if (!f[2] && state->current_position.block != 0) {
 		state->last_block[state->current_position.partition] = state->current_position.block;
 		state->eod[state->current_position.partition] = MISSING_EOD;
 		if (state->conf.dummy_io) {
 			dp = opendir(state->dirname);
-			if (! dp) {
+			if (!dp) {
 				ltfsmsg(LTFS_ERR, 30004E, state->dirname);
 				return 0;
 			}
 
 			while ((entry = readdir(dp))) {
-				if ( entry->d_name[strlen(entry->d_name) - 1] == 'E') {
+				if (entry->d_name[strlen(entry->d_name) - 1] == 'E') {
 					entry->d_name[strlen(entry->d_name) - 2] = '\0';
 					entry->d_name[1] = '\0';
 					p = atoi(entry->d_name);
@@ -2378,8 +2322,7 @@ int _filedebug_write_eod(struct filedebug_data *state)
 	uint64_t i;
 	bool remove_extra_rec = true;
 
-	if(state->eod[state->current_position.partition] == MISSING_EOD)
-		remove_extra_rec = false;
+	if (state->eod[state->current_position.partition] == MISSING_EOD) remove_extra_rec = false;
 
 	/* remove any existing record at this position */
 	ret = _filedebug_remove_current_record(state);
@@ -2394,20 +2337,16 @@ int _filedebug_write_eod(struct filedebug_data *state)
 		ltfsmsg(LTFS_ERR, 30072E);
 		return -EDEV_NO_MEMORY;
 	}
-	arch_open(&fd, fname,
-		O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
-		SHARE_FLAG_DENYRW
-		, PERMISSION_READWRITE
-	);
+	arch_open(&fd, fname, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
 	free(fname);
 	if (fd < 0 || arch_close(fd) < 0) {
 		ltfsmsg(LTFS_ERR, 30073E, errno);
 		return -EDEV_RW_PERM;
 	}
 
-	if(remove_extra_rec) {
+	if (remove_extra_rec) {
 		/* remove records following this position */
-		for (i=state->current_position.block+1; i<=state->eod[state->current_position.partition]; ++i) {
+		for (i = state->current_position.block + 1; i <= state->eod[state->current_position.partition]; ++i) {
 			ret = _filedebug_remove_record(state, state->current_position.partition, i);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 30074E, ret);
@@ -2426,17 +2365,14 @@ int _filedebug_write_eod(struct filedebug_data *state)
  */
 int _filedebug_remove_current_record(const struct filedebug_data *state)
 {
-	return _filedebug_remove_record(state
-									, state->current_position.partition
-									, state->current_position.block);
+	return _filedebug_remove_record(state, state->current_position.partition, state->current_position.block);
 }
 
 /**
  * Delete the file associated with a given tape position.
  * @return 1 on successful delete, 0 if no file found, negative on error.
  */
-int _filedebug_remove_record(const struct filedebug_data *state,
-	int partition, uint64_t blknum)
+int _filedebug_remove_record(const struct filedebug_data *state, int partition, uint64_t blknum)
 {
 	char *fname;
 	size_t fname_len;
@@ -2494,10 +2430,7 @@ int _filedebug_check_file(const char *fname)
  */
 char *_filedebug_make_current_filename(const struct filedebug_data *state, char type)
 {
-	return _filedebug_make_filename(state
-									, state->current_position.partition
-									, state->current_position.block
-									, type);
+	return _filedebug_make_filename(state, state->current_position.partition, state->current_position.block, type);
 }
 
 /**
@@ -2505,12 +2438,11 @@ char *_filedebug_make_current_filename(const struct filedebug_data *state, char 
  * Returns a string on success or NULL on failure. The caller is responsible for freeing
  * the returned memory. Failure probably means asprintf couldn't allocate memory.
  */
-char *_filedebug_make_filename(const struct filedebug_data *state,
-	int part, uint64_t pos, char type)
+char *_filedebug_make_filename(const struct filedebug_data *state, int part, uint64_t pos, char type)
 {
 	char *fname;
 	int ret;
-	ret = asprintf(&fname, "%s/%d_%"PRIu64"_%c", state->dirname, part, pos, type);
+	ret = asprintf(&fname, "%s/%d_%" PRIu64 "_%c", state->dirname, part, pos, type);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return NULL;
@@ -2549,21 +2481,17 @@ int _filedebug_space_fm(struct filedebug_data *state, uint64_t count, bool back)
 	uint64_t fm_count = 0;
 	int ret;
 
-	if (count == 0)
-		return DEVICE_GOOD;
+	if (count == 0) return DEVICE_GOOD;
 
-	if (back && state->current_position.block > 0)
-		--state->current_position.block;
+	if (back && state->current_position.block > 0) --state->current_position.block;
 
 	while (1) {
-		if (!back &&
-			state->current_position.block == state->eod[state->current_position.partition]) {
+		if (!back && state->current_position.block == state->eod[state->current_position.partition]) {
 			ltfsmsg(LTFS_ERR, 30077E);
 			return -EDEV_EOD_DETECTED;
 		}
 
-		if (!back &&
-			state->current_position.block == state->last_block[state->current_position.partition] + 1) {
+		if (!back && state->current_position.block == state->last_block[state->current_position.partition] + 1) {
 			return -EDEV_RW_PERM;
 		}
 
@@ -2580,8 +2508,7 @@ int _filedebug_space_fm(struct filedebug_data *state, uint64_t count, bool back)
 		} else if (ret > 0) {
 			++fm_count;
 			if (fm_count == count) {
-				if (!back)
-					++state->current_position.block;
+				if (!back) ++state->current_position.block;
 				return DEVICE_GOOD;
 			}
 		}
@@ -2615,31 +2542,25 @@ int _filedebug_space_rec(struct filedebug_data *state, uint64_t count, bool back
 	uint64_t rec_count = 0;
 	int ret;
 
-	if (count == 0)
-		return DEVICE_GOOD;
+	if (count == 0) return DEVICE_GOOD;
 
 	while (1) {
-		if (!back &&
-			state->current_position.block == state->eod[state->current_position.partition]) {
+		if (!back && state->current_position.block == state->eod[state->current_position.partition]) {
 			return -EDEV_EOD_DETECTED;
 		}
 
-		if (!back &&
-			state->current_position.block == state->last_block[state->current_position.partition] + 1) {
+		if (!back && state->current_position.block == state->last_block[state->current_position.partition] + 1) {
 			return -EDEV_RW_PERM;
 		}
 
 		/* check for filemark */
 		fname = _filedebug_make_current_filename(state, rec_suffixes[SUFFIX_FILEMARK]);
-		if (!fname)
-			return -EDEV_NO_MEMORY;
+		if (!fname) return -EDEV_NO_MEMORY;
 		ret = _filedebug_check_file(fname);
 		free(fname);
-		if (ret < 0)
-			return ret;
+		if (ret < 0) return ret;
 		if (ret > 0 && (!back || rec_count > 0)) {
-			if (!back)
-				++state->current_position.block;
+			if (!back) ++state->current_position.block;
 			return -EDEV_RW_PERM;
 		}
 
@@ -2667,9 +2588,8 @@ int _get_wp(struct filedebug_data *device, uint64_t *wp)
 	memset(wp_data, 0, sizeof(wp_data));
 
 	*wp = 0;
-	ret = filedebug_read_attribute(device, 0, TC_MAM_PAGE_VCR
-								   , wp_data, sizeof(wp_data));
-	if(ret == 0)
+	ret = filedebug_read_attribute(device, 0, TC_MAM_PAGE_VCR, wp_data, sizeof(wp_data));
+	if (ret == 0)
 		*wp = ltfs_betou32(wp_data + 5);
 	else
 		ret = _set_wp(device, (uint64_t)1);
@@ -2705,10 +2625,10 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 	DIR *dp;
 	struct dirent *entry;
 	int deventries = 0;
-	char *ser= NULL, *pid = NULL, *tmp;
+	char *ser = NULL, *pid = NULL, *tmp;
 	int i;
 
-	if (! original_pid) {
+	if (!original_pid) {
 		original_pid = (long)arch_getpid();
 	}
 
@@ -2725,26 +2645,24 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 		return 0;
 	} else {
 		devdir = fgets(line, sizeof(line), infile);
-		if(devdir[strlen(devdir) - 1] == '\n')
-			devdir[strlen(devdir) - 1] = '\0';
+		if (devdir[strlen(devdir) - 1] == '\n') devdir[strlen(devdir) - 1] = '\0';
 		fclose(infile);
 		free(filename);
 	}
 
 	ltfsmsg(LTFS_INFO, 30083I, devdir);
 	dp = opendir(devdir);
-	if (! dp) {
+	if (!dp) {
 		ltfsmsg(LTFS_ERR, 30004E, devdir);
 		return 0;
 	}
 
 	while ((entry = readdir(dp))) {
-		if (strncmp(entry->d_name, DRIVE_FILE_PREFIX, strlen(DRIVE_FILE_PREFIX)))
-			continue;
+		if (strncmp(entry->d_name, DRIVE_FILE_PREFIX, strlen(DRIVE_FILE_PREFIX))) continue;
 
 		if (buf && deventries < count) {
 			tmp = arch_strdup(entry->d_name);
-			if (! *tmp) {
+			if (!*tmp) {
 				ltfsmsg(LTFS_ERR, 10001E, "filedebug_get_device_list");
 				return -ENOMEM;
 			}
@@ -2767,13 +2685,17 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 			snprintf(buf[deventries].serial_number, TAPE_SERIAL_LEN_MAX, "%s", ser);
 			snprintf(buf[deventries].product_name, PRODUCT_NAME_LENGTH, "[%s]", pid);
 
-			buf[deventries].host    = 0;
+			buf[deventries].host = 0;
 			buf[deventries].channel = 0;
-			buf[deventries].target  = 0;
-			buf[deventries].lun     = -1;
+			buf[deventries].target = 0;
+			buf[deventries].lun = -1;
 
-			ltfsmsg(LTFS_DEBUG, 30084D, buf[deventries].name, buf[deventries].vendor,
-					buf[deventries].model, buf[deventries].serial_number);
+			ltfsmsg(LTFS_DEBUG,
+							30084D,
+							buf[deventries].name,
+							buf[deventries].vendor,
+							buf[deventries].model,
+							buf[deventries].serial_number);
 
 			free(tmp);
 		}
@@ -2802,17 +2724,15 @@ int filedebug_takedump_drive(void *device, bool nonforced_dump)
 	return DEVICE_GOOD;
 }
 
-int filedebug_is_mountable(void *device, const char *barcode, const unsigned char cart_type,
-							const unsigned char density)
+int filedebug_is_mountable(void *device,
+													 const char *barcode,
+													 const unsigned char cart_type,
+													 const unsigned char density)
 {
 	int ret;
 	struct filedebug_data *state = (struct filedebug_data *)device;
 
-	ret = ibm_tape_is_mountable( state->drive_type,
-								barcode,
-								cart_type,
-								density,
-								global_data.strict_drive);
+	ret = ibm_tape_is_mountable(state->drive_type, barcode, cart_type, density, global_data.strict_drive);
 
 	return ret;
 }
@@ -2822,11 +2742,8 @@ bool filedebug_is_readonly(void *device)
 	int ret;
 	struct filedebug_data *state = (struct filedebug_data *)device;
 
-	ret = ibm_tape_is_mountable( state->drive_type,
-								NULL,
-								state->conf.cart_type,
-								state->conf.density_code,
-								global_data.strict_drive);
+	ret = ibm_tape_is_mountable(
+			state->drive_type, NULL, state->conf.cart_type, state->conf.density_code, global_data.strict_drive);
 
 	if (ret == MEDIUM_READONLY)
 		return true;
@@ -2850,12 +2767,11 @@ int filedebug_get_serialnumber(void *device, char **result)
 	CHECK_ARG_NULL(result, -LTFS_NULL_ARG);
 
 	if (state->serial_number)
-		*result = arch_strdup((const char*)state->serial_number);
+		*result = arch_strdup((const char *)state->serial_number);
 	else
 		*result = arch_strdup("DUMMY");
 
-	if (! *result)
-		return -EDEV_NO_MEMORY;
+	if (!*result) return -EDEV_NO_MEMORY;
 
 	return DEVICE_GOOD;
 }
@@ -2880,68 +2796,68 @@ int filedebug_get_next_block_to_xfer(void *device, struct tc_position *pos)
 	struct filedebug_data *state = (struct filedebug_data *)device;
 
 	pos->partition = state->current_position.partition;
-	pos->block     = state->current_position.block - THRESHOLD_FORCE_WRITE_NO_WRITE;
+	pos->block = state->current_position.block - THRESHOLD_FORCE_WRITE_NO_WRITE;
 
 	return 0;
 }
 
 struct tape_ops filedebug_handler = {
-	.open                   = filedebug_open,
-	.reopen                 = filedebug_reopen,
-	.close                  = filedebug_close,
-	.close_raw              = filedebug_close_raw,
-	.is_connected           = filedebug_is_connected,
-	.inquiry                = filedebug_inquiry,
-	.inquiry_page           = filedebug_inquiry_page,
-	.test_unit_ready        = filedebug_test_unit_ready,
-	.read                   = filedebug_read,
-	.write                  = filedebug_write,
-	.writefm                = filedebug_writefm,
-	.rewind                 = filedebug_rewind,
-	.locate                 = filedebug_locate,
-	.space                  = filedebug_space,
-	.erase                  = filedebug_erase,
-	.load                   = filedebug_load,
-	.unload                 = filedebug_unload,
-	.readpos                = filedebug_readpos,
-	.setcap                 = filedebug_setcap,
-	.format                 = filedebug_format,
-	.remaining_capacity     = filedebug_remaining_capacity,
-	.logsense               = filedebug_logsense,
-	.modesense              = filedebug_modesense,
-	.modeselect             = filedebug_modeselect,
-	.reserve_unit           = filedebug_reserve_unit,
-	.release_unit           = filedebug_release_unit,
+	.open = filedebug_open,
+	.reopen = filedebug_reopen,
+	.close = filedebug_close,
+	.close_raw = filedebug_close_raw,
+	.is_connected = filedebug_is_connected,
+	.inquiry = filedebug_inquiry,
+	.inquiry_page = filedebug_inquiry_page,
+	.test_unit_ready = filedebug_test_unit_ready,
+	.read = filedebug_read,
+	.write = filedebug_write,
+	.writefm = filedebug_writefm,
+	.rewind = filedebug_rewind,
+	.locate = filedebug_locate,
+	.space = filedebug_space,
+	.erase = filedebug_erase,
+	.load = filedebug_load,
+	.unload = filedebug_unload,
+	.readpos = filedebug_readpos,
+	.setcap = filedebug_setcap,
+	.format = filedebug_format,
+	.remaining_capacity = filedebug_remaining_capacity,
+	.logsense = filedebug_logsense,
+	.modesense = filedebug_modesense,
+	.modeselect = filedebug_modeselect,
+	.reserve_unit = filedebug_reserve_unit,
+	.release_unit = filedebug_release_unit,
 	.prevent_medium_removal = filedebug_prevent_medium_removal,
-	.allow_medium_removal   = filedebug_allow_medium_removal,
-	.write_attribute        = filedebug_write_attribute,
-	.read_attribute         = filedebug_read_attribute,
-	.allow_overwrite        = filedebug_allow_overwrite,
-	.grao                   = filedebug_grao,
-	.rrao                   = filedebug_rrao,
-	.set_compression        = filedebug_set_compression,
-	.set_default            = filedebug_set_default,
-	.get_cartridge_health   = filedebug_get_cartridge_health,
-	.get_tape_alert         = filedebug_get_tape_alert,
-	.clear_tape_alert       = filedebug_clear_tape_alert,
-	.get_xattr              = filedebug_get_xattr,
-	.set_xattr              = filedebug_set_xattr,
-	.get_parameters         = filedebug_get_parameters,
-	.get_eod_status         = filedebug_get_eod_status,
-	.get_device_list        = filedebug_get_device_list,
-	.help_message           = filedebug_help_message,
-	.parse_opts             = filedebug_parse_opts,
-	.default_device_name    = filedebug_default_device_name,
-	.set_key                = filedebug_set_key,
-	.get_keyalias           = filedebug_get_keyalias,
-	.takedump_drive         = filedebug_takedump_drive,
-	.is_mountable           = filedebug_is_mountable,
-	.get_worm_status        = filedebug_get_worm_status,
-	.get_serialnumber       = filedebug_get_serialnumber,
-	.get_info               = filedebug_get_info,
-	.set_profiler           = filedebug_set_profiler,
+	.allow_medium_removal = filedebug_allow_medium_removal,
+	.write_attribute = filedebug_write_attribute,
+	.read_attribute = filedebug_read_attribute,
+	.allow_overwrite = filedebug_allow_overwrite,
+	.grao = filedebug_grao,
+	.rrao = filedebug_rrao,
+	.set_compression = filedebug_set_compression,
+	.set_default = filedebug_set_default,
+	.get_cartridge_health = filedebug_get_cartridge_health,
+	.get_tape_alert = filedebug_get_tape_alert,
+	.clear_tape_alert = filedebug_clear_tape_alert,
+	.get_xattr = filedebug_get_xattr,
+	.set_xattr = filedebug_set_xattr,
+	.get_parameters = filedebug_get_parameters,
+	.get_eod_status = filedebug_get_eod_status,
+	.get_device_list = filedebug_get_device_list,
+	.help_message = filedebug_help_message,
+	.parse_opts = filedebug_parse_opts,
+	.default_device_name = filedebug_default_device_name,
+	.set_key = filedebug_set_key,
+	.get_keyalias = filedebug_get_keyalias,
+	.takedump_drive = filedebug_takedump_drive,
+	.is_mountable = filedebug_is_mountable,
+	.get_worm_status = filedebug_get_worm_status,
+	.get_serialnumber = filedebug_get_serialnumber,
+	.get_info = filedebug_get_info,
+	.set_profiler = filedebug_set_profiler,
 	.get_next_block_to_xfer = filedebug_get_next_block_to_xfer,
-	.is_readonly            = filedebug_is_readonly,
+	.is_readonly = filedebug_is_readonly,
 };
 
 struct tape_ops *tape_dev_get_ops(void)

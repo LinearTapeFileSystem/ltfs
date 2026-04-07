@@ -48,6 +48,8 @@
 */
 #ifndef __cache_manager_h
 #define __cache_manager_h
+#include <stdbool.h>
+#include <stdlib.h>
 
 void *cache_manager_init(size_t object_size, size_t initial_capacity, size_t max_capacity);
 void cache_manager_destroy(void *cache);

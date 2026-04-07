@@ -61,25 +61,26 @@
 int ltfs_index_alloc(struct ltfs_index **index, struct ltfs_volume *vol);
 
 void _ltfs_index_free(bool force, struct ltfs_index **index);
-#define ltfs_index_free(idx)					\
-	_ltfs_index_free(false, idx)
-#define ltfs_index_free_force(idx)				\
-	_ltfs_index_free(true, idx)
+#define ltfs_index_free(idx) _ltfs_index_free(false, idx)
+#define ltfs_index_free_force(idx) _ltfs_index_free(true, idx)
 
 int ltfs_check_medium(bool fix, bool deep, bool recover_extra, bool recover_symlink, struct ltfs_volume *vol);
 int ltfs_read_labels(bool trial, struct ltfs_volume *vol);
-int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label,
-	struct ltfs_volume *vol);
+int ltfs_read_one_label(tape_partition_t partition, struct ltfs_label *label, struct ltfs_volume *vol);
 int ltfs_read_index(uint64_t eod_pos, bool recover_symlink, struct ltfs_volume *vol);
 
 int ltfs_update_cart_coherency(struct ltfs_volume *vol);
 int ltfs_write_index_conditional(char partition, struct ltfs_volume *vol);
 bool ltfs_is_valid_partid(char id);
 
-int ltfs_seek_index(char partition, tape_block_t *eod_pos, tape_block_t *index_end_pos,
-			bool *fm_after, bool *blocks_after, bool recover_symlink, struct ltfs_volume *vol);
-void _ltfs_last_ref(struct dentry *d, tape_block_t *dp_last, tape_block_t *ip_last,
-					struct ltfs_volume *vol);
-int ltfs_split_symlink( struct ltfs_volume *vol );
+int ltfs_seek_index(char partition,
+										tape_block_t *eod_pos,
+										tape_block_t *index_end_pos,
+										bool *fm_after,
+										bool *blocks_after,
+										bool recover_symlink,
+										struct ltfs_volume *vol);
+void _ltfs_last_ref(struct dentry *d, tape_block_t *dp_last, tape_block_t *ip_last, struct ltfs_volume *vol);
+int ltfs_split_symlink(struct ltfs_volume *vol);
 
 #endif /* __ltfs_internal_h__ */

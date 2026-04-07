@@ -47,13 +47,13 @@
 *************************************************************************************
 */
 
+#include "libltfs/arch/filename_handling.h"
 #include "libltfs/fs.h"
 #include "libltfs/pathname.h"
-#include "libltfs/arch/filename_handling.h"
 
 #if defined(mingw_PLATFORM)
-bool _replace_invalid_chars(char * file_name, bool * dosdev);
-char * _generate_target_file_name(const char *prefix, const char *extension, int suffix, bool dosdev);
+bool _replace_invalid_chars(char *file_name, bool *dosdev);
+char *_generate_target_file_name(const char *prefix, const char *extension, int suffix, bool dosdev);
 int _utf8_strlen(const char *s);
 int _utf8_strcpy(char *t, const char *s, int n);
 #endif
@@ -65,35 +65,33 @@ int _utf8_strcpy(char *t, const char *s, int n);
  * if TRUE. otherwise the name is skipped withour updating
  * platform_safe_name field.
  */
-void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, struct ltfs_index *idx)
+void update_platform_safe_name(struct dentry *dentry, bool handle_invalid_char, struct ltfs_index *idx)
 {
 #if defined(mingw_PLATFORM)
 	bool dosdev = false;
 	int suffix = 0;
-	char source_file_name[LTFS_FILENAME_MAX*4+1];
+	char source_file_name[LTFS_FILENAME_MAX * 4 + 1];
 	char *source_file_name_prefix, *source_file_name_extension;
 	char *target_file_name;
-	struct dentry* d = NULL;
+	struct dentry *d = NULL;
 	int ret;
 
 	dentry->platform_safe_name = NULL;
 	arch_strcpy_auto(source_file_name, dentry->name.name);
 
 	if (_replace_invalid_chars(source_file_name, &dosdev)) {
-		if (! handle_invalid_char)
-			return;
+		if (!handle_invalid_char) return;
 		suffix++;
 	}
 
 	/* Split source file name to prefix and extension */
-	if (! dosdev) {
+	if (!dosdev) {
 		source_file_name_prefix = source_file_name;
 		source_file_name_extension = strrchr(source_file_name, '.');
 
 		/* If '.' is at the beginning of file name, then all of file name is
 		   recognized as prefix, not extension. */
-		if (source_file_name_extension == source_file_name_prefix)
-			source_file_name_extension = NULL;
+		if (source_file_name_extension == source_file_name_prefix) source_file_name_extension = NULL;
 	} else {
 		source_file_name_prefix = source_file_name;
 		source_file_name_extension = strchr(source_file_name, '.');
@@ -107,7 +105,7 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
 	while (1) {
 		target_file_name = _generate_target_file_name(source_file_name_prefix, source_file_name_extension, suffix, dosdev);
 
-		if (! target_file_name)
+		if (!target_file_name)
 			break;
 		else {
 			if (dentry->parent) {
@@ -117,7 +115,7 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
 					break;
 				}
 			}
-			if (! dentry->parent || ! d ) {
+			if (!dentry->parent || !d) {
 				dentry->platform_safe_name = target_file_name;
 				break;
 			} else {
@@ -157,35 +155,31 @@ int ltfs_compare_names(const char *name1, const char *name2, int *result)
  *  name includes reserved dos device name.
  * @param file_name file_name to be checked
  */
-bool _replace_invalid_chars(char * file_name, bool * dosdev)
+bool _replace_invalid_chars(char *file_name, bool *dosdev)
 {
 	bool to_be_changed = false;
-	static char invalid_chars[] = "\\:*?\"<>|" ;
-	static char *dosdev_list[] = {	"CON", "PRN", "AUX", "CLOCK$", "NUL", "COM0",
-									"COM1", "COM2", "COM3", "COM4", "COM5", "COM6",
-									"COM7", "COM8", "COM9", "LPT0", "LPT1", "LPT2",
-									"LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8",
-									"LPT9", NULL };
+	static char invalid_chars[] = "\\:*?\"<>|";
+	static char *dosdev_list[] = { "CON",	 "PRN",	 "AUX",	 "CLOCK$", "NUL",	 "COM0", "COM1", "COM2", "COM3",
+																 "COM4", "COM5", "COM6", "COM7",	 "COM8", "COM9", "LPT0", "LPT1", "LPT2",
+																 "LPT3", "LPT4", "LPT5", "LPT6",	 "LPT7", "LPT8", "LPT9", NULL };
 	int i;
 
 	*dosdev = false;
 	for (i = 0; dosdev_list[i]; i++) {
-		if ( strcasestr(file_name, dosdev_list[i]) == file_name &&
-			 (file_name[strlen(dosdev_list[i])] == '\0' ||file_name[strlen(dosdev_list[i])] == '.') ) {
+		if (strcasestr(file_name, dosdev_list[i]) == file_name &&
+				(file_name[strlen(dosdev_list[i])] == '\0' || file_name[strlen(dosdev_list[i])] == '.')) {
 			*dosdev = true;
 			to_be_changed = true;
 		}
 	}
 
-	for (i = 0; ; i++) {
+	for (i = 0;; i++) {
 		if (file_name[i]) {
-			if (file_name[i] >= 0x01 && file_name[i] <= 0x1F ||
-				strchr(invalid_chars, file_name[i])) {
+			if (file_name[i] >= 0x01 && file_name[i] <= 0x1F || strchr(invalid_chars, file_name[i])) {
 				file_name[i] = '_';
 				to_be_changed = true;
 			}
-		}
-		else
+		} else
 			break;
 	}
 
@@ -197,26 +191,26 @@ bool _replace_invalid_chars(char * file_name, bool * dosdev)
  *  extension, and suffix.
  * @param file_name file_name to be checked
  */
-char * _generate_target_file_name(const char *prefix, const char *extension, int suffix, bool dosdev)
+char *_generate_target_file_name(const char *prefix, const char *extension, int suffix, bool dosdev)
 {
 	char *target;
-	char suffix_string[LTFS_FILENAME_MAX*4+1];
-	char trimmed_name[LTFS_FILENAME_MAX*4+1];
+	char suffix_string[LTFS_FILENAME_MAX * 4 + 1];
+	char trimmed_name[LTFS_FILENAME_MAX * 4 + 1];
 	int prefix_length, extension_length, suffix_length, ret;
 
 	ret = -1;
 	target = NULL;
 
 	if (suffix) {
-		arch_sprintf_auto( suffix_string, "~%d", suffix );
+		arch_sprintf_auto(suffix_string, "~%d", suffix);
 
-		prefix_length    = prefix    ? _utf8_strlen(prefix)    : 0;
+		prefix_length = prefix ? _utf8_strlen(prefix) : 0;
 		extension_length = extension ? _utf8_strlen(extension) : 0;
-		suffix_length    = _utf8_strlen(suffix_string);
+		suffix_length = _utf8_strlen(suffix_string);
 
 		if (prefix_length + extension_length + suffix_length > LTFS_FILENAME_MAX) {
 			/* Need to trim source file name to add suffix */
-			if (! dosdev && prefix_length > suffix_length) {
+			if (!dosdev && prefix_length > suffix_length) {
 				/* Prefix is to be trimmed. */
 				_utf8_strcpy(trimmed_name, prefix, prefix_length - suffix_length);
 				if (extension)
@@ -260,8 +254,7 @@ int _utf8_strlen(const char *s)
 	CHECK_ARG_NULL(s, -LTFS_NULL_ARG);
 
 	while (*s) {
-		if (! (*s & 0x80) || (*s & 0xC0) == 0xC0)
-			++ret;
+		if (!(*s & 0x80) || (*s & 0xC0) == 0xC0) ++ret;
 		++s;
 	}
 	return ret;
@@ -281,7 +274,7 @@ int _utf8_strcpy(char *t, const char *s, int n)
 	CHECK_ARG_NULL(s, -LTFS_NULL_ARG);
 
 	while (*s) {
-		if (! (*s & 0x80) || (*s & 0xC0) == 0xC0) {
+		if (!(*s & 0x80) || (*s & 0xC0) == 0xC0) {
 			++ret;
 			if (ret > n) {
 				*t = 0x00;

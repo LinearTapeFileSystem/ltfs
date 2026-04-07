@@ -62,14 +62,14 @@
 struct iokit_device
 {
 	/* Equivalent to fd in other platforms */
-	mach_port_t             masterPort;           /**< OS X master port to kernel for IOKit calls */
-	io_service_t            ioservice;            /**< Service instance for the selected tape drive */
-	IOCFPlugInInterface     **plugInInterface;    /**< IOKit plugin interface */
-	SCSITaskDeviceInterface **scsiTaskInterface;  /**< IOKit task device interface */
-	SCSITaskInterface       **task;               /**< Reusable task object */
-	bool                    exclusive_lock;       /**< OS X exclusive lock held on device */
+	mach_port_t masterPort;											 /**< OS X master port to kernel for IOKit calls */
+	io_service_t ioservice;											 /**< Service instance for the selected tape drive */
+	IOCFPlugInInterface **plugInInterface;			 /**< IOKit plugin interface */
+	SCSITaskDeviceInterface **scsiTaskInterface; /**< IOKit task device interface */
+	SCSITaskInterface **task;										 /**< Reusable task object */
+	bool exclusive_lock;												 /**< OS X exclusive lock held on device */
 	/* */
-	bool                    is_data_key_set;      /**< Is a valid data key set? */
+	bool is_data_key_set; /**< Is a valid data key set? */
 };
 
 /**
@@ -187,4 +187,4 @@ int iokit_find_smc_device(struct iokit_device *device, int changer_number);
  */
 int iokit_find_ssc_device(struct iokit_device *device, int drive_number);
 
-#endif // __iokit_service_h
+#endif	// __iokit_service_h

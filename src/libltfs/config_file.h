@@ -107,4 +107,3 @@ char **config_file_get_plugins(const char *type, struct config_file *config);
 char **config_file_get_options(const char *type, struct config_file *config);
 
 #endif /* __CONFIG_FILE_H__ */
-

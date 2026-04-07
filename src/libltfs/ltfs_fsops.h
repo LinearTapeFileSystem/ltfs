@@ -51,21 +51,25 @@
 *************************************************************************************
 */
 
-
 #ifndef ltfs_fsops_h__
 #define ltfs_fsops_h__
+#include "ltfs.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-typedef	struct _ltfs_file_id
-{
-	uint64_t uid;
-	uint64_t ino;
-} ltfs_file_id;
+	typedef struct _ltfs_file_id
+	{
+		uint64_t uid;
+		uint64_t ino;
+	} ltfs_file_id;
 
-/**
+	/**
  * Open a file or directory. This means looking it up in the name tree and incrementing its
  * reference count, as well as informing the I/O scheduler that the file is open.
  * For each call to this function, there must be a call to ltfs_fsops_close() with an identical
@@ -86,10 +90,9 @@ typedef	struct _ltfs_file_id
  *    - -LTFS_NO_DENTRY if the path does not exist
  *    - Another negative value if an unexpected error occurred
  */
-int ltfs_fsops_open(const char *path, bool open_write, bool use_iosched, struct dentry **d,
-	struct ltfs_volume *vol);
+	int ltfs_fsops_open(const char *path, bool open_write, bool use_iosched, struct dentry **d, struct ltfs_volume *vol);
 
-/**
+	/**
  * Open a file or directory. This means looking it up in the name tree and incrementing its
  * reference count, as well as informing the I/O scheduler that the file is open.
  * For each call to this function, there must be a call to ltfs_fsops_close() with an identical
@@ -112,11 +115,15 @@ int ltfs_fsops_open(const char *path, bool open_write, bool use_iosched, struct 
  *    - -LTFS_NO_DENTRY if the path does not exist
  *    - Another negative value if an unexpected error occurred
  */
-int ltfs_fsops_open_combo(const char *path, bool open_write, bool use_iosched,
-						  struct dentry **d, bool *is_readonly,
-						  bool isopendir, struct ltfs_volume *vol);
+	int ltfs_fsops_open_combo(const char *path,
+														bool open_write,
+														bool use_iosched,
+														struct dentry **d,
+														bool *is_readonly,
+														bool isopendir,
+														struct ltfs_volume *vol);
 
-/**
+	/**
  * Close a prevously opened file or directory.
  * For each call to ltfs_fsops_open(), there must be a call to this function with an identical
  * use_iosched flag. For each call to ltfs_fsops_create(), there must be a call to this function
@@ -134,9 +141,9 @@ int ltfs_fsops_open_combo(const char *path, bool open_write, bool use_iosched,
  *    - Another negative value if an unexpected error occurred. This can only happen if
  *      use_iosched is set and 'd' is a file (not a directory).
  */
-int ltfs_fsops_close(struct dentry *d, bool dirty, bool open_write, bool use_iosched,  struct ltfs_volume *vol);
+	int ltfs_fsops_close(struct dentry *d, bool dirty, bool open_write, bool use_iosched, struct ltfs_volume *vol);
 
-/**
+	/**
  * Recalculate used blocks of specified dentry and reflect it to valid_blocks in the index structure
  * @param d File or directory to update.
  * @param vol LTFS volume to which the dentry belongs.
@@ -146,9 +153,9 @@ int ltfs_fsops_close(struct dentry *d, bool dirty, bool open_write, bool use_ios
  *    - Another negative value if an unexpected error occurred. This can only happen if
  *      use_iosched is set and 'd' is a file (not a directory).
  */
-int ltfs_fsops_update_used_blocks(struct dentry *d, struct ltfs_volume *vol);
+	int ltfs_fsops_update_used_blocks(struct dentry *d, struct ltfs_volume *vol);
 
-/**
+	/**
  * Create a new file or directory and open it for writing.
  * For each call to this function, there must be a call to ltfs_fsops_close() (with use_iosched
  * set for files and unset for directories).
@@ -170,10 +177,10 @@ int ltfs_fsops_update_used_blocks(struct dentry *d, struct ltfs_volume *vol);
  *    - -LTFS_DENTRY_EXISTS if the target path already exists
  *    - Another negative value if an unexpected error occurred
  */
-int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrite, struct dentry **dentry,
-	struct ltfs_volume *vol);
+	int ltfs_fsops_create(
+			const char *path, bool isdir, bool readonly, bool overwrite, struct dentry **dentry, struct ltfs_volume *vol);
 
-/**
+	/**
  * Unlink a file or directory from the tree.
  * @param path File or directory to remove.
  * @param id (out) File identifier to be processed
@@ -191,9 +198,9 @@ int ltfs_fsops_create(const char *path, bool isdir, bool readonly, bool overwrit
  *    - -LTFS_DIRNOTEMPTY if the target is a non-empty directory
  *    - Another negative value if an unexpected error occurred
  */
-int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vol);
+	int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vol);
 
-/**
+	/**
  * Rename a file or directory, unlinking the target path if it exists.
  * @param from Source file or directory.
  * @param to Target path.
@@ -215,9 +222,9 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
  *    - -LTFS_RENAMELOOP if 'from' is the parent or ancestor of 'to'
  *    - Another negative value if an unexpected error occurred
  */
-int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct ltfs_volume *vol);
+	int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct ltfs_volume *vol);
 
-/**
+	/**
  * Get attributes for a file or directory.
  * @param d File or directory to inspect.
  * @param attr Output buffer for attributes.
@@ -227,14 +234,14 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
  *    - -LTFS_NULL_ARG if any of the input arguments are NULL
  *    - Another negative value if an internal error occurred in the I/O scheduler
  */
-int ltfs_fsops_getattr(struct dentry *d, struct dentry_attr *attr, struct ltfs_volume *vol);
+	int ltfs_fsops_getattr(struct dentry *d, struct dentry_attr *attr, struct ltfs_volume *vol);
 
-/**
+	/**
  * Wrapper for ltfs_fsops_getattr() that takes a path argument.
  */
-int ltfs_fsops_getattr_path(const char *path, struct dentry_attr *attr, ltfs_file_id *id, struct ltfs_volume *vol);
+	int ltfs_fsops_getattr_path(const char *path, struct dentry_attr *attr, ltfs_file_id *id, struct ltfs_volume *vol);
 
-/**
+	/**
  * Set an extended attribute on a file or directory.
  * @param path File or directory for which the extended attribute will be set.
  * @param name Name to set.
@@ -249,10 +256,15 @@ int ltfs_fsops_getattr_path(const char *path, struct dentry_attr *attr, ltfs_fil
  *    - LTFS_NULL_ARG if any of the input arguments are NULL
  *    - Another negative value if an unexpected error occurred.
  */
-int ltfs_fsops_setxattr(const char *path, const char *name, const char *value, size_t size,
-						int flags, ltfs_file_id *id, struct ltfs_volume *vol);
+	int ltfs_fsops_setxattr(const char *path,
+													const char *name,
+													const char *value,
+													size_t size,
+													int flags,
+													ltfs_file_id *id,
+													struct ltfs_volume *vol);
 
-/*
+	/*
  * Get an extended attribute from a file or directory.
  * @param path File/directory to check
  * @param name Extended attribute name
@@ -272,10 +284,10 @@ int ltfs_fsops_setxattr(const char *path, const char *name, const char *value, s
  *    - -LTFS_SMALL_BUFFER is size is too small to hold the xattr value.
  *    - Another negative value if an unexpected error occurred.
  */
-int ltfs_fsops_getxattr(const char *path, const char *name, char *value, size_t size,
-						ltfs_file_id *id, struct ltfs_volume *vol);
+	int ltfs_fsops_getxattr(
+			const char *path, const char *name, char *value, size_t size, ltfs_file_id *id, struct ltfs_volume *vol);
 
-/**
+	/**
  * List extended attributes for a file or directory.
  * @param path File or directory to inspect.
  * @param list Output buffer where the extended attributes found will be copied to. If set to
@@ -292,9 +304,9 @@ int ltfs_fsops_getxattr(const char *path, const char *name, char *value, size_t 
  *    - LTFS_NULL_ARG if the 'd' or 'vol' input arguments are NULL
  *    - Another negative value if an unexpected error occurred.
  */
-int ltfs_fsops_listxattr(const char *path, char *list, size_t size, ltfs_file_id *id, struct ltfs_volume *vol);
+	int ltfs_fsops_listxattr(const char *path, char *list, size_t size, ltfs_file_id *id, struct ltfs_volume *vol);
 
-/*
+	/*
  * Remove an extended attribute from a file or directory.
  * @param path File or directory to operate on
  * @param name Extended attribute name to delete
@@ -305,9 +317,9 @@ int ltfs_fsops_listxattr(const char *path, char *list, size_t size, ltfs_file_id
  *    - -LTFS_NO_XATTR is the requested attribute or namespace doesn't exist
  *    - Another negative value if an unexpected error occurred.
  */
-int ltfs_fsops_removexattr(const char *path, const char *name, ltfs_file_id *id, struct ltfs_volume *vol);
+	int ltfs_fsops_removexattr(const char *path, const char *name, ltfs_file_id *id, struct ltfs_volume *vol);
 
-/**
+	/**
  * List directory contents, invoking a callback function for each directory entry.
  * It does not invoke the filler for the "." and ".." entries.
  * @param d Directory to list.
@@ -321,10 +333,10 @@ int ltfs_fsops_removexattr(const char *path, const char *name, ltfs_file_id *id,
  *    - -LTFS_ISFILE if the provided dentry is not a directory
  *    - Another negative value if an unexpected error occurred or if the filler callback failed
  */
-int ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler, void *filler_priv,
-	struct ltfs_volume *vol);
+	int ltfs_fsops_readdir(
+			struct dentry *d, void *buf, ltfs_dir_filler filler, void *filler_priv, struct ltfs_volume *vol);
 
-/**
+	/**
  * Get an entry in the directory.
  * It does get the "." and ".." entries only when d is specified non volume root directory.
  * @param d Directory to list.
@@ -338,10 +350,12 @@ int ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler, void
  *    - -LTFS_NO_DENTRY if the provided index of dentry is not existed in the directory
  *    - Another negative value if an unexpected error occurred
  */
-int ltfs_fsops_read_direntry(struct dentry *d, struct ltfs_direntry *dirent, unsigned long index,
-	struct ltfs_volume *vol);
+	int ltfs_fsops_read_direntry(struct dentry *d,
+															 struct ltfs_direntry *dirent,
+															 unsigned long index,
+															 struct ltfs_volume *vol);
 
-/**
+	/**
  * Get an entry in the directory. It always does get the "." and ".." entries.
  * @param d Directory to list.
  * @param dirent Output buffer
@@ -354,10 +368,12 @@ int ltfs_fsops_read_direntry(struct dentry *d, struct ltfs_direntry *dirent, uns
  *    - -LTFS_NO_DENTRY if the provided index of dentry is not existed in the directory
  *    - Another negative value if an unexpected error occurred
  */
-int ltfs_fsops_read_direntry_noroot(struct dentry *d, struct ltfs_direntry *dirent,
-	unsigned long index, struct ltfs_volume *vol);
+	int ltfs_fsops_read_direntry_noroot(struct dentry *d,
+																			struct ltfs_direntry *dirent,
+																			unsigned long index,
+																			struct ltfs_volume *vol);
 
-/**
+	/**
  * Set access and modification times on a file or directory.
  * @param d File or directory to modify.
  * @param ts New times to set.
@@ -370,14 +386,17 @@ int ltfs_fsops_read_direntry_noroot(struct dentry *d, struct ltfs_direntry *dire
  *    - -LTFS_DEVICE_UNREADY if the underlying device is not ready
  *    - Another negative value if an unexpected error occurred
  */
-int ltfs_fsops_utimens(struct dentry *d, const struct ltfs_timespec ts[2], struct ltfs_volume *vol);
+	int ltfs_fsops_utimens(struct dentry *d, const struct ltfs_timespec ts[2], struct ltfs_volume *vol);
 
-/**
+	/**
  * Wrapper for ltfs_fsops_utimens() that takes a path argument.
  */
-int ltfs_fsops_utimens_path(const char *path, const struct ltfs_timespec ts[2], ltfs_file_id *id, struct ltfs_volume *vol);
+	int ltfs_fsops_utimens_path(const char *path,
+															const struct ltfs_timespec ts[2],
+															ltfs_file_id *id,
+															struct ltfs_volume *vol);
 
-/**
+	/**
  * Set access and modification times on a file or directory.
  * @param d File or directory to modify.
  * @param ts New times to set.
@@ -394,9 +413,9 @@ int ltfs_fsops_utimens_path(const char *path, const struct ltfs_timespec ts[2], 
  *    - -LTFS_DEVICE_UNREADY if the underlying device is not ready
  *    - Another negative value if an unexpected error occurred
  */
-int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], struct ltfs_volume *vol);
+	int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], struct ltfs_volume *vol);
 
-/**
+	/**
  * Set the readonly flag on a file or directory.
  * @param d File or directory to modify.
  * @param readonly New value for the readonly flag.
@@ -409,14 +428,14 @@ int ltfs_fsops_utimens_all(struct dentry *d, const struct ltfs_timespec ts[4], s
  *    - -LTFS_DEVICE_UNREADY if the underlying device is not ready
  *    - Another negative value if an unexpected error occurred
  */
-int ltfs_fsops_set_readonly(struct dentry *d, bool readonly, struct ltfs_volume *vol);
+	int ltfs_fsops_set_readonly(struct dentry *d, bool readonly, struct ltfs_volume *vol);
 
-/**
+	/**
  * Wrapper for ltfs_fsops_set_readonly() that takes a path argument.
  */
-int ltfs_fsops_set_readonly_path(const char *path, bool readonly, ltfs_file_id *id, struct ltfs_volume *vol);
+	int ltfs_fsops_set_readonly_path(const char *path, bool readonly, ltfs_file_id *id, struct ltfs_volume *vol);
 
-/**
+	/**
  * Write data to a file, buffering data in the I/O scheduler if possible.
  * @param d File to write.
  * @param buf Data buffer to write.
@@ -433,10 +452,10 @@ int ltfs_fsops_set_readonly_path(const char *path, bool readonly, ltfs_file_id *
  *    - -LTFS_ISDIRECTORY if 'd' is a directory
  *    - Another negative value if an internal error occurs or if writing to the device fails
  */
-int ltfs_fsops_write(struct dentry *d, const char *buf, size_t count, off_t offset,
-	bool isupdatetime, struct ltfs_volume *vol);
+	int ltfs_fsops_write(
+			struct dentry *d, const char *buf, size_t count, off_t offset, bool isupdatetime, struct ltfs_volume *vol);
 
-/**
+	/**
  * Read data from a file.
  * The number of bytes read may be less than requested, or even 0, if the read location extents
  * past the logical end of the file.
@@ -451,10 +470,9 @@ int ltfs_fsops_write(struct dentry *d, const char *buf, size_t count, off_t offs
  *    - -LTFS_ISDIRECTORY if 'd' is a directory
  *    - Another negative value if an internal error or device error occurred
  */
-ssize_t ltfs_fsops_read(struct dentry *d, char *buf, size_t count, off_t offset,
-	struct ltfs_volume *vol);
+	ssize_t ltfs_fsops_read(struct dentry *d, char *buf, size_t count, off_t offset, struct ltfs_volume *vol);
 
-/**
+	/**
  * Truncate a file to shorten it or extend it with zeros.
  * When extending a file, the file is made sparse; explicit zeros are not written to the medium.
  * @param d File to modify.
@@ -470,14 +488,14 @@ ssize_t ltfs_fsops_read(struct dentry *d, char *buf, size_t count, off_t offset,
  *    - -LTFS_ISDIRECTORY if 'd' is a directory
  *    - Another negative value if an internal error occurs
  */
-int ltfs_fsops_truncate(struct dentry *d, off_t length, struct ltfs_volume *vol);
+	int ltfs_fsops_truncate(struct dentry *d, off_t length, struct ltfs_volume *vol);
 
-/**
+	/**
  * Wrapper for ltfs_fsops_truncate() that takes a path argument.
  */
-int ltfs_fsops_truncate_path(const char *path, off_t length, ltfs_file_id *id, struct ltfs_volume *vol);
+	int ltfs_fsops_truncate_path(const char *path, off_t length, ltfs_file_id *id, struct ltfs_volume *vol);
 
-/**
+	/**
  * Flush cached data for a file to the medium. Has no effect if no I/O scheduler is in use.
  * @param d File to flush, or NULL to flush all cached data.
  * @param closeflag True if flushing prior to closing a file. The scheduler may use this flag as
@@ -493,9 +511,9 @@ int ltfs_fsops_truncate_path(const char *path, off_t length, ltfs_file_id *id, s
  *      buffers when the flush request is made, but the caller cannot rely on receiving those
  *      values to determine the read-only status of the medium.
  */
-int ltfs_fsops_flush(struct dentry *d, bool closeflag, struct ltfs_volume *vol);
+	int ltfs_fsops_flush(struct dentry *d, bool closeflag, struct ltfs_volume *vol);
 
-/**
+	/**
  * Create a symbolic link node
  * @param to path to the target file of symbolic link
  * @param from path to the symbolic link node
@@ -506,9 +524,9 @@ int ltfs_fsops_flush(struct dentry *d, bool closeflag, struct ltfs_volume *vol);
  *    - -LTFS_NULL_ARG if 'vol' is NULL
  *    - Another negative value if an internal error or device write error occurred.
  */
-int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, struct ltfs_volume *vol);
+	int ltfs_fsops_symlink_path(const char *to, const char *from, ltfs_file_id *id, struct ltfs_volume *vol);
 
-/**
+	/**
  * Read a target of the symbolic link node
  * @param path path to the symbolic link node
  * @param buf buffer to copy the a target of the symbolic link node (string)
@@ -520,9 +538,9 @@ int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, 
  *    - -LTFS_NULL_ARG if 'vol' is NULL
  *    - Another negative value if an internal error or device write error occurred.
  */
-int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file_id *id, struct ltfs_volume *vol);
+	int ltfs_fsops_readlink_path(const char *path, char *buf, size_t size, ltfs_file_id *id, struct ltfs_volume *vol);
 
-/**
+	/**
  * Change target path from relative to absolute (Use for Windows)
  * @param link path to the symbolic link node
  * @param target path to the symbolic link target
@@ -535,9 +553,9 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
  *    - -LTFS_SMALL_BUFFER if input buffer is smaller than the resolved string
  *    - Another negative value if an internal error or device write error occurred.
  */
-int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* buf, size_t size );
+	int ltfs_fsops_target_absolute_path(const char *link, const char *target, char *buf, size_t size);
 
-/**
+	/**
  * Flush all cached data to the medium and write index.
  * @param reason reason of sync operation. This reason is stored into the index.
  * @param vol LTFS volume.
@@ -549,7 +567,7 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
  *      buffers when the flush request is made, but the caller cannot rely on receiving those
  *      values to determine the read-only status of the medium.
  */
-int ltfs_fsops_volume_sync(char *reason, struct ltfs_volume *vol);
+	int ltfs_fsops_volume_sync(char *reason, struct ltfs_volume *vol);
 
 #ifdef __cplusplus
 }

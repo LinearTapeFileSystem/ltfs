@@ -55,4 +55,3 @@
 size_t base64_decode(const unsigned char *enc, size_t nbytes_in, unsigned char **dec);
 
 #endif /* __base64_h */
-

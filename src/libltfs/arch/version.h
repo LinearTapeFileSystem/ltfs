@@ -58,13 +58,13 @@
 #define CREATOR_STRING_FORMAT "%s %s - %s - %s"
 
 #ifdef __APPLE__
-    #define PLATFORM "Mac OS X"
+#	define PLATFORM "Mac OS X"
 #elif mingw_PLATFORM
-    #define PLATFORM "Windows"
+#	define PLATFORM "Windows"
 #elif __FreeBSD__
-    #define PLATFORM "FreeBSD"
+#	define PLATFORM "FreeBSD"
 #else
-    #define PLATFORM "Linux"
+#	define PLATFORM "Linux"
 #endif /* __APPLE__ */
 
 #endif /* VERSION_H_ */

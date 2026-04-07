@@ -37,87 +37,86 @@
 #define __ltfslogging_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-#include <stdio.h>
-#include <stdbool.h>
 #include <inttypes.h>
+#include <stdbool.h>
+#include <stdio.h>
 
-enum ltfs_log_levels {
-	LTFS_NONE  = -1, /* Don't print any log (special use for mkltfs/ltfsck) */
-	LTFS_ERR    = 0,  /* Fatal error or operation failed unexpectedly */
-	LTFS_WARN   = 1,  /* Unexpected condition, but the program can continue */
-	LTFS_INFO   = 2,  /* Helpful message */
-	LTFS_DEBUG  = 3,  /* Diagnostic messages (Level 0: Base Level) */
-	LTFS_DEBUG1 = 4,  /* Diagnostic messages (Level 1) */
-	LTFS_DEBUG2 = 5,  /* Diagnostic messages (Level 2) */
-	LTFS_DEBUG3 = 6,  /* Diagnostic messages (Level 3) */
-	LTFS_TRACE  = 7,  /* Full call tracing */
-};
+	enum ltfs_log_levels
+	{
+		LTFS_NONE = -1,	 /* Don't print any log (special use for mkltfs/ltfsck) */
+		LTFS_ERR = 0,		 /* Fatal error or operation failed unexpectedly */
+		LTFS_WARN = 1,	 /* Unexpected condition, but the program can continue */
+		LTFS_INFO = 2,	 /* Helpful message */
+		LTFS_DEBUG = 3,	 /* Diagnostic messages (Level 0: Base Level) */
+		LTFS_DEBUG1 = 4, /* Diagnostic messages (Level 1) */
+		LTFS_DEBUG2 = 5, /* Diagnostic messages (Level 2) */
+		LTFS_DEBUG3 = 6, /* Diagnostic messages (Level 3) */
+		LTFS_TRACE = 7,	 /* Full call tracing */
+	};
 
-extern int ltfs_log_level;
-extern int ltfs_syslog_level;
-extern bool ltfs_print_thread_id;
+	extern int ltfs_log_level;
+	extern int ltfs_syslog_level;
+	extern bool ltfs_print_thread_id;
 
 /* Wrapper for ltfsmsg_internal. It only invokes the message print function if the requested
  * log level is not too verbose. */
 #if 0
-#include "ltfsmsg.h"
-#define ltfsmsg(level, id, ...)					\
-	do {										\
-		printf(LTFS ## id, ##__VA_ARGS__);		\
-	} while(0)
+#	include "ltfsmsg.h"
+#	define ltfsmsg(level, id, ...)      \
+		do {                               \
+			printf(LTFS##id, ##__VA_ARGS__); \
+		} while (0)
 #else
-#define ltfsmsg(level, id, ...) \
-	do { \
-		if (level <= ltfs_log_level) \
-			ltfsmsg_internal(true, level, NULL, #id, ##__VA_ARGS__);	\
-	} while (0)
+#	define ltfsmsg(level, id, ...)                                                           \
+		do {                                                                                    \
+			if (level <= ltfs_log_level) ltfsmsg_internal(true, level, NULL, #id, ##__VA_ARGS__); \
+		} while (0)
 
-#define ltfsmsgplain(level, id, ...) \
-	do { \
-		if (level <= ltfs_log_level) \
-			ltfsmsg_internal(true, level, NULL, id, ##__VA_ARGS__);	\
-	} while (0)
+#	define ltfsmsgplain(level, id, ...)                                                     \
+		do {                                                                                   \
+			if (level <= ltfs_log_level) ltfsmsg_internal(true, level, NULL, id, ##__VA_ARGS__); \
+		} while (0)
 #endif
 
 /* CAUTION: ltfsmsg_buffer takes message ID as a text literal */
 /* Wrapper for ltfsmsg_internal. It only invokes the message print function if the requested
  * log level is not too verbose. */
-#define ltfsmsg_buffer(level, id, buffer, ...)	\
-	do { \
-		*buffer = NULL; \
-		if (level <= ltfs_log_level) \
-			ltfsmsg_internal(true, level, buffer, id, ##__VA_ARGS__);	\
+#define ltfsmsg_buffer(level, id, buffer, ...)                                             \
+	do {                                                                                     \
+		*buffer = NULL;                                                                        \
+		if (level <= ltfs_log_level) ltfsmsg_internal(true, level, buffer, id, ##__VA_ARGS__); \
 	} while (0)
 
 /* Wrapper for ltfsmsg_internal that prints a message without the LTFSnnnnn prefix. It
  * always invokes the message print function, regardless of the message level. */
 #if 0
-#define ltfsresult(id, ...)						\
-	do {										\
-		printf(LTFS ## id, ##__VA_ARGS__);		\
-	} while(0)
+#	define ltfsresult(id, ...)          \
+		do {                               \
+			printf(LTFS##id, ##__VA_ARGS__); \
+		} while (0)
 #else
-#define ltfsresult(id, ...)						\
-	do {																\
-		ltfsmsg_internal(false, LTFS_TRACE + 1, NULL, #id, ##__VA_ARGS__); \
-	} while (0)
+#	define ltfsresult(id, ...)                                            \
+		do {                                                                 \
+			ltfsmsg_internal(false, LTFS_TRACE + 1, NULL, #id, ##__VA_ARGS__); \
+		} while (0)
 #endif
 
 /* Shortcut for asserting that a function argument is not NULL. It generates an error-level
  * message if the given argument is NULL. Functions for which a NULL argument is a warning
  * should not use this macro. */
-#define CHECK_ARG_NULL(var, ret) \
-	do { \
-		if (! (var)) { \
+#define CHECK_ARG_NULL(var, ret)                     \
+	do {                                               \
+		if (!(var)) {                                    \
 			ltfsmsg(LTFS_ERR, 10005E, #var, __FUNCTION__); \
-			return ret; \
-		} \
+			return ret;                                    \
+		}                                                \
 	} while (0)
 
-/**
+	/**
  * Initialize the logging and error reporting functions.
  * @param log_level Logging level (generally one of LTFS_ERROR...LTFS_TRACE).
  * @param use_syslog Send error/warning/info messages to syslog? This function does not call
@@ -125,19 +124,19 @@ extern bool ltfs_print_thread_id;
  * @param print_thread_id Print thread ID to the message.
  * @return 0 on success or a negative value on error.
  */
-int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id);
+	int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id);
 
-/**
+	/**
  * Tear down the logging and error reporting framework.
  */
-void ltfsprintf_finish();
+	void ltfsprintf_finish();
 
-/**
+	/**
  * Update ltfs_log_level
  */
-int ltfsprintf_set_log_level(int log_level);
+	int ltfsprintf_set_log_level(int log_level);
 
-/**
+	/**
  * Load messages for a plugin from the specified resource name.
  * @param bundle_name Message bundle name.
  * @param bundle_data Message bundle data structure.
@@ -145,15 +144,15 @@ int ltfsprintf_set_log_level(int log_level);
  *                 should be passed to @ltfsprintf_unload_plugin later.
  * @return 0 on success or a negative value on error.
  */
-int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **messages);
+	int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **messages);
 
-/**
+	/**
  * Stop using messages from the given plugin message bundle.
  * @param handle Message bundle handle, as returned by @ltfsprintf_load_plugin.
  */
-void ltfsprintf_unload_plugin(void *handle);
+	void ltfsprintf_unload_plugin(void *handle);
 
-/**
+	/**
  * Print a message in the system locale. Any extra arguments are substituted into the
  * format string. The current logging level is ignored, so the ltfsmsg macro
  * (which calls this function) should be used instead.
@@ -165,7 +164,7 @@ void ltfsprintf_unload_plugin(void *handle);
  * @param id Unique ID of this error.
  * @return 0 if a message was printed or a negative value on error.
  */
-int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *id, ...);
+	int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *id, ...);
 
 #ifdef __cplusplus
 }

@@ -54,23 +54,23 @@
 **
 *************************************************************************************
 */
-#include <syslog.h>
 #include <dirent.h>
-#include <pwd.h>
 #include <grp.h>
+#include <pwd.h>
+#include <syslog.h>
 
-#include "ltfs_fuse.h"
-#include "libltfs/ltfs.h"
-#include "ltfs_copyright.h"
-#include "libltfs/pathname.h"
-#include "libltfs/plugin.h"
 #include "libltfs/dcache.h"
 #include "libltfs/index_criteria.h"
-#include "libltfs/ltfssnmp.h"
 #include "libltfs/kmi.h"
+#include "libltfs/ltfs.h"
+#include "libltfs/ltfssnmp.h"
+#include "libltfs/pathname.h"
+#include "libltfs/plugin.h"
 #include "libltfs/tape.h"
+#include "ltfs_copyright.h"
+#include "ltfs_fuse.h"
 
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n";
+volatile char *copyright = LTFS_COPYRIGHT_0 "\n" LTFS_COPYRIGHT_1 "\n" LTFS_COPYRIGHT_2 "\n";
 
 /* Defined in src/ltfs.c */
 extern struct fuse_operations ltfs_ops;
@@ -80,102 +80,99 @@ extern char bin_ltfs_dat[];
 /**
  * Command line parsing
  */
-enum {
+enum
+{
 	KEY_HELP,
 	KEY_VERSION,
 	KEY_VERBOSE,
 	KEY_ADVANCED_HELP,
 };
 
-#define LTFS_OPT(templ,offset,value) { templ, offsetof(struct ltfs_fuse_data, offset), value }
-#define LTFS_OPT_KEY(templ, key)     { templ, -1U, key }
+#define LTFS_OPT(templ, offset, value) { templ, offsetof(struct ltfs_fuse_data, offset), value }
+#define LTFS_OPT_KEY(templ, key) { templ, -1U, key }
 
 /* Forward declarations */
 int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv);
 
-static struct fuse_opt ltfs_options_pass1[] = {
-	LTFS_OPT("config_file=%s",         config_file, 0),
-	LTFS_OPT_KEY("-a",                 KEY_ADVANCED_HELP),
-	FUSE_OPT_KEY("-h",                 KEY_HELP),
-	FUSE_OPT_KEY("--help",             KEY_HELP),
-	FUSE_OPT_KEY("-V",                 KEY_VERSION),
-	FUSE_OPT_KEY("--version",          KEY_VERSION),
-	FUSE_OPT_END
-};
+static struct fuse_opt ltfs_options_pass1[] = { LTFS_OPT("config_file=%s", config_file, 0),
+																								LTFS_OPT_KEY("-a", KEY_ADVANCED_HELP),
+																								FUSE_OPT_KEY("-h", KEY_HELP),
+																								FUSE_OPT_KEY("--help", KEY_HELP),
+																								FUSE_OPT_KEY("-V", KEY_VERSION),
+																								FUSE_OPT_KEY("--version", KEY_VERSION),
+																								FUSE_OPT_END };
 
-static struct fuse_opt ltfs_options[] = {
-	LTFS_OPT("devname=%s",             devname, 0),
-	LTFS_OPT("work_directory=%s",      work_directory, 0),
-	LTFS_OPT("atime",                  atime, 1),
-	LTFS_OPT("noatime",                atime, 0),
-	LTFS_OPT("tape_backend=%s",        tape_backend_name, 0),
-	LTFS_OPT("iosched_backend=%s",     iosched_backend_name, 0),
-	LTFS_OPT("kmi_backend=%s",         kmi_backend_name, 0),
-	LTFS_OPT("umask=%s",               force_umask, 0),
-	LTFS_OPT("fmask=%s",               force_fmask, 0),
-	LTFS_OPT("dmask=%s",               force_dmask, 0),
-	LTFS_OPT("uid=%s",                 force_uid, 0),
-	LTFS_OPT("gid=%s",                 force_gid, 0),
-	LTFS_OPT("min_pool_size=%s",       force_min_pool, 0),
-	LTFS_OPT("max_pool_size=%s",       force_max_pool, 0),
-	LTFS_OPT("rules=%s",               index_rules, 0),
-	LTFS_OPT("quiet",                  verbose, LTFS_WARN),
-	LTFS_OPT("trace",                  verbose, LTFS_DEBUG),
-	LTFS_OPT("syslogtrace",            verbose, LTFS_DEBUG * 100 + LTFS_DEBUG),
-	LTFS_OPT("fulltrace",              verbose, LTFS_TRACE),
-	LTFS_OPT("verbose=%d",             verbose, 0),
-	LTFS_OPT("eject",                  eject, 1),
-	LTFS_OPT("noeject",                eject, 0),
-	LTFS_OPT("sync_type=%s",           sync_type_str, 0),
-	LTFS_OPT("force_mount_no_eod",     skip_eod_check, 1),
-	LTFS_OPT("device_list",            device_list, 1),
-	LTFS_OPT("rollback_mount=%s",      rollback_str, 0),
-	LTFS_OPT("release_device",         release_device, 1),
-	LTFS_OPT("allow_other",            allow_other, 1),
-	LTFS_OPT("noallow_other",          allow_other, 0),
-	LTFS_OPT("capture_index",          capture_index, 1),
-	LTFS_OPT("symlink_type=%s",        symlink_str, 0),
-	LTFS_OPT("scsi_append_only_mode=%s", str_append_only_mode, 0),
-	LTFS_OPT_KEY("-a",                 KEY_ADVANCED_HELP),
-	FUSE_OPT_KEY("-h",                 KEY_HELP),
-	FUSE_OPT_KEY("--help",             KEY_HELP),
-	FUSE_OPT_KEY("-V",                 KEY_VERSION),
-	FUSE_OPT_KEY("--version",          KEY_VERSION),
-	FUSE_OPT_END
-};
+static struct fuse_opt ltfs_options[] = { LTFS_OPT("devname=%s", devname, 0),
+																					LTFS_OPT("work_directory=%s", work_directory, 0),
+																					LTFS_OPT("atime", atime, 1),
+																					LTFS_OPT("noatime", atime, 0),
+																					LTFS_OPT("tape_backend=%s", tape_backend_name, 0),
+																					LTFS_OPT("iosched_backend=%s", iosched_backend_name, 0),
+																					LTFS_OPT("kmi_backend=%s", kmi_backend_name, 0),
+																					LTFS_OPT("umask=%s", force_umask, 0),
+																					LTFS_OPT("fmask=%s", force_fmask, 0),
+																					LTFS_OPT("dmask=%s", force_dmask, 0),
+																					LTFS_OPT("uid=%s", force_uid, 0),
+																					LTFS_OPT("gid=%s", force_gid, 0),
+																					LTFS_OPT("min_pool_size=%s", force_min_pool, 0),
+																					LTFS_OPT("max_pool_size=%s", force_max_pool, 0),
+																					LTFS_OPT("rules=%s", index_rules, 0),
+																					LTFS_OPT("quiet", verbose, LTFS_WARN),
+																					LTFS_OPT("trace", verbose, LTFS_DEBUG),
+																					LTFS_OPT("syslogtrace", verbose, LTFS_DEBUG * 100 + LTFS_DEBUG),
+																					LTFS_OPT("fulltrace", verbose, LTFS_TRACE),
+																					LTFS_OPT("verbose=%d", verbose, 0),
+																					LTFS_OPT("eject", eject, 1),
+																					LTFS_OPT("noeject", eject, 0),
+																					LTFS_OPT("sync_type=%s", sync_type_str, 0),
+																					LTFS_OPT("force_mount_no_eod", skip_eod_check, 1),
+																					LTFS_OPT("device_list", device_list, 1),
+																					LTFS_OPT("rollback_mount=%s", rollback_str, 0),
+																					LTFS_OPT("release_device", release_device, 1),
+																					LTFS_OPT("allow_other", allow_other, 1),
+																					LTFS_OPT("noallow_other", allow_other, 0),
+																					LTFS_OPT("capture_index", capture_index, 1),
+																					LTFS_OPT("symlink_type=%s", symlink_str, 0),
+																					LTFS_OPT("scsi_append_only_mode=%s", str_append_only_mode, 0),
+																					LTFS_OPT_KEY("-a", KEY_ADVANCED_HELP),
+																					FUSE_OPT_KEY("-h", KEY_HELP),
+																					FUSE_OPT_KEY("--help", KEY_HELP),
+																					FUSE_OPT_KEY("-V", KEY_VERSION),
+																					FUSE_OPT_KEY("--version", KEY_VERSION),
+																					FUSE_OPT_END };
 
 void single_drive_advanced_usage(const char *default_driver, struct ltfs_fuse_data *priv)
 {
-	ltfsresult(14401I);                        /* LTFS options: */
-	ltfsresult(14413I, LTFS_CONFIG_FILE);      /* -o config_file=<file> */
-	ltfsresult(14404I, LTFS_DEFAULT_WORK_DIR); /* -o work_directory=<dir> */
-	ltfsresult(14414I);                        /* -o atime */
-	ltfsresult(14440I);                        /* -o noatime */
-	ltfsresult(14415I, default_driver);        /* -o tape_backend=<name> */
+	ltfsresult(14401I);																													 /* LTFS options: */
+	ltfsresult(14413I, LTFS_CONFIG_FILE);																				 /* -o config_file=<file> */
+	ltfsresult(14404I, LTFS_DEFAULT_WORK_DIR);																	 /* -o work_directory=<dir> */
+	ltfsresult(14414I);																													 /* -o atime */
+	ltfsresult(14440I);																													 /* -o noatime */
+	ltfsresult(14415I, default_driver);																					 /* -o tape_backend=<name> */
 	ltfsresult(14416I, config_file_get_default_plugin("iosched", priv->config)); /* -o iosched_backend=<name> */
-	ltfsresult(14455I, config_file_get_default_plugin("kmi", priv->config)); /* -o kmi_backend=<name> */
-	ltfsresult(14417I);                        /* -o umask=<mode> */
-	ltfsresult(14418I);                        /* -o fmask=<mode> */
-	ltfsresult(14419I);                        /* -o dmask=<mode> */
-	ltfsresult(14420I, LTFS_MIN_CACHE_SIZE_DEFAULT); /* -o min_pool_size=<num> */
-	ltfsresult(14421I, LTFS_MAX_CACHE_SIZE_DEFAULT); /* -o max_pool_size=<num> */
-	ltfsresult(14422I); /* -o rules=<rule[,rule]> */
-	ltfsresult(14423I); /* -o quiet */
-	ltfsresult(14405I); /* -o trace */
-	ltfsresult(14467I); /* -o syslogtrace */
-	ltfsresult(14424I); /* -o fulltrace */
-	ltfsresult(14441I, LTFS_INFO); /* -o verbose=<num> */
-	ltfsresult(14425I); /* -o eject */
-	ltfsresult(14439I); /* -o noeject */
-	ltfsresult(14427I, LONG_MAX / 60); /* -o sync_type=type */
-	ltfsresult(14443I); /* -o force_mount_no_eod */
-	ltfsresult(14436I); /* -o device_list */
-	ltfsresult(14437I); /* -o rollback_mount */
-	ltfsresult(14448I); /* -o release_device */
-	ltfsresult(14456I); /* -o capture_index */
-	ltfsresult(14463I); /* -o scsi_append_only_mode=<on|off> */
-	ltfsresult(14406I); /* -a */
-	/* TODO: future use for WORM */
+	ltfsresult(14455I, config_file_get_default_plugin("kmi", priv->config));		 /* -o kmi_backend=<name> */
+	ltfsresult(14417I);																													 /* -o umask=<mode> */
+	ltfsresult(14418I);																													 /* -o fmask=<mode> */
+	ltfsresult(14419I);																													 /* -o dmask=<mode> */
+	ltfsresult(14420I, LTFS_MIN_CACHE_SIZE_DEFAULT);														 /* -o min_pool_size=<num> */
+	ltfsresult(14421I, LTFS_MAX_CACHE_SIZE_DEFAULT);														 /* -o max_pool_size=<num> */
+	ltfsresult(14422I);																													 /* -o rules=<rule[,rule]> */
+	ltfsresult(14423I);																													 /* -o quiet */
+	ltfsresult(14405I);																													 /* -o trace */
+	ltfsresult(14467I);																													 /* -o syslogtrace */
+	ltfsresult(14424I);																													 /* -o fulltrace */
+	ltfsresult(14441I, LTFS_INFO);																							 /* -o verbose=<num> */
+	ltfsresult(14425I);																													 /* -o eject */
+	ltfsresult(14439I);																													 /* -o noeject */
+	ltfsresult(14427I, LONG_MAX / 60);																					 /* -o sync_type=type */
+	ltfsresult(14443I);																													 /* -o force_mount_no_eod */
+	ltfsresult(14436I);																													 /* -o device_list */
+	ltfsresult(14437I);																													 /* -o rollback_mount */
+	ltfsresult(14448I);																													 /* -o release_device */
+	ltfsresult(14456I);																													 /* -o capture_index */
+	ltfsresult(14463I);																													 /* -o scsi_append_only_mode=<on|off> */
+	ltfsresult(14406I);																													 /* -a */
+																																							 /* TODO: future use for WORM */
 	/* set worm rollback flag and rollback_str by this option */
 	/* ltfsresult(14468I); */ /* -o rollback_mount_no_eod */
 }
@@ -186,43 +183,40 @@ void usage(char *progname, struct ltfs_fuse_data *priv)
 	const char *default_driver = config_file_get_default_plugin("tape", priv->config);
 	const char *default_device = NULL;
 
-	if (! priv->advanced_help) {
-		if (! priv->tape_backend_name)
-			priv->tape_backend_name = default_driver;
+	if (!priv->advanced_help) {
+		if (!priv->tape_backend_name) priv->tape_backend_name = default_driver;
 
 		ret = plugin_load(&priv->tape_plugin, "tape", priv->tape_backend_name, priv->config);
-		if (ret == 0)
-			default_device = ltfs_default_device_name(priv->tape_plugin.ops);
+		if (ret == 0) default_device = ltfs_default_device_name(priv->tape_plugin.ops);
 
-		ltfsresult(14400I, progname);                   /* usage: %s mountpoint [options] */
+		ltfsresult(14400I, progname);							 /* usage: %s mountpoint [options] */
 		fprintf(stderr, "\n");
-		ltfsresult(14401I);                             /* LTFS options: */
+		ltfsresult(14401I);												 /* LTFS options: */
 		if (default_device)
-			ltfsresult(14402I, default_device);         /* -o devname=<dev> */
+			ltfsresult(14402I, default_device);			 /* -o devname=<dev> */
 		else
-			ltfsresult(14403I);                         /* -o devname=<dev> */
-		ltfsresult(14404I, LTFS_DEFAULT_WORK_DIR);      /* -o work_directory=<dir> */
-		ltfsresult(14405I);                             /* -o trace */
-		ltfsresult(14425I);                             /* -o eject */
-		ltfsresult(14427I, LONG_MAX / 60);              /* -o sync_type=type */
-		ltfsresult(14443I);                             /* -o force_mount_no_eod */
-		ltfsresult(14436I);                             /* -o device_list */
-		ltfsresult(14437I);                             /* -o rollback_mount */
-		ltfsresult(14448I);                             /* -o release_device */
-		ltfsresult(14461I);                             /* -o symlink_type=type */
-		ltfsresult(14406I);                             /* -a */
-		ltfsresult(14407I);                             /* -V, --version */
-		ltfsresult(14408I);                             /* -h, --help */
+			ltfsresult(14403I);											 /* -o devname=<dev> */
+		ltfsresult(14404I, LTFS_DEFAULT_WORK_DIR); /* -o work_directory=<dir> */
+		ltfsresult(14405I);												 /* -o trace */
+		ltfsresult(14425I);												 /* -o eject */
+		ltfsresult(14427I, LONG_MAX / 60);				 /* -o sync_type=type */
+		ltfsresult(14443I);												 /* -o force_mount_no_eod */
+		ltfsresult(14436I);												 /* -o device_list */
+		ltfsresult(14437I);												 /* -o rollback_mount */
+		ltfsresult(14448I);												 /* -o release_device */
+		ltfsresult(14461I);												 /* -o symlink_type=type */
+		ltfsresult(14406I);												 /* -a */
+		ltfsresult(14407I);												 /* -V, --version */
+		ltfsresult(14408I);												 /* -h, --help */
 		fprintf(stderr, "\n");
-		ltfsresult(14409I);                             /* FUSE options: */
-		ltfsresult(14410I);                             /* -o umask=M */
-		ltfsresult(14411I);                             /* -o uid=N */
-		ltfsresult(14412I);                             /* -o gid=N */
+		ltfsresult(14409I);												 /* FUSE options: */
+		ltfsresult(14410I);												 /* -o umask=M */
+		ltfsresult(14411I);												 /* -o uid=N */
+		ltfsresult(14412I);												 /* -o gid=N */
 		fprintf(stderr, "\n");
 		fprintf(stderr, "\n");
 
-		if (ret == 0)
-			plugin_unload(&priv->tape_plugin);
+		if (ret == 0) plugin_unload(&priv->tape_plugin);
 	} else {
 		fprintf(stderr, "\n");
 		single_drive_advanced_usage(default_driver, priv);
@@ -234,11 +228,8 @@ void usage(char *progname, struct ltfs_fuse_data *priv)
 
 mode_t parse_mode(char *input)
 {
-	if (! input || strlen(input) != 3)
-		return (mode_t)-1;
-	if (input[0] < '0' || input[0] > '7' ||
-		input[1] < '0' || input[1] > '7' ||
-		input[2] < '0' || input[2] > '7')
+	if (!input || strlen(input) != 3) return (mode_t)-1;
+	if (input[0] < '0' || input[0] > '7' || input[1] < '0' || input[1] > '7' || input[2] < '0' || input[2] > '7')
 		return (mode_t)-1;
 	return ((input[0] - '0') << 6) | ((input[1] - '0') << 3) | (input[2] - '0');
 }
@@ -247,13 +238,10 @@ uid_t parse_uid(const char *input)
 {
 	const char *i;
 	struct passwd *pw = getpwnam(input);
-	if (pw)
-		return pw->pw_uid;
-	if (input[0] == '\0')
-		return (uid_t)-1;
-	for (i=input; *i; ++i)
-		if (*i < '0' || *i > '9')
-			return (uid_t)-1;
+	if (pw) return pw->pw_uid;
+	if (input[0] == '\0') return (uid_t)-1;
+	for (i = input; *i; ++i)
+		if (*i < '0' || *i > '9') return (uid_t)-1;
 	return strtoul(input, NULL, 10);
 }
 
@@ -261,24 +249,19 @@ gid_t parse_gid(const char *input)
 {
 	const char *i;
 	struct group *gr = getgrnam(input);
-	if (gr)
-		return gr->gr_gid;
-	if (input[0] == '\0')
-		return (gid_t)-1;
-	for (i=input; *i; ++i)
-		if (*i < '0' || *i > '9')
-			return (gid_t)-1;
+	if (gr) return gr->gr_gid;
+	if (input[0] == '\0') return (gid_t)-1;
+	for (i = input; *i; ++i)
+		if (*i < '0' || *i > '9') return (gid_t)-1;
 	return strtoul(input, NULL, 10);
 }
 
 size_t parse_size_t(const char *input)
 {
 	const char *i;
-	if (input[0] == '\0')
-		return 0;
-	for (i=input; *i; i++)
-		if (*i < '0' || *i > '9')
-			return 0;
+	if (input[0] == '\0') return 0;
+	for (i = input; *i; i++)
+		if (*i < '0' || *i > '9') return 0;
 	return strtoull(input, NULL, 10);
 }
 
@@ -361,7 +344,7 @@ int permissions_setup(struct ltfs_fuse_data *priv)
 		free(priv->force_dmask);
 	}
 
-/* Uncomment to apply the current umask to the default permissions, as vfat does.
+	/* Uncomment to apply the current umask to the default permissions, as vfat does.
 	mode = umask(0);
 	umask(mode);
 	if (! priv->force_umask && ! priv->force_fmask)
@@ -375,12 +358,12 @@ int permissions_setup(struct ltfs_fuse_data *priv)
 
 int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_args *outargs)
 {
-	struct ltfs_fuse_data *priv = (struct ltfs_fuse_data *) priv_data;
+	struct ltfs_fuse_data *priv = (struct ltfs_fuse_data *)priv_data;
 	const char *fuse_options[] = { "-f", "-d", "-s", NULL };
 	bool valid_fuse_option = false;
 	int i;
 
-	switch(key) {
+	switch (key) {
 		case KEY_VERSION:
 			ltfsresult(14058I, PACKAGE_NAME, PACKAGE_VERSION);
 			ltfsresult(14058I, "LTFS Format Specification", LTFS_INDEX_VERSION_STR);
@@ -391,14 +374,14 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 			/* fall through */
 		case FUSE_OPT_KEY_OPT:
 		case FUSE_OPT_KEY_NONOPT:
-			for (i=0; arg && fuse_options[i]; ++i) {
-				if (! strcmp(arg, fuse_options[i])) {
+			for (i = 0; arg && fuse_options[i]; ++i) {
+				if (!strcmp(arg, fuse_options[i])) {
 					valid_fuse_option = true;
 					break;
 				}
 			}
-			if (! priv->advanced_help) {
-				if (! valid_fuse_option && key == FUSE_OPT_KEY_OPT && arg && arg[0] == '-') {
+			if (!priv->advanced_help) {
+				if (!valid_fuse_option && key == FUSE_OPT_KEY_OPT && arg && arg[0] == '-') {
 					/* invalid option */
 					ltfsmsg(LTFS_ERR, 9010E, arg);
 				} else
@@ -407,10 +390,9 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 			/* fall through */
 		case KEY_HELP:
 		default:
-			if (! priv->first_parsing_pass) {
+			if (!priv->first_parsing_pass) {
 				fuse_opt_add_arg(outargs, "-h");
-				if (priv->advanced_help)
-					fuse_main(outargs->argc, outargs->argv, &ltfs_ops, NULL);
+				if (priv->advanced_help) fuse_main(outargs->argc, outargs->argv, &ltfs_ops, NULL);
 				usage(outargs->argv[0], priv);
 				exit(key == KEY_HELP ? 0 : 1);
 			}
@@ -421,27 +403,24 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 
 int mkdir_p(const char *path, mode_t mode)
 {
-	char *ptr, buf[strlen(path)+1];
+	char *ptr, buf[strlen(path) + 1];
 	struct stat statbuf;
 	int ret;
 
 	sprintf(buf, "%s", path);
 	ret = stat(path, &statbuf);
-	if (ret == 0)
-		return 0;
+	if (ret == 0) return 0;
 
-	for (ptr=(buf[0] == '/') ? &buf[1] : buf; *ptr; ++ptr) {
+	for (ptr = (buf[0] == '/') ? &buf[1] : buf; *ptr; ++ptr) {
 		bool last = ptr[1] == '\0';
-		if (*ptr == '/')
-			*ptr = '\0';
+		if (*ptr == '/') *ptr = '\0';
 		if (*ptr == '\0' || last) {
 			ret = mkdir(buf, mode);
 			if (ret && errno != EEXIST) {
 				ltfsmsg(LTFS_ERR, 9014E, path, strerror(errno));
 				return 1;
 			}
-			if (! last)
-				*(ptr++) = '/';
+			if (!last) *(ptr++) = '/';
 		}
 	}
 	return 0;
@@ -460,7 +439,7 @@ static int create_workdir(struct ltfs_fuse_data *priv)
 			ltfsmsg(LTFS_ERR, 14004E, ret);
 			return ret;
 		}
-	} else if (! S_ISDIR(statbuf.st_mode)) {
+	} else if (!S_ISDIR(statbuf.st_mode)) {
 		/* Path exists but is not a directory */
 		ltfsmsg(LTFS_ERR, 14005E, priv->work_directory);
 		return -ENOTDIR;
@@ -545,8 +524,7 @@ static int show_device_list(struct ltfs_fuse_data *priv)
 	int ret;
 
 	/* Load tape backend */
-	if (priv->tape_backend_name == NULL)
-		priv->tape_backend_name = config_file_get_default_plugin("tape", priv->config);
+	if (priv->tape_backend_name == NULL) priv->tape_backend_name = config_file_get_default_plugin("tape", priv->config);
 	ret = plugin_load(&priv->tape_plugin, "tape", priv->tape_backend_name, priv->config);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 14054E, ret);
@@ -566,7 +544,7 @@ int main(int argc, char **argv)
 {
 	int ret, i, cmd_args_len;
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
-	struct ltfs_fuse_data *priv = (struct ltfs_fuse_data *) calloc(1, sizeof(struct ltfs_fuse_data));
+	struct ltfs_fuse_data *priv = (struct ltfs_fuse_data *)calloc(1, sizeof(struct ltfs_fuse_data));
 	char *lang, **mount_options, **snmp_options, *cmd_args;
 	void *message_handle;
 
@@ -576,8 +554,10 @@ int main(int argc, char **argv)
 
 	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
 	lang = getenv("LANG");
-	if (! lang) {
-		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting ltfs.\n");
+	if (!lang) {
+		fprintf(stderr,
+						"LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable "
+						"before starting ltfs.\n");
 		ret = setenv("LANG", "en_US.UTF-8", 1);
 		if (ret) {
 			fprintf(stderr, "LTFS9016E Cannot set the LANG environment variable\n");
@@ -601,7 +581,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if (! priv) {
+	if (!priv) {
 		ltfsmsg(LTFS_ERR, 10001E, "main: private data");
 		return 1;
 	}
@@ -625,11 +605,11 @@ int main(int argc, char **argv)
 	snmp_options = config_file_get_options("snmp", priv->config);
 	if (snmp_options) {
 		priv->snmp_enabled = false;
-		for (i=0; snmp_options[i]; ++i) {
-			if (! strcmp(snmp_options[i], "enabled"))
+		for (i = 0; snmp_options[i]; ++i) {
+			if (!strcmp(snmp_options[i], "enabled"))
 				priv->snmp_enabled = true;
-			else if (! strncmp(snmp_options[i], "deffile ", 8)) {
-				ret = asprintf(&priv->snmp_deffile, "%s", snmp_options[i]+8);
+			else if (!strncmp(snmp_options[i], "deffile ", 8)) {
+				ret = asprintf(&priv->snmp_deffile, "%s", snmp_options[i] + 8);
 				if (ret < 0) {
 					ltfsmsg(LTFS_ERR, 10001E, "library_main: snmp_deffile");
 					priv->snmp_enabled = false;
@@ -638,17 +618,15 @@ int main(int argc, char **argv)
 			}
 			free(snmp_options[i]);
 		}
-		if (priv->snmp_enabled)
-			ltfs_snmp_init(priv->snmp_deffile);
+		if (priv->snmp_enabled) ltfs_snmp_init(priv->snmp_deffile);
 		free(snmp_options);
 	}
 
 	/* Bring in extra mount options set in the config file */
 	mount_options = config_file_get_options("single-drive", priv->config);
-	if (! mount_options)
-		return 1;
-	for (i=0; mount_options[i]; ++i) {
-		ret = fuse_opt_insert_arg(&args, i+1, mount_options[i]);
+	if (!mount_options) return 1;
+	for (i = 0; mount_options[i]; ++i) {
+		ret = fuse_opt_insert_arg(&args, i + 1, mount_options[i]);
 		if (ret < 0) {
 			/* Could not enable FUSE option */
 			ltfsmsg(LTFS_ERR, 14001E, mount_options[i], ret);
@@ -667,8 +645,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Set the logging level */
-	if (priv->verbose > 100)
-		ltfs_set_syslog_level(priv->verbose / 100);
+	if (priv->verbose > 100) ltfs_set_syslog_level(priv->verbose / 100);
 	ltfs_set_log_level(priv->verbose % 100);
 
 	/* LTFS starting */
@@ -676,7 +653,7 @@ int main(int argc, char **argv)
 	ltfsmsg(LTFS_INFO, 14058I, "LTFS Format Specification", LTFS_INDEX_VERSION_STR);
 
 	/* Show command line arguments */
-	for (i = 0, cmd_args_len = 0 ; i < argc; i++) {
+	for (i = 0, cmd_args_len = 0; i < argc; i++) {
 		cmd_args_len += strlen(argv[i]) + 1;
 	}
 	cmd_args = calloc(1, cmd_args_len + 1);
@@ -709,11 +686,10 @@ int main(int argc, char **argv)
 
 	/* Validate sync option */
 	ret = validate_sync_option(priv);
-	if (ret != 0)
-		return 1; /* Error message was already displayed */
+	if (ret != 0) return 1; /* Error message was already displayed */
 
 	/* Print the active sync mode */
-	switch(priv->sync_type) {
+	switch (priv->sync_type) {
 		case LTFS_SYNC_TIME:
 			ltfsmsg(LTFS_INFO, 14063I, "time", priv->sync_time);
 			break;
@@ -763,11 +739,11 @@ int main(int argc, char **argv)
 	}
 
 #ifdef __APPLE__
-    /* Change MacFUSE timeout from 60 secs to 3100 secs (41mins) */
-    /* 3100 secs comes from the timeout value of locate/space, it is the most longest timeout value  */
-    /* in the commands used by LTFS. Actually the timeout value of locate/space is 2500 secs,        */
-    /* we set the MacFUSE as the timeout value of locate/space + 10 mins. Because MacFUSE timeout    */
-    /* should come after the drive command timeout.                                                  */
+	/* Change MacFUSE timeout from 60 secs to 3100 secs (41mins) */
+	/* 3100 secs comes from the timeout value of locate/space, it is the most longest timeout value  */
+	/* in the commands used by LTFS. Actually the timeout value of locate/space is 2500 secs,        */
+	/* we set the MacFUSE as the timeout value of locate/space + 10 mins. Because MacFUSE timeout    */
+	/* should come after the drive command timeout.                                                  */
 	fuse_opt_add_arg(&args, "-odaemon_timeout=3100");
 	if (ret < 0) {
 		/* Could not enable FUSE option */
@@ -817,14 +793,10 @@ int main(int argc, char **argv)
 	}
 	if (priv->iosched_backend_name == NULL)
 		priv->iosched_backend_name = config_file_get_default_plugin("iosched", priv->config);
-	if (priv->iosched_backend_name && strcmp(priv->iosched_backend_name, "none") == 0)
-		priv->iosched_backend_name = NULL;
-	if (priv->kmi_backend_name == NULL)
-		priv->kmi_backend_name = config_file_get_default_plugin("kmi", priv->config);
-	if (priv->kmi_backend_name && strcmp(priv->kmi_backend_name, "none") == 0)
-		priv->kmi_backend_name = NULL;
-	if (priv->work_directory == NULL || ! strcmp(priv->work_directory, ""))
-		priv->work_directory = LTFS_DEFAULT_WORK_DIR;
+	if (priv->iosched_backend_name && strcmp(priv->iosched_backend_name, "none") == 0) priv->iosched_backend_name = NULL;
+	if (priv->kmi_backend_name == NULL) priv->kmi_backend_name = config_file_get_default_plugin("kmi", priv->config);
+	if (priv->kmi_backend_name && strcmp(priv->kmi_backend_name, "none") == 0) priv->kmi_backend_name = NULL;
+	if (priv->work_directory == NULL || !strcmp(priv->work_directory, "")) priv->work_directory = LTFS_DEFAULT_WORK_DIR;
 	if (priv->force_min_pool) {
 		priv->min_pool_size = parse_size_t(priv->force_min_pool);
 		if (priv->min_pool_size == 0) {
@@ -849,8 +821,7 @@ int main(int argc, char **argv)
 
 	/* Make sure work directory exists */
 	ret = create_workdir(priv);
-	if (ret < 0)
-		return 1;
+	if (ret < 0) return 1;
 
 	/* Load plugins */
 	ret = plugin_load(&priv->tape_plugin, "tape", priv->tape_backend_name, priv->config);
@@ -859,16 +830,14 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	if (priv->iosched_backend_name) {
-		ret = plugin_load(&priv->iosched_plugin, "iosched", priv->iosched_backend_name,
-			priv->config);
+		ret = plugin_load(&priv->iosched_plugin, "iosched", priv->iosched_backend_name, priv->config);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 14055E, ret);
 			return 1;
 		}
 	}
 	if (priv->kmi_backend_name) {
-		ret = plugin_load(&priv->kmi_plugin, "kmi", priv->kmi_backend_name,
-			priv->config);
+		ret = plugin_load(&priv->kmi_plugin, "kmi", priv->kmi_backend_name, priv->config);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 14057E, ret);
 			return 1;
@@ -876,9 +845,9 @@ int main(int argc, char **argv)
 	}
 
 	/* Make sure we have a device name */
-	if (! priv->devname) {
+	if (!priv->devname) {
 		priv->devname = ltfs_default_device_name(priv->tape_plugin.ops);
-		if (! priv->devname) {
+		if (!priv->devname) {
 			/* The backend \'%s\' does not have a default device */
 			ltfsmsg(LTFS_ERR, 14009E, priv->tape_backend_name);
 			return 1;
@@ -887,8 +856,7 @@ int main(int argc, char **argv)
 
 	/* Initialize filesystem component in libltfs */
 	ret = ltfs_fs_init();
-	if (ret)
-		return 1;
+	if (ret) return 1;
 
 	/* Invoke the single drive main operations */
 	ret = ltfs_mutex_init(&priv->file_table_lock);
@@ -900,14 +868,11 @@ int main(int argc, char **argv)
 	ret = single_drive_main(&args, priv);
 
 	/* Send a trap of LTFS termination */
-	if (priv->snmp_enabled)
-		ltfs_snmp_finish();
+	if (priv->snmp_enabled) ltfs_snmp_finish();
 
 	/* Unload plugins */
-	if (priv->iosched_backend_name)
-		plugin_unload(&priv->iosched_plugin);
-	if (priv->kmi_backend_name)
-		plugin_unload(&priv->kmi_plugin);
+	if (priv->iosched_backend_name) plugin_unload(&priv->iosched_plugin);
+	if (priv->kmi_backend_name) plugin_unload(&priv->kmi_plugin);
 	plugin_unload(&priv->tape_plugin);
 
 	/* Free data structures */
@@ -930,7 +895,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	char *opt_volname = NULL;
 #endif
 	char *mountpoint = NULL;
-	struct fuse_args tmpa=FUSE_ARGS_INIT(0, NULL);
+	struct fuse_args tmpa = FUSE_ARGS_INIT(0, NULL);
 	int i;
 	bool is_worm = false, is_ro = false;
 
@@ -945,7 +910,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	if (priv->rollback_str) {
 		errno = 0;
 		priv->rollback_gen = strtoul(priv->rollback_str, &invalid_start, 0);
-		if( (*invalid_start != '\0') || priv->rollback_gen == 0 ) {
+		if ((*invalid_start != '\0') || priv->rollback_gen == 0) {
 			ltfsmsg(LTFS_ERR, 14091E, priv->rollback_str);
 			return 1;
 		}
@@ -1037,8 +1002,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 			return 1;
 		}
 
-		if (tape_clear_key(priv->data->device, priv->data->kmi_handle) < 0)
-			return 1;
+		if (tape_clear_key(priv->data->device, priv->data->kmi_handle) < 0) return 1;
 	}
 
 	/* Setup tape drive */
@@ -1061,7 +1025,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	if (priv->skip_eod_check) {
 		ltfsmsg(LTFS_INFO, 14076I);
 		ltfsmsg(LTFS_INFO, 14077I);
-		ltfs_set_eod_check(! priv->skip_eod_check, priv->data);
+		ltfs_set_eod_check(!priv->skip_eod_check, priv->data);
 	}
 
 	/* Validate symbolic link type */
@@ -1154,7 +1118,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 						/* The index partition is in early warning zone. To be mounted read-only */
 						ltfsmsg(LTFS_INFO, 14073I);
 						break;
-					default:  /* 0 or -LTFS_LESS_SPACE */
+					default: /* 0 or -LTFS_LESS_SPACE */
 						/* The data partition may be in early warning zone. To be mounted read-only */
 						ltfsmsg(LTFS_INFO, 14074I);
 						break;
@@ -1220,10 +1184,10 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 #endif
 
 	/* Get and store mount point */
-	for ( i=0; i<args->argc; i++) {
+	for (i = 0; i < args->argc; i++) {
 		fuse_opt_add_arg(&tmpa, args->argv[i]);
 	}
-	ret = fuse_parse_cmdline( &tmpa, &mountpoint, NULL, NULL);
+	ret = fuse_parse_cmdline(&tmpa, &mountpoint, NULL, NULL);
 	fuse_opt_free_args(&tmpa);
 	if (ret < 0 || mountpoint == NULL) {
 		ltfsmsg(LTFS_ERR, 14094E, ret);
@@ -1234,8 +1198,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	priv->data->mountpoint_len = strlen(mountpoint);
 
 	/* Send a trap of LTFS start */
-	if (priv->snmp_enabled)
-		send_ltfsStartTrap();
+	if (priv->snmp_enabled) send_ltfsStartTrap();
 
 	/* now we can safely call FUSE */
 	ltfsmsg(LTFS_INFO, 14111I);
@@ -1257,13 +1220,11 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		return 1;
 	}
 
-	if (priv->eject)
-		ltfs_eject_tape(false, priv->data);
+	if (priv->eject) ltfs_eject_tape(false, priv->data);
 
 	/* close the volume */
 #ifdef __APPLE__
-	if (opt_volname)
-		free(opt_volname);
+	if (opt_volname) free(opt_volname);
 #endif
 	ltfs_device_close(priv->data);
 	ltfs_volume_free(&priv->data);

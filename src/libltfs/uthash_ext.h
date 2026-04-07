@@ -47,7 +47,8 @@
 #define __uthash_ext_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* Define OOM handling macros before including uthash */
@@ -55,19 +56,24 @@ extern "C" {
 #define HASH_NONFATAL_OOM 1
 
 #undef uthash_nonfatal_oom
-#define uthash_nonfatal_oom(obj) do { (void)(obj); errno = ENOMEM; } while (0)
+#define uthash_nonfatal_oom(obj) \
+	do {                           \
+		(void)(obj);                 \
+		errno = ENOMEM;              \
+	} while (0)
 
-#define HASH_FIND_PARTIAL(structure,start,length,table,search,result)	\
-do {																	\
-	structure *s, *tmp;													\
-	result = NULL;														\
-	HASH_ITER(hh, table, s, tmp) {										\
-		if (HASH_KEYCMP(&s->start, &search.start, length) == 0) {		\
-			result = s;													\
-			break;														\
-		}																\
-	}																	\
-} while (0)
+#define HASH_FIND_PARTIAL(structure, start, length, table, search, result) \
+	do {                                                                     \
+		structure *s, *tmp;                                                    \
+		result = NULL;                                                         \
+		HASH_ITER(hh, table, s, tmp)                                           \
+		{                                                                      \
+			if (HASH_KEYCMP(&s->start, &search.start, length) == 0) {            \
+				result = s;                                                        \
+				break;                                                             \
+			}                                                                    \
+		}                                                                      \
+	} while (0)
 
 #ifdef __cplusplus
 }

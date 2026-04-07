@@ -46,8 +46,8 @@
 **
 *************************************************************************************
 */
-#include "libltfs/ltfs.h"
 #include "cache_manager.h"
+#include "libltfs/ltfs.h"
 
 /**
  * cache_pool structure.
@@ -62,11 +62,12 @@
  * have been allocated through this cache pool; it doesn't necessarily say how
  * many available objects are in the pool.
  */
-struct cache_pool {
-	size_t object_size;       /**< The size of each object in this pool */
-	size_t initial_capacity;  /**< Low water mark. Defines the initial capacity of the pool */
-	size_t max_capacity;      /**< High water mark. Defines the maximum capacity of the pool */
-	size_t current_capacity;  /**< How many objects are currently allocated */
+struct cache_pool
+{
+	size_t object_size;														 /**< The size of each object in this pool */
+	size_t initial_capacity;											 /**< Low water mark. Defines the initial capacity of the pool */
+	size_t max_capacity;													 /**< High water mark. Defines the maximum capacity of the pool */
+	size_t current_capacity;											 /**< How many objects are currently allocated */
 	TAILQ_HEAD(objects_struct, cache_object) pool; /**< Pool of cached objects */
 };
 
@@ -74,11 +75,12 @@ struct cache_pool {
  * cache_object structure.
  * Holds objects of size @object_size, as stored in the cache_pool structure.
  */
-struct cache_object {
-	uint32_t refcount;              /**< Reference count */
-	ltfs_mutex_t lock;           /**< Lock to protect access to the refcount */
-	void *data;                     /**< Cached data. Must be the first element in the structure */
-	struct cache_pool *pool;        /**< Backpointer to the cache pool this object is part of */
+struct cache_object
+{
+	uint32_t refcount;							/**< Reference count */
+	ltfs_mutex_t lock;							/**< Lock to protect access to the refcount */
+	void *data;											/**< Cached data. Must be the first element in the structure */
+	struct cache_pool *pool;				/**< Backpointer to the cache pool this object is part of */
 	TAILQ_ENTRY(cache_object) list; /**< Pointers to next and previous cache objects */
 };
 
@@ -92,12 +94,13 @@ struct cache_object *_cache_manager_create_object(struct cache_pool *pool)
 {
 	int ret;
 	struct cache_object *object = calloc(1, sizeof(struct cache_object));
-	if (! object) {
+	if (!object) {
 		ltfsmsg(LTFS_ERR, 10001E, "cache manager: object");
 		return NULL;
 	}
-	object->data = calloc(1, pool->object_size + LTFS_CRC_SIZE); /* Allocate extra 4-bytes for SCSI logical block protection */
-	if (! object->data) {
+	object->data =
+			calloc(1, pool->object_size + LTFS_CRC_SIZE); /* Allocate extra 4-bytes for SCSI logical block protection */
+	if (!object->data) {
 		ltfsmsg(LTFS_ERR, 10001E, "cache manager: object data");
 		free(object);
 		return NULL;
@@ -127,8 +130,8 @@ void *cache_manager_init(size_t object_size, size_t initial_capacity, size_t max
 	struct cache_pool *pool;
 	size_t i;
 
-	pool = (struct cache_pool *) calloc(1, sizeof (struct cache_pool));
-	if (! pool) {
+	pool = (struct cache_pool *)calloc(1, sizeof(struct cache_pool));
+	if (!pool) {
 		ltfsmsg(LTFS_ERR, 10001E, "cache manager: pool");
 		return NULL;
 	}
@@ -138,16 +141,16 @@ void *cache_manager_init(size_t object_size, size_t initial_capacity, size_t max
 	pool->current_capacity = initial_capacity;
 	TAILQ_INIT(&pool->pool);
 
-	for (i=0; i<initial_capacity; ++i) {
+	for (i = 0; i < initial_capacity; ++i) {
 		struct cache_object *object = _cache_manager_create_object(pool);
-		if (! object) {
+		if (!object) {
 			ltfsmsg(LTFS_ERR, 11114E);
 			cache_manager_destroy(pool);
 			return NULL;
 		}
 	}
 
-	return (void *) pool;
+	return (void *)pool;
 }
 
 /**
@@ -157,17 +160,17 @@ void *cache_manager_init(size_t object_size, size_t initial_capacity, size_t max
 void cache_manager_destroy(void *cache)
 {
 	struct cache_object *object, *aux;
-	struct cache_pool *pool = (struct cache_pool *) cache;
-	if (! pool) {
+	struct cache_pool *pool = (struct cache_pool *)cache;
+	if (!pool) {
 		ltfsmsg(LTFS_WARN, 10006W, "pool", __FUNCTION__);
 		return;
 	}
 
-	TAILQ_FOREACH_SAFE(object, &pool->pool, list, aux) {
+	TAILQ_FOREACH_SAFE(object, &pool->pool, list, aux)
+	{
 		TAILQ_REMOVE(&pool->pool, object, list);
 		ltfs_mutex_destroy(&object->lock);
-		if (object->data)
-			free(object->data);
+		if (object->data) free(object->data);
 		free(object);
 	}
 
@@ -181,10 +184,10 @@ void cache_manager_destroy(void *cache)
  */
 bool cache_manager_has_room(void *cache)
 {
-	struct cache_pool *pool = (struct cache_pool *) cache;
+	struct cache_pool *pool = (struct cache_pool *)cache;
 	CHECK_ARG_NULL(pool, false);
 
-	return ! (TAILQ_EMPTY(&pool->pool) && pool->current_capacity == pool->max_capacity);
+	return !(TAILQ_EMPTY(&pool->pool) && pool->current_capacity == pool->max_capacity);
 }
 
 /**
@@ -202,14 +205,15 @@ void *cache_manager_allocate_object(void *cache)
 {
 	size_t i, new_size = 0;
 	struct cache_object *object, *last_object = NULL;
-	struct cache_pool *pool = (struct cache_pool *) cache;
+	struct cache_pool *pool = (struct cache_pool *)cache;
 	CHECK_ARG_NULL(pool, NULL);
 
-	TAILQ_FOREACH(object, &pool->pool, list) {
+	TAILQ_FOREACH(object, &pool->pool, list)
+	{
 		/* Return the first available object */
 		TAILQ_REMOVE(&pool->pool, object, list);
 		object->refcount = 1;
-		return (void *) object;
+		return (void *)object;
 	}
 
 	/*
@@ -229,9 +233,9 @@ void *cache_manager_allocate_object(void *cache)
 		/* Expand until the maximum capacity */
 		new_size = pool->max_capacity;
 
-	for (i=pool->current_capacity; i<new_size; ++i) {
+	for (i = pool->current_capacity; i < new_size; ++i) {
 		struct cache_object *object = _cache_manager_create_object(pool);
-		if (! object) {
+		if (!object) {
 			/* Luckily we might have increased the size of the cache by a few entries.. */
 			ltfsmsg(LTFS_WARN, 11115W);
 			break;
@@ -240,7 +244,7 @@ void *cache_manager_allocate_object(void *cache)
 		pool->current_capacity++;
 	}
 
-	if (! last_object) {
+	if (!last_object) {
 		/* If we couldn't grow the cache any further return failure */
 		ltfsmsg(LTFS_ERR, 11116E);
 		return NULL;
@@ -258,7 +262,7 @@ void *cache_manager_allocate_object(void *cache)
  */
 void *cache_manager_get_object(void *cache_object)
 {
-	struct cache_object *object = (struct cache_object *) cache_object;
+	struct cache_object *object = (struct cache_object *)cache_object;
 
 	CHECK_ARG_NULL(cache_object, NULL);
 
@@ -276,8 +280,8 @@ void *cache_manager_get_object(void *cache_object)
 void cache_manager_free_object(void *cache_object, size_t count)
 {
 	struct cache_pool *pool;
-	struct cache_object *object = (struct cache_object *) cache_object;
-	if (! object) {
+	struct cache_object *object = (struct cache_object *)cache_object;
+	if (!object) {
 		ltfsmsg(LTFS_WARN, 10006W, "object", __FUNCTION__);
 		return;
 	}
@@ -316,7 +320,7 @@ void cache_manager_free_object(void *cache_object, size_t count)
  */
 void *cache_manager_get_object_data(void *cache_object)
 {
-	struct cache_object *object = (struct cache_object *) cache_object;
+	struct cache_object *object = (struct cache_object *)cache_object;
 	CHECK_ARG_NULL(object, NULL);
 	return object->data;
 }
@@ -328,7 +332,7 @@ void *cache_manager_get_object_data(void *cache_object)
  */
 size_t cache_manager_get_object_size(void *cache_object)
 {
-	struct cache_object *object = (struct cache_object *) cache_object;
+	struct cache_object *object = (struct cache_object *)cache_object;
 	CHECK_ARG_NULL(object, 0);
 	return object->pool->object_size;
 }
