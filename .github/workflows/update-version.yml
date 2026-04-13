@@ -1,0 +1,133 @@
+name: Sync LTFS Version with Upstream
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Fetch latest tag from upstream
+        id: get_tag
+        run: |
+          # Fetch the latest tag from the upstream repository
+          LATEST_TAG=$(curl -s https://api.github.com/repos/LinearTapeFileSystem/ltfs/tags | jq -r '.[0].name')
+          echo "Latest tag from upstream: $LATEST_TAG"
+          
+          # Extract version numbers and build number (e.g., v.2.4.8.2-10520 -> 2.4.8.2 (10520))
+          VERSION_NUM=$(echo "$LATEST_TAG" | sed -E 's/^v\.?([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          BUILD_NUM=$(echo "$LATEST_TAG" | sed -E 's/^v\.?[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+-([0-9]+).*/\1/')
+          
+          # Combine version with build number
+          if [ -n "$BUILD_NUM" ] && [ "$BUILD_NUM" != "$LATEST_TAG" ]; then
+            VERSION="$VERSION_NUM ($BUILD_NUM)"
+          else
+            VERSION="$VERSION_NUM"
+          fi
+          
+          echo "Extracted version: $VERSION"
+          
+          # Store in output
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Check current version in configure.ac
+        id: check_version
+        run: |
+          # Extract current version from line 39
+          CURRENT_VERSION=$(sed -n '39p' configure.ac | sed -E 's/.*\[LTFS\], \[([^]]+)\].*/\1/')
+          echo "Current version in configure.ac: $CURRENT_VERSION"
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # Check if commit message contains "release-tag"
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Latest commit message: $COMMIT_MSG"
+          
+          if echo "$COMMIT_MSG" | grep -q "release-tag"; then
+            echo "Commit contains 'release-tag' keyword - skipping update"
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Extract the value inside parentheses from current version
+          PAREN_VALUE=$(echo "$CURRENT_VERSION" | sed -E 's/.*\(([^)]+)\).*/\1/')
+          echo "Value in parentheses: $PAREN_VALUE"
+          
+          # Check if the value in parentheses is a number
+          if ! echo "$PAREN_VALUE" | grep -qE '^[0-9]+$'; then
+            echo "Value in parentheses is not a number (likely 'Prelim') - no update needed"
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "Value in parentheses is a number - proceeding with update"
+          
+          # Extract version number without parentheses (e.g., "2.4.8.2" from "2.4.8.2 (10520)")
+          VERSION_BASE=$(echo "$CURRENT_VERSION" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          echo "Base version: $VERSION_BASE"
+          
+          # Increment the last number in the version
+          LAST_NUM=$(echo "$VERSION_BASE" | awk -F. '{print $NF}')
+          NEW_LAST_NUM=$((LAST_NUM + 1))
+          NEW_VERSION=$(echo "$VERSION_BASE" | sed -E "s/\.[0-9]+$/.$NEW_LAST_NUM/")
+          NEW_VERSION_WITH_PRELIM="$NEW_VERSION (Prelim)"
+          
+          echo "New version: $NEW_VERSION_WITH_PRELIM"
+          echo "new_version=$NEW_VERSION_WITH_PRELIM" >> $GITHUB_OUTPUT
+          echo "needs_update=true" >> $GITHUB_OUTPUT
+      
+      - name: Update configure.ac
+        if: steps.check_version.outputs.needs_update == 'true'
+        id: update_file
+        run: |
+          VERSION="${{ steps.check_version.outputs.new_version }}"
+          
+          # Update line 39 with the new version
+          sed -i "39s/\[LTFS\], \[[^]]*\]/[LTFS], [$VERSION]/" configure.ac
+          
+          echo "File updated successfully"
+          echo "Updated line 39:"
+          sed -n '39p' configure.ac
+      
+      - name: Commit and push changes
+        if: steps.check_version.outputs.needs_update == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add configure.ac
+          git commit -m "chore: update version to ${{ steps.check_version.outputs.new_version }}"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+      
+      - name: Summary
+        run: |
+          echo "## Version Check Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Upstream Tag**: ${{ steps.get_tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Upstream Version**: ${{ steps.get_tag.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Current Version**: ${{ steps.check_version.outputs.current_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Update Needed**: ${{ steps.check_version.outputs.needs_update }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.check_version.outputs.needs_update }}" == "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**configure.ac updated** - Version changed from ${{ steps.check_version.outputs.current_version }} to ${{ steps.check_version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**No update needed** - Version already has 'Prelim' or commit contains 'release-tag'" >> $GITHUB_STEP_SUMMARY
+          fi
+
