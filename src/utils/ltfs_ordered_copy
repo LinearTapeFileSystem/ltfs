@@ -363,7 +363,7 @@ direct_write_threads = 8
 try:
     sig = xattr.get(args.DEST, VEA_PREFIX + LTFS_SIG_VEA)
 
-    if sig.startswith("LTFS"):
+    if sig.startswith(b"LTFS"):
         logger.info("Destination {0} is LTFS".format(args.DEST))
         direct_write_threads = 1
     else:
