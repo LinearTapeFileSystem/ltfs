@@ -222,8 +222,10 @@ class CopyQueue:
 
 RESULT_LOCK = threading.Lock()
 
+BUFSIZE = 256 * 1024 * 1024 # 256MiB
+
 # Based on shutil's code
-def copyfileobj(fsrc, fdst, callback, length=shutil.COPY_BUFSIZE):
+def copyfileobj(fsrc, fdst, callback, length=BUFSIZE):
     try:
         # check for optimisation opportunity
         if "b" in fsrc.mode and "b" in fdst.mode and fsrc.readinto:
@@ -242,7 +244,7 @@ def copyfileobj(fsrc, fdst, callback, length=shutil.COPY_BUFSIZE):
         fdst_write(buf)
         callback(len(buf))
 
-def _copyfileobj_readinto(fsrc, fdst, callback, length=shutil.COPY_BUFSIZE):
+def _copyfileobj_readinto(fsrc, fdst, callback, length=BUFSIZE):
     """readinto()/memoryview() based variant of copyfileobj().
     *fsrc* must support readinto() method and both files must be
     open in binary mode.
