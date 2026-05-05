@@ -2709,17 +2709,16 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 	FILE *infile;
 	DIR *dp;
 	struct dirent *entry;
-	int deventries = 0;
+	int deventries = 0, ret;
 	char *ser= NULL, *pid = NULL, *tmp;
-	int i;
 
 	if (! original_pid) {
 		original_pid = (long)arch_getpid();
 	}
 
 	/* Create a file to indicate current directory of drive link (for tape file backend) */
-	asprintf(&filename, "%s/ltfs%ld", DRIVE_LIST_DIR, original_pid);
-	if (!filename) {
+	ret = asprintf(&filename, "%s/ltfs%ld", DRIVE_LIST_DIR, original_pid);
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10001E, "filechanger_data drive file name");
 		return -LTFS_NO_MEMORY;
 	}
@@ -2727,6 +2726,7 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 	arch_fopen(filename, "r", infile);
 	if (!infile) {
 		ltfsmsg(LTFS_INFO, 30082I, filename);
+		free(filename);
 		return 0;
 	} else {
 		devdir = fgets(line, sizeof(line), infile);
@@ -2755,7 +2755,7 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 				return -ENOMEM;
 			}
 
-			for (i = strlen(tmp) - 1; i > 0; --i) {
+			for (int i = strlen(tmp) - 1; i > 0; --i) {
 				if (tmp[i] == '.') {
 					tmp[i] = '\0';
 					pid = &tmp[i + 1];

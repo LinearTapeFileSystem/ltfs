@@ -550,24 +550,21 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 		writer, BAD_CAST NEXTUID_TAGNAME, "%"PRIu64, idx->uid_number), -1);
 
 	{
-		char *value = NULL;
+		const char *value;
 
 		switch (idx->vollock) {
 			case LOCKED_MAM:
-				asprintf(&value, "locked");
+				value = "locked";
 				break;
 			case PERMLOCKED_MAM:
-				asprintf(&value, "permlocked");
+				value = "permlocked";
 				break;
 			default:
-				asprintf(&value, "unlocked");
+				value = "unlocked";
 				break;
 		}
 
-		if (value)
-			xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "volumelockstate", BAD_CAST value), -1);
-
-		free(value);
+		xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "volumelockstate", BAD_CAST value), -1);
 	}
 
 	xml_mktag(_xml_write_dirtree(writer, idx->root, idx, &offset, &list), -1);

@@ -1289,7 +1289,7 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 	size_t i, size;
 	struct dentry *d, *workd;
 	int ret=0;
-	char *name, *lfdir, *path, *tok, *next_tok;
+	char *name, *lfdir, *path, *new_path, *tok, *next_tok;
 	bool basedir=true, use_iosche=false;
 	char value[32];
 	ltfs_file_id id;
@@ -1337,7 +1337,14 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 
 		/* check directory path and make if it doesn't exist */
 		while( next_tok ){
-			asprintf( &path, "%s/%s", path, tok );
+			ret = asprintf(&new_path, "%s/%s", path, tok);
+			if (ret < 0) {
+				ltfsmsg(LTFS_ERR, 10001E, "_ltfs_recover_symlink: path");
+				ret = -LTFS_NO_MEMORY;
+				goto err_out_func;
+			}
+			free(path);
+			path = new_path;
 			if ( basedir ) {
 				ret = fs_path_lookup(path, 0, &workd, vol->index);
 				if ( ret==-LTFS_NO_DENTRY  )
@@ -1357,7 +1364,14 @@ int ltfs_split_symlink(struct ltfs_volume *vol)
 			next_tok = arch_strtok( NULL, "/", contextVal);
 		}
 		/* Make filename with path in lost_and_found */
-		asprintf( &path, "%s/%s", path, tok);
+		ret = asprintf(&new_path, "%s/%s", path, tok);
+		if (ret < 0) {
+			ltfsmsg(LTFS_ERR, 10001E, "_ltfs_recover_symlink: path");
+			ret = -LTFS_NO_MEMORY;
+			goto err_out_func;
+		}
+		free(path);
+		path = new_path;
 		ret = fs_path_lookup(path, 0, &workd, vol->index);
 		if ( ret == 0 ) {
 			/* delete same name old symlink */
