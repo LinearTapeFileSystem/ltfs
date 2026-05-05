@@ -155,6 +155,11 @@ static int decode_entry_name(char **new_name, const char *name)
 
 	*new_name = arch_strdup(tmp_name);
 	free(tmp_name);
+	
+	if (!*new_name) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -LTFS_NO_MEMORY;
+	}
 
 	return 0;
 }
@@ -187,8 +192,10 @@ static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, boo
 	}
 
 	if (n->percent_encode) {
-		decode_entry_name(&decoded_name, encoded_name);
+		ret = decode_entry_name(&decoded_name, encoded_name);
 		free(encoded_name);
+		if (ret < 0)
+			return ret;
 	} else {
 		decoded_name = encoded_name;
 	}
@@ -241,8 +248,10 @@ static int _xml_parse_nametype_allow_zero_length(xmlTextReaderPtr reader, struct
 	}
 
 	if (n->percent_encode) {
-		decode_entry_name(&decoded_name, encoded_name);
+		ret = decode_entry_name(&decoded_name, encoded_name);
 		free(encoded_name);
+		if (ret < 0)
+			return ret;
 	} else {
 		decoded_name = encoded_name;
 	}

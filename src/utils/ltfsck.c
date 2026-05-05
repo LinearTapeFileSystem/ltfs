@@ -340,12 +340,20 @@ int main(int argc, char **argv)
 				break;
 			case 'e':
 				opt.backend_path = arch_strdup(optarg);
+				if (!opt.backend_path) {
+					ltfsmsg(LTFS_ERR, 10001E, "ltfsck: backend path");
+					return LTFSCK_OPERATIONAL_ERROR;
+				}
 				break;
 			case 'g':
 				if(opt.op_mode == MODE_CHECK)
 					opt.op_mode = MODE_VERIFY;
 				opt.search_mode = SEARCH_BY_GEN;
 				opt.str_gen = arch_strdup(optarg);
+				if (!opt.str_gen) {
+					ltfsmsg(LTFS_ERR, 10001E, "ltfsck: generation string");
+					return LTFSCK_OPERATIONAL_ERROR;
+				}
 				break;
 			case 'v':
 				if ( strcmp(optarg, "forward") == 0)
@@ -357,6 +365,10 @@ int main(int argc, char **argv)
 				break;
 			case '-':
 				opt.kmi_backend_name = arch_strdup(optarg);
+				if (!opt.kmi_backend_name) {
+					ltfsmsg(LTFS_ERR, 10001E, "ltfsck: KMI backend name");
+					return LTFSCK_OPERATIONAL_ERROR;
+				}
 				break;
 			case '+':
 				opt.op_mode = MODE_LIST_POINT;
@@ -427,6 +439,10 @@ int main(int argc, char **argv)
 			return LTFSCK_OPERATIONAL_ERROR;
 		}
 		opt.backend_path = arch_strdup(default_backend);
+		if (!opt.backend_path) {
+			ltfsmsg(LTFS_ERR, 10001E, "ltfsck: default backend path");
+			return LTFSCK_OPERATIONAL_ERROR;
+		}
 	}
 	if (! opt.kmi_backend_name) {
 		const char *default_backend = config_file_get_default_plugin("kmi", opt.config);
@@ -434,6 +450,11 @@ int main(int argc, char **argv)
 			opt.kmi_backend_name = arch_strdup(default_backend);
 		else
 			opt.kmi_backend_name = arch_strdup("none");
+		
+		if (!opt.kmi_backend_name) {
+			ltfsmsg(LTFS_ERR, 10001E, "ltfsck: default KMI backend");
+			return LTFSCK_OPERATIONAL_ERROR;
+		}
 	}
 	if (opt.kmi_backend_name && strcmp(opt.kmi_backend_name, "none") == 0)
 		opt.kmi_backend_name = NULL;
@@ -497,10 +518,19 @@ int main(int argc, char **argv)
 		return LTFSCK_OPERATIONAL_ERROR;
 	}
 
-	if(argv[optind + num_of_o])
+	if(argv[optind + num_of_o]) {
 		opt.devname = arch_strdup(argv[optind + num_of_o]);
+		if (!opt.devname) {
+			ltfsmsg(LTFS_ERR, 10001E, "ltfsck: device name");
+			return LTFSCK_OPERATIONAL_ERROR;
+		}
+	}
 
 	opt.prg_name = arch_strdup(argv[0]);
+	if (!opt.prg_name) {
+		ltfsmsg(LTFS_ERR, 10001E, "ltfsck: program name");
+		return LTFSCK_OPERATIONAL_ERROR;
+	}
 
 	if (_ltfsck_validate_options(&opt)) {
 		ltfsmsg(LTFS_ERR, 16002E);

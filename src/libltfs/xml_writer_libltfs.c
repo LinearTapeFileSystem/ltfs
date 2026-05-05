@@ -130,6 +130,11 @@ static int encode_entry_name(char **new_name, const char *name)
 
 	*new_name = arch_strdup(tmp_name);
 	free(tmp_name);
+	
+	if (!*new_name) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -LTFS_NO_MEMORY;
+	}
 
 	return 0;
 }
@@ -146,7 +151,10 @@ static int _xml_write_nametype(xmlTextWriterPtr writer, const char *tag, struct 
 	char *encoded_name = NULL;
 
 	if (n->percent_encode) {
-		encode_entry_name(&encoded_name, n->name);
+		if (encode_entry_name(&encoded_name, n->name) < 0) {
+			ltfsmsg(LTFS_ERR, 17098E, __FUNCTION__);
+			return -1;
+		}
 		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST tag), -1);
 		xml_mktag(xmlTextWriterWriteAttribute(writer, BAD_CAST "percentencoded", BAD_CAST "true"), -1);
 		xml_mktag(xmlTextWriterWriteString(writer, BAD_CAST encoded_name), -1);

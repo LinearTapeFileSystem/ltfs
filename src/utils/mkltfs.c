@@ -154,6 +154,8 @@ void show_usage(char *appname, struct config_file *config, bool full)
 	struct libltfs_plugin backend;
 	const char *default_backend;
 	char *devname = NULL;
+	const char *devname_fallback = "<devname>";
+	bool devname_allocated = false;
 
 	default_backend = config_file_get_default_plugin("tape", config);
 	if (default_backend && plugin_load(&backend, "tape", default_backend, config) == 0) {
@@ -161,16 +163,13 @@ void show_usage(char *appname, struct config_file *config, bool full)
 		plugin_unload(&backend);
 		if (!devname) {
 			ltfsmsg(LTFS_ERR, 10001E, "show_usage: devname");
-			devname = arch_strdup("<devname>");  /* Fallback for help text */
+		} else {
+			devname_allocated = true;
 		}
 	}
 
-	if (! devname) {
-		devname = arch_strdup("<devname>");
-		if (!devname) {
-			ltfsmsg(LTFS_ERR, 10001E, "show_usage: devname fallback");
-			devname = arch_strdup("<devname>");  /* Last resort for help text */
-		}
+	if (!devname) {
+		devname = (char *)devname_fallback;
 	}
 
 	fprintf(stderr, "\n");
@@ -212,7 +211,9 @@ void show_usage(char *appname, struct config_file *config, bool full)
 	ltfsresult(15411I, appname, devname, "size=1M/name=*.jpg");
 	ltfsresult(15411I, appname, devname, "size=1M/name=*.jpg:*.png");
 
-	free(devname);
+	if (devname_allocated) {
+		free(devname);
+	}
 }
 
 
@@ -322,24 +323,48 @@ int main(int argc, char **argv)
 			case 'e':
 				free(opt.backend_path);
 				opt.backend_path = arch_strdup(optarg);
+				if (!opt.backend_path) {
+					ltfsmsg(LTFS_ERR, 10001E, "mkltfs: backend path");
+					return MKLTFS_OPERATIONAL_ERROR;
+				}
 				break;
 			case 'd':
 				opt.devname = arch_strdup(optarg);
+				if (!opt.devname) {
+					ltfsmsg(LTFS_ERR, 10001E, "mkltfs: device name");
+					return MKLTFS_OPERATIONAL_ERROR;
+				}
 				break;
 			case 'b':
 				opt.blocksize = atoi(optarg);
 				break;
 			case 's':
 				opt.barcode = arch_strdup(optarg);
+				if (!opt.barcode) {
+					ltfsmsg(LTFS_ERR, 10001E, "mkltfs: barcode");
+					return MKLTFS_OPERATIONAL_ERROR;
+				}
 				break;
 			case 'n':
 				opt.volume_name = arch_strdup(optarg);
+				if (!opt.volume_name) {
+					ltfsmsg(LTFS_ERR, 10001E, "mkltfs: volume name");
+					return MKLTFS_OPERATIONAL_ERROR;
+				}
 				break;
 			case 'r':
 				opt.filterrules = arch_strdup(optarg);
+				if (!opt.filterrules) {
+					ltfsmsg(LTFS_ERR, 10001E, "mkltfs: filter rules");
+					return MKLTFS_OPERATIONAL_ERROR;
+				}
 				break;
 			case '-':
 				opt.kmi_backend_name = arch_strdup(optarg);
+				if (!opt.kmi_backend_name) {
+					ltfsmsg(LTFS_ERR, 10001E, "mkltfs: KMI backend name");
+					return MKLTFS_OPERATIONAL_ERROR;
+				}
 				break;
 			case 'c':
 				opt.enable_compression = false;
@@ -409,6 +434,10 @@ int main(int argc, char **argv)
 			return MKLTFS_OPERATIONAL_ERROR;
 		}
 		opt.backend_path = arch_strdup(default_backend);
+		if (!opt.backend_path) {
+			ltfsmsg(LTFS_ERR, 10001E, "mkltfs: default backend path");
+			return MKLTFS_OPERATIONAL_ERROR;
+		}
 	}
 	if (! opt.kmi_backend_name) {
 		const char *default_backend = config_file_get_default_plugin("kmi", opt.config);
@@ -416,7 +445,13 @@ int main(int argc, char **argv)
 			opt.kmi_backend_name = arch_strdup(default_backend);
 		else
 			opt.kmi_backend_name = arch_strdup("none");
+		/* Unified NULL check for both arch_strdup calls above */
+		if (!opt.kmi_backend_name) {
+			ltfsmsg(LTFS_ERR, 10001E, "mkltfs: default KMI backend");
+			return MKLTFS_OPERATIONAL_ERROR;
+		}
 	}
+	/* FIXED: Changed from !opt.kmi_backend_name to opt.kmi_backend_name to prevent NULL dereference */
 	if (opt.kmi_backend_name && strcmp(opt.kmi_backend_name, "none") == 0)
 		opt.kmi_backend_name = NULL;
 
