@@ -1020,6 +1020,7 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 		devfile = strdup(devname);
 		if (!devfile) {
 			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+			free(priv);
 			return -LTFS_NO_MEMORY;
 		}
 	} else {
@@ -1029,6 +1030,7 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 			buf = (struct tc_drive_info *)calloc(devs * 2, sizeof(struct tc_drive_info));
 			if (! buf) {
 				ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+				free(priv);
 				return -LTFS_NO_MEMORY;
 			}
 			info_devs = lin_tape_ibmtape_get_device_list(buf, devs * 2);
