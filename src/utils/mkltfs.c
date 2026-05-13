@@ -220,12 +220,14 @@ void show_usage(char *appname, struct config_file *config, bool full)
 /* Operation */
 int main(int argc, char **argv)
 {
-	struct ltfs_volume *newvol;
+	struct ltfs_volume *newvol = NULL;
 	struct other_format_opts opt;
 	int ret, log_level, syslog_level, i, cmd_args_len;
-	char *lang = NULL, *cmd_args;
+	char *lang = NULL, *cmd_args = NULL;
 	const char *config_file = NULL;
-	void *message_handle;
+	void *message_handle = NULL;
+	bool ltfs_initialized = false;
+	bool message_plugin_loaded = false;
 	int fuse_argc = argc;
 	char **fuse_argv = calloc(fuse_argc, sizeof(char *));
 	if (! fuse_argv) {
@@ -234,7 +236,8 @@ int main(int argc, char **argv)
 	for (i = 0; i < fuse_argc; ++i) {
 		fuse_argv[i] = arch_strdup(argv[i]);
 		if (! fuse_argv[i]) {
-			return MKLTFS_OPERATIONAL_ERROR;
+			ret = MKLTFS_OPERATIONAL_ERROR;
+			goto cleanup;
 		}
 	}
 	struct fuse_args args = FUSE_ARGS_INIT(fuse_argc, fuse_argv);
@@ -246,7 +249,8 @@ int main(int argc, char **argv)
 		ret = setenv("LANG", "en_US.UTF-8", 1);
 		if (ret) {
 			fprintf(stderr, "LTFS9016E Cannot set the LANG environment variable\n");
-			return MKLTFS_OPERATIONAL_ERROR;
+			ret = MKLTFS_OPERATIONAL_ERROR;
+			goto cleanup;
 		}
 	}
 
@@ -257,22 +261,27 @@ int main(int argc, char **argv)
 	ret = ltfs_init(LTFS_INFO, true, false);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10000E, ret);
-		return MKLTFS_OPERATIONAL_ERROR;
+		ret = MKLTFS_OPERATIONAL_ERROR;
+		goto cleanup;
 	}
+	ltfs_initialized = true;
 
 	/*  Setup signal handler to terminate cleanly */
 	ret = ltfs_set_signal_handlers();
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10013E);
-		return MKLTFS_OPERATIONAL_ERROR;
+		ret = MKLTFS_OPERATIONAL_ERROR;
+		goto cleanup;
 	}
 
 	/* Register messages with libltfs */
 	ret = ltfsprintf_load_plugin("bin_mkltfs", bin_mkltfs_dat, &message_handle);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10012E, ret);
-		return MKLTFS_OPERATIONAL_ERROR;
+		ret = MKLTFS_OPERATIONAL_ERROR;
+		goto cleanup;
 	}
+	message_plugin_loaded = true;
 
 	/* Set up empty format options and load the configuration file. */
 	memset(&opt, 0, sizeof(struct other_format_opts));
@@ -284,6 +293,13 @@ int main(int argc, char **argv)
 	opt.blocksize = LTFS_DEFAULT_BLOCKSIZE;
 	opt.long_wipe = false;
 	opt.destructive = false;
+	opt.backend_path = NULL;
+	opt.devname = NULL;
+	opt.barcode = NULL;
+	opt.volume_name = NULL;
+	opt.filterrules = NULL;
+	opt.kmi_backend_name = NULL;
+	opt.config = NULL;
 
 	/* Check for a config file path given on the command line */
 	while (true) {
@@ -295,7 +311,8 @@ int main(int argc, char **argv)
 			config_file = arch_strdup(optarg);
 			if (!config_file) {
 				ltfsmsg(LTFS_ERR, 10001E, "mkltfs: config_file");
-				return MKLTFS_OPERATIONAL_ERROR;
+				ret = MKLTFS_OPERATIONAL_ERROR;
+				goto cleanup;
 			}
 			break;
 		}
@@ -305,7 +322,8 @@ int main(int argc, char **argv)
 	ret = config_file_load(config_file, &opt.config);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10008E, ret);
-		return MKLTFS_OPERATIONAL_ERROR;
+		ret = MKLTFS_OPERATIONAL_ERROR;
+		goto cleanup;
 	}
 
 	/* Parse all command line arguments */
@@ -325,14 +343,16 @@ int main(int argc, char **argv)
 				opt.backend_path = arch_strdup(optarg);
 				if (!opt.backend_path) {
 					ltfsmsg(LTFS_ERR, 10001E, "mkltfs: backend path");
-					return MKLTFS_OPERATIONAL_ERROR;
+					ret = MKLTFS_OPERATIONAL_ERROR;
+					goto cleanup;
 				}
 				break;
 			case 'd':
 				opt.devname = arch_strdup(optarg);
 				if (!opt.devname) {
 					ltfsmsg(LTFS_ERR, 10001E, "mkltfs: device name");
-					return MKLTFS_OPERATIONAL_ERROR;
+					ret = MKLTFS_OPERATIONAL_ERROR;
+					goto cleanup;
 				}
 				break;
 			case 'b':
@@ -342,28 +362,32 @@ int main(int argc, char **argv)
 				opt.barcode = arch_strdup(optarg);
 				if (!opt.barcode) {
 					ltfsmsg(LTFS_ERR, 10001E, "mkltfs: barcode");
-					return MKLTFS_OPERATIONAL_ERROR;
+					ret = MKLTFS_OPERATIONAL_ERROR;
+					goto cleanup;
 				}
 				break;
 			case 'n':
 				opt.volume_name = arch_strdup(optarg);
 				if (!opt.volume_name) {
 					ltfsmsg(LTFS_ERR, 10001E, "mkltfs: volume name");
-					return MKLTFS_OPERATIONAL_ERROR;
+					ret = MKLTFS_OPERATIONAL_ERROR;
+					goto cleanup;
 				}
 				break;
 			case 'r':
 				opt.filterrules = arch_strdup(optarg);
 				if (!opt.filterrules) {
 					ltfsmsg(LTFS_ERR, 10001E, "mkltfs: filter rules");
-					return MKLTFS_OPERATIONAL_ERROR;
+					ret = MKLTFS_OPERATIONAL_ERROR;
+					goto cleanup;
 				}
 				break;
 			case '-':
 				opt.kmi_backend_name = arch_strdup(optarg);
 				if (!opt.kmi_backend_name) {
 					ltfsmsg(LTFS_ERR, 10001E, "mkltfs: KMI backend name");
-					return MKLTFS_OPERATIONAL_ERROR;
+					ret = MKLTFS_OPERATIONAL_ERROR;
+					goto cleanup;
 				}
 				break;
 			case 'c':
@@ -406,24 +430,29 @@ int main(int argc, char **argv)
 				break;
 			case 'h':
 				show_usage(argv[0], opt.config, false);
-				return 0;
+				ret = 0;
+				goto cleanup;
 			case 'p':
 				show_usage(argv[0], opt.config, true);
-				return 0;
+				ret = 0;
+				goto cleanup;
 			case 'V':
 				ltfsresult(15059I, "mkltfs", PACKAGE_VERSION);
 				ltfsresult(15059I, "LTFS Format Specification", LTFS_INDEX_VERSION_STR);
-				return 0;
+				ret = 0;
+				goto cleanup;
 			case '?':
 			default:
 				show_usage(argv[0], opt.config, false);
-				return MKLTFS_USAGE_SYNTAX_ERROR;
+				ret = MKLTFS_USAGE_SYNTAX_ERROR;
+				goto cleanup;
 		}
 	}
 
 	if (optind + num_of_o < argc) {
 		show_usage(argv[0], opt.config, false);
-		return MKLTFS_USAGE_SYNTAX_ERROR;
+		ret = MKLTFS_USAGE_SYNTAX_ERROR;
+		goto cleanup;
 	}
 
 	/* Pick up default backend if one wasn't specified before */
@@ -431,12 +460,14 @@ int main(int argc, char **argv)
 		const char *default_backend = config_file_get_default_plugin("tape", opt.config);
 		if (! default_backend) {
 			ltfsmsg(LTFS_ERR, 10009E);
-			return MKLTFS_OPERATIONAL_ERROR;
+			ret = MKLTFS_OPERATIONAL_ERROR;
+			goto cleanup;
 		}
 		opt.backend_path = arch_strdup(default_backend);
 		if (!opt.backend_path) {
 			ltfsmsg(LTFS_ERR, 10001E, "mkltfs: default backend path");
-			return MKLTFS_OPERATIONAL_ERROR;
+			ret = MKLTFS_OPERATIONAL_ERROR;
+			goto cleanup;
 		}
 	}
 	if (! opt.kmi_backend_name) {
@@ -448,7 +479,8 @@ int main(int argc, char **argv)
 		/* Unified NULL check for both arch_strdup calls above */
 		if (!opt.kmi_backend_name) {
 			ltfsmsg(LTFS_ERR, 10001E, "mkltfs: default KMI backend");
-			return MKLTFS_OPERATIONAL_ERROR;
+			ret = MKLTFS_OPERATIONAL_ERROR;
+			goto cleanup;
 		}
 	}
 	/* FIXED: Changed from !opt.kmi_backend_name to opt.kmi_backend_name to prevent NULL dereference */
@@ -459,7 +491,8 @@ int main(int argc, char **argv)
 	if (opt.quiet && (opt.trace || opt.fulltrace)) {
 		ltfsmsg(LTFS_ERR, 9012E);
 		show_usage(argv[0], opt.config, false);
-		return 1;
+		ret = 1;
+		goto cleanup;
 	} else if (opt.quiet) {
 		log_level = LTFS_WARN;
 		syslog_level = LTFS_NONE;
@@ -490,7 +523,8 @@ int main(int argc, char **argv)
 	if (!cmd_args) {
 		/* Memory allocation failed */
 		ltfsmsg(LTFS_ERR, 10001E, "mkltfs (arguments)");
-		return MKLTFS_OPERATIONAL_ERROR;
+		ret = MKLTFS_OPERATIONAL_ERROR;
+		goto cleanup;
 	}
 	arch_strcat(cmd_args, cmd_args_len,argv[0]);
 	for (i = 1; i < argc; i++) {
@@ -511,7 +545,8 @@ int main(int argc, char **argv)
 	ret = ltfs_volume_alloc("mkltfs", &newvol);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 15001E);
-		return MKLTFS_OPERATIONAL_ERROR;
+		ret = MKLTFS_OPERATIONAL_ERROR;
+		goto cleanup;
 	}
 
 	ret = ltfs_set_blocksize(opt.blocksize, newvol);
@@ -519,7 +554,8 @@ int main(int argc, char **argv)
 		if (ret == -LTFS_SMALL_BLOCKSIZE)
 			ltfsmsg(LTFS_ERR, 15028E, LTFS_MIN_BLOCKSIZE);
 		show_usage(argv[0], opt.config, false);
-		return MKLTFS_OPERATIONAL_ERROR;
+		ret = MKLTFS_OPERATIONAL_ERROR;
+		goto cleanup;
 	}
 	ltfs_set_compression(opt.enable_compression, newvol);
 	ret = ltfs_set_barcode(opt.barcode, newvol);
@@ -529,18 +565,22 @@ int main(int argc, char **argv)
 		else if (ret == -LTFS_BARCODE_INVALID)
 			ltfsmsg(LTFS_ERR, 15030E);
 		show_usage(argv[0], opt.config, false);
-		return MKLTFS_USAGE_SYNTAX_ERROR;
+		ret = MKLTFS_USAGE_SYNTAX_ERROR;
+		goto cleanup;
 	}
 
 	if (_mkltfs_validate_options(argv[0], newvol, &opt)) {
 		ltfsmsg(LTFS_ERR, 15002E);
 		show_usage(argv[0], opt.config, false);
-		return MKLTFS_USAGE_SYNTAX_ERROR;
+		ret = MKLTFS_USAGE_SYNTAX_ERROR;
+		goto cleanup;
 	}
 
 	ret = ltfs_fs_init();
-	if (ret)
-		return LTFSCK_OPERATIONAL_ERROR;;
+	if (ret) {
+		ret = LTFSCK_OPERATIONAL_ERROR;
+		goto cleanup;
+	}
 
 	ltfsmsg(LTFS_INFO, 15003I, opt.devname);
 	ltfsmsg(LTFS_INFO, 15004I, opt.blocksize);
@@ -553,13 +593,29 @@ int main(int argc, char **argv)
 	else
 		ret = format_tape(newvol, &opt, &args);
 
-
+cleanup:
+	/* Free all allocated resources */
+	if (fuse_argv) {
+		for (i = 0; i < fuse_argc; ++i) {
+			free(fuse_argv[i]);
+		}
+		free(fuse_argv);
+	}
+	free(cmd_args);
 	arch_safe_free(opt.backend_path);
 	arch_safe_free(opt.kmi_backend_name);
 	arch_safe_free(opt.devname);
-	config_file_free(opt.config);
-	ltfsprintf_unload_plugin(message_handle);
-	ltfs_finish();
+	arch_safe_free(opt.barcode);
+	arch_safe_free(opt.volume_name);
+	arch_safe_free(opt.filterrules);
+	if (config_file)
+		free((void *)config_file);
+	if (opt.config)
+		config_file_free(opt.config);
+	if (message_plugin_loaded)
+		ltfsprintf_unload_plugin(message_handle);
+	if (ltfs_initialized)
+		ltfs_finish();
 
 	return ret;
 }
