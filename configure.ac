@@ -49,7 +49,10 @@ AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
 AM_PROG_AR
-AC_PROG_LIBTOOL
+dnl
+dnl Initialize libtool - use LT_INIT for libtool 2.x, AC_PROG_LIBTOOL for 1.x
+dnl
+m4_ifdef([LT_INIT], [LT_INIT], [AC_PROG_LIBTOOL])
 
 dnl
 dnl Detecting OS
