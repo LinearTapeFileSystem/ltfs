@@ -853,9 +853,9 @@ int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
 		return ret;
 	}
 
-	ret = filler(buf, new_name, NULL, 0);
+	ret = filler(buf, new_name, NULL, 0, 0);
 #else
-	ret = filler(buf, name, NULL, 0);
+	ret = filler(buf, name, NULL, 0, 0);
 #endif
 
 	free(new_name);
@@ -875,12 +875,12 @@ int ltfs_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	ltfsmsg(LTFS_DEBUG, 14047D, _dentry_name(path, file->file_info));
 
-	if (filler(buf, ".",  NULL, 0)) {
+	if (filler(buf, ".", NULL, 0, 0)) {
 		/* No buffer space */
 		ltfsmsg(LTFS_DEBUG, 14026D);
 		return -ENOBUFS;
 	}
-	if (filler(buf, "..", NULL, 0)) {
+	if (filler(buf, "..", NULL, 0, 0)) {
 		/* No buffer space */
 		ltfsmsg(LTFS_DEBUG, 14026D);
 		return -ENOBUFS;
@@ -1206,7 +1206,6 @@ struct fuse_operations ltfs_ops = {
 	.init        = ltfs_fuse_mount,
 	.destroy     = ltfs_fuse_umount,
 	.getattr     = ltfs_fuse_getattr,
-	.fgetattr    = ltfs_fuse_fgetattr,
 	.access      = ltfs_fuse_access,
 	.statfs      = ltfs_fuse_statfs,
 	.open        = ltfs_fuse_open,
@@ -1218,7 +1217,6 @@ struct fuse_operations ltfs_ops = {
 	.chown       = ltfs_fuse_chown,
 	.create      = ltfs_fuse_create,
 	.truncate    = ltfs_fuse_truncate,
-	.ftruncate   = ltfs_fuse_ftruncate,
 	.unlink      = ltfs_fuse_unlink,
 	.rename      = ltfs_fuse_rename,
 	.mkdir       = ltfs_fuse_mkdir,
@@ -1236,6 +1234,5 @@ struct fuse_operations ltfs_ops = {
 	.symlink     = ltfs_fuse_symlink,
 	.readlink    = ltfs_fuse_readlink,
 #if FUSE_VERSION >= 28
-	.flag_nullpath_ok = 1,
 #endif
 };

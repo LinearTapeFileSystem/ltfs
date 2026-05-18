@@ -50,6 +50,6 @@
 #ifndef __ltfs_fuse_version_h__
 #define __ltfs_fuse_version_h__
 
-#define FUSE_USE_VERSION 26
+#define FUSE_USE_VERSION 30
 
 #endif /* __ltfs_fuse_version_h__ */
