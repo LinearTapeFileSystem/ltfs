@@ -378,20 +378,35 @@ struct supported_device *usb_supported_drives[] = {
 struct error_table ibm_tape_errors[] = {
 	/* Sense Key 0 (No Sense) */
 	{0x008282, -EDEV_CLEANING_REQUIRED,         "IBM LTO - Cleaning Required"},
+	{0x00EE13, -EDEV_RECOVERED_ERROR, 			"Encryption - Key translate"},
+
 	/* Sense Key 1 (Recoverd Error) */
+	{0x015DFF, -EDEV_RECOVERED_ERROR,           "Failure Prediction Threshold Exceeded (FALSE)"}, 
 	{0x018252, -EDEV_DEGRADED_MEDIA,            "IBM LTO - Degraded Media"},
 	{0x018383, -EDEV_RECOVERED_ERROR,           "Drive Has Been Cleaned"},
 	{0x018500, -EDEV_RECOVERED_ERROR,           "Search Match List Limit (warning)"},
 	{0x018501, -EDEV_RECOVERED_ERROR,           "Search Snoop Match Found"},
+
+	/* Sense Key 2 (Not Ready) */
+	{0x028005, -EDEV_NOT_READY,                 "TS2900 - During Reprogramming Mode, New firmware is being downloaded"}, 
+
 	/* Sense Key 3 (Medium Error) */
 	{0x038500, -EDEV_DATA_PROTECT,              "Write Protected Because of Tape or Drive Failure"},
 	{0x038501, -EDEV_DATA_PROTECT,              "Write Protected Because of Tape Failure"},
 	{0x038502, -EDEV_DATA_PROTECT,              "Write Protected Because of Drive Failure"},
+
+	{0x044080, -EDEV_HARDWARE_ERROR,            "TS3310 - Component failure."}, 
+	{0x048000, -EDEV_HARDWARE_ERROR,            "TS3200/TS3100 - Hardware Error"}, 
+	{0x048004, -EDEV_HARDWARE_ERROR,            "TS2900 - Fan Alarm"}, 
+	{0x048007, -EDEV_HARDWARE_ERROR,            "TS2900 - NVRAM Failure"}, 
+
 	/* Sense Key 5 (Illegal Request) */
 	{0x058000, -EDEV_ILLEGAL_REQUEST,           "CU Mode, Vendor-Unique"},
 	{0x058283, -EDEV_ILLEGAL_REQUEST,           "Bad Microcode Detected"},
 	{0x058503, -EDEV_ILLEGAL_REQUEST,           "Write Protected Because of Current Tape Position"},
 	{0x05A301, -EDEV_ILLEGAL_REQUEST,           "OEM Vendor-Specific"},
+	{0x053B80, -EDEV_ILLEGAL_REQUEST,           "TS3500/4500/DMback - Medium Transport Element Full (Should be converted to 05/8273)"}, 
+
 	/* Sense Key 6 (Unit Attention) */
 	{0x065DFF, -EDEV_UNIT_ATTENTION,            "Failure Prediction False"},
 	{0x068283, -EDEV_UNIT_ATTENTION,            "Drive Has Been Cleaned (older versions of microcode)"},
@@ -409,6 +424,7 @@ struct error_table ibm_tape_errors[] = {
 	{0x044781, -EDEV_HARDWARE_ERROR,            "IBM LTO - Write Internal CRC Error"},
 	{0x04EE0E, -EDEV_KEY_SERVICE_ERROR,         "Encryption - Key Service Timeout"}, /* LTO5, Jag4 and earlier */
 	{0x04EE0F, -EDEV_KEY_SERVICE_ERROR,         "Encryption - Key Service Failure"}, /* LTO5, Jag4 and earlier */
+	{0x054080, -EDEV_ILLEGAL_REQUEST,			"Recovered Diagnostic Failure"}, 
 	{0x05EE00, -EDEV_CRYPTO_ERROR,              "Encryption - Key Service Not Enabled"},
 	{0x05EE01, -EDEV_CRYPTO_ERROR,              "Encryption - Key Service Not Configured"},
 	{0x05EE02, -EDEV_CRYPTO_ERROR,              "Encryption - Key Service Not Available"},
@@ -453,6 +469,13 @@ struct error_table ibm_tape_errors[] = {
 	{0x06EF1A, -EDEV_CRYPTO_ERROR,              "Encryption - Key Optional (i.e., chose encryption enabled/disabled)"},
 	{0x07EE0E, -EDEV_KEY_SERVICE_ERROR,         "Encryption - Key Service Timeout"}, /* LTO6, Jag5 and later */
 	{0x07EE0F, -EDEV_KEY_SERVICE_ERROR,         "Encryption - Key Service Failure"}, /* LTO6, Jag5 and later */
+	{0x07EE10, -EDEV_KEY_REQUIRED,				"Encryption - Key Required"}, 
+	{0x07EE11, -EDEV_KEY_GENERATION,			"Encryption - Key Generation"}, 
+	{0x07EE13, -EDEV_KEY_TRANSLATE,				"Encryption - Key Translate"}, 
+	{0x07EE1A, -EDEV_KEY_OPTIONAL,				"Encryption - Key Optional"}, 
+	{0x07EEA0, -EDEV_KEY_REQUIRED,				"Encryption - Key Required (T10)"}, 
+	{0x07EEA1, -EDEV_KEY_GENERATION,			"Encryption - Key Generation (T10)"}, 
+	{0x07EEC0, -EDEV_NO_OPERATION,				"Encryption - No Operation"}, 
 	{0x07EF10, -EDEV_KEY_REQUIRED,              "Encryption - Key Required"},
 	{0x07EF11, -EDEV_CRYPTO_ERROR,              "Encryption - Key Generation"},
 	{0x07EF13, -EDEV_CRYPTO_ERROR,              "Encryption - Key Translate"},
