@@ -1068,6 +1068,14 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_MOUNT), 0, 0);
 
+	/* FUSE3: Disable async reads to prevent unnecessary tape repositioning.
+	 * The -osync_read option was removed in FUSE3. Async read is now controlled
+	 * via FUSE_CAP_ASYNC_READ in the init() callback (this function).
+	 * See: https://github.com/libfuse/libfuse/blob/master/ChangeLog.rst
+	 */
+	if (conn->capable & FUSE_CAP_ASYNC_READ)
+		conn->want &= ~FUSE_CAP_ASYNC_READ;
+
 	if (priv->pid_orig != getpid()) {
 		/*
 		 * Reopen device when LTFS was forked in fuse_main().

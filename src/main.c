@@ -755,13 +755,10 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	/* perform reads synchronously */
-/* FUSE3: removed deprecated option: ret = fuse_opt_add_arg(&args, "-osync_read"); */
-	if (ret < 0) {
-		/* Could not enable FUSE option */
-/* FUSE3: removed deprecated option: ltfsmsg(LTFS_ERR, 14001E, "sync_read", ret); */
-		return 1;
-	}
+	/* FUSE3: The -osync_read option was removed in FUSE3.
+	 * Async read is now disabled via FUSE_CAP_ASYNC_READ in the
+	 * init() callback (see ltfs_fuse_mount() in ltfs_fuse.c).
+	 */
 
 #ifdef __APPLE__
     /* Change MacFUSE timeout from 60 secs to 3100 secs (41mins) */
@@ -975,14 +972,15 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	/* If the local inode space is big enough, have FUSE pass through our UIDs as inode
 	 * numbers instead of generating its own. */
 	if (sizeof(ino_t) >= 8) {
-/* FUSE3: removed deprecated option: ret = fuse_opt_add_arg(args, "-ouse_ino"); */
-		if (ret < 0) {
-			/* Could not enable FUSE option */
-/* FUSE3: removed deprecated option: ltfsmsg(LTFS_ERR, 14001E, "use_ino", ret); */
-			return 1;
-		}
+	  /* FUSE3: use_ino option removed in FUSE3 */
+	  /* ret = fuse_opt_add_arg(args, "-ouse_ino"); */
+	  if (ret < 0) {
+	    /* Could not enable FUSE option */
+	    /* FUSE3: removed deprecated option: ltfsmsg(LTFS_ERR, 14001E, "use_ino", ret); */
+	    return 1;
+	  }
 	}
-
+ 
 	/* Set file system name to "ltfs:devname" in case FUSE doesn't pick it up */
 	snprintf(fsname, sizeof(fsname), "-ofsname=ltfs:%s", priv->devname);
 	ret = fuse_opt_add_arg(args, fsname);
