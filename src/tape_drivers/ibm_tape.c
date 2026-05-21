@@ -387,25 +387,17 @@ struct error_table ibm_tape_errors[] = {
 	{0x018500, -EDEV_RECOVERED_ERROR,           "Search Match List Limit (warning)"},
 	{0x018501, -EDEV_RECOVERED_ERROR,           "Search Snoop Match Found"},
 
-	/* Sense Key 2 (Not Ready) */
-	{0x028005, -EDEV_NOT_READY,                 "TS2900 - During Reprogramming Mode, New firmware is being downloaded"}, 
-
 	/* Sense Key 3 (Medium Error) */
 	{0x038500, -EDEV_DATA_PROTECT,              "Write Protected Because of Tape or Drive Failure"},
 	{0x038501, -EDEV_DATA_PROTECT,              "Write Protected Because of Tape Failure"},
 	{0x038502, -EDEV_DATA_PROTECT,              "Write Protected Because of Drive Failure"},
 
-	{0x044080, -EDEV_HARDWARE_ERROR,            "TS3310 - Component failure."}, 
-	{0x048000, -EDEV_HARDWARE_ERROR,            "TS3200/TS3100 - Hardware Error"}, 
-	{0x048004, -EDEV_HARDWARE_ERROR,            "TS2900 - Fan Alarm"}, 
-	{0x048007, -EDEV_HARDWARE_ERROR,            "TS2900 - NVRAM Failure"}, 
 
 	/* Sense Key 5 (Illegal Request) */
 	{0x058000, -EDEV_ILLEGAL_REQUEST,           "CU Mode, Vendor-Unique"},
 	{0x058283, -EDEV_ILLEGAL_REQUEST,           "Bad Microcode Detected"},
 	{0x058503, -EDEV_ILLEGAL_REQUEST,           "Write Protected Because of Current Tape Position"},
 	{0x05A301, -EDEV_ILLEGAL_REQUEST,           "OEM Vendor-Specific"},
-	{0x053B80, -EDEV_ILLEGAL_REQUEST,           "TS3500/4500/DMback - Medium Transport Element Full (Should be converted to 05/8273)"}, 
 
 	/* Sense Key 6 (Unit Attention) */
 	{0x065DFF, -EDEV_UNIT_ATTENTION,            "Failure Prediction False"},
