@@ -450,6 +450,10 @@
 #define EDEV_KEY_SERVICE_ERROR       21601  /* 04/EE0E 04/EE0F 07/EE0E 07/EE0F Key service timeout or failure */
 #define EDEV_KEY_CHANGE_DETECTED     21602  /* 06/EE12 06/EE18 06/EE19 Detect key change */
 #define EDEV_KEY_REQUIRED            21603  /* 07/EF10 Detect key change */
+#define EDEV_KEY_GENERATION          21604  /* 07/EE11 07/EEA1 Detect key generation */
+#define EDEV_KEY_TRANSLATE           21605  /* 07/EE13 Detect key translate */
+#define EDEV_KEY_OPTIONAL            21606  /* 07/EE1A Detect key optional */
+#define EDEV_NO_OPERATION            21607  /* 07/EEC0 Detect no operation */
 
 /* Internal errors */
 #define EDEV_INTERNAL_ERROR          21700  /* Internal logic error */
