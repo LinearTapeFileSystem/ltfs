@@ -1061,7 +1061,7 @@ int ltfs_fuse_removexattr(const char *path, const char *name)
  * Mount the filesystem. This function assumes a volume has been
  * allocated and ltfs_mount has been called; it just does some secondary setup.
  */
-void * ltfs_fuse_mount(struct fuse_conn_info *conn)
+void * ltfs_fuse_mount(struct fuse_conn_info *conn, struct fuse_config *config)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	struct statvfs *stats = &priv->fs_stats;
@@ -1075,6 +1075,8 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	 */
 	if (conn->capable & FUSE_CAP_ASYNC_READ)
 		conn->want &= ~FUSE_CAP_ASYNC_READ;
+	config->use_ino = true;
+	config->hard_remove = true;
 
 	if (priv->pid_orig != getpid()) {
 		/*

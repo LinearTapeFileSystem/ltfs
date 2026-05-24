@@ -286,7 +286,7 @@ fi
 dnl
 dnl Check for FUSE, libuuid, and libxml2
 dnl
-PKG_CHECK_MODULES([FUSE_MODULE], [fuse >= 2.6.0])
+PKG_CHECK_MODULES([FUSE_MODULE], [fuse3 >= 3.0.0])
 PKG_CHECK_MODULES([LIBXML2_MODULE], [libxml-2.0 >= 2.6.16])
 
 if test "x${host_mac}" = "xyes"
