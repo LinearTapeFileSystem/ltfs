@@ -853,9 +853,9 @@ int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
 		return ret;
 	}
 
-	ret = filler(buf, new_name, NULL, 0);
+	ret = filler(buf, new_name, NULL, 0, 0);
 #else
-	ret = filler(buf, name, NULL, 0);
+	ret = filler(buf, name, NULL, 0, 0);
 #endif
 
 	free(new_name);
@@ -875,12 +875,12 @@ int ltfs_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	ltfsmsg(LTFS_DEBUG, 14047D, _dentry_name(path, file->file_info));
 
-	if (filler(buf, ".",  NULL, 0)) {
+	if (filler(buf, ".", NULL, 0, 0)) {
 		/* No buffer space */
 		ltfsmsg(LTFS_DEBUG, 14026D);
 		return -ENOBUFS;
 	}
-	if (filler(buf, "..", NULL, 0)) {
+	if (filler(buf, "..", NULL, 0, 0)) {
 		/* No buffer space */
 		ltfsmsg(LTFS_DEBUG, 14026D);
 		return -ENOBUFS;
@@ -1061,12 +1061,22 @@ int ltfs_fuse_removexattr(const char *path, const char *name)
  * Mount the filesystem. This function assumes a volume has been
  * allocated and ltfs_mount has been called; it just does some secondary setup.
  */
-void * ltfs_fuse_mount(struct fuse_conn_info *conn)
+void * ltfs_fuse_mount(struct fuse_conn_info *conn, struct fuse_config *config)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	struct statvfs *stats = &priv->fs_stats;
 
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_MOUNT), 0, 0);
+
+	/* FUSE3: Disable async reads to prevent unnecessary tape repositioning.
+	 * The -osync_read option was removed in FUSE3. Async read is now controlled
+	 * via FUSE_CAP_ASYNC_READ in the init() callback (this function).
+	 * See: https://github.com/libfuse/libfuse/blob/master/ChangeLog.rst
+	 */
+	if (conn->capable & FUSE_CAP_ASYNC_READ)
+		conn->want &= ~FUSE_CAP_ASYNC_READ;
+	config->use_ino = true;
+	config->hard_remove = true;
 
 	if (priv->pid_orig != getpid()) {
 		/*
@@ -1206,7 +1216,6 @@ struct fuse_operations ltfs_ops = {
 	.init        = ltfs_fuse_mount,
 	.destroy     = ltfs_fuse_umount,
 	.getattr     = ltfs_fuse_getattr,
-	.fgetattr    = ltfs_fuse_fgetattr,
 	.access      = ltfs_fuse_access,
 	.statfs      = ltfs_fuse_statfs,
 	.open        = ltfs_fuse_open,
@@ -1218,7 +1227,6 @@ struct fuse_operations ltfs_ops = {
 	.chown       = ltfs_fuse_chown,
 	.create      = ltfs_fuse_create,
 	.truncate    = ltfs_fuse_truncate,
-	.ftruncate   = ltfs_fuse_ftruncate,
 	.unlink      = ltfs_fuse_unlink,
 	.rename      = ltfs_fuse_rename,
 	.mkdir       = ltfs_fuse_mkdir,
@@ -1236,6 +1244,5 @@ struct fuse_operations ltfs_ops = {
 	.symlink     = ltfs_fuse_symlink,
 	.readlink    = ltfs_fuse_readlink,
 #if FUSE_VERSION >= 28
-	.flag_nullpath_ok = 1,
 #endif
 };

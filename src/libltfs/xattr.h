@@ -66,7 +66,8 @@ extern "C" {
 #include "libltfs/arch/freebsd/xattr.h"
 #endif
 
-#include "fuse.h"
+#include "ltfs_fuse_version.h"
+#include <fuse.h>
 #include "ltfs.h"
 
 #define LTFS_PRIVATE_PREFIX "ltfs."

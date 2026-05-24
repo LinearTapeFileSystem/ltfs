@@ -289,6 +289,8 @@ int get_vendor_id(char* vendor)
 		return VENDOR_HP;
 	else if (!strncmp(vendor, HPE_VENDOR_ID, strlen(HPE_VENDOR_ID)))
 		return VENDOR_HP;
+	else if (!strncmp(vendor, TANDBERG_VENDOR_ID, strlen(TANDBERG_VENDOR_ID)))
+		return VENDOR_TANDBERG;
 	else if (!strncmp(vendor, QUANTUM_VENDOR_ID, strlen(QUANTUM_VENDOR_ID)))
 		return VENDOR_QUANTUM;
 	else
@@ -308,6 +310,9 @@ struct supported_device **get_supported_devs(int vendor)
 			break;
 		case VENDOR_QUANTUM:
 			cur = quantum_supported_drives;
+			break;
+		case VENDOR_TANDBERG:
+			cur = hp_supported_drives;
 			break;
 	}
 
@@ -412,6 +417,9 @@ void init_error_table(int vendor,
 		case VENDOR_QUANTUM:
 			*vendor_table = quantum_tape_errors;
 			break;
+		case VENDOR_TANDBERG:
+			*vendor_table = hp_tape_errors;
+			break;
 	}
 }
 
@@ -428,6 +436,9 @@ int init_timeout(int vendor, struct timeout_tape **table, int type)
 			break;
 		case VENDOR_QUANTUM:
 			ret = quantum_tape_init_timeout(table, type);
+			break;
+		case VENDOR_TANDBERG:
+			ret = hp_tape_init_timeout(table, type);
 			break;
 	}
 

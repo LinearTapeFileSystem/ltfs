@@ -3031,7 +3031,7 @@ int sg_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 
 	memset(buffer, 0, LOGSENSEPAGE);
 
-	if (IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) {
+	if (IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05 || priv->vendor == VENDOR_TANDBERG)) {
 		/* Use LogPage 0x31 */
 		ret = sg_logsense(device, (uint8_t)LOG_TAPECAPACITY, (uint8_t)0, (void *)buffer, LOGSENSEPAGE);
 		if(ret < 0)

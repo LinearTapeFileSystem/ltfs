@@ -179,6 +179,7 @@ enum {
 	VENDOR_IBM,
 	VENDOR_HP,
 	VENDOR_QUANTUM,
+	VENDOR_TANDBERG,
 };
 
 enum {

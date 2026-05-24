@@ -60,6 +60,7 @@
 #include <grp.h>
 
 #include "ltfs_fuse.h"
+#include <fuse3/fuse_lowlevel.h>
 #include "libltfs/ltfs.h"
 #include "ltfs_copyright.h"
 #include "libltfs/pathname.h"
@@ -747,20 +748,17 @@ int main(int argc, char **argv)
 	}
 
 	/* Unlink objects from the file system instead of having them renamed to .fuse_hidden */
-	ret = fuse_opt_add_arg(&args, "-ohard_remove");
+/* FUSE3: removed deprecated option: ret = fuse_opt_add_arg(&args, "-ohard_remove"); */
 	if (ret < 0) {
 		/* Could not enable FUSE option */
-		ltfsmsg(LTFS_ERR, 14001E, "hard_remove", ret);
+/* FUSE3: removed deprecated option: ltfsmsg(LTFS_ERR, 14001E, "hard_remove", ret); */
 		return 1;
 	}
 
-	/* perform reads synchronously */
-	ret = fuse_opt_add_arg(&args, "-osync_read");
-	if (ret < 0) {
-		/* Could not enable FUSE option */
-		ltfsmsg(LTFS_ERR, 14001E, "sync_read", ret);
-		return 1;
-	}
+	/* FUSE3: The -osync_read option was removed in FUSE3.
+	 * Async read is now disabled via FUSE_CAP_ASYNC_READ in the
+	 * init() callback (see ltfs_fuse_mount() in ltfs_fuse.c).
+	 */
 
 #ifdef __APPLE__
     /* Change MacFUSE timeout from 60 secs to 3100 secs (41mins) */
@@ -788,11 +786,11 @@ int main(int argc, char **argv)
 #endif
 
 #if FUSE_VERSION >= 28
-	/* For FUSE 2.8 or higher, automatically enable big_writes */
-	ret = fuse_opt_add_arg(&args, "-obig_writes");
+/* FUSE3: removed deprecated option: For FUSE 2.8 or higher, automatically enable big_writes */
+/* FUSE3: removed deprecated option: ret = fuse_opt_add_arg(&args, "-obig_writes"); */
 	if (ret < 0) {
 		/* Could not enable FUSE option */
-		ltfsmsg(LTFS_ERR, 14001E, "big_writes", ret);
+/* FUSE3: removed deprecated option: ltfsmsg(LTFS_ERR, 14001E, "big_writes", ret); */
 		return 1;
 	}
 #endif
@@ -974,14 +972,15 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	/* If the local inode space is big enough, have FUSE pass through our UIDs as inode
 	 * numbers instead of generating its own. */
 	if (sizeof(ino_t) >= 8) {
-		ret = fuse_opt_add_arg(args, "-ouse_ino");
-		if (ret < 0) {
-			/* Could not enable FUSE option */
-			ltfsmsg(LTFS_ERR, 14001E, "use_ino", ret);
-			return 1;
-		}
+	  /* FUSE3: use_ino option removed in FUSE3 */
+	  /* ret = fuse_opt_add_arg(args, "-ouse_ino"); */
+	  if (ret < 0) {
+	    /* Could not enable FUSE option */
+	    /* FUSE3: removed deprecated option: ltfsmsg(LTFS_ERR, 14001E, "use_ino", ret); */
+	    return 1;
+	  }
 	}
-
+ 
 	/* Set file system name to "ltfs:devname" in case FUSE doesn't pick it up */
 	snprintf(fsname, sizeof(fsname), "-ofsname=ltfs:%s", priv->devname);
 	ret = fuse_opt_add_arg(args, fsname);
@@ -1223,12 +1222,16 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	for ( i=0; i<args->argc; i++) {
 		fuse_opt_add_arg(&tmpa, args->argv[i]);
 	}
-	ret = fuse_parse_cmdline( &tmpa, &mountpoint, NULL, NULL);
-	fuse_opt_free_args(&tmpa);
-	if (ret < 0 || mountpoint == NULL) {
-		ltfsmsg(LTFS_ERR, 14094E, ret);
-		ltfs_volume_free(&priv->data);
-		return 1;
+	{
+		struct fuse_cmdline_opts fuse_opts;
+		ret = fuse_parse_cmdline(&tmpa, &fuse_opts);
+		fuse_opt_free_args(&tmpa);
+		if (ret < 0 || fuse_opts.mountpoint == NULL) {
+			ltfsmsg(LTFS_ERR, 14094E, ret);
+			ltfs_volume_free(&priv->data);
+			return 1;
+		}
+		mountpoint = fuse_opts.mountpoint;
 	}
 	priv->data->mountpoint = mountpoint;
 	priv->data->mountpoint_len = strlen(mountpoint);
