@@ -388,6 +388,7 @@ struct error_table ibm_tape_errors[] = {
 	{0x018501, -EDEV_RECOVERED_ERROR,           "Search Snoop Match Found"},
 
 	/* Sense Key 3 (Medium Error) */
+	{0x035200, -EDEV_MEDIUM_ERROR,              "(LTO)Cartridge Fault/(3592)Media Load or Eject Failed"},
 	{0x038500, -EDEV_DATA_PROTECT,              "Write Protected Because of Tape or Drive Failure"},
 	{0x038501, -EDEV_DATA_PROTECT,              "Write Protected Because of Tape Failure"},
 	{0x038502, -EDEV_DATA_PROTECT,              "Write Protected Because of Drive Failure"},
@@ -417,6 +418,7 @@ struct error_table ibm_tape_errors[] = {
 	{0x04EE0E, -EDEV_KEY_SERVICE_ERROR,         "Encryption - Key Service Timeout"}, /* LTO5, Jag4 and earlier */
 	{0x04EE0F, -EDEV_KEY_SERVICE_ERROR,         "Encryption - Key Service Failure"}, /* LTO5, Jag4 and earlier */
 	{0x054080, -EDEV_ILLEGAL_REQUEST,			"Recovered Diagnostic Failure"}, 
+	{0x055506, -EDEV_ILLEGAL_REQUEST,			"Auxiliary Memory Out of Space"},/*3592*/
 	{0x05EE00, -EDEV_CRYPTO_ERROR,              "Encryption - Key Service Not Enabled"},
 	{0x05EE01, -EDEV_CRYPTO_ERROR,              "Encryption - Key Service Not Configured"},
 	{0x05EE02, -EDEV_CRYPTO_ERROR,              "Encryption - Key Service Not Available"},
@@ -445,6 +447,7 @@ struct error_table ibm_tape_errors[] = {
 	{0x05EEE2, -EDEV_CRYPTO_ERROR,              "Encryption - Key Translation Disallowed"},
 	{0x05EEFF, -EDEV_CRYPTO_ERROR,              "Encryption - Security Prohibited Function"},
 	{0x05EF01, -EDEV_CRYPTO_ERROR,              "Encryption - Key Service Not Configured"},
+	{0x062A0D, -EDEV_UNIT_ATTENTION,			"Data Encryption Capabilities Changed"},/*3592*/
 	{0x06EE11, -EDEV_CRYPTO_ERROR,              "Encryption - Key Generation"},
 	{0x06EE12, -EDEV_KEY_CHANGE_DETECTED,       "Encryption - Key Change Detected"},
 	{0x06EE13, -EDEV_CRYPTO_ERROR,              "Encryption - Key Translation"},
@@ -474,6 +477,16 @@ struct error_table ibm_tape_errors[] = {
 	{0x07EF1A, -EDEV_CRYPTO_ERROR,              "Encryption - Key Optional"},
 	{0x07EF31, -EDEV_CRYPTO_ERROR,              "Encryption - Key Unknown"},
 	{0x07EFC0, -EDEV_CRYPTO_ERROR,              "Encryption - No Operation"},
+	/*Sense Key A (Copy Aborted) 3592 Only*/
+	{0x0A0D01, -EDEV_THIRD_PARTY_ERROR,			"Third Party Device Failure"},
+	{0x0A0D02, -EDEV_UNREACHABLE_TARGET,		"Copy Target Device Not Reachable"},
+	{0x0A0D03, -EDEV_INCORRECT_TARGET_TYPE,		"Incorrect Copy Target Device Type"},
+	{0x0A0D04, -EDEV_COPY_UNDERRUN,				"Copy Target Device Data Underrun"},
+	{0x0A0D05, -EDEV_COPY_OVERRUN,				"Copy Target Device Data Overrun"},
+	{0x0A260C, -EDEV_INVALID_COPY,				"Invalid Operation for Copy Source or Destination"},
+	{0x0A2F02, -EDEV_COMMAND_CLEARED,			"Commands Cleared by Device Server"},
+	/* Sense Key F (Completed) 3592 Only*/
+	{0x0F0020, -EDEV_COPY_INFORMATION,			"Extended Copy Information Available"},
 	/* END MARK*/
 	{0xFFFFFF, -EDEV_UNKNOWN,                   "Unknown Error code"},
 };
