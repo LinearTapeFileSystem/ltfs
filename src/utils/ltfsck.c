@@ -531,7 +531,6 @@ int main(int argc, char **argv)
 		arch_strcat(cmd_args, cmd_args_len, argv[i]);
 	}
 	ltfsmsg(LTFS_INFO, 16088I, cmd_args);
-	free(cmd_args);
 
 	/* Show build time information */
 	ltfsmsg(LTFS_INFO, 16089I, BUILD_SYS_FOR);
