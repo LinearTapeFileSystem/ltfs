@@ -345,6 +345,7 @@
 #define EDEV_DRIVE_NOT_PRESENT       20013  /* 00/8200 (TS3500) The drive is not present */
 #define EDEV_RECORD_NOT_FOUND        20014  /* 00/1400 Record not found (string search) */
 #define EDEV_INSUFFICIENT_TIME       20015  /* 00/2E00 Insufficient time for operation (string search) */
+#define EDEV_IDLE                    20016  /* 00/5E07 Idle condition activated by timer */
 #define EDEV_CLEANING_REQUIRED       20098  /* (IBM LTO 00/8282) Drive requests cleaning */
 
 /* Sense Key 1 Recovered Error */
@@ -361,10 +362,11 @@
 #define EDEV_OPERATION_IN_PROGRESS   20205  /* 00/0016 02/0407 Operation in progress */
 #define EDEV_OFFLINE                 20206  /* 02/0412 Device is off-line */
 #define EDEV_DOOR_OPEN               20207  /* 02/0418 Door Open*/
-#define EDEV_OVER_TEMPERATURE        20208  /* 02/0B01 08/0B01 Device is too hot. */
+#define EDEV_OVER_TEMPERATURE        20208  /* 02/0B01 0B/0B01 0B/0B0A 0B/0B0C Device is too hot. */
 #define EDEV_NO_MEDIUM               20209  /* 02/3A00 Drive has no medium */
 #define EDEV_NOT_SELF_CONFIGURED_YET 20210  /* 02/3E00 Device is not self configured yet */
 #define EDEV_PARAMETER_VALUE_REJECTED 20211 /* 02/7411 SA creation parameter value rejected */
+#define EDEV_OVER_HUMIDITY           20212  /* 02/0B0E 0B/0B0E 0B/0B10 Device humidity is too high */
 #define EDEV_CLEANING_IN_PROGRESS    20297  /* 02/3003 Cleaning in progress*/
 #define EDEV_IE_OPEN                 20298  /* 02/0484 (TS3500) IO slot is opened */
 
@@ -422,6 +424,7 @@
 #define EDEV_RESERVATION_PREEMPTED   20610  /* 06/2A03 Reservations preempted */
 #define EDEV_RESERVATION_RELEASED    20611  /* 06/2A04 Reservations released */
 #define EDEV_REGISTRATION_PREEMPTED  20612  /* 06/2A05 Registrations preempted */
+#define EDEV_PREDICTION_FAILED       20613  /* 06/5D00 Failure prediction threshold exceeded */
 #define EDEV_UA_MAX                  20699  /* Minimum UA error value */
 #define IS_UNIT_ATTENTION(e)         ((e>=EDEV_UA_MIN)&&(e<=EDEV_UA_MAX))
 
@@ -441,9 +444,22 @@
 #define EDEV_OVERLAPPED              21101  /* 0B/4E00 Overlapped commands */
 #define EDEV_TIMEOUT                 21102  /* 0B/4B06 Initiator response timeout */
 #define EDEV_ABORT_WAIT_READY        21103  /* 0B/2907 0B/0800 0B/0801 on Library */
+#define EDEV_MISCORRECTED_ERROR      21104  /* 0B/110A Miscorrected error */
+#define EDEV_AUTH_FAILED             21105  /* 0B/7440 Authentication failed */
 
 /* Sense Key D Volume Overflow */
 #define EDEV_OVERFLOW                21300  /* 0D/XXXX The medium is overflowed */
+
+/* Sense Key A Copy Aborted (3592 Only) */
+#define EDEV_THIRD_PARTY_ERROR       21000  /* 0A/0D01 Third party device failure */
+#define EDEV_UNREACHABLE_TARGET      21001  /* 0A/0D02 Copy target device not reachable */
+#define EDEV_INCORRECT_TARGET_TYPE   21002  /* 0A/0D03 Incorrect copy target device type */
+#define EDEV_COPY_UNDERRUN           21003  /* 0A/0D04 Copy target device data underrun */
+#define EDEV_COPY_OVERRUN            21004  /* 0A/0D05 Copy target device data overrun */
+#define EDEV_INVALID_COPY            21005  /* 0A/260C Invalid operation for copy source or destination */
+
+/* Sense Key F Completed (3592 Only) */
+#define EDEV_COPY_INFORMATION        21500  /* 0F/0020 Extended copy information available */
 
 /* Crypto Errors on the tape drive */
 #define EDEV_CRYPTO_ERROR            21600  /* XX/EEXX 07/EFXX 07/74XX Other crypto related errors */
