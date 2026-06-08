@@ -59,6 +59,7 @@
 
 #include "fs.h"
 #include "ltfs.h"
+#include "ltfs_error.h"
 #include "ltfs_internal.h"
 #include "libltfs/ltfslogging.h"
 #include "ltfs_copyright.h"
@@ -2431,15 +2432,14 @@ size_t ltfs_max_cache_size(struct ltfs_volume *vol)
  */
 int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 {
-	int ret, ret_mam;
+	int ret;
 	struct tape_offset old_selfptr, old_backptr;
 	struct ltfs_timespec modtime_old = { .tv_sec = 0, .tv_nsec = 0 };
 	bool generation_inc = false;
 	struct tc_position physical_selfptr, current_position;
 	char *cache_path_save = NULL;
 	bool write_perm = (strcmp(reason, SYNC_WRITE_PERM) == 0);
-	bool update_vollock = false;
-	int volstat = -1, new_volstat = 0;
+	int volstat = -1;
 	char *bc_print = NULL;
 	unsigned long long diff;
 
@@ -2567,13 +2567,13 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		return -1;
 	}
 
-	/* Prior to writing the index, compare the current location of the head position to the head location 
+	/* Prior to writing the index, compare the current location of the head position to the head location
 	that is kept in the cache of ltfs (physical_selfptr). If they are different return error (-1) */
 	diff = ((unsigned long long)physical_selfptr.block - (unsigned long long)current_position.block);
 	if (diff) {
 		/* Position mismatch, diff not equal zero */
 		ltfsmsg(LTFS_INFO, 17293E, (unsigned long long)physical_selfptr.block, (unsigned long long)current_position.block);
-		return -1;
+		return -LTFS_INDEX_INVALID;
 	}
 
 	old_selfptr = vol->index->selfptr;
@@ -2594,9 +2594,6 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 			vol->index->backptr = old_backptr;
 			vol->index->selfptr = old_selfptr;
 
-			if (IS_WRITE_PERM(-ret))
-				update_vollock = true;
-
 			goto out_write_perm;
 		}
 	}
@@ -2614,9 +2611,6 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		vol->index->backptr = old_backptr;
 		vol->index->selfptr = old_selfptr;
 
-		if (IS_WRITE_PERM(-ret))
-			update_vollock = true;
-
 		goto out_write_perm;
 	}
 
@@ -2630,9 +2624,6 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		}
 		vol->index->backptr = old_backptr;
 		vol->index->selfptr = old_selfptr;
-
-		if (IS_WRITE_PERM(-ret))
-			update_vollock = true;
 
 		goto out_write_perm;
 	}
@@ -2675,23 +2666,6 @@ out_write_perm:
 		ltfs_mutex_lock(&vol->device->read_only_flag_mutex);
 		vol->device->write_error = true;
 		ltfs_mutex_unlock(&vol->device->read_only_flag_mutex);
-	}
-
-	if (update_vollock) {
-		if (volstat == PWE_MAM_DP && partition == ltfs_ip_id(vol))
-			new_volstat = PWE_MAM_BOTH;
-		else if (volstat == PWE_MAM_IP && partition == ltfs_dp_id(vol))
-			new_volstat = PWE_MAM_BOTH;
-		else if (volstat == UNLOCKED_MAM && partition == ltfs_ip_id(vol))
-			new_volstat = PWE_MAM_IP;
-		else if (volstat == UNLOCKED_MAM && partition == ltfs_dp_id(vol))
-			new_volstat = PWE_MAM_DP;
-
-		if (new_volstat) {
-			ret_mam = tape_set_cart_volume_lock_status(vol, new_volstat);
-			if (ret_mam)
-				ret = ret_mam;
-		}
 	}
 
 	return ret;
@@ -4443,7 +4417,7 @@ static int _ltfs_write_rao_file(char *file_path_org, unsigned char *buf, size_t 
 		ltfsmsg(LTFS_ERR, 10001E, __FILE__);
 		return -LTFS_NO_MEMORY;
 	}
-		
+
 	arch_open(&fd, path,
 		O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
 		SHARE_FLAG_DENYRW, PERMISSION_READWRITE);
