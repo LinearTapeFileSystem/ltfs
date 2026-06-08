@@ -56,6 +56,7 @@
  */
 
 #include "libltfs/ltfs.h"
+#include "libltfs/ltfs_locking_old.h"
 #include "libltfs/tape.h"
 #include "libltfs/ltfs_fsops_raw.h"
 #include "libltfs/index_criteria.h"
@@ -252,7 +253,6 @@ void _unified_unset_write_ip(struct dentry_priv *dpr, struct unified_data *priv)
 void _unified_handle_write_error(ssize_t write_ret, struct write_request *req,
 	struct dentry_priv *dpr, struct unified_data *priv);
 int _unified_get_write_error(struct dentry_priv *dpr);
-int _unified_write_index_after_perm(int write_ret, struct unified_data *priv);
 
 /**
  * Initialize an instance of the unified scheduler.
@@ -1189,9 +1189,6 @@ void _unified_process_index_queue(struct unified_data *priv)
 				if (ret < 0) {
 					/* Index partition writer: failed to write data to the tape (%d) */
 					ltfsmsg(LTFS_WARN, 13013W, (int)ret);
-					if (IS_WRITE_PERM(-ret)) {
-						ret = tape_set_cart_volume_lock_status(priv->vol, PWE_MAM_IP);
-					}
 					_unified_handle_write_error(ret, req, dentry_priv, priv);
 					break;
 				} else {
@@ -1283,7 +1280,6 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 					if (ret < 0) {
 						/* Data partition writer: failed to write data to the tape (%d) */
 						ltfsmsg(LTFS_WARN, 13014W, (int)ret);
-						(void)_unified_write_index_after_perm(ret, priv);
 						_unified_handle_write_error(ret, req, dentry_priv, priv);
 						break;
 					} else {
@@ -1314,7 +1310,6 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 				if (ret < 0) {
 					/* Data partition writer: failed to write data to the tape (%d) */
 					ltfsmsg(LTFS_WARN, 13014W, (int)ret);
-					(void)_unified_write_index_after_perm(ret, priv);
 					break;
 				} else {
 					TAILQ_REMOVE(&local_req_list, req, list);
@@ -1961,7 +1956,6 @@ int _unified_flush_unlocked(struct dentry *d, struct unified_data *priv)
 			ret = ltfs_fsraw_write(d, req_cache, req->count, req->offset, dp_id, false, priv->vol);
 			if (ret < 0) {
 				ltfsmsg(LTFS_ERR, 13019E, (int)ret);
-				(void)_unified_write_index_after_perm(ret, priv);
 				_unified_handle_write_error(ret, req, dpr, priv);
 				break;
 			} else if (dpr->write_ip) {
@@ -2242,56 +2236,6 @@ int _unified_get_write_error(struct dentry_priv *dpr)
 		dpr->write_error = 0;
 		ltfs_mutex_unlock(&dpr->write_error_lock);
 	}
-
-	return ret;
-}
-
-int _unified_write_index_after_perm(int write_ret, struct unified_data *priv)
-{
-	int ret = 0;
-	struct tc_position err_pos;
-	uint64_t last_index_pos = UINT64_MAX;
-	unsigned long blocksize;
-
-	if (!IS_WRITE_PERM(-write_ret)) {
-		/* Nothing to do for non-medium error */
-		return ret;
-	}
-
-	ltfsmsg(LTFS_INFO, 13024I, write_ret);
-	ret = tape_set_cart_volume_lock_status(priv->vol, PWE_MAM_DP);
-	if (ret < 0)
-		ltfsmsg(LTFS_ERR, 13026E, "update MAM", ret);
-
-	blocksize = ltfs_get_blocksize(priv->vol);
-
-	ret = tape_get_first_untransfered_position(priv->vol->device, &err_pos);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 13026E, "get error pos", ret);
-		return ret;
-	}
-
-	/* Check the err_pos is larger than the last index position of the partition */
-	if (err_pos.partition == ltfs_part_id2num(priv->vol->label->partid_ip, priv->vol)) {
-		last_index_pos = priv->vol->ip_coh.set_id;
-	} else {
-		last_index_pos = priv->vol->dp_coh.set_id;
-	}
-
-	if (last_index_pos > err_pos.block) {
-		ltfsmsg(LTFS_INFO, 13027I, (int)err_pos.partition,
-				(unsigned long long)err_pos.block, (unsigned long long)last_index_pos);
-		err_pos.block = last_index_pos + 1;
-	}
-
-	ltfsmsg(LTFS_INFO, 13025I, (int)err_pos.partition, (unsigned long long)err_pos.block, blocksize);
-	ret = ltfs_fsraw_cleanup_extent(priv->vol->index->root, err_pos, blocksize, priv->vol);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 13026E, "extent cleanup", ret);
-		return ret;
-	}
-
-	ret = ltfs_write_index(ltfs_ip_id(priv->vol), SYNC_WRITE_PERM, priv->vol);
 
 	return ret;
 }

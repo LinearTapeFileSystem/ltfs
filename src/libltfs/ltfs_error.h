@@ -383,6 +383,7 @@
 #define EDEV_MEDIUM_MAX              20399  /* Maximum medium error value */
 
 #define IS_MEDIUM_ERROR(e)           ((e>=EDEV_MEDIUM_MIN)&&(e<=EDEV_MEDIUM_MAX))
+#define IS_RW_PERM(e)                ((e==EDEV_RW_PERM)||(e==EDEV_READ_PERM)||(e==EDEV_WRITE_PERM))
 #define IS_READ_PERM(e)              ((e==EDEV_RW_PERM)||(e==EDEV_READ_PERM)||(e==EDEV_MEDIUM_FORMAT_CORRUPTED))
 #define IS_WRITE_PERM(e)             ((e==EDEV_RW_PERM)||(e==EDEV_WRITE_PERM)||(e==EDEV_MEDIUM_FORMAT_CORRUPTED))
 
