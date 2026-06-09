@@ -1769,6 +1769,10 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	int ret;
 	unsigned char coh_data[TC_MAM_PAGE_COHERENCY_SIZE + TC_MAM_PAGE_HEADER_SIZE];
 
+	/* Zero the buffer so the "LTFS\0" signature's NUL terminator is written: the
+	 * arch_strncpy below only copies 4 bytes, and the reader checks all 5. */
+	memset(coh_data, 0, sizeof(coh_data));
+
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
 
