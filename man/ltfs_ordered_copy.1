@@ -40,6 +40,9 @@ Configure verbosity of logger. VERBOSE shall be 0-6. (Default: 4)
 .TP
 \fB-q, --quiet\fR
 No message outout
+.TP
+\fB--move\fR
+Move files instead of copying them. Each source file is removed only after it has been successfully copied to the destination, so the LTFS tape read order is preserved and no data is lost if a copy fails. This option implies \fB-p\fR so that file attributes are preserved like a normal move. After a recursive move the emptied source directories are pruned; source directories that still contain files (for example because a copy failed) are left untouched.
 .SH "COMMAND EXAMPLES"
 .PP
 This section shows various command examples.

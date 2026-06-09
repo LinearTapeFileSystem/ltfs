@@ -46,12 +46,13 @@ from collections import deque
 
 class CopyItem:
     """"""
-    def __init__(self, src, dst, vea_pre, cp_attr, cp_xattr, logger): #initialization
+    def __init__(self, src, dst, vea_pre, cp_attr, cp_xattr, logger, move=False): #initialization
         self.src     = src
         self.dst     = dst
         self.vea_pre = vea_pre
         self.cp_attr = cp_attr
         self.cp_xattr = cp_xattr
+        self.move    = move
         self.vuuid   = ''
         self.part    = ''
         self.start   = -1
@@ -78,6 +79,7 @@ class CopyItem:
         return (self.vuuid, self.part, self.start)
 
     def run(self):
+        action = 'move' if self.move else 'copy'
         try:
             if len(self.vuuid):
                 logger.debug('"{0}" ({2}) -> "{1}"'.format(self.src, self.dst, str(self.start)))
@@ -98,8 +100,18 @@ class CopyItem:
             else: #Only copy data
                 shutil.copy(self.src, self.dst)
         except Exception as e:
-            self.logger.error('Failed to copy "{0}" to "{1}": {2}'.format(self.src, self.dst, str(str(e))))
+            self.logger.error('Failed to {3} "{0}" to "{1}": {2}'.format(self.src, self.dst, str(str(e)), action))
             return False
+
+        if self.move:
+            # The data is safely on the destination now; remove the source to
+            # complete the move. Deletion happens only after a successful copy so
+            # that nothing is lost if the copy above failed.
+            try:
+                os.remove(self.src)
+            except Exception as e:
+                self.logger.error('Copied "{0}" to "{1}" but failed to remove source: {2}'.format(self.src, self.dst, str(e)))
+                return False
 
         return True
 
@@ -151,7 +163,7 @@ class CopyQueue:
 
             self.items = self.items + 1
 
-    def walk_dir(self, source, dest, cp_attr, cp_xattr=False):
+    def walk_dir(self, source, dest, cp_attr, cp_xattr=False, move=False):
         (source_root, t) = os.path.split(source)
         prefix_len = len(source_root)
         dst = dest + "/" + t
@@ -171,7 +183,7 @@ class CopyQueue:
             for f in sorted(files) if self.sort_files else files:
                 self.logger.log(NOTSET + 1, 'Creating a copy item for file {}'.format(f))
                 c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX,
-                             cp_attr, cp_xattr, logger)
+                             cp_attr, cp_xattr, logger, move)
                 self.add_copy_item(c)
 
         for d in walk_dirs:
@@ -280,12 +292,17 @@ parser.add_argument('-v', help='Verbose output. Set VERBOSE level 5', action='st
 parser.add_argument('--verbose', help='Configure verbosity of logger. VERBOSE shall be 0-6. default is 4', default = str(logger_info))
 parser.add_argument('-q','--quiet', help='No message output', action='store_true')
 parser.add_argument('--sort-files', help='Sort the file list before copying', action='store_true')
+parser.add_argument('--move', help='Move files instead of copying. Each source file is removed only after it has been successfully copied to the destination, preserving tape read order. Implies -p so file attributes are preserved like a normal move. Empty source directories are pruned after a recursive move.', action='store_true')
 
 args=parser.parse_args()
 
 if args.all:
     args.p = True
     args.recursive = True
+
+if args.move:
+    # A move should preserve file metadata like a regular "mv".
+    args.p = True
 
 logger = getLogger(__name__)
 basicConfig(format = '')
@@ -348,7 +365,12 @@ if args.recursive == False and len(args.SOURCE) == 1:
                 (new_d, t) = os.path.split(dst)
                 if not os.path.exists(new_d):
                     os.makedirs(new_d)
-            shutil.copy(args.SOURCE[0], args.DEST)
+            if args.p:
+                shutil.copy2(args.SOURCE[0], args.DEST)
+            else:
+                shutil.copy(args.SOURCE[0], args.DEST)
+            if args.move:
+                os.remove(args.SOURCE[0])
         except Exception as e:
             logger.error(str(e))
             exit(1)
@@ -402,7 +424,7 @@ for s in args.SOURCE:
             (new_d, t) = os.path.split(dst)
             if not os.path.exists(new_d):
                 os.makedirs(new_d)
-        c = CopyItem(s, dst, VEA_PREFIX, args.p, args.all, logger)
+        c = CopyItem(s, dst, VEA_PREFIX, args.p, args.all, logger, args.move)
         copyq.add_copy_item(c)
     else:
         logger.log(NOTSET + 1, 'Creating copy item for directory {}'.format(s))
@@ -414,7 +436,7 @@ for s in args.SOURCE:
                 if not os.path.exists(new_d):
                    os.makedirs(new_d)
                 dst = new_d
-            copyq.walk_dir(s, dst, args.p, args.all)
+            copyq.walk_dir(s, dst, args.p, args.all, args.move)
         else:
             logger.warning("omitting directory '{0}'".format(s))
 
@@ -471,10 +493,24 @@ while tape != None:
     (tape_key, tape) = copyq.pop_tape()
     prog_tape.finish()
 
+# In move mode the source files have been removed as they were copied. Prune the
+# now-empty source directory trees bottom-up. Directories that still hold files
+# (e.g. because a copy failed, or a non-recursive directory was skipped) are left
+# untouched, so no data is ever discarded.
+if args.move:
+    for s in args.SOURCE:
+        if os.path.isdir(s):
+            for dirpath, dirnames, filenames in os.walk(s, topdown=False):
+                try:
+                    os.rmdir(dirpath)
+                except OSError:
+                    pass # Not empty or already removed
+
 # Return code
+done = 'Moved' if args.move else 'Copied'
 if fail:
-    logger.info("Copied {} files, Failed {} files.".format(success, fail))
+    logger.info("{} {} files, Failed {} files.".format(done, success, fail))
     exit(1)
 else:
-    logger.info("Copied {} files.".format(success, fail))
+    logger.info("{} {} files.".format(done, success))
     exit(0)
