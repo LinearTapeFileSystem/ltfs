@@ -40,18 +40,65 @@ import argparse
 import xattr
 import shutil
 import threading
+import hashlib
 
 from logging import getLogger, basicConfig, NOTSET, CRITICAL, ERROR, WARNING, INFO, DEBUG
 from collections import deque
 
+# hashlib.algorithms_guaranteed is Python 3.2+; Python 2.7 exposes hashlib.algorithms
+# instead. Use whichever exists so the script runs on both 2.7 and 3.x. (The "or" only
+# evaluates the 2.7 fallback when algorithms_guaranteed is absent, so it never raises on 3.x.)
+HASH_ALGORITHMS = getattr(hashlib, 'algorithms_guaranteed', None) or set(hashlib.algorithms)
+
+def compute_file_hash(path, algo):
+    """Stream a file and return its hex digest using the named hashlib algorithm."""
+    h = hashlib.new(algo)
+    with open(path, 'rb') as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b''):
+            h.update(chunk)
+    if algo.startswith('shake_'):
+        # SHAKE is an extendable-output function; emit a fixed-length 32-byte digest.
+        return h.hexdigest(32)
+    return h.hexdigest()
+
+def ensure_ltfs_hash_supported(probe_path, logger):
+    """When --store-hash targets an LTFS volume, require LTFS Format Spec >= 2.4 (the
+    version that introduced the stored ltfs.hash.* VEA), aborting on an older LTFS
+    volume. Non-LTFS destinations are left alone -- there ltfs.hash.* is just a plain
+    user extended attribute."""
+    try:
+        sig = xattr.get(probe_path, VEA_PREFIX + LTFS_SIG_VEA)
+    except Exception:
+        return  # No LTFS signature: not an LTFS destination, nothing to gate.
+    if isinstance(sig, bytes):
+        sig = sig.decode('ascii', 'replace')
+    if not sig.startswith('LTFS'):
+        return
+    try:
+        spec = xattr.get(probe_path, VEA_PREFIX + 'ltfs.softwareFormatSpec')
+        if isinstance(spec, bytes):
+            spec = spec.decode('ascii', 'replace')
+        nums = [int(x) for x in spec.strip().split('.')[:2]]
+        version = (nums[0], nums[1] if len(nums) > 1 else 0)
+    except Exception as e:
+        logger.error("--store-hash: cannot determine the LTFS format spec version of '{0}': {1}".format(probe_path, str(e)))
+        exit(2)
+    if version < (2, 4):
+        logger.error("--store-hash: destination LTFS Format Spec {0} is older than 2.4, which is "
+                     "required to store ltfs.hash.* attributes. Omit --store-hash or use a 2.4+ "
+                     "LTFS volume.".format(spec))
+        exit(2)
+    logger.log(NOTSET + 1, "Destination LTFS Format Spec {0} supports ltfs.hash.* (>= 2.4)".format(spec))
+
 class CopyItem:
     """"""
-    def __init__(self, src, dst, vea_pre, cp_attr, cp_xattr, logger): #initialization
+    def __init__(self, src, dst, vea_pre, cp_attr, cp_xattr, logger, store_hash=None): #initialization
         self.src     = src
         self.dst     = dst
         self.vea_pre = vea_pre
         self.cp_attr = cp_attr
         self.cp_xattr = cp_xattr
+        self.store_hash = store_hash
         self.vuuid   = ''
         self.part    = ''
         self.start   = -1
@@ -100,6 +147,20 @@ class CopyItem:
         except Exception as e:
             self.logger.error('Failed to copy "{0}" to "{1}": {2}'.format(self.src, self.dst, str(str(e))))
             return False
+
+        if self.store_hash:
+            # Store the content hash in the ltfs.hash.<algo> VEA on the destination.
+            # The hash is computed from the (on-disk) source, whose bytes are identical
+            # to what was just copied; on LTFS this is persisted into the index.
+            try:
+                target = self.dst
+                if os.path.isdir(target):
+                    target = os.path.join(target, os.path.basename(self.src))
+                digest = compute_file_hash(self.src, self.store_hash)
+                xattr.set(target, self.vea_pre + 'ltfs.hash.' + self.store_hash, digest.encode('ascii'))
+            except Exception as e:
+                self.logger.error('Copied "{0}" to "{1}" but failed to store {2} hash: {3}'.format(self.src, self.dst, self.store_hash, str(e)))
+                return False
 
         return True
 
@@ -151,7 +212,7 @@ class CopyQueue:
 
             self.items = self.items + 1
 
-    def walk_dir(self, source, dest, cp_attr, cp_xattr=False):
+    def walk_dir(self, source, dest, cp_attr, cp_xattr=False, store_hash=None):
         (source_root, t) = os.path.split(source)
         prefix_len = len(source_root)
         dst = dest + "/" + t
@@ -171,7 +232,7 @@ class CopyQueue:
             for f in sorted(files) if self.sort_files else files:
                 self.logger.log(NOTSET + 1, 'Creating a copy item for file {}'.format(f))
                 c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX,
-                             cp_attr, cp_xattr, logger)
+                             cp_attr, cp_xattr, logger, store_hash)
                 self.add_copy_item(c)
 
         for d in walk_dirs:
@@ -280,6 +341,14 @@ parser.add_argument('-v', help='Verbose output. Set VERBOSE level 5', action='st
 parser.add_argument('--verbose', help='Configure verbosity of logger. VERBOSE shall be 0-6. default is 4', default = str(logger_info))
 parser.add_argument('-q','--quiet', help='No message output', action='store_true')
 parser.add_argument('--sort-files', help='Sort the file list before copying', action='store_true')
+parser.add_argument('--store-hash', action='store_true',
+                    help='Compute a content hash of each copied file and store it in the '
+                         'ltfs.hash.<algorithm> extended attribute on the destination (intended '
+                         'for LTFS destinations, which persist it in the index per LTFS Format '
+                         'Spec 2.4). The algorithm is selected with --hash-algo (default sha256).')
+parser.add_argument('--hash-algo', default='sha256', metavar='ALGO',
+                    help='Hash algorithm to use with --store-hash. Default sha256. Available: '
+                         + ', '.join(sorted(HASH_ALGORITHMS)) + '.')
 
 args=parser.parse_args()
 
@@ -318,6 +387,18 @@ else:
 
 logger.info('Tape order aware copy for LTFS')
 
+# Resolve --store-hash / --hash-algo into a single value: the algorithm name when
+# hashing is enabled, otherwise None. Downstream code treats it as "algo or falsy".
+if args.store_hash:
+    algo = args.hash_algo.lower()
+    if algo not in HASH_ALGORITHMS:
+        logger.error("Unsupported hash algorithm '{0}'. Available: {1}".format(
+            algo, ', '.join(sorted(HASH_ALGORITHMS))))
+        exit(2)
+    args.store_hash = algo
+else:
+    args.store_hash = None
+
 if args.target_directory:
     if args.DEST != None:
         args.SOURCE.extend(args.DEST)
@@ -336,6 +417,13 @@ if args.DEST == None:
     logger.error('No destination is specified')
     exit(2)
 
+if args.store_hash:
+    # ltfs.hash.* is a stored VEA introduced in LTFS Format Spec 2.4. If the
+    # destination is on an LTFS volume, verify it is new enough up front so we
+    # fail fast instead of erroring on every single file.
+    hash_probe = args.DEST if os.path.isdir(args.DEST) else (os.path.dirname(args.DEST) or '.')
+    ensure_ltfs_hash_supported(hash_probe, logger)
+
 # Special case:
 #  Copy source is only one file
 if args.recursive == False and len(args.SOURCE) == 1:
@@ -349,6 +437,12 @@ if args.recursive == False and len(args.SOURCE) == 1:
                 if not os.path.exists(new_d):
                     os.makedirs(new_d)
             shutil.copy(args.SOURCE[0], args.DEST)
+            if args.store_hash:
+                target = args.DEST
+                if os.path.isdir(target):
+                    target = os.path.join(target, os.path.basename(args.SOURCE[0]))
+                digest = compute_file_hash(args.SOURCE[0], args.store_hash)
+                xattr.set(target, VEA_PREFIX + 'ltfs.hash.' + args.store_hash, digest.encode('ascii'))
         except Exception as e:
             logger.error(str(e))
             exit(1)
@@ -402,7 +496,7 @@ for s in args.SOURCE:
             (new_d, t) = os.path.split(dst)
             if not os.path.exists(new_d):
                 os.makedirs(new_d)
-        c = CopyItem(s, dst, VEA_PREFIX, args.p, args.all, logger)
+        c = CopyItem(s, dst, VEA_PREFIX, args.p, args.all, logger, args.store_hash)
         copyq.add_copy_item(c)
     else:
         logger.log(NOTSET + 1, 'Creating copy item for directory {}'.format(s))
@@ -414,7 +508,7 @@ for s in args.SOURCE:
                 if not os.path.exists(new_d):
                    os.makedirs(new_d)
                 dst = new_d
-            copyq.walk_dir(s, dst, args.p, args.all)
+            copyq.walk_dir(s, dst, args.p, args.all, args.store_hash)
         else:
             logger.warning("omitting directory '{0}'".format(s))
 

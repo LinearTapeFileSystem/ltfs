@@ -40,6 +40,12 @@ Configure verbosity of logger. VERBOSE shall be 0-6. (Default: 4)
 .TP
 \fB-q, --quiet\fR
 No message outout
+.TP
+\fB--store-hash\fR
+Compute a content hash of each copied file and store it in the \fBltfs.hash.\fR\fIALGO\fR extended attribute on the destination. This is intended for LTFS destinations, which persist the value into the index (LTFS Format Spec 2.4). The hash is computed from the source file content and stored as a hex string; if the hash cannot be stored the file is treated as failed.
+.TP
+\fB--hash-algo\fR \fIALGO\fR
+Hash algorithm to use with \fB--store-hash\fR. Defaults to \fBsha256\fR and may be any algorithm guaranteed by the Python \fBhashlib\fR module (on Python 3: md5, sha1, sha224, sha256, sha384, sha512, sha3_224, sha3_256, sha3_384, sha3_512, shake_128, shake_256, blake2b, blake2s; on Python 2.7 the classic md5/sha1/sha224/sha256/sha384/sha512).
 .SH "COMMAND EXAMPLES"
 .PP
 This section shows various command examples.
