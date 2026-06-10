@@ -1192,11 +1192,21 @@ static int _xml_parse_file(xmlTextReaderPtr reader, struct ltfs_index *idx, stru
  * Parse a dir into the given directory.
  */
 
+/* Guard against C-stack exhaustion while parsing the directory tree:
+ * _xml_parse_dirtree recurses once per nesting level and XML_PARSE_HUGE
+ * removes libxml2's own nesting limit, so a crafted index could otherwise
+ * recurse until the stack overflows. This is a stack-safety bound, not an
+ * LTFS format limit (the format defines no maximum depth); it is set far
+ * above any tree that fits in a conventional PATH_MAX, so it cannot reject
+ * a volume produced from a real filesystem. */
+#define XML_MAX_DIRTREE_DEPTH 1024
+
 static int _xml_parse_dirtree(xmlTextReaderPtr reader, struct dentry *parent,
 							  struct ltfs_index *idx, struct ltfs_volume *vol,
-							  struct name_list *dirname); /* Forward reference */
+							  struct name_list *dirname, int depth); /* Forward reference */
 
-static int _xml_parse_dir_contents(xmlTextReaderPtr reader, struct dentry *dir, struct ltfs_index *idx)
+static int _xml_parse_dir_contents(xmlTextReaderPtr reader, struct dentry *dir,
+								   struct ltfs_index *idx, int depth)
 {
 	struct name_list *list = NULL, *entry_name = NULL;
 	CHECK_ARG_NULL(dir, -LTFS_NULL_ARG);
@@ -1228,7 +1238,7 @@ static int _xml_parse_dir_contents(xmlTextReaderPtr reader, struct dentry *dir, 
 				ltfsmsg(LTFS_ERR, 10001E, "_xml_parse_dir_contents: dir");
 				return -LTFS_NO_MEMORY;
 			}
-			ret = _xml_parse_dirtree(reader, dir, idx, dir->vol, entry_name);
+			ret = _xml_parse_dirtree(reader, dir, idx, dir->vol, entry_name, depth + 1);
 			if (ret < 0) {
 				free(entry_name);
 				return ret;
@@ -1285,13 +1295,18 @@ static int _xml_parse_dir_contents(xmlTextReaderPtr reader, struct dentry *dir, 
  */
 static int _xml_parse_dirtree(xmlTextReaderPtr reader, struct dentry *parent,
 							  struct ltfs_index *idx, struct ltfs_volume *vol,
-							  struct name_list *dirname)
+							  struct name_list *dirname, int depth)
 {
 	unsigned long long value_int;
 	struct dentry *dir;
 
 	declare_parser_vars("directory");
 	declare_tracking_arrays(9, 1);
+
+	if (depth > XML_MAX_DIRTREE_DEPTH) {
+		ltfsmsg(LTFS_ERR, 17295E, XML_MAX_DIRTREE_DEPTH);
+		return -LTFS_XML_DEEP_NESTING;
+	}
 
 	if (! parent && idx->root) {
 		dir = idx->root;
@@ -1407,7 +1422,7 @@ static int _xml_parse_dirtree(xmlTextReaderPtr reader, struct dentry *parent,
 			check_required_tag(6);
 			check_empty();
 			if (empty == 0) {
-				ret = _xml_parse_dir_contents(reader, dir, idx);
+				ret = _xml_parse_dir_contents(reader, dir, idx, depth);
 				if (ret < 0)
 					return ret;
 			}
@@ -1598,7 +1613,7 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 		} else if (! strcmp(name, "directory")) {
 			check_required_tag(6);
 			assert_not_empty();
-			ret = _xml_parse_dirtree(reader, NULL, idx, vol, NULL);
+			ret = _xml_parse_dirtree(reader, NULL, idx, vol, NULL, 0);
 			if (ret < 0)
 				return ret;
 
