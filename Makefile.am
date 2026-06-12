@@ -37,7 +37,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 nobase_pkginclude_HEADERS = config.h
 
-SUBDIRS = messages src conf init.d man
+SUBDIRS = messages src conf init.d man tests
 
 install-data-local: ltfs.pc
 	if [ ! -d $(DESTDIR)$(libdir)/pkgconfig ]; then \

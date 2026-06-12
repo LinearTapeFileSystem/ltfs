@@ -604,6 +604,11 @@ dnl
 dnl Output files
 dnl
 AC_CONFIG_HEADERS([config.h])
+dnl Compute the integration test list at configure time so branches can
+dnl add tests/t/*.sh scripts without editing the build files.
+TESTS_LIST=`cd "$srcdir/tests" 2>/dev/null && ls t/*.sh 2>/dev/null | sort | tr '\n' ' '`
+AC_SUBST([TESTS_LIST])
+
 AC_CONFIG_FILES([
     Makefile
     messages/Makefile
@@ -622,6 +627,7 @@ AC_CONFIG_FILES([
     src/iosched/Makefile
     src/kmi/Makefile
     src/utils/Makefile
+    tests/Makefile
     ltfs.pc:ltfs.pc.in
 ])
 
