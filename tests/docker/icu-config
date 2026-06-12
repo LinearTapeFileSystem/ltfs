@@ -1,0 +1,12 @@
+#!/bin/sh
+# Minimal icu-config replacement for distributions that no longer ship it.
+case "$1" in
+    --cppflags)
+        pkg-config --cflags icu-uc ;;
+    --ldflags)
+        pkg-config --libs icu-uc icu-io ;;
+    --version)
+        pkg-config --modversion icu-uc ;;
+    *)
+        echo '' ;;
+esac
