@@ -50,6 +50,12 @@
 #ifndef __ltfs_fuse_version_h__
 #define __ltfs_fuse_version_h__
 
+/* HAVE_FUSE3 is set on the compiler command line by configure
+ * (default on Linux; --with-fuse2 selects the libfuse 2 API). */
+#ifdef HAVE_FUSE3
+#define FUSE_USE_VERSION 31
+#else
 #define FUSE_USE_VERSION 26
+#endif
 
 #endif /* __ltfs_fuse_version_h__ */
