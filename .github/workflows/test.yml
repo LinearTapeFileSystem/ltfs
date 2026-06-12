@@ -1,0 +1,32 @@
+name: Test Suite
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get -q update
+          sudo apt-get -q -y install --no-install-recommends \
+            build-essential automake autoconf libtool pkg-config \
+            icu-devtools libicu-dev libxml2-dev uuid-dev libsnmp-dev \
+            libfuse-dev attr
+          sudo install -m 755 tests/docker/icu-config /usr/local/bin/icu-config
+
+      - name: Build
+        run: |
+          ./autogen.sh
+          ./configure --enable-icu-6x
+          make -j"$(nproc)"
+
+      - name: Run tests
+        run: make check VERBOSE=1 || { cat tests/test-suite.log; exit 1; }
