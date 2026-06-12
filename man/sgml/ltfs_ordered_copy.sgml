@@ -107,13 +107,13 @@
         <varlistentry>
           <term><option>--store-hash</option></term>
           <listitem>
-            <para>Compute a content hash of each copied file and store it in the <literal>ltfs.hash.<replaceable>ALGO</replaceable></literal> extended attribute on the destination. This is intended for LTFS destinations, which persist the value into the index (LTFS Format Spec 2.4). The hash is computed from the source file content and stored as a hex string; if the hash cannot be stored the file is treated as failed.</para>
+            <para>Compute a content hash of each copied file and store it in the <literal>ltfs.hash.<replaceable>HASHTYPE</replaceable></literal> extended attribute on the destination, as defined by the LTFS Format Specification 2.4 (Annex F, Table F.1). This is intended for LTFS destinations, which persist the value into the index. The hash is stored as a UTF-8 hex string of the length the spec requires for the type; if the hash cannot be stored the file is treated as failed.</para>
           </listitem>
         </varlistentry>
         <varlistentry>
-          <term><option>--hash-algo</option> <replaceable>ALGO</replaceable></term>
+          <term><option>--hash-algo</option> <replaceable>HASHTYPE</replaceable></term>
           <listitem>
-            <para>Hash algorithm to use with <option>--store-hash</option>. Defaults to <literal>sha256</literal> and may be any algorithm guaranteed by the Python <literal>hashlib</literal> module (on Python 3: md5, sha1, sha224, sha256, sha384, sha512, sha3_224, sha3_256, sha3_384, sha3_512, shake_128, shake_256, blake2b, blake2s; on Python 2.7 the classic md5/sha1/sha224/sha256/sha384/sha512).</para>
+            <para>LTFS hash type to use with <option>--store-hash</option> (LTFS Format Spec 2.4, Table F.1). One of <literal>crc32sum</literal>, <literal>md5sum</literal>, <literal>sha1sum</literal>, <literal>sha256sum</literal>, <literal>sha512sum</literal>; the bare names crc32, md5, sha1, sha256, sha512 are accepted as aliases. Defaults to <literal>sha256sum</literal>.</para>
           </listitem>
         </varlistentry>
       </variablelist>

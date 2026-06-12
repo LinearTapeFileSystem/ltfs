@@ -41,24 +41,42 @@ import xattr
 import shutil
 import threading
 import hashlib
+import zlib
 
 from logging import getLogger, basicConfig, NOTSET, CRITICAL, ERROR, WARNING, INFO, DEBUG
 from collections import deque
 
-# hashlib.algorithms_guaranteed is Python 3.2+; Python 2.7 exposes hashlib.algorithms
-# instead. Use whichever exists so the script runs on both 2.7 and 3.x. (The "or" only
-# evaluates the 2.7 fallback when algorithms_guaranteed is absent, so it never raises on 3.x.)
-HASH_ALGORITHMS = getattr(hashlib, 'algorithms_guaranteed', None) or set(hashlib.algorithms)
+# LTFS Format Specification 2.4, Annex F (Table F.1): file content hashes are stored as
+# ltfs.hash.<hashtype> extended attributes. Only these hashtypes are standardized; all
+# other hashtype values are reserved by the spec. Each maps to its underlying algorithm
+# (all of which are available on both Python 2.7 and 3.x).
+HASH_TYPES = {
+    'crc32sum':  'crc32',
+    'md5sum':    'md5',
+    'sha1sum':   'sha1',
+    'sha256sum': 'sha256',
+    'sha512sum': 'sha512',
+}
+# Accept the bare algorithm name as a convenience alias for the spec hashtype.
+HASH_ALIASES = {
+    'crc32': 'crc32sum', 'md5': 'md5sum', 'sha1': 'sha1sum',
+    'sha256': 'sha256sum', 'sha512': 'sha512sum',
+}
 
-def compute_file_hash(path, algo):
-    """Stream a file and return its hex digest using the named hashlib algorithm."""
+def compute_file_hash(path, hashtype):
+    """Stream a file and return the hex digest for an LTFS Table F.1 hashtype (e.g.
+    'sha256sum'), as a UTF-8 hex string of the length the spec requires for that type."""
+    algo = HASH_TYPES[hashtype]
+    if algo == 'crc32':
+        crc = 0
+        with open(path, 'rb') as f:
+            for chunk in iter(lambda: f.read(1024 * 1024), b''):
+                crc = zlib.crc32(chunk, crc)
+        return '%08x' % (crc & 0xffffffff)
     h = hashlib.new(algo)
     with open(path, 'rb') as f:
         for chunk in iter(lambda: f.read(1024 * 1024), b''):
             h.update(chunk)
-    if algo.startswith('shake_'):
-        # SHAKE is an extendable-output function; emit a fixed-length 32-byte digest.
-        return h.hexdigest(32)
     return h.hexdigest()
 
 def ensure_ltfs_hash_supported(probe_path, logger):
@@ -149,7 +167,7 @@ class CopyItem:
             return False
 
         if self.store_hash:
-            # Store the content hash in the ltfs.hash.<algo> VEA on the destination.
+            # Store the content hash in the ltfs.hash.<hashtype> VEA on the destination.
             # The hash is computed from the (on-disk) source, whose bytes are identical
             # to what was just copied; on LTFS this is persisted into the index.
             try:
@@ -343,12 +361,16 @@ parser.add_argument('-q','--quiet', help='No message output', action='store_true
 parser.add_argument('--sort-files', help='Sort the file list before copying', action='store_true')
 parser.add_argument('--store-hash', action='store_true',
                     help='Compute a content hash of each copied file and store it in the '
-                         'ltfs.hash.<algorithm> extended attribute on the destination (intended '
+                         'ltfs.hash.<hashtype> extended attribute on the destination (intended '
                          'for LTFS destinations, which persist it in the index per LTFS Format '
-                         'Spec 2.4). The algorithm is selected with --hash-algo (default sha256).')
-parser.add_argument('--hash-algo', default='sha256', metavar='ALGO',
-                    help='Hash algorithm to use with --store-hash. Default sha256. Available: '
-                         + ', '.join(sorted(HASH_ALGORITHMS)) + '.')
+                         'Spec 2.4, Table F.1). The hash type is selected with --hash-algo '
+                         '(default sha256sum).')
+parser.add_argument('--hash-algo', default='sha256sum', metavar='HASHTYPE',
+                    help='LTFS hash type to use with --store-hash, stored as ltfs.hash.<HASHTYPE> '
+                         '(LTFS Format Spec 2.4, Table F.1). One of: '
+                         + ', '.join(sorted(HASH_TYPES))
+                         + ' (the bare names ' + ', '.join(sorted(HASH_ALIASES))
+                         + ' are accepted as aliases). Default sha256sum.')
 
 args=parser.parse_args()
 
@@ -387,15 +409,16 @@ else:
 
 logger.info('Tape order aware copy for LTFS')
 
-# Resolve --store-hash / --hash-algo into a single value: the algorithm name when
-# hashing is enabled, otherwise None. Downstream code treats it as "algo or falsy".
+# Resolve --store-hash / --hash-algo into a single value: the LTFS spec hashtype when
+# hashing is enabled, otherwise None. Downstream code treats it as "hashtype or falsy".
 if args.store_hash:
-    algo = args.hash_algo.lower()
-    if algo not in HASH_ALGORITHMS:
-        logger.error("Unsupported hash algorithm '{0}'. Available: {1}".format(
-            algo, ', '.join(sorted(HASH_ALGORITHMS))))
+    ht = args.hash_algo.lower()
+    ht = HASH_ALIASES.get(ht, ht)   # accept a bare algorithm name as an alias
+    if ht not in HASH_TYPES:
+        logger.error("Unsupported hash type '{0}'. LTFS Format Spec 2.4 (Table F.1) defines: {1}.".format(
+            args.hash_algo, ', '.join(sorted(HASH_TYPES))))
         exit(2)
-    args.store_hash = algo
+    args.store_hash = ht
 else:
     args.store_hash = None
 
