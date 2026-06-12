@@ -322,6 +322,22 @@ then
 else
     AC_MSG_RESULT([3])
 fi
+
+dnl
+dnl struct fuse_file_info.parallel_direct_writes appeared in libfuse 3.15;
+dnl detect the member instead of relying on version numbers.
+dnl
+if test "x${with_fuse2}" != "xyes"
+then
+    SAVE_CFLAGS=$CFLAGS
+    CFLAGS="$CFLAGS ${FUSE_MODULE_CFLAGS} -DFUSE_USE_VERSION=31"
+    AC_CHECK_MEMBER([struct fuse_file_info.parallel_direct_writes],
+        [AC_DEFINE([HAVE_FUSE_PARALLEL_DIRECT_WRITES], [1],
+            [Define to 1 if struct fuse_file_info has parallel_direct_writes])],
+        [],
+        [[#include <fuse.h>]])
+    CFLAGS="$SAVE_CFLAGS"
+fi
 PKG_CHECK_MODULES([LIBXML2_MODULE], [libxml-2.0 >= 2.6.16])
 
 if test "x${host_mac}" = "xyes"

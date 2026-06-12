@@ -325,6 +325,13 @@ int ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler, void
 	struct ltfs_volume *vol);
 
 /**
+ * List a directory like ltfs_fsops_readdir, passing each entry's attributes
+ * to the filler as well. attr is NULL when the backing store yields names only.
+ */
+int ltfs_fsops_readdir_attr(struct dentry *d, void *buf, ltfs_dir_filler_attr filler,
+	void *filler_priv, struct ltfs_volume *vol);
+
+/**
  * Get an entry in the directory.
  * It does get the "." and ".." entries only when d is specified non volume root directory.
  * @param d Directory to list.
