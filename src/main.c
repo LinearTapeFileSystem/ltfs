@@ -60,6 +60,9 @@
 #include <grp.h>
 
 #include "ltfs_fuse.h"
+#ifdef HAVE_FUSE3
+#include <fuse_lowlevel.h>   /* fuse_parse_cmdline, struct fuse_cmdline_opts */
+#endif
 #include "libltfs/ltfs.h"
 #include "ltfs_copyright.h"
 #include "libltfs/pathname.h"
@@ -746,6 +749,10 @@ int main(int argc, char **argv)
 		}
 	}
 
+#ifndef HAVE_FUSE3
+	/* On FUSE 3 these are set through struct fuse_config in the init
+	 * callback (ltfs_fuse_mount); the mount options no longer exist. */
+
 	/* Unlink objects from the file system instead of having them renamed to .fuse_hidden */
 	ret = fuse_opt_add_arg(&args, "-ohard_remove");
 	if (ret < 0) {
@@ -761,6 +768,7 @@ int main(int argc, char **argv)
 		ltfsmsg(LTFS_ERR, 14001E, "sync_read", ret);
 		return 1;
 	}
+#endif
 
 #ifdef __APPLE__
     /* Change MacFUSE timeout from 60 secs to 3100 secs (41mins) */
@@ -787,14 +795,17 @@ int main(int argc, char **argv)
 	}
 #endif
 
+#ifndef HAVE_FUSE3
 #if FUSE_VERSION >= 28
-	/* For FUSE 2.8 or higher, automatically enable big_writes */
+	/* For FUSE 2.8 or higher, automatically enable big_writes.
+	 * FUSE 3 removed the option; large writes are always enabled. */
 	ret = fuse_opt_add_arg(&args, "-obig_writes");
 	if (ret < 0) {
 		/* Could not enable FUSE option */
 		ltfsmsg(LTFS_ERR, 14001E, "big_writes", ret);
 		return 1;
 	}
+#endif
 #endif
 
 	/* Set up permissions based on mount options and current user information */
@@ -971,8 +982,10 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		ltfsmsg(LTFS_INFO, 14095I);
 	}
 
+#ifndef HAVE_FUSE3
 	/* If the local inode space is big enough, have FUSE pass through our UIDs as inode
-	 * numbers instead of generating its own. */
+	 * numbers instead of generating its own. On FUSE 3 this is set through
+	 * struct fuse_config in the init callback. */
 	if (sizeof(ino_t) >= 8) {
 		ret = fuse_opt_add_arg(args, "-ouse_ino");
 		if (ret < 0) {
@@ -981,6 +994,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 			return 1;
 		}
 	}
+#endif
 
 	/* Set file system name to "ltfs:devname" in case FUSE doesn't pick it up */
 	snprintf(fsname, sizeof(fsname), "-ofsname=ltfs:%s", priv->devname);
@@ -1223,7 +1237,17 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	for ( i=0; i<args->argc; i++) {
 		fuse_opt_add_arg(&tmpa, args->argv[i]);
 	}
+#ifdef HAVE_FUSE3
+	{
+		struct fuse_cmdline_opts cmdline_opts;
+
+		ret = fuse_parse_cmdline(&tmpa, &cmdline_opts);
+		if (ret == 0)
+			mountpoint = cmdline_opts.mountpoint;
+	}
+#else
 	ret = fuse_parse_cmdline( &tmpa, &mountpoint, NULL, NULL);
+#endif
 	fuse_opt_free_args(&tmpa);
 	if (ret < 0 || mountpoint == NULL) {
 		ltfsmsg(LTFS_ERR, 14094E, ret);
