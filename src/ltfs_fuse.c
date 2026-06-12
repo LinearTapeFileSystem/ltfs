@@ -104,6 +104,31 @@ static struct fuse_context *context;
 int ltfs_fuse_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi);
 int ltfs_fuse_ftruncate(const char *path, off_t length, struct fuse_file_info *fi);
 
+#if !defined(__APPLE__) && FUSE_VERSION > 27
+/* Per-open cache policy. With -o direct_io every read and write bypasses
+ * the kernel page cache: requests arrive at the application's I/O size
+ * (up to the negotiated maximum) and stream straight to the daemon, at
+ * the cost of mmap support and kernel readahead. Otherwise the page
+ * cache is used and kept across opens (the daemon is the only writer).
+ * keep_cache must never be set while another open of the same file uses
+ * direct_io; the policy is mount-wide, so the modes cannot mix. */
+static void _ltfs_fuse_set_cache_flags(struct fuse_file_info *fi, struct ltfs_fuse_data *priv)
+{
+	if (priv->direct_io) {
+		fi->direct_io = 1;
+		fi->keep_cache = 0;
+#ifdef HAVE_FUSE_PARALLEL_DIRECT_WRITES
+		/* Writes are serialized further down; this only removes the
+		 * kernel-side exclusive lock for non-extending direct writes. */
+		fi->parallel_direct_writes = 1;
+#endif
+	} else {
+		fi->direct_io = 0;
+		fi->keep_cache = 1;
+	}
+}
+#endif
+
 struct ltfs_file_handle *_new_ltfs_file_handle(struct file_info *fi)
 {
 	int ret;
@@ -442,10 +467,7 @@ int ltfs_fuse_open(const char *path, struct fuse_file_info *fi)
 		fi->direct_io = 1;
 	fi->keep_cache = 0;
 #else
-	/* cannot set keep cache if any process has the file open with direct_io set! so only
-	 * set it on newer FUSE versions, where we don't use direct_io. */
-	fi->direct_io = 0;
-	fi->keep_cache = 1;
+	_ltfs_fuse_set_cache_flags(fi, priv);
 #endif
 #endif
 
@@ -787,10 +809,7 @@ int ltfs_fuse_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 	fi->direct_io = 1;
 	fi->keep_cache = 0;
 #else
-	/* cannot set keep cache if any process has the file open with direct_io set! so only
-	 * set it on newer FUSE versions, where we don't use direct_io. */
-	fi->direct_io = 0;
-	fi->keep_cache = 1;
+	_ltfs_fuse_set_cache_flags(fi, priv);
 #endif
 #endif
 
@@ -973,6 +992,56 @@ int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
 }
 
 #ifdef HAVE_FUSE3
+/* Context for _ltfs_fuse_filldir_plus */
+struct ltfs_fuse_fill_plus {
+	fuse_fill_dir_t filler;
+	struct ltfs_fuse_data *priv;
+};
+
+/* readdirplus filler: hand the entry's attributes to the kernel so it can
+ * prefill its inode cache and no getattr round trip is needed per entry. */
+static int _ltfs_fuse_filldir_plus(void *buf, const char *name,
+	const struct dentry_attr *attr, void *vpriv)
+{
+	struct ltfs_fuse_fill_plus *fill = vpriv;
+	struct stat st;
+	char *new_name;
+	int ret;
+
+	if (! attr)
+		return _ltfs_fuse_filldir(buf, name, fill->filler);
+
+	memset(&st, 0, sizeof(st));
+	_ltfs_fuse_attr_to_stat(&st, (struct dentry_attr *)attr, fill->priv);
+
+	ret = pathname_unformat(name, &new_name);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 14027E, "unformat", ret);
+		return ret;
+	}
+
+#ifdef __APPLE__
+	free(new_name);
+
+	ret = pathname_nfd_normalize(name, &new_name);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 14027E, "nfd", ret);
+		return ret;
+	}
+
+	ret = fill->filler(buf, new_name, &st, 0, FUSE_FILL_DIR_PLUS);
+#else
+	ret = fill->filler(buf, name, &st, 0, FUSE_FILL_DIR_PLUS);
+#endif
+
+	free(new_name);
+	if (ret)
+		return -ENOBUFS;
+	return 0;
+}
+#endif /* HAVE_FUSE3 */
+
+#ifdef HAVE_FUSE3
 int ltfs_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags)
 #else
@@ -999,6 +1068,14 @@ int ltfs_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		return -ENOBUFS;
 	}
 
+#ifdef HAVE_FUSE3
+	if (flags & FUSE_READDIR_PLUS) {
+		struct ltfs_fuse_fill_plus fill = { .filler = filler, .priv = priv };
+
+		ret = ltfs_fsops_readdir_attr(file->file_info->dentry_handle, buf,
+									  _ltfs_fuse_filldir_plus, &fill, priv->data);
+	} else
+#endif
 	ret = ltfs_fsops_readdir(file->file_info->dentry_handle, buf, _ltfs_fuse_filldir,
 							 filler, priv->data);
 
@@ -1198,6 +1275,17 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	/* Tape reads must stay ordered; FUSE 3 enables asynchronous reads by
 	 * default (the -o sync_read mount option was removed). */
 	conn->want &= ~FUSE_CAP_ASYNC_READ;
+
+	/* Request sizes up to max_write (libfuse >= 3.6 negotiates the
+	 * matching max_pages with the kernel). Read requests are bounded by
+	 * the same page limit. */
+	conn->max_write = priv->fuse_max_write;
+	ltfsmsg(LTFS_INFO, 14124I, (unsigned int)(conn->max_write / 1024));
+
+	/* Always use readdirplus, not only when the kernel heuristic asks
+	 * for it: attributes come from the in-memory index, so handing them
+	 * out with the listing is free and avoids a getattr per entry. */
+	conn->want &= ~FUSE_CAP_READDIRPLUS_AUTO;
 #endif
 
 	if (priv->pid_orig != getpid()) {
