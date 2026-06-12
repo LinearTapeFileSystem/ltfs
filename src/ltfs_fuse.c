@@ -104,6 +104,13 @@ static struct fuse_context *context;
 int ltfs_fuse_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi);
 int ltfs_fuse_ftruncate(const char *path, off_t length, struct fuse_file_info *fi);
 
+/* The fuse2 macFUSE API adds a position argument to the xattr handlers; the
+ * fuse3 build uses the upstream signatures (Darwin extensions disabled in
+ * ltfs_fuse_version.h). */
+#if defined(__APPLE__) && !defined(HAVE_FUSE3)
+#define LTFS_XATTR_POSITION 1
+#endif
+
 #if !defined(__APPLE__) && FUSE_VERSION > 27
 /* Per-open cache policy. With -o direct_io every read and write bypasses
  * the kernel page cache: requests arrive at the application's I/O size
@@ -1135,13 +1142,13 @@ int ltfs_fuse_read(const char *path, char *buf, size_t size, off_t offset, struc
 	return errormap_fuse_error(ret);
 }
 
-#ifdef __APPLE__
+#ifdef LTFS_XATTR_POSITION
 int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, size_t size,
 	int flags, uint32_t position)
 #else
 int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, size_t size,
 	int flags)
-#endif /* __APPLE__ */
+#endif /* LTFS_XATTR_POSITION */
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	ltfs_file_id id;
@@ -1155,14 +1162,14 @@ int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, si
 	 * on OS X, and we have no resource forks
 	 * TODO: is it correct to behave this way?
 	 */
-#ifdef __APPLE__
+#ifdef LTFS_XATTR_POSITION
 	if (position) {
 		/* Position argument must be zero */
 		ltfsmsg(LTFS_ERR, 14023E);
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_SETXATTR), -EINVAL, 0);
 		return -EINVAL;
 	}
-#endif /* __APPLE__ */
+#endif /* LTFS_XATTR_POSITION */
 
 	ret = ltfs_fsops_setxattr(path, name, value, size, flags, &id, priv->data);
 
@@ -1171,12 +1178,12 @@ int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, si
 	return errormap_fuse_error(ret);
 }
 
-#ifdef __APPLE__
+#ifdef LTFS_XATTR_POSITION
 int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t size,
 	uint32_t position)
 #else
 int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t size)
-#endif /* __APPLE__ */
+#endif /* LTFS_XATTR_POSITION */
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	ltfs_file_id id;
@@ -1190,7 +1197,7 @@ int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t s
 	 * on OS X, and we have no resource forks
 	 * TODO: is it correct to behave this way?
 	 */
-#ifdef __APPLE__
+#ifdef LTFS_XATTR_POSITION
 	if (position) {
 		/* Position argument must be zero */
 		ltfsmsg(LTFS_ERR, 14024E);
@@ -1204,7 +1211,7 @@ int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t s
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_GETXATTR), -LTFS_NO_XATTR, 0);
 		return errormap_fuse_error(-LTFS_NO_XATTR);
 	}
-#endif /* __APPLE__ */
+#endif /* LTFS_XATTR_POSITION */
 
 	ret = ltfs_fsops_getxattr(path, name, value, size, &id, priv->data);
 
