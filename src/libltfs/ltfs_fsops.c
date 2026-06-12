@@ -1414,6 +1414,96 @@ int ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler, void
 	return ret;
 }
 
+/* Copy a child's attributes without taking the volume lock again;
+ * the caller already holds it (same fields as ltfs_fsops_getattr). */
+static void _fsops_child_attr(struct dentry *child, struct dentry_attr *attr,
+	struct ltfs_volume *vol)
+{
+	acquireread_mrsw(&child->meta_lock);
+
+	if (child->isslink)
+		attr->size = strlen(child->target.name);
+	else
+		attr->size = child->size;
+
+	attr->alloc_size = child->realsize;
+	attr->blocksize = vol->label->blocksize;
+	attr->uid = child->uid;
+	attr->nlink = child->link_count;
+	attr->create_time = child->creation_time;
+	attr->access_time = child->access_time;
+	attr->modify_time = child->modify_time;
+	attr->change_time = child->change_time;
+	attr->backup_time = child->backup_time;
+	attr->readonly = child->readonly;
+	attr->isdir = child->isdir;
+	attr->isslink = child->isslink;
+
+	releaseread_mrsw(&child->meta_lock);
+
+	if (! child->isdir && ! child->isslink && iosched_initialized(vol))
+		attr->size = iosched_get_filesize(child, vol);
+}
+
+int ltfs_fsops_readdir_attr(struct dentry *d, void *buf, ltfs_dir_filler_attr filler,
+	void *filler_priv, struct ltfs_volume *vol)
+{
+	int ret = 0;
+	struct name_list *entry, *tmp;
+	struct dentry_attr attr;
+
+	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(filler, -LTFS_NULL_ARG);
+	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
+
+	if (! d->isdir)
+		return -LTFS_ISFILE;
+
+	ret = ltfs_get_volume_lock(false, vol);
+	if (ret < 0)
+		return ret;
+
+	acquireread_mrsw(&d->contents_lock);
+	if (dcache_initialized(vol)) {
+		/* The dentry cache yields names only */
+		int i;
+		char **namelist = NULL;
+		ret = dcache_readdir(d, false, (void ***) &namelist, vol);
+		if (ret == 0 && namelist) {
+			for (i=0; namelist[i]; ++i) {
+				ret = filler(buf, namelist[i], NULL, filler_priv);
+				if (ret < 0)
+					break;
+			}
+			for (i=0; namelist[i]; ++i)
+				free(namelist[i]);
+			free(namelist);
+		}
+	} else {
+		if (HASH_COUNT(d->child_list) != 0) {
+			HASH_SORT(d->child_list, fs_hash_sort_by_uid);
+			HASH_ITER(hh, d->child_list, entry, tmp) {
+				_fsops_child_attr(entry->d, &attr, vol);
+				ret = filler(buf, entry->d->platform_safe_name, &attr, filler_priv);
+				if (ret < 0)
+					break;
+			}
+		}
+	}
+	releaseread_mrsw(&d->contents_lock);
+
+	/* Update access time */
+	if (ret == 0) {
+		acquirewrite_mrsw(&d->meta_lock);
+		get_current_timespec(&d->access_time);
+		releasewrite_mrsw(&d->meta_lock);
+		ltfs_set_index_dirty(true, true, vol->index);
+	}
+
+	releaseread_mrsw(&vol->lock);
+	return ret;
+}
+
 int _ltfs_fsops_read_direntry(struct dentry *d, struct ltfs_direntry *dirent,
 							  unsigned long index, bool root, struct ltfs_volume *vol)
 {

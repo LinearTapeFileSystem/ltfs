@@ -139,6 +139,9 @@ static struct fuse_opt ltfs_options[] = {
 	LTFS_OPT("capture_index",          capture_index, 1),
 	LTFS_OPT("symlink_type=%s",        symlink_str, 0),
 	LTFS_OPT("scsi_append_only_mode=%s", str_append_only_mode, 0),
+	LTFS_OPT("max_write=%lu",          fuse_max_write, 0),
+	LTFS_OPT("direct_io",              direct_io, 1),
+	LTFS_OPT("nodirect_io",            direct_io, 0),
 	LTFS_OPT_KEY("-a",                 KEY_ADVANCED_HELP),
 	FUSE_OPT_KEY("-h",                 KEY_HELP),
 	FUSE_OPT_KEY("--help",             KEY_HELP),
@@ -177,6 +180,8 @@ void single_drive_advanced_usage(const char *default_driver, struct ltfs_fuse_da
 	ltfsresult(14448I); /* -o release_device */
 	ltfsresult(14456I); /* -o capture_index */
 	ltfsresult(14463I); /* -o scsi_append_only_mode=<on|off> */
+	ltfsresult(14469I); /* -o max_write=<num> */
+	ltfsresult(14470I); /* -o direct_io */
 	ltfsresult(14406I); /* -a */
 	/* TODO: future use for WORM */
 	/* set worm rollback flag and rollback_str by this option */
@@ -981,6 +986,18 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		priv->append_only_mode = 0;
 		ltfsmsg(LTFS_INFO, 14095I);
 	}
+
+#ifdef HAVE_FUSE3
+	/* Maximum FUSE request size; the kernel rounds it to whole pages and
+	 * caps it (1 MiB unless raised via fs.fuse.max_pages_limit). */
+	if (priv->fuse_max_write == 0)
+		priv->fuse_max_write = LTFS_FUSE_MAX_WRITE_DEFAULT;
+	else if (priv->fuse_max_write < LTFS_FUSE_MAX_WRITE_MIN)
+		priv->fuse_max_write = LTFS_FUSE_MAX_WRITE_MIN;
+#else
+	if (priv->fuse_max_write != 0)
+		ltfsmsg(LTFS_WARN, 14125W);
+#endif
 
 #ifndef HAVE_FUSE3
 	/* If the local inode space is big enough, have FUSE pass through our UIDs as inode
