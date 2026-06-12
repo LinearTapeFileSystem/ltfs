@@ -222,6 +222,16 @@ struct ltfs_timespec          start;
 struct timer_info             timerinfo;
 bool                          trace_enable   = true;
 
+/* The trace dump is best-effort diagnostics; a write failure must not fail
+ * the operation that triggered the dump. glibc marks write() with
+ * warn_unused_result and a (void) cast does not silence it, so consume the
+ * result here and deliberately ignore it. */
+static void _dump_write(int fd, const void *buf, size_t count)
+{
+	ssize_t ignored = arch_write(fd, buf, count);
+	(void)ignored;
+}
+
 static int ltfs_request_trace_init(void)
 {
 	int ret = 0;
@@ -576,7 +586,7 @@ int ltfs_dump(char *fname, const char *work_dir)
 	int ret = 0, num_args = 0, status;
 	char *path, *pid;
 	pid_t fork_pid;
-	const unsigned int max_arguments = 32;
+	enum { max_arguments = 32 };
 	const char *args[max_arguments];
 
 	if(!work_dir)
@@ -694,37 +704,37 @@ int ltfs_trace_dump(char *fname, const char *work_dir)
 			trc_header->header_size + req_header->header_size + fn_trc_header->header_size;
 
 		/* Write headers */
-		(void)arch_write(fd, trc_header, sizeof(struct trace_header));
-		(void)arch_write(fd, req_header, sizeof(struct request_header));
+		_dump_write(fd, trc_header, sizeof(struct trace_header));
+		_dump_write(fd, req_header, sizeof(struct request_header));
 
 		/* Write request trace data */
 		ltfs_mutex_lock(&req_trace->req_trace_lock);
-		(void)arch_write(fd, req_trace->entries, REQ_TRACE_SIZE);
+		_dump_write(fd, req_trace->entries, REQ_TRACE_SIZE);
 		ltfs_mutex_unlock(&req_trace->req_trace_lock);
 
 		/* Write function trace header */
-		(void)arch_write(fd, &fn_trc_header->header_size, sizeof(uint32_t));
-		(void)arch_write(fd, &fn_trc_header->num_of_fn_trace, sizeof(uint32_t));
+		_dump_write(fd, &fn_trc_header->header_size, sizeof(uint32_t));
+		_dump_write(fd, &fn_trc_header->num_of_fn_trace, sizeof(uint32_t));
 		for (unsigned int i=0; i<n; i++)
-			(void)arch_write(fd, &fn_trc_header->req_t_desc[i], sizeof(struct function_trace_descriptor));
-		(void)arch_write(fd, &fn_trc_header->crc, sizeof(uint32_t));
+			_dump_write(fd, &fn_trc_header->req_t_desc[i], sizeof(struct function_trace_descriptor));
+		_dump_write(fd, &fn_trc_header->crc, sizeof(uint32_t));
 		free(fn_trc_header->req_t_desc);
 		fn_trc_header->req_t_desc = NULL;
 
 		/* Write function trace data */
 		for (fsitem=fs_tr_list; fsitem != NULL; fsitem=fsitem->hh.next) {
 			acquireread_mrsw(&fsitem->fn_entry->trace_lock);
-			(void)arch_write(fd, fsitem->fn_entry->entries, FS_FN_TRACE_SIZE);
+			_dump_write(fd, fsitem->fn_entry->entries, FS_FN_TRACE_SIZE);
 			releaseread_mrsw(&fsitem->fn_entry->trace_lock);
 		}
 		for (admitem=admin_tr_list; admitem != NULL; admitem=admitem->hh.next) {
 			acquireread_mrsw(&admitem->fn_entry->trace_lock);
-			(void)arch_write(fd, admitem->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
+			_dump_write(fd, admitem->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
 			releaseread_mrsw(&admitem->fn_entry->trace_lock);
 		}
 		TAILQ_FOREACH (tailq_item, acomp, list) {
 			acquireread_mrsw(&tailq_item->fn_entry->trace_lock);
-			(void)arch_write(fd, tailq_item->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
+			_dump_write(fd, tailq_item->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
 			releaseread_mrsw(&tailq_item->fn_entry->trace_lock);
 		}
 	}

@@ -947,7 +947,10 @@ int itdtimage_read_attribute(void *vstate, const tape_partition_t part, const ui
 		return -EDEV_HARDWARE_ERROR;
 	}
 
-	fread(buf, 1, data2ReadFromFile, state->img_file);
+	if (fread(buf, 1, data2ReadFromFile, state->img_file) != data2ReadFromFile) {
+		ltfsmsg(LTFS_ERR, 31002E, (long long)attrLength, state->filename, offset);
+		return -EDEV_HARDWARE_ERROR;
+	}
 	return DEVICE_GOOD;
 }
 
@@ -1370,9 +1373,10 @@ int itdtimage_get_device_list(struct tc_drive_info *buf, int count)
 
 		if (buf && deventries < count) {
 			snprintf(buf[deventries].name, TAPE_DEVNAME_LEN_MAX, "%s/%s", devdir, entry->d_name);
-			arch_strncpy_auto(buf[deventries].vendor, "DUMMY", TAPE_VENDOR_NAME_LEN_MAX);
-			arch_strncpy_auto(buf[deventries].model, "DUMMYDEV", TAPE_MODEL_NAME_LEN_MAX);
-			arch_strncpy_auto(buf[deventries].serial_number, &(entry->d_name[strlen(DRIVE_FILE_PREFIX)]), TAPE_SERIAL_LEN_MAX);
+			ltfs_string_copy(buf[deventries].vendor, TAPE_VENDOR_NAME_LEN_MAX + 1, "DUMMY");
+			ltfs_string_copy(buf[deventries].model, TAPE_MODEL_NAME_LEN_MAX + 1, "DUMMYDEV");
+			ltfs_string_copy(buf[deventries].serial_number, TAPE_SERIAL_LEN_MAX + 1,
+							 &(entry->d_name[strlen(DRIVE_FILE_PREFIX)]));
 			ltfsmsg(LTFS_DEBUG, 31030D, buf[deventries].name, buf[deventries].vendor,
 					buf[deventries].model, buf[deventries].serial_number);
 		}
