@@ -54,6 +54,12 @@
  * (default on Linux; --with-fuse2 selects the libfuse 2 API). */
 #ifdef HAVE_FUSE3
 #define FUSE_USE_VERSION 31
+/* macFUSE 5's libfuse3 defaults to Darwin-specific operation signatures
+ * (struct fuse_darwin_attr, struct statfs, ...). Request the upstream-
+ * compatible API instead; the library exports both symbol flavors. */
+#ifdef __APPLE__
+#define FUSE_DARWIN_ENABLE_EXTENSIONS 0
+#endif
 #else
 #define FUSE_USE_VERSION 26
 #endif
