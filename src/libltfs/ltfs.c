@@ -4404,7 +4404,9 @@ void ltfs_enable_livelink_mode(struct ltfs_volume *vol)
  */
 int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol)
 {
-	int ret, ret_save = 0;
+	/* ret stays unset if neither the iosched nor device handle is present;
+	 * the final "if (!ret && ret_save)" would then read garbage. */
+	int ret = 0, ret_save = 0;
 
 	if (vol->iosched_handle) {
 		if (source & PROF_IOSCHED) {

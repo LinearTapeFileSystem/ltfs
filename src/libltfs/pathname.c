@@ -197,10 +197,14 @@ int pathname_prepare_caseless(const char *name, UChar **new_name, bool use_nfc)
 	/* Convert to NFD if needed, then case fold the name. */
 	if (need_initial_nfd) {
 		ret = _pathname_normalize_nfd_icu(icu_name, &icu_nfd);
+		if (ret < 0) {
+			/* icu_nfd is unset on error; free the input and bail before
+			 * comparing the (garbage) output pointer. */
+			free(icu_name);
+			return ret;
+		}
 		if (icu_name != icu_nfd)
 			free(icu_name);
-		if (ret < 0)
-			return ret;
 		ret = _pathname_foldcase_icu(icu_nfd, &icu_fold);
 		free(icu_nfd);
 		if (ret < 0)
@@ -217,10 +221,14 @@ int pathname_prepare_caseless(const char *name, UChar **new_name, bool use_nfc)
 		ret = _pathname_normalize_nfc_icu(icu_fold, new_name);
 	else
 		ret = _pathname_normalize_nfd_icu(icu_fold, new_name);
+	if (ret < 0) {
+		/* *new_name is unset on error; free the input and bail before
+		 * comparing the (garbage) output pointer. */
+		free(icu_fold);
+		return ret;
+	}
 	if (icu_fold != *new_name)
 		free(icu_fold);
-	if (ret < 0)
-		return ret;
 
 	return 0;
 }
@@ -475,10 +483,12 @@ int _pathname_format_icu(const char *src, char **dest, bool validate, bool allow
 
 	/* normalize */
 	ret = _pathname_normalize_nfc_icu(utf16_name, &utf16_name_norm);
+	if (ret < 0) {
+		free(utf16_name);
+		return ret;
+	}
 	if (utf16_name != utf16_name_norm)
 		free(utf16_name);
-	if (ret < 0)
-		return ret;
 
 	/* convert to UTF-8 */
 	ret = _pathname_utf16_to_utf8_icu(utf16_name_norm, dest);
@@ -534,10 +544,12 @@ int _pathname_normalize_utf8_nfd_icu(const char *src, char **dest)
 		return ret;
 
 	ret = _pathname_normalize_nfd_icu(icu_str, &icu_str_norm);
+	if (ret < 0) {
+		free(icu_str);
+		return ret;
+	}
 	if (icu_str != icu_str_norm)
 		free(icu_str);
-	if (ret < 0)
-		return ret;
 
 	ret = _pathname_utf16_to_utf8_icu(icu_str_norm, dest);
 	free(icu_str_norm);
@@ -602,10 +614,12 @@ int _pathname_normalize_utf8_icu(const char *src, char **dest)
 		return ret;
 
 	ret = _pathname_normalize_nfc_icu(icu_str, &icu_str_norm);
+	if (ret < 0) {
+		free(icu_str);
+		return ret;
+	}
 	if (icu_str != icu_str_norm)
 		free(icu_str);
-	if (ret < 0)
-		return ret;
 
 	ret = _pathname_utf16_to_utf8_icu(icu_str_norm, dest);
 	free(icu_str_norm);
