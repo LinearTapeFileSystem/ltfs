@@ -98,6 +98,10 @@ static int decode_entry_name(char **new_name, const char *name)
 	/* Always, length must be shorter than original but allocate null termination space */
 	len = strlen(name);
 	tmp_name = malloc((len * sizeof(UChar)) + 1);
+	if (! tmp_name) {
+		ltfsmsg(LTFS_ERR, 10001E, "decode_entry_name: tmp_name");
+		return -LTFS_NO_MEMORY;
+	}
 	buf_decode[2] = '\0';
 
 	while (i < len) {
@@ -575,8 +579,15 @@ static int _xml_parse_ip_criteria(xmlTextReaderPtr reader, struct ltfs_index *id
 
 			++num_patterns;
 			/* quite inefficient, but the number of patterns should be small. */
-			idx->original_criteria.glob_patterns = realloc(idx->original_criteria.glob_patterns,
-														   (num_patterns + 1) * sizeof(struct ltfs_name));
+			{
+				struct ltfs_name *new_patterns = realloc(idx->original_criteria.glob_patterns,
+														 (num_patterns + 1) * sizeof(struct ltfs_name));
+				if (! new_patterns) {
+					ltfsmsg(LTFS_ERR, 10001E, "_xml_parse_ip_criteria: glob_patterns");
+					return -LTFS_NO_MEMORY;
+				}
+				idx->original_criteria.glob_patterns = new_patterns;
+			}
 
 			if (_xml_parse_nametype(reader,
 									&idx->original_criteria.glob_patterns[num_patterns - 1],
@@ -863,10 +874,10 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 	if (xattr) {
 		TAILQ_INSERT_TAIL(&d->xattrlist, xattr, list);
 
-		if (!strcmp(xattr->key.name, "ltfs.vendor.IBM.immutable") && !strcmp(xattr->value, "1") ) {
+		if (xattr->value && !strcmp(xattr->key.name, "ltfs.vendor.IBM.immutable") && !strcmp(xattr->value, "1") ) {
 			d->is_immutable = true;
 		}
-		if (!strcmp(xattr->key.name, "ltfs.vendor.IBM.appendonly") && !strcmp(xattr->value, "1") ) {
+		if (xattr->value && !strcmp(xattr->key.name, "ltfs.vendor.IBM.appendonly") && !strcmp(xattr->value, "1") ) {
 			d->is_appendonly = true;
 		}
 	}

@@ -115,7 +115,9 @@ int xml_next_tag(xmlTextReaderPtr reader, const char *containing_name,
 			return ret;
 		*name = (const char *)xmlTextReaderConstName(reader);
 		*type = xmlTextReaderNodeType(reader);
-	} while (strcmp(*name, containing_name) && (*type) != XML_ELEMENT_NODE);
+		/* libxml2 returns a NULL name for some node types; keep reading
+		 * rather than dereferencing NULL in strcmp below. */
+	} while (! *name || (strcmp(*name, containing_name) && (*type) != XML_ELEMENT_NODE));
 
 	return 0;
 }
