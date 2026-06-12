@@ -46,6 +46,9 @@ Compute a content hash of each copied file and store it in the \fBltfs.hash.\fR\
 .TP
 \fB--hash-algo\fR \fIHASHTYPE\fR
 LTFS hash type to use with \fB--store-hash\fR (LTFS Format Spec 2.4, Table F.1). One of \fBcrc32sum\fR, \fBmd5sum\fR, \fBsha1sum\fR, \fBsha256sum\fR, \fBsha512sum\fR; the bare names \fBcrc32\fR, \fBmd5\fR, \fBsha1\fR, \fBsha256\fR, \fBsha512\fR are accepted as aliases. Defaults to \fBsha256sum\fR.
+.TP
+\fB--store-hash-all\fR
+Like \fB--store-hash\fR, but compute and store every standardized LTFS hash type (\fBcrc32sum\fR, \fBmd5sum\fR, \fBsha1sum\fR, \fBsha256sum\fR, \fBsha512sum\fR) for each file. Each file is read once and the hash types are computed in parallel, one worker thread per type. Overrides \fB--hash-algo\fR.
 .SH "COMMAND EXAMPLES"
 .PP
 This section shows various command examples.

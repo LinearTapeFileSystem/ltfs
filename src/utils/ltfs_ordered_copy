@@ -79,6 +79,57 @@ def compute_file_hash(path, hashtype):
             h.update(chunk)
     return h.hexdigest()
 
+def compute_file_hashes(path, hashtypes):
+    """Compute one or more LTFS Table F.1 hashtypes for a file and return
+    {hashtype: hexdigest}. The file is read only once. With several hashtypes each is
+    updated in its own worker thread fed by a single reader; hashlib and zlib release
+    the GIL during their update calls, so the per-type work runs across CPU cores in
+    parallel."""
+    if len(hashtypes) == 1:
+        ht = hashtypes[0]
+        return {ht: compute_file_hash(path, ht)}
+
+    try:
+        from queue import Queue          # Python 3
+    except ImportError:
+        from Queue import Queue          # Python 2
+
+    queues = dict((ht, Queue(maxsize=8)) for ht in hashtypes)
+    results = {}
+
+    def worker(ht):
+        q = queues[ht]
+        algo = HASH_TYPES[ht]
+        if algo == 'crc32':
+            crc = 0
+            chunk = q.get()
+            while chunk is not None:
+                crc = zlib.crc32(chunk, crc)
+                chunk = q.get()
+            results[ht] = '%08x' % (crc & 0xffffffff)
+        else:
+            h = hashlib.new(algo)
+            chunk = q.get()
+            while chunk is not None:
+                h.update(chunk)
+                chunk = q.get()
+            results[ht] = h.hexdigest()
+
+    threads = [threading.Thread(target=worker, args=(ht,)) for ht in hashtypes]
+    for t in threads:
+        t.start()
+    try:
+        with open(path, 'rb') as f:
+            for chunk in iter(lambda: f.read(1024 * 1024), b''):
+                for q in queues.values():
+                    q.put(chunk)
+    finally:
+        for q in queues.values():
+            q.put(None)   # signal end-of-stream to every worker
+        for t in threads:
+            t.join()
+    return results
+
 def ensure_ltfs_hash_supported(probe_path, logger):
     """When --store-hash targets an LTFS volume, require LTFS Format Spec >= 2.4 (the
     version that introduced the stored ltfs.hash.* VEA), aborting on an older LTFS
@@ -167,17 +218,19 @@ class CopyItem:
             return False
 
         if self.store_hash:
-            # Store the content hash in the ltfs.hash.<hashtype> VEA on the destination.
-            # The hash is computed from the (on-disk) source, whose bytes are identical
-            # to what was just copied; on LTFS this is persisted into the index.
+            # Store one ltfs.hash.<hashtype> VEA per requested hashtype on the
+            # destination. The hash(es) are computed from the (on-disk) source, whose
+            # bytes are identical to what was just copied; on LTFS this is persisted
+            # into the index.
             try:
                 target = self.dst
                 if os.path.isdir(target):
                     target = os.path.join(target, os.path.basename(self.src))
-                digest = compute_file_hash(self.src, self.store_hash)
-                xattr.set(target, self.vea_pre + 'ltfs.hash.' + self.store_hash, digest.encode('ascii'))
+                digests = compute_file_hashes(self.src, self.store_hash)
+                for ht in self.store_hash:
+                    xattr.set(target, self.vea_pre + 'ltfs.hash.' + ht, digests[ht].encode('ascii'))
             except Exception as e:
-                self.logger.error('Copied "{0}" to "{1}" but failed to store {2} hash: {3}'.format(self.src, self.dst, self.store_hash, str(e)))
+                self.logger.error('Copied "{0}" to "{1}" but failed to store hash(es): {2}'.format(self.src, self.dst, str(e)))
                 return False
 
         return True
@@ -371,6 +424,11 @@ parser.add_argument('--hash-algo', default='sha256sum', metavar='HASHTYPE',
                          + ', '.join(sorted(HASH_TYPES))
                          + ' (the bare names ' + ', '.join(sorted(HASH_ALIASES))
                          + ' are accepted as aliases). Default sha256sum.')
+parser.add_argument('--store-hash-all', action='store_true',
+                    help='Like --store-hash, but compute and store every standardized LTFS '
+                         'hash type (' + ', '.join(sorted(HASH_TYPES)) + ') for each file. '
+                         'The file is read once and the hash types are computed in parallel '
+                         '(one worker thread each). Overrides --hash-algo.')
 
 args=parser.parse_args()
 
@@ -409,16 +467,19 @@ else:
 
 logger.info('Tape order aware copy for LTFS')
 
-# Resolve --store-hash / --hash-algo into a single value: the LTFS spec hashtype when
-# hashing is enabled, otherwise None. Downstream code treats it as "hashtype or falsy".
-if args.store_hash:
+# Resolve --store-hash / --store-hash-all / --hash-algo into args.store_hash: a list of
+# LTFS spec hashtypes to compute when hashing is enabled, otherwise None. Downstream code
+# treats it as "list of hashtypes or falsy".
+if args.store_hash_all:
+    args.store_hash = sorted(HASH_TYPES)   # every standardized hashtype
+elif args.store_hash:
     ht = args.hash_algo.lower()
     ht = HASH_ALIASES.get(ht, ht)   # accept a bare algorithm name as an alias
     if ht not in HASH_TYPES:
         logger.error("Unsupported hash type '{0}'. LTFS Format Spec 2.4 (Table F.1) defines: {1}.".format(
             args.hash_algo, ', '.join(sorted(HASH_TYPES))))
         exit(2)
-    args.store_hash = ht
+    args.store_hash = [ht]
 else:
     args.store_hash = None
 
@@ -464,8 +525,9 @@ if args.recursive == False and len(args.SOURCE) == 1:
                 target = args.DEST
                 if os.path.isdir(target):
                     target = os.path.join(target, os.path.basename(args.SOURCE[0]))
-                digest = compute_file_hash(args.SOURCE[0], args.store_hash)
-                xattr.set(target, VEA_PREFIX + 'ltfs.hash.' + args.store_hash, digest.encode('ascii'))
+                digests = compute_file_hashes(args.SOURCE[0], args.store_hash)
+                for ht in args.store_hash:
+                    xattr.set(target, VEA_PREFIX + 'ltfs.hash.' + ht, digests[ht].encode('ascii'))
         except Exception as e:
             logger.error(str(e))
             exit(1)

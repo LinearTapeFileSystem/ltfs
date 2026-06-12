@@ -116,6 +116,12 @@
             <para>LTFS hash type to use with <option>--store-hash</option> (LTFS Format Spec 2.4, Table F.1). One of <literal>crc32sum</literal>, <literal>md5sum</literal>, <literal>sha1sum</literal>, <literal>sha256sum</literal>, <literal>sha512sum</literal>; the bare names crc32, md5, sha1, sha256, sha512 are accepted as aliases. Defaults to <literal>sha256sum</literal>.</para>
           </listitem>
         </varlistentry>
+        <varlistentry>
+          <term><option>--store-hash-all</option></term>
+          <listitem>
+            <para>Like <option>--store-hash</option>, but compute and store every standardized LTFS hash type (<literal>crc32sum</literal>, <literal>md5sum</literal>, <literal>sha1sum</literal>, <literal>sha256sum</literal>, <literal>sha512sum</literal>) for each file. Each file is read once and the hash types are computed in parallel, one worker thread per type. Overrides <option>--hash-algo</option>.</para>
+          </listitem>
+        </varlistentry>
       </variablelist>
     </refsect1>
 
