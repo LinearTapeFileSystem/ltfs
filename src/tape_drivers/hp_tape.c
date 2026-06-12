@@ -68,6 +68,8 @@ struct supported_device *hp_supported_drives[] = {
 		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 7-SCSI", DRIVE_LTO7,    "[Ultrium 7-SCSI]" ),  /* HP Ultrium Gen 7  */
 		TAPEDRIVE( HPE_VENDOR_ID, "Ultrium 8-SCSI", DRIVE_LTO8,    "[Ultrium 8-SCSI]" ),  /* HPE Ultrium Gen 8 */
 		TAPEDRIVE( HPE_VENDOR_ID, "Ultrium 9-SCSI", DRIVE_LTO9,    "[Ultrium 9-SCSI]" ),  /* HPE Ultrium Gen 9 */
+		TAPEDRIVE( HPE_VENDOR_ID, "Ultrium A-SCSI", DRIVE_LTO10,   "[Ultrium A-SCSI]" ),  /* HPE Ultrium Gen A (Gen 10) */
+		TAPEDRIVE( HPE_VENDOR_ID, "Ultrium 10-SCSI", DRIVE_LTO10,  "[Ultrium 10-SCSI]" ), /* HPE Ultrium Gen 10 */
 		/* End of supported_devices */
 		NULL
 };
