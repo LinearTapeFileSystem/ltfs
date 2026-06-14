@@ -250,6 +250,7 @@ typedef enum {
 #define TC_MAM_PAGE_VCR_SIZE       (0x4)    /* Size of Volume Change Reference */
 #define TC_MAM_PAGE_COHERENCY      (0x080C)
 #define TC_MAM_PAGE_COHERENCY_SIZE (0x46)
+#define TC_MAM_COHERENCY_SIGNATURE "LTFS" /* Volume coherency signature; 4 chars + NUL, reader compares all 5 */
 
 #define TC_MAM_APP_VENDER          (0x0800)
 #define TC_MAM_APP_VENDER_SIZE     (0x8)

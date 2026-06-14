@@ -1741,7 +1741,8 @@ int tape_get_cart_coherency(struct device_data *dev, const tape_partition_t part
 		if (ap_clent_specific_len != 42 && ap_clent_specific_len != 43) {
 			ltfsmsg(LTFS_WARN, 12061W, ap_clent_specific_len);
 			return -LTFS_UNEXPECTED_VALUE;
-		} else if (strncmp((char *)coh_data + 32, "LTFS", sizeof("LTFS")) != 0) {
+		} else if (strncmp((char *)coh_data + 32, TC_MAM_COHERENCY_SIGNATURE,
+						   sizeof(TC_MAM_COHERENCY_SIGNATURE)) != 0) {
 			ltfsmsg(LTFS_WARN, 12062W);
 			return -LTFS_UNEXPECTED_VALUE;
 		}
@@ -1769,8 +1770,16 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	int ret;
 	unsigned char coh_data[TC_MAM_PAGE_COHERENCY_SIZE + TC_MAM_PAGE_HEADER_SIZE];
 
-	/* Zero the buffer so the "LTFS\0" signature's NUL terminator is written: the
-	 * arch_strncpy below only copies 4 bytes, and the reader checks all 5. */
+	/* The coherency record is written below at fixed byte offsets; the version
+	 * byte at offset 74 is the highest, so the page must be at least 75 bytes.
+	 * Lock that invariant at compile time so a future change to the page-size
+	 * constants cannot silently overflow this stack buffer. */
+	_Static_assert(sizeof(coh_data) > 74,
+		"MAM coherency page too small for the coherency record layout");
+
+	/* Zero unwritten bytes for deterministic on-medium content. The "LTFS"
+	 * signature's NUL terminator is written explicitly below, so correctness of
+	 * the signature no longer depends on this memset. */
 	memset(coh_data, 0, sizeof(coh_data));
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
@@ -1786,8 +1795,13 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	/* APPLICATION CLIENT SPECIFIC INFORMATION LENGTH */
 	coh_data[30] = 0;  /* Size of APPLICATION CLIENT SPECIFIC INFORMATION (Byte 1) */
 	coh_data[31] = 43; /* Size of APPLICATION CLIENT SPECIFIC INFORMATION (Byte 0) */
-	/* Size of the buffer to insert 'LTFS' needs to be size of 5 for the 4 letters and the null terminator*/
-	arch_strncpy((char *)coh_data + 32,"LTFS", 5, 4);
+	/* Volume coherency signature: the 4 letters "LTFS" plus a trailing NUL at
+	 * offset 36. The reader compares all 5 bytes, so copy the NUL terminator
+	 * explicitly (an earlier strncpy-based write copied only 4 bytes and left
+	 * byte 36 uninitialised, triggering a full consistency check on every mount). */
+	_Static_assert(sizeof(TC_MAM_COHERENCY_SIGNATURE) == 5,
+		"LTFS coherency signature must be 4 characters plus a NUL terminator");
+	memcpy(coh_data + 32, TC_MAM_COHERENCY_SIGNATURE, sizeof(TC_MAM_COHERENCY_SIGNATURE));
 	memcpy(coh_data + 37, coh->uuid, 37);
 	/*
 	   Version field
