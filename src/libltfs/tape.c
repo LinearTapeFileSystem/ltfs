@@ -1665,6 +1665,13 @@ int tape_get_volume_change_reference(struct device_data *dev, uint64_t *volume_c
 	int ret;
 	unsigned char vcr_data[TC_MAM_PAGE_VCR_SIZE + TC_MAM_PAGE_HEADER_SIZE];
 
+	/* The VCR is read as a 32-bit field at offset 5 (just past the page
+	 * header), so the buffer must hold at least 5 + 4 bytes. Lock that at
+	 * compile time so a change to the page-size constants cannot make the
+	 * read below run off the end of the buffer. */
+	_Static_assert(sizeof(vcr_data) >= 5 + sizeof(uint32_t),
+		"MAM VCR page too small to hold the volume change reference");
+
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
 
@@ -1820,6 +1827,13 @@ int tape_get_cart_volume_lock_status(struct device_data *dev, int *status)
 {
 	int ret;
 	unsigned char attr_data[TC_MAM_LOCKED_MAM_SIZE + TC_MAM_PAGE_HEADER_SIZE];
+
+	/* The lock status byte is read at offset TC_MAM_PAGE_HEADER_SIZE, so the
+	 * buffer must extend past the page header. Lock that at compile time so a
+	 * change to the page-size constants cannot make the read below run off the
+	 * end of the buffer. */
+	_Static_assert(sizeof(attr_data) > TC_MAM_PAGE_HEADER_SIZE,
+		"MAM locked-MAM page too small to hold the lock status byte");
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(status, -LTFS_NULL_ARG);
