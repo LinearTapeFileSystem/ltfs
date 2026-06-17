@@ -25,8 +25,10 @@ set(LTFS_PACKAGE_NAME "LTFS")
 set(LTFS_PACKAGE_TARNAME "ltfs")
 set(LTFS_BUGREPORT "IBM corporation.")
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 11)
+#set(CMAKE_C_STANDARD 17)   # bump to C17 once the oldest supported toolchains are GCC 8+/Clang 7+
 set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS ON)   # gnu11: LTFS uses GNU extensions (_GNU_SOURCE, asprintf, ...)
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "" FORCE)
 endif()
