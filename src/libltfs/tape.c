@@ -1772,6 +1772,17 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
 
+	/* Zero the whole buffer so any byte not written explicitly below is
+	 * deterministic. In particular byte 36 (the byte following the 4-char
+	 * "LTFS" signature) is never assigned: arch_strncpy() copies exactly 4
+	 * bytes and, since the count equals strlen("LTFS"), strncpy() writes no
+	 * terminating NUL on POSIX. Without this memset that byte would carry
+	 * uninitialized stack data onto the medium, and tape_get_cart_coherency()
+	 * compares the signature with sizeof("LTFS") == 5 bytes, so a non-zero
+	 * byte 36 makes the read-back fail (LTFS12062W) and forces a full
+	 * consistency check on the next mount. */
+	memset(coh_data, 0, sizeof(coh_data));
+
 	ltfs_u16tobe(coh_data, TC_MAM_PAGE_COHERENCY);
 	coh_data[2]  = 0;
 	ltfs_u16tobe(coh_data + 3, TC_MAM_PAGE_COHERENCY_SIZE);
