@@ -36,7 +36,7 @@
 dnl
 dnl LTFS configure.ac.
 dnl
-AC_INIT([LTFS], [2.4.5.1 (Prelim)], IBM corporation.)
+AC_INIT([LTFS], [2.4.8.4 (Prelim)], IBM corporation.)
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4])
@@ -49,7 +49,10 @@ AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
 AM_PROG_AR
-AC_PROG_LIBTOOL
+dnl
+dnl Initialize libtool - use LT_INIT for libtool 2.x, AC_PROG_LIBTOOL for 1.x
+dnl
+m4_ifdef([LT_INIT], [LT_INIT], [AC_PROG_LIBTOOL])
 
 dnl
 dnl Detecting OS

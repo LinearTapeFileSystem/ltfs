@@ -1,5 +1,5 @@
 ![](https://img.shields.io/github/issues/lineartapefilesystem/ltfs.svg)
-![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS7%20Build%20Job/badge.svg?branch=master)
+![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-centos8.yml/badge.svg)
 [![BSD License](http://img.shields.io/badge/license-BSD-blue.svg?style=flat)](LICENSE)
 
 # Linear Tape File System (LTFS)
@@ -105,7 +105,89 @@ These instructions will get you a copy of the project up and running on your loc
 
 ## Installing
 
-### Build and install on Linux
+LTFS Format Specification is specified data placement, shape of index and names of extended attributes for LTFS. This specification is defined in [SNIA](https://www.snia.org/tech_activities/standards/curr_standards/ltfs) first and then it is forwarded to [ISO](https://www.iso.org/home.html) as ISO/IEC 20919 from version 2.2.
+
+The table below show status of the LTFS format Specification
+
+  | Version | Status of SNIA                                                                                                        | Status of ISO                                                        |
+  |:-------:|:---------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|
+  | 2.2     | [Published](http://snia.org/sites/default/files/LTFS_Format_2.2.0_Technical_Position.pdf)                             | [Published as `20919:2016`](https://www.iso.org/standard/69458.html) |
+  | 2.3.1   | [Published](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.3.1_TechPosition.PDF)          | -                                                                    |
+  | 2.4     | [Published](https://www.snia.org/sites/default/files/technical_work/LTFS/LTFS_Format_2.4.0_TechPosition.pdf)          | -                                                                    |
+  | 2.5.1   | [Published](https://www.snia.org/sites/default/files/technical-work/ltfs/release/SNIA-LTFS-Format-2-5-1-Standard.pdf) | [Published as `20919:2021`](https://www.iso.org/standard/80598.html) |
+
+# How to use the LTFS (Quick start)
+
+This section is for a person who already has a machine with the LTFS installed. Instructions on how to use the LTFS is also available on [Wiki](https://github.com/LinearTapeFileSystem/ltfs/wiki).
+
+## Step1: List tape drives
+
+`# ltfs -o device_list`
+
+The output is as follows. You have 3 drives in this example and you can use "Device Name" field, like `/dev/sg43` in this case, as the argument of ltfs command to mount the tape drive.
+
+```
+50c4 LTFS14000I LTFS starting, LTFS version 2.4.0.0 (10022), log level 2.
+50c4 LTFS14058I LTFS Format Specification version 2.4.0.
+50c4 LTFS14104I Launched by "/home/piste/ltfsoss/bin/ltfs -o device_list".
+50c4 LTFS14105I This binary is built for Linux (x86_64).
+50c4 LTFS14106I GCC version is 4.8.5 20150623 (Red Hat 4.8.5-11).
+50c4 LTFS17087I Kernel version: Linux version 3.10.0-514.10.2.el7.x86_64 (mockbuild@x86-039.build.eng.bos.redhat.com) (gcc version 4.8.5 20150623 (Red Hat 4.8.5-11) (GCC) ) #1 SMP Mon Feb 20 02:37:52 EST 2017 i386.
+50c4 LTFS17089I Distribution: NAME="Red Hat Enterprise Linux Server".
+50c4 LTFS17089I Distribution: Red Hat Enterprise Linux Server release 7.3 (Maipo).
+50c4 LTFS17089I Distribution: Red Hat Enterprise Linux Server release 7.3 (Maipo).
+50c4 LTFS17085I Plugin: Loading "sg" tape backend.
+Tape Device list:.
+Device Name = /dev/sg43, Vender ID = IBM    , Product ID = ULTRIUM-TD5    , Serial Number = 9A700L0077, Product Name = [ULTRIUM-TD5] .
+Device Name = /dev/sg38, Vender ID = IBM    , Product ID = ULT3580-TD6    , Serial Number = 00013B0119, Product Name = [ULT3580-TD6] .
+Device Name = /dev/sg37, Vender ID = IBM    , Product ID = ULT3580-TD7    , Serial Number = 00078D00C2, Product Name = [ULT3580-TD7] .
+```
+
+## Step2: Format a tape
+
+As described in the LTFS format specifications, LTFS uses the partition feature of the tape drive. This means you can't use a tape just after you purchase a tape. You need format the tape before using it on LTFS.
+
+To format a tape, you can use `mkltfs` command like
+
+`# mkltfs -d 9A700L0077`
+
+In this case, `mkltfs` tries to format a tape in the tape drive `9A700L0077`. You can use the device name `/dev/sg43` instead.
+
+## Step3: Mount a tape through a tape drive
+
+After you prepared a formatted tape, you can mount it through a tape drive like
+
+`# ltfs -o devname=9A700L0077 /ltfs`
+
+In this command, the ltfs command will try to mount the tape in the tape drive `9A700L0077` to `/ltfs` directory. Of course, you can use a device name `/dev/sg43` instead.
+
+If the mount process is successfully done, you can access to the LTFS tape through `/ltfs` directory.
+
+You must not touch any `st` devices while ltfs is mounting a tape.
+
+## Step4: Unmount the tape drive
+
+You can use following command when you want to unmount the tape. The ltfs command try to write the current meta-data to the tape and close the tape cleanly.
+
+`# umount /ltfs`
+
+One thing you need to pay attention to here is, that the unmount command continues to work in the background after it returns. It just initiates a trigger to notify the the ltfs command of the unmount request. Actual unmount is completed when the ltfs command is finished.
+
+## The `ltfs_ordered_copy` utility
+
+The [`ltfs_ordered_copy`](https://github.com/LinearTapeFileSystem/ltfs/wiki/ltfs_ordered_copy) is a program to copy files from source to destination with LTFS  order  optimization.
+
+It is written in python and it can work with both python2 and python3 (Python 2.7 or later is strongly recommended). You need to install the `pyxattr` module for both python2 and python3.
+
+# Building the LTFS from this GitHub project
+
+These instructions will get a copy of the project up and running on your local machine for development and testing purposes.
+
+## Prerequisites for build
+
+Please refer [this page](https://github.com/LinearTapeFileSystem/ltfs/wiki/Build-Environments).
+
+## Build and install on Linux
 
 ```
 ./autogen.sh
@@ -198,20 +280,20 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
 
   | Dist                               | Arch    | Status                                                                                                                           |
   |:----------------------------------:|:-------:|:--------------------------------------------------------------------------------------------------------------------------------:|
-  | RHEL 8                             | x86_64  | OK                                                                                                                               |
-  | RHEL 8                             | ppc64le | OK                                                                                                                               |
-  | CentOS 8 (Rocky Linux)             | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/CentOS8%20Build%20Job/badge.svg?branch=master)        |
-  | CentOS 8 (Rocky Linux)             | ppc64le | Probably OK                                                                                                                      |
-  | Fedora 28                          | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Fedora28%20Build%20Job/badge.svg?branch=master)       |
-  | Ubuntu 16.04 LTS                   | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2016.04%20Build%20Job/badge.svg?branch=master) |
-  | Ubuntu 16.04 LTS                   | ppc64le | Probably OK                                                                                                                      |
-  | Ubuntu 18.04 LTS                   | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2018.04%20Build%20Job/badge.svg?branch=master) |
-  | Ubuntu 18.04 LTS                   | ppc64le | Probably OK                                                                                                                      |
-  | Ubuntu 20.04 LTS (Need icu-config) | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Ubuntu%2020.04%20Build%20Job/badge.svg?branch=master) |
-  | Debian 9                           | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian9%20Build%20Job/badge.svg?branch=master)        |
-  | Debian 10 (Need icu-config)        | x86_64  | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/workflows/Debian10%20Build%20Job/badge.svg?branch=master)       |
-  | ArchLinux 2018.08.01               | x86_64  | Not checked automatically                                                                                                        |
-  | ArchLinux 2018.12.31 (rolling)     | x86_64  | Not checked automatically                                                                                                        |
+  | RHEL 8                             | x86\_64 | OK - Not checked automatically                                                                                                   |
+  | RHEL 8                             | ppc64le | OK - Not checked automatically                                                                                                   |
+  | CentOS 8 (Rocky Linux)             | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-centos8.yml/badge.svg)        |
+  | CentOS 8 (Rocky Linux)             | ppc64le | OK - Not checked automatically                                                                                                   |
+  | Fedora 28                          | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-fedora28.yml/badge.svg)       |
+  | Ubuntu 16.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-ubuntu-xeneal.yml/badge.svg) |
+  | Ubuntu 16.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                   |
+  | Ubuntu 18.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-ubuntu-bionic.yml/badge.svg) |
+  | Ubuntu 18.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                   |
+  | Ubuntu 20.04 LTS (Need icu-config) | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-ubuntu-focal.yml/badge.svg) |
+  | Debian 9                           | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-debian9.yml/badge.svg)        |
+  | Debian 10 (Need icu-config)        | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-debian10.yml/badge.svg)       |
+  | ArchLinux 2018.08.01               | x86\_64 | OK - Not checked automatically                                                                                                   |
+  | ArchLinux 2018.12.31 (rolling)     | x86\_64 | OK - Not checked automatically                                                                                                   |
 
 Currently, automatic build checking is working on GitHub Actions and Travis CI.
 

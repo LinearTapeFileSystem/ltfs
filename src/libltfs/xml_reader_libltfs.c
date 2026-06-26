@@ -155,6 +155,11 @@ static int decode_entry_name(char **new_name, const char *name)
 
 	*new_name = arch_strdup(tmp_name);
 	free(tmp_name);
+	
+	if (!*new_name) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -LTFS_NO_MEMORY;
+	}
 
 	return 0;
 }
@@ -165,7 +170,7 @@ static int decode_entry_name(char **new_name, const char *name)
 static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, bool target)
 {
 	const char name[] = "nametype", *value;
-	char *decoded_name, *encoded_name, *encode;
+	char *decoded_name = NULL, *encoded_name = NULL, *encode = NULL;
 	int empty, ret = -1;
 
 	encode = (char *)xmlTextReaderGetAttribute(reader, BAD_CAST "percentencoded");
@@ -187,8 +192,10 @@ static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, boo
 	}
 
 	if (n->percent_encode) {
-		decode_entry_name(&decoded_name, encoded_name);
+		ret = decode_entry_name(&decoded_name, encoded_name);
 		free(encoded_name);
+		if (ret < 0)
+			return ret;
 	} else {
 		decoded_name = encoded_name;
 	}
@@ -213,7 +220,7 @@ static int _xml_parse_nametype(xmlTextReaderPtr reader, struct ltfs_name *n, boo
 static int _xml_parse_nametype_allow_zero_length(xmlTextReaderPtr reader, struct ltfs_name *n, bool target)
 {
 	const char name[] = "nametype", *value;
-	char *decoded_name, *encoded_name, *encode;
+	char *decoded_name = NULL, *encoded_name = NULL, *encode = NULL;
 	int empty, ret = -1;
 
 	encode = (char *)xmlTextReaderGetAttribute(reader, BAD_CAST "percentencoded");
@@ -241,8 +248,10 @@ static int _xml_parse_nametype_allow_zero_length(xmlTextReaderPtr reader, struct
 	}
 
 	if (n->percent_encode) {
-		decode_entry_name(&decoded_name, encoded_name);
+		ret = decode_entry_name(&decoded_name, encoded_name);
 		free(encoded_name);
+		if (ret < 0)
+			return ret;
 	} else {
 		decoded_name = encoded_name;
 	}
@@ -378,7 +387,7 @@ static int _xml_parser_init(xmlTextReaderPtr reader, const char *top_name, int *
 static int _xml_parse_label_location(xmlTextReaderPtr reader, struct ltfs_label *label)
 {
 	declare_parser_vars("location");
-	declare_tracking_arrays(1, 0);
+	declare_tracking_arrays_no_opt(1);
 
 	while (true) {
 		get_next_tag();
@@ -407,7 +416,7 @@ static int _xml_parse_label_location(xmlTextReaderPtr reader, struct ltfs_label 
 static int _xml_parse_partition_map(xmlTextReaderPtr reader, struct ltfs_label *label)
 {
 	declare_parser_vars("partitions");
-	declare_tracking_arrays(2, 0);
+	declare_tracking_arrays_no_opt(2);
 
 	while (true) {
 		get_next_tag();
@@ -443,7 +452,7 @@ static int _xml_parse_label(xmlTextReaderPtr reader, struct ltfs_label *label)
 {
 	unsigned long long value_int;
 	declare_parser_vars("ltfslabel");
-	declare_tracking_arrays(7, 0);
+	declare_tracking_arrays_no_opt(7);
 
 	/* start the parser: find top-level "label" tag, check version and encoding */
 	ret = _xml_parser_init(reader, parent_tag, &label->version,
@@ -540,7 +549,7 @@ static int _xml_parse_ip_criteria(xmlTextReaderPtr reader, struct ltfs_index *id
 	unsigned long long value_int;
 	int num_patterns = 0;
 	declare_parser_vars("indexpartitioncriteria");
-	declare_tracking_arrays(1, 0);
+	declare_tracking_arrays_no_opt(1);
 
 	/* clear the glob pattern list first */
 	index_criteria_free(&idx->original_criteria);
@@ -601,7 +610,7 @@ static int _xml_parse_ip_criteria(xmlTextReaderPtr reader, struct ltfs_index *id
 static int _xml_parse_policy(xmlTextReaderPtr reader, struct ltfs_index *idx)
 {
 	declare_parser("dataplacementpolicy");
-	declare_tracking_arrays(1, 0);
+	declare_tracking_arrays_no_opt(1);
 
 	/* parse the contents of the policy tag */
 	while (true) {
@@ -630,7 +639,7 @@ static int _xml_parse_one_extent(xmlTextReaderPtr reader, int idx_version, struc
 	unsigned long long value_int;
 	struct extent_info *xt, *xt_last;
 	declare_parser_vars("extent");
-	declare_tracking_arrays(5, 0);
+	declare_tracking_arrays_no_opt(5);
 
 	xt = calloc(1, sizeof(struct extent_info));
 	if (!xt) {
@@ -747,7 +756,7 @@ static int _xml_parse_one_extent(xmlTextReaderPtr reader, int idx_version, struc
 static int _xml_parse_extents(xmlTextReaderPtr reader, int idx_version, struct dentry *d)
 {
 	declare_parser("extentinfo");
-	declare_tracking_arrays(0, 0);
+	declare_tracking_arrays_no_tags();
 
 	while (true) {
 		get_next_tag();
@@ -774,7 +783,7 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 	char *xattr_type;
 	struct xattr_info *xattr = NULL;
 	declare_parser_vars("xattr");
-	declare_tracking_arrays(2, 0);
+	declare_tracking_arrays_no_opt(2);
 
 	xattr = calloc(1, sizeof(struct xattr_info));
 	if (! xattr) {
@@ -871,7 +880,7 @@ static int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 static int _xml_parse_xattrs(xmlTextReaderPtr reader, struct dentry *d)
 {
 	declare_parser("extendedattributes");
-	declare_tracking_arrays(0, 0);
+	declare_tracking_arrays_no_tags();
 
 	while (true) {
 		get_next_tag();
@@ -904,7 +913,7 @@ static int _xml_parse_tapepos(xmlTextReaderPtr reader, const char *tag, struct t
 {
 	unsigned long long value_int;
 	declare_parser_vars(tag);
-	declare_tracking_arrays(2, 0);
+	declare_tracking_arrays_no_opt(2);
 
 	while (true) {
 		get_next_tag();
@@ -1192,7 +1201,7 @@ static int _xml_parse_dir_contents(xmlTextReaderPtr reader, struct dentry *dir, 
 	struct name_list *list = NULL, *entry_name = NULL;
 	CHECK_ARG_NULL(dir, -LTFS_NULL_ARG);
 	declare_parser("contents");
-	declare_tracking_arrays(0, 0);
+	declare_tracking_arrays_no_tags();
 
 	errno = 0;
 
@@ -1669,7 +1678,7 @@ static int _xml_parse_schema(xmlTextReaderPtr reader, struct ltfs_index *idx, st
 static int _xml_parse_symlink_target(xmlTextReaderPtr reader, int idx_version, struct dentry *d)
 {
 	declare_parser_vars_symlinknode("symlink");
-	declare_tracking_arrays(1, 0);
+	declare_tracking_arrays_no_opt(1);
 
 	while (true) {
 		get_next_tag();

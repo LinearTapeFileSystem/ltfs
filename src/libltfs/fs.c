@@ -77,8 +77,6 @@ int fs_hash_sort_by_uid(struct name_list *a, struct name_list *b)
 static char* generate_hash_key_name(const char *src_str, int *rc)
 {
 	char *key_name = NULL;
-	key_name = malloc(sizeof(char*));
-	if (key_name == NULL) return NULL;
 #ifdef mingw_PLATFORM
 	UChar *uchar_name;
 
@@ -89,11 +87,16 @@ static char* generate_hash_key_name(const char *src_str, int *rc)
 
 	if (*rc != 0) {
 		key_name = NULL;
-	} else
-		free(uchar_name);
+	} else{
+		arch_safe_free(uchar_name);
+	}	
 #else
 	key_name = arch_strdup(src_str);
-	*rc = 0;
+	if (key_name){
+		*rc = 0;
+	}else{
+		*rc = -LTFS_NO_MEMORY;
+	}	
 #endif
 
 	return key_name;

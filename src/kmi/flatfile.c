@@ -108,7 +108,7 @@ static int convert_option(const unsigned char * const path, unsigned char **dk_l
 	unsigned int num_of_lines = 0; /* number of lines which has a valid info */
 	for (num_of_lines = 0; fgets(buf, sizeof(buf), fp); ++num_of_lines) {
 		const int i = num_of_lines % 2;
-		if (! strncmp(buf, tag[i].name, strlen(tag[i].name))) {
+		if (! strncmp(buf, tag[i].name, strlen(tag[i].name)) && strlen(buf) >= strlen(tag[i].name)) {
 			if (buf[strlen(buf) - 1] == '\n')
 				buf[strlen(buf) - 1] = '\0';
 

@@ -146,7 +146,7 @@ root:table {
 		I1093E:string{ "Cannot remove the drive: 'Critical' cartridge is loaded." }
 		I1094E:string{ "Cannot add the drive: the drive is already added." }
 		I1095E:string{ "Unexpected inventory rebuild error (have to manage within LTFS itself)." }
-		I1096E:string{ "Library failes to get inventory. Try to unmount LTFS and re-mount LTFS again." }
+		I1096E:string{ "Library failed to get inventory. Try to unmount LTFS and re-mount LTFS again." }
 		I1097E:string{ "Operation needs to be restarted." }
 		I1098E:string{ "No target drive is found." }
 		I1099E:string{ "No supported filesystem type for dcache is in this system." }
@@ -191,7 +191,7 @@ root:table {
 		I1138E:string{ "Specified block size is not correct." }
 		I1139E:string{ "Specified volume name is not correct." }
 		I1140E:string{ "Specified placement policy is not correct." }
-		I1141E:string{ "Need to specify a genaration to be rollbacked." }
+		I1141E:string{ "Need to specify a generation to be rollbacked." }
 		I1142E:string{ "Specified generation is not correct." }
 		I1143E:string{ "Rollback target generation is not specified." }
 		I1144E:string{ "Multiple target indexes were found on the cartridge." }
@@ -275,7 +275,7 @@ root:table {
 		I5014E:string{ "Wrong UUID is detected." }
 		I5015E:string{ "Cannot parse generation number correctly." }
 		I5016E:string{ "Cannot parse index's updatetime correctly." }
-		I5017E:string{ "Wrong tape position of index or labal is detected." }
+		I5017E:string{ "Wrong tape position of index or label is detected." }
 		I5018E:string{ "Wrong tape position of previous index is detected." }
 		I5019E:string{ "Unexpected policyupdate value is detected." }
 		I5020E:string{ "Wrong policy value is detected." }

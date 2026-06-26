@@ -205,6 +205,58 @@ bool ltfs_is_interrupted(void)
 	return interrupted;
 }
 
+bool caught_sigcont = false;
+void _ltfs_sigcont(int signal)
+{
+	ltfsmsg(LTFS_INFO, 17294I, signal);
+	ltfs_sigcont_set(true);
+}
+
+void ltfs_sigcont_set(bool sig_val)
+{
+	caught_sigcont = sig_val;
+}
+
+bool ltfs_caught_sigcont(void)
+{
+	return caught_sigcont;
+}
+
+int ltfs_extra_signal_handlers(void)
+#ifdef mingw_PLATFORM
+{
+	return 0;
+}
+#else
+{
+	ltfs_sighandler_t ret;
+	ret = signal(SIGCONT, _ltfs_sigcont);
+	if (ret == SIG_ERR) {
+		return -LTFS_SIG_HANDLER_ERR;
+	}
+
+	return 0;
+}
+#endif
+
+int ltfs_unset_extra_signal_handler(void)
+#ifdef mingw_PLATFORM
+{
+	return 0;
+}
+#else
+{
+	ltfs_sighandler_t rc;
+	int ret = 0;
+
+	rc = signal(SIGCONT, SIG_DFL);
+	if (rc == SIG_ERR)
+		ret = -LTFS_SIG_HANDLER_ERR;
+
+	return ret;
+}
+#endif
+
 /**
  * This function can be used to enable libltfs signal handler
  * to kill ltfs, mkltfs, ltfsck cleanly
@@ -2383,12 +2435,13 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	struct tape_offset old_selfptr, old_backptr;
 	struct ltfs_timespec modtime_old = { .tv_sec = 0, .tv_nsec = 0 };
 	bool generation_inc = false;
-	struct tc_position physical_selfptr;
+	struct tc_position physical_selfptr, current_position;
 	char *cache_path_save = NULL;
 	bool write_perm = (strcmp(reason, SYNC_WRITE_PERM) == 0);
 	bool update_vollock = false;
 	int volstat = -1, new_volstat = 0;
 	char *bc_print = NULL;
+	unsigned long long diff;
 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
@@ -2505,6 +2558,24 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 		vol->index->backptr = old_backptr;
 		goto out_write_perm;
 	}
+
+	/* Get the tape position from the tape drive by using the SCSI command READPOS*/
+	ret = tape_get_position_from_drive(vol->device, &current_position);
+	if (ret < 0) {
+		/* Return error since the current tape position was unable to be determined, so there could be an undetected position mismatch */
+		ltfsmsg(LTFS_ERR, 11081E, ret);
+		return -1;
+	}
+
+	/* Prior to writing the index, compare the current location of the head position to the head location 
+	that is kept in the cache of ltfs (physical_selfptr). If they are different return error (-1) */
+	diff = ((unsigned long long)physical_selfptr.block - (unsigned long long)current_position.block);
+	if (diff) {
+		/* Position mismatch, diff not equal zero */
+		ltfsmsg(LTFS_INFO, 17293E, (unsigned long long)physical_selfptr.block, (unsigned long long)current_position.block);
+		return -1;
+	}
+
 	old_selfptr = vol->index->selfptr;
 	vol->index->selfptr.partition = partition;
 	vol->index->selfptr.partition = vol->label->part_num2id[physical_selfptr.partition];
