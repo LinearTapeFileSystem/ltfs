@@ -3,7 +3,7 @@
 ;;  OO_Copyright_BEGIN
 ;;
 ;;
-;;  Copyright 2010, 2021 IBM Corp. All rights reserved.
+;;  Copyright 2010, 2026 IBM Corp. All rights reserved.
 ;;
 ;;  Redistribution and use in source and binary forms, with or without
 ;;   modification, are permitted provided that the following conditions
@@ -346,22 +346,12 @@ AC_MSG_RESULT([$linux_distro])
 dnl
 dnl Check for ICU
 dnl
-ICU_MODULE_CFLAGS=""
-ICU_MODULE_LIBS=""
-AS_IF([test "$linux_distro" = "ubuntu"],
-[
-  AC_MSG_NOTICE([Detected Ubuntu - using pkg-config for ICU])
-  ICU_MODULE_CFLAGS="`pkg-config --cflags icu-uc icu-i18n`"
-  ICU_MODULE_LIBS="`pkg-config --libs icu-uc icu-i18n`"
-],
-[
-  AC_MSG_NOTICE([Detected non-Ubuntu - using icu-config for ICU])
-  ICU_MODULE_CFLAGS="`icu-config --cppflags 2>/dev/null`"
-  ICU_MODULE_LIBS="`icu-config --ldflags 2>/dev/null`"
-
-  AS_IF([test -z "$ICU_MODULE_LIBS"],
-    [AC_MSG_ERROR([icu-config failed to return valid flags. Please install ICU or set ICU_MODULE_LIBS manually.])])
-])
+ICU_MODULE_CFLAGS="`icu-config --cppflags 2> /dev/null`";
+ICU_MODULE_LIBS="`icu-config --ldflags 2> /dev/null`";
+if test -z "$ICU_MODULE_LIBS"
+then
+    PKG_CHECK_MODULES([ICU_MODULE], [icu-uc >= 0.21])
+fi
 
 AC_MSG_CHECKING([use latest ICU])
 AC_ARG_ENABLE([icu_6x],
