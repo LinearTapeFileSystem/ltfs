@@ -337,11 +337,6 @@ then
 
 fi
 
-dnl
-dnl Check Linux Distro and save it
-AC_MSG_CHECKING([for Linux distribution])
-linux_distro=`(grep '^ID=' /etc/os-release | cut -d= -f2 | tr -d '"') 2>/dev/null`
-AC_MSG_RESULT([$linux_distro])
 
 dnl
 dnl Check for ICU
