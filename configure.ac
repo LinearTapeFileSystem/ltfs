@@ -337,7 +337,6 @@ then
 
 fi
 
-
 dnl
 dnl Check for ICU
 dnl
