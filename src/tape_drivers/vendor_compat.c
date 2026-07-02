@@ -126,6 +126,7 @@ struct error_table standard_tape_errors[] = {
 	{0x033B00, -EDEV_MEDIUM_ERROR,              "Sequential Positioning Error"},
 	{0x035000, -EDEV_RW_PERM,                   "Write Append Error"},
 	{0x035100, -EDEV_MEDIUM_ERROR,              "Erase Failure"},
+	{0x035200, -EDEV_MEDIUM_ERROR,              "(LTO)Cartridge Fault/(3592)Media Load or Eject Failed"},
 	{0x035300, -EDEV_LOAD_UNLOAD_ERROR,         "Media Load or Eject Failed"},
 	{0x035304, -EDEV_LOAD_UNLOAD_ERROR,         "Medium Thread or Unthread Failure"},
 	
@@ -185,6 +186,7 @@ struct error_table standard_tape_errors[] = {
 	{0x055303, -EDEV_MEDIUM_LOCKED,             "Insufficient Resources"},
 	{0x055306, -EDEV_ILLEGAL_REQUEST,			"Auxiliary Memory Out of Space"},/*LTO*/
 	{0x055503, -EDEV_ILLEGAL_REQUEST,			"Insufficient Resources"},
+	{0x055506, -EDEV_ILLEGAL_REQUEST,           "Auxiliary Memory Out of Space"},/*3592*/
 	{0x055508, -EDEV_ILLEGAL_REQUEST,           "Maximum Number of Supplemental Decryption Keys Exceeded"},
 	{0x055B03, -EDEV_ILLEGAL_REQUEST,           "Log List Codes Exhausted"},
 	{0x057408, -EDEV_ILLEGAL_REQUEST,           "Digital Signature Validation Failure"},
@@ -214,6 +216,7 @@ struct error_table standard_tape_errors[] = {
 	{0x062A05, -EDEV_UNIT_ATTENTION,            "Registrations preempted"},
 	{0x062A0A, -EDEV_UNIT_ATTENTION,            "Error History I_T Nexus Cleared"},
 	{0x062A0B, -EDEV_UNIT_ATTENTION,            "Crypto Capabilities Changed"},/*LTO*/
+	{0x062A0D, -EDEV_UNIT_ATTENTION,            "Data Encryption Capabilities Changed"},/*3592*/
 	{0x062A10, -EDEV_TIME_STAMP_CHANGED,        "Time stamp changed"},
 	{0x062A11, -EDEV_CRYPTO_ERROR,              "Encryption - Data Encryption Parameters Changed by Another I_T Nexus"},
 	{0x062A12, -EDEV_CRYPTO_ERROR,              "Encryption - Data Encryption Parameters Changed by Vendor Specific Event"},
@@ -292,8 +295,18 @@ struct error_table standard_tape_errors[] = {
 	{0x0B4B06, -EDEV_TIMEOUT,                   "Initiator Response Timeout"},
 	{0x0B4E00, -EDEV_OVERLAPPED,                "Overlapped Commands Attempted"},
 	{0x0B7440, -EDEV_AUTH_FAILED,               "Authentication Failed"},
+	/* Sense Key A (Copy Aborted) */
+	{0x0A0D01, -EDEV_THIRD_PARTY_ERROR,         "Third Party Device Failure"},
+	{0x0A0D02, -EDEV_UNREACHABLE_TARGET,        "Copy Target Device Not Reachable"},
+	{0x0A0D03, -EDEV_INCORRECT_TARGET_TYPE,     "Incorrect Copy Target Device Type"},
+	{0x0A0D04, -EDEV_COPY_UNDERRUN,             "Copy Target Device Data Underrun"},
+	{0x0A0D05, -EDEV_COPY_OVERRUN,              "Copy Target Device Data Overrun"},
+	{0x0A260C, -EDEV_INVALID_COPY,              "Invalid Operation for Copy Source or Destination"},
+	{0x0A2F02, -EDEV_COMMAND_CLEARED,           "Commands Cleared by Device Server"},
 	/* Sense Key D (Volume Overflow) */
 	{0x0D0002, -EDEV_OVERFLOW,                  "End-of-Partition/Medium Detected"},
+	/* Sense Key F (Completed) */
+	{0x0F0020, -EDEV_COPY_INFORMATION,          "Extended Copy Information Available"},
 	/* END MARK*/
 	{0xFFFFFF, -EDEV_UNKNOWN,                   "Unknown Error code"},
 };
