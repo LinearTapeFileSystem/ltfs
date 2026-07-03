@@ -414,6 +414,9 @@ if args.keep_tree is None:
 
 # Create the list of copy item
 copyq = CopyQueue(logger, args.sort_files)
+# Track directory sources that were actually recursed into, so a --move run only
+# prunes trees it really moved (not plain files, not directories skipped without -r).
+moved_dirs = []
 for s in args.SOURCE:
     dst = args.DEST
     if os.path.isfile(s):
@@ -437,6 +440,8 @@ for s in args.SOURCE:
                    os.makedirs(new_d)
                 dst = new_d
             copyq.walk_dir(s, dst, args.p, args.all, args.move)
+            if args.move:
+                moved_dirs.append(s)
         else:
             logger.warning("omitting directory '{0}'".format(s))
 
@@ -494,11 +499,13 @@ while tape != None:
     prog_tape.finish()
 
 # In move mode the source files have been removed as they were copied. Prune the
-# now-empty source directory trees bottom-up. Directories that still hold files
-# (e.g. because a copy failed, or a non-recursive directory was skipped) are left
-# untouched, so no data is ever discarded.
+# now-empty source directory trees bottom-up. Only directories that were actually
+# recursed into by this move are considered (moved_dirs), so a directory passed
+# without -r, or an empty directory outside the moved trees, is never touched.
+# Directories that still hold files (e.g. because a copy failed) make rmdir fail
+# and are left untouched, so no data is ever discarded.
 if args.move:
-    for s in args.SOURCE:
+    for s in moved_dirs:
         if os.path.isdir(s):
             for dirpath, dirnames, filenames in os.walk(s, topdown=False):
                 try:
