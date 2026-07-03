@@ -128,6 +128,7 @@ class CopyQueue:
         self.items = 0
         self.logger = logger
         self.sort_files = sort_files
+        self.walked_dirs = [] # (source_dir, dest_dir) pairs for metadata replication
 
     def add_copy_item(self, c):
         (u, p, s) = c.eval()
@@ -177,6 +178,12 @@ class CopyQueue:
             t = root[prefix_len:]
             dst = dest + "/" + t
             dst = os.path.normpath(dst)
+
+            # Record every directory (os.walk yields each one once, including
+            # empty ones) together with a snapshot of its metadata taken now,
+            # before any files are moved out -- removing a source file bumps its
+            # directory's mtime, so the snapshot must be captured up front.
+            self.walked_dirs.append((root, dst, os.stat(root)))
 
             for d in sorted(dirs) if self.sort_files else dirs:
                 walk_dirs.append(os.path.join(dst, d))
@@ -497,6 +504,23 @@ while tape != None:
 
     (tape_key, tape) = copyq.pop_tape()
     prog_tape.finish()
+
+# Replicate directory metadata (mode and timestamps with -p; xattrs with --all)
+# onto each walked destination directory. Mode/timestamps come from the snapshot
+# taken during the walk, before the move removed any files (which would bump the
+# source directory mtimes). Runs after all files are copied and before move-mode
+# pruning, deepest-first so setting a child never re-bumps an already-set parent.
+if args.p or args.all:
+    for (src_dir, dst_dir, src_stat) in reversed(copyq.walked_dirs):
+        try:
+            if args.p:
+                os.chmod(dst_dir, src_stat.st_mode & 0o7777)
+                os.utime(dst_dir, (src_stat.st_atime, src_stat.st_mtime))
+            if args.all:
+                for key in xattr.list(src_dir):
+                    xattr.set(dst_dir, key, xattr.get(src_dir, key))
+        except Exception as e:
+            logger.error('Failed to copy directory metadata to "{0}": {1}'.format(dst_dir, str(e)))
 
 # In move mode the source files have been removed as they were copied. Prune the
 # now-empty source directory trees bottom-up. Only directories that were actually
