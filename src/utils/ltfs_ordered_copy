@@ -265,25 +265,25 @@ def _copyfileobj_readinto(fsrc, fdst, callback, length=BUFSIZE):
             callback(n)
 
 class Progress:
-    def __init__(self, logger, title, num_f, num_b): #initialization
+    def __init__(self, logger, title, total_files, total_bytes): #initialization
         self.logger = logger
         self.title = title
-        self.num_f = num_f
-        self.num_b = num_b
-        self.cur_f = 0
+        self.total_files = total_files
+        self.total_bytes = total_bytes
+        self.current_file = 0
         self.tqdm = None
 
     def update_file(self, name):
         # Delay the initialization of tqdm to prevent console spam
         if self.logger.getEffectiveLevel() == INFO and USE_TQDM and self.tqdm is None:
-            self.tqdm = tqdm(total=self.num_b, unit='B', unit_scale=True, unit_divisor=1024)
+            self.tqdm = tqdm(total=self.total_bytes, unit='B', unit_scale=True, unit_divisor=1024)
 
-        self.cur_f += 1
+        self.current_file += 1
         if self.logger.getEffectiveLevel() == INFO:
             if self.tqdm is not None:
-                self.tqdm.set_description(f'{name} [{self.cur_f} / {self.num_f}]')
+                self.tqdm.set_description(f'{name} [{self.current_file} / {self.total_files}]')
             else:
-                sys.stderr.write('\r{}: {}/{}'.format(self.title, self.cur_f, self.num_f))
+                sys.stderr.write('\r{}: {}/{}'.format(self.title, self.current_file, self.total_files))
                 sys.stderr.flush()
 
     def update(self, bytes_add):
