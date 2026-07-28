@@ -378,7 +378,6 @@ struct supported_device *usb_supported_drives[] = {
 struct error_table ibm_tape_errors[] = {
 	/* Sense Key 0 (No Sense) */
 	{0x008282, -EDEV_CLEANING_REQUIRED,         "IBM LTO - Cleaning Required"},
-	{0x00EE13, -EDEV_RECOVERED_ERROR, 			"Encryption - Key translate"},
 
 	/* Sense Key 1 (Recoverd Error) */
 	{0x015DFF, -EDEV_RECOVERED_ERROR,           "Failure Prediction Threshold Exceeded (FALSE)"}, 
