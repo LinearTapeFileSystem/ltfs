@@ -96,6 +96,7 @@ struct scsipi_ibmtape_global_data global_data;
 
 #define TU_DEFAULT_TIMEOUT (60)
 #define MAX_RETRY          (100)
+#define POR_MAX_RETRIES (3)
 
 /* Forward references (For keep function order to struct tape_ops) */
 int scsipi_ibmtape_readpos(void *device, struct tc_position *pos);
@@ -1657,7 +1658,7 @@ int scsipi_ibmtape_write(void *device, const char *buf, size_t count, struct tc_
 	struct scsipi_ibmtape_data *priv = (struct scsipi_ibmtape_data*)device;
 	struct tc_position cur_pos;
 	size_t datacount = count;
-	int retry_count = 0;
+	int retry_count = 0, por_retry_count = 0;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITE));
 
@@ -1708,11 +1709,11 @@ start_write:
 		ret = _handle_block_allocation_failure(device, pos, &retry_count, "write");
 		if (ret == -EDEV_RETRY)
 			goto start_write;
-	} else if (ret == -EDEV_HOST_ERROR && retry_count < SOFT_ERROR_MAX_RETRIES) {
+	} else if (ret == -EDEV_HOST_ERROR && por_retry_count < POR_MAX_RETRIES) {
 		sleep(5);
 		ret = _clear_por(priv);
 		if (ret == DEVICE_GOOD) {
-  		ret = _handle_block_allocation_failure(device, pos, &retry_count, "write");
+  		ret = _handle_block_allocation_failure(device, pos, &por_retry_count, "write");
   		if (ret == -EDEV_RETRY)
   			goto start_write;
 		}
