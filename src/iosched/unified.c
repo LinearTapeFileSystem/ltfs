@@ -1790,7 +1790,11 @@ ssize_t _unified_insert_new_request(const char *buf, off_t offset, size_t count,
 	if (new_req->offset + new_req->count > dpr->file_size)
 		dpr->file_size = new_req->offset + new_req->count;
 
-	return (ssize_t)count;
+	/* Only copy_count bytes were stored (one cache block at most); the
+	 * caller's append loop must advance by that, not the full count, or
+	 * everything past the first block of a larger-than-blocksize write is
+	 * silently dropped. */
+	return (ssize_t)copy_count;
 }
 
 /**
