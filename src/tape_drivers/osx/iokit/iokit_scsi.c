@@ -257,9 +257,11 @@ int iokit_issue_cdb_command(struct iokit_device *device,
 free:
 	if (ret != DEVICE_GOOD) {
 		if (is_expected_error(device, req->cmdp, ret)) {
-			ltfsmsg(LTFS_DEBUG, 30807D, req->desc, req->cmdp[0], ret);
+			ltfsmsg(LTFS_DEBUG, 30807D, req->desc, req->cmdp[0],
+				(sense >> 16) & 0xFF, (sense >> 8) & 0xFF, sense & 0xFF, ret);
 		} else {
-			ltfsmsg(LTFS_INFO, 30808I, req->desc, req->cmdp[0], ret);
+			ltfsmsg(LTFS_INFO, 30808I, req->desc, req->cmdp[0],
+				(sense >> 16) & 0xFF, (sense >> 8) & 0xFF, sense & 0xFF, ret);
 		}
 	}
 
