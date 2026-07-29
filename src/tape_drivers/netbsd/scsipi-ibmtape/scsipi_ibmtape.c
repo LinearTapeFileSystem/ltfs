@@ -569,7 +569,7 @@ int _raw_tur(const int fd)
 
 #define _clear_por(p) _clear_por_raw((p)->dev.fd);
 
-void _clear_por_raw(const int fd)
+int _clear_por_raw(const int fd)
 {
 	int i = 0, ret = -1;
 
@@ -589,6 +589,7 @@ void _clear_por_raw(const int fd)
 		}
 		i++;
 	}
+	return ret;
 }
 
 /* Forward reference */
@@ -1707,6 +1708,14 @@ start_write:
 		ret = _handle_block_allocation_failure(device, pos, &retry_count, "write");
 		if (ret == -EDEV_RETRY)
 			goto start_write;
+	} else if (ret == -EDEV_HOST_ERROR && retry_count < SOFT_ERROR_MAX_RETRIES) {
+		sleep(5);
+		ret = _clear_por(priv);
+		if (ret == DEVICE_GOOD) {
+  		ret = _handle_block_allocation_failure(device, pos, &retry_count, "write");
+  		if (ret == -EDEV_RETRY)
+  			goto start_write;
+		}
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));

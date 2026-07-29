@@ -54,6 +54,7 @@
 #include <dirent.h>
 #include <sys/ioctl.h>
 
+#include "libltfs/ltfs_error.h"
 #include "ltfs_copyright.h"
 #include "libltfs/ltfslogging.h"
 #include "libltfs/fs.h"
@@ -605,7 +606,7 @@ int _raw_tur(const int fd)
 
 #define _clear_por(p) _clear_por_raw((p)->dev.fd);
 
-void _clear_por_raw(const int fd)
+int _clear_por_raw(const int fd)
 {
 	int i = 0, ret = -1;
 
@@ -625,6 +626,7 @@ void _clear_por_raw(const int fd)
 		}
 		i++;
 	}
+	return ret;
 }
 
 #define _get_stable_tur_response(p) _get_stable_tur_response_raw((p)->dev.fd)
@@ -2099,8 +2101,7 @@ int sg_write(void *device, const char *buf, size_t count, struct tc_position *po
 	struct sg_data *priv = (struct sg_data*)device;
 	struct tc_position cur_pos;
 	size_t datacount = count;
-	int reconnect_retry_count = 0, soft_error_retry_count = 0;
-	int TBL_SLEEP_SECS[SOFT_ERROR_MAX_RETRIES] = {45, 60, 75}; // Hardcoded exponentially increasing sleep time
+	int retry_count = 0;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITE));
 
@@ -2147,15 +2148,18 @@ start_write:
 			} else
 				ret = -EDEV_POR_OR_BUS_RESET;
 		}
-	} else if (ret == -EDEV_BUFFER_ALLOCATE_ERROR && reconnect_retry_count < MAX_RETRY) {
-		ret = _handle_block_allocation_failure(device, pos, &reconnect_retry_count, "write");
-		if (ret == -EDEV_RETRY)
-			goto start_write;
-	} else if (ret == -EDEV_HOST_ERROR && soft_error_retry_count < SOFT_ERROR_MAX_RETRIES) {
-		sleep(TBL_SLEEP_SECS[soft_error_retry_count]);
+	} else if (ret == -EDEV_BUFFER_ALLOCATE_ERROR && retry_count < MAX_RETRY) {
 		ret = _handle_block_allocation_failure(device, pos, &retry_count, "write");
 		if (ret == -EDEV_RETRY)
 			goto start_write;
+	} else if (ret == -EDEV_HOST_ERROR && retry_count < SOFT_ERROR_MAX_RETRIES) {
+		sleep(5);
+		ret = _clear_por(priv);
+		if (ret == DEVICE_GOOD) {
+  		ret = _handle_block_allocation_failure(device, pos, &retry_count, "write");
+  		if (ret == -EDEV_RETRY)
+  			goto start_write;
+		}
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
