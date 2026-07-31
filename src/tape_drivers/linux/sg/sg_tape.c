@@ -2093,7 +2093,7 @@ static int _cdb_write(void *device, uint8_t *buf, size_t size, bool *ew, bool *p
 
 int sg_write(void *device, const char *buf, size_t count, struct tc_position *pos)
 {
-	int ret, ret_fo;
+	int ret, ret_fo, ret_write = -1;
 	bool ew = false, pew = false;
 	struct sg_data *priv = (struct sg_data*)device;
 	struct tc_position cur_pos;
@@ -2128,12 +2128,12 @@ int sg_write(void *device, const char *buf, size_t count, struct tc_position *po
 	}
 
 start_write:
-	ret = _cdb_write(device, (uint8_t *)buf, datacount, &ew, &pew);
-	if (ret == DEVICE_GOOD) {
+	ret_write = _cdb_write(device, (uint8_t *)buf, datacount, &ew, &pew);
+	if (ret_write == DEVICE_GOOD) {
 		pos->block++;
 		pos->early_warning = ew;
 		pos->programmable_early_warning = pew;
-	} else if (ret == -EDEV_NEED_FAILOVER) {
+	} else if (ret_write == -EDEV_NEED_FAILOVER) {
 		ret_fo = sg_readpos(device, &cur_pos);
 		if (!ret_fo) {
 			if (pos->partition == cur_pos.partition
@@ -2141,7 +2141,7 @@ start_write:
 				pos->block++;
 				pos->early_warning = cur_pos.early_warning;
 				pos->programmable_early_warning = cur_pos.programmable_early_warning;
-				ret = DEVICE_GOOD;
+				ret = ret_write = DEVICE_GOOD;
 			} else
 				ret = -EDEV_POR_OR_BUS_RESET;
 		}
@@ -2156,15 +2156,15 @@ start_write:
 		sleep(5);
 		ret = _clear_por(priv);
 		if (ret == DEVICE_GOOD) {
-  		ret = _handle_block_write_failure(device, pos, "write");
-  		if (ret == -EDEV_RETRY)
-  			goto start_write;
+  			ret = _handle_block_write_failure(device, pos, "write");
+  			if (ret == -EDEV_RETRY)
+  				goto start_write;
 		}
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
 
-	return ret;
+	return ret_write;
 }
 
 int sg_writefm(void *device, size_t count, struct tc_position *pos, bool immed)
