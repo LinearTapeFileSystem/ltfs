@@ -1541,8 +1541,8 @@ write_start:
 				rc = DEVICE_GOOD;
 			}
 		} else if (errno == ENOMEM && retry < MAX_WRITE_RETRY) {
-		  sleep(3); // Wait for kernel GC
-      ltfsmsg(LTFS_WARN, 30440W, ++retry);
+			sleep(3); // Wait for kernel GC
+			ltfsmsg(LTFS_WARN, 30440W, ++retry);
 			rc = _handle_block_write_failure(device, pos);
 			if (rc == WRITE_RETRY) {
 				errno = 0;
@@ -1569,7 +1569,7 @@ write_start:
 
 			if (retry < MAX_WRITE_RETRY
 				&& ((current_errno == EIO && rc == -EDEV_NO_SENSE ) || (rc == -EDEV_CONFIGURE_CHANGED) || (rc == -EDEV_TIME_STAMP_CHANGED))) {
-		    sleep(5);
+				sleep(5);
 				rc = _handle_block_write_failure(device, pos);
 				if (rc == WRITE_RETRY) {
 					errno = 0;
