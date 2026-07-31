@@ -1437,14 +1437,10 @@ int lin_tape_ibmtape_read(void *device, char *buf, size_t count, struct tc_posit
 
 #define WRITE_RETRY (-LINUX_MAX_BLOCK_SIZE)
 
-static inline int _handle_block_allocation_failure(void *device, struct tc_position *pos, int *retry)
+static inline int _handle_block_write_failure(void *device, struct tc_position *pos)
 {
     int ret = 0;
     struct tc_position tmp_pos = {0, 0};
-
-    /* Sleep 3 secs to wait garbage correction in kernel side and retry */
-    ltfsmsg(LTFS_WARN, 30440W, ++(*retry));
-    sleep(3);
 
     ret = lin_tape_ibmtape_readpos(device, &tmp_pos);
     if (ret == DEVICE_GOOD && pos->partition == tmp_pos.partition) {
@@ -1545,7 +1541,9 @@ write_start:
 				rc = DEVICE_GOOD;
 			}
 		} else if (errno == ENOMEM && retry < MAX_WRITE_RETRY) {
-			rc = _handle_block_allocation_failure(device, pos, &retry);
+		  sleep(3); // Wait for kernel GC
+      ltfsmsg(LTFS_WARN, 30440W, ++retry);
+			rc = _handle_block_write_failure(device, pos);
 			if (rc == WRITE_RETRY) {
 				errno = 0;
 				goto write_start;
@@ -1571,7 +1569,8 @@ write_start:
 
 			if (retry < MAX_WRITE_RETRY
 				&& ((current_errno == EIO && rc == -EDEV_NO_SENSE ) || (rc == -EDEV_CONFIGURE_CHANGED) || (rc == -EDEV_TIME_STAMP_CHANGED))) {
-				rc = _handle_block_allocation_failure(device, pos, &retry);
+		    sleep(5);
+				rc = _handle_block_write_failure(device, pos);
 				if (rc == WRITE_RETRY) {
 					errno = 0;
 					goto write_start;

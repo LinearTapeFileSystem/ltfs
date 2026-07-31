@@ -1864,15 +1864,10 @@ static int _cdb_read(void *device, char *buf, size_t size, bool sili)
 	return length;
 }
 
-static inline int _handle_block_allocation_failure(void *device, struct tc_position *pos,
-												   int *retry, char *op)
+static inline int _handle_block_write_failure(void *device, struct tc_position *pos, char *op)
 {
 	int ret = 0;
 	struct tc_position tmp_pos = {0, 0};
-
-	/* Sleep 3 secs to wait garbage correction in kernel side and retry */
-	ltfsmsg(LTFS_WARN, 30277W, ++(*retry));
-	sleep(3);
 
 	ret = sg_readpos(device, &tmp_pos);
 	if (ret == DEVICE_GOOD && pos->partition == tmp_pos.partition) {
@@ -1987,7 +1982,9 @@ start_read:
 		priv->use_sili = false;
 		ret = _cdb_read(device, buf, datacount, unusual_size);
 	} else if (ret == -EDEV_BUFFER_ALLOCATE_ERROR && retry_count < MAX_RETRY) {
-		ret = _handle_block_allocation_failure(device, pos, &retry_count, "read");
+    sleep(3); // Wait for kernel GC
+    ltfsmsg(LTFS_WARN, 30277W, ++retry_count);
+		ret = _handle_block_write_failure(device, pos, "read");
 		if (ret == -EDEV_RETRY)
 			goto start_read;
 	}
@@ -2149,14 +2146,17 @@ start_write:
 				ret = -EDEV_POR_OR_BUS_RESET;
 		}
 	} else if (ret == -EDEV_BUFFER_ALLOCATE_ERROR && retry_count < MAX_RETRY) {
-		ret = _handle_block_allocation_failure(device, pos, &retry_count, "write");
+	  sleep(3); // Wait for kernel GC
+    ltfsmsg(LTFS_WARN, 30277W, ++retry_count);
+		ret = _handle_block_write_failure(device, pos, "write");
 		if (ret == -EDEV_RETRY)
 			goto start_write;
 	} else if (ret == -EDEV_HOST_ERROR && por_retry_count < POR_MAX_RETRIES) {
+    por_retry_count++;
 		sleep(5);
 		ret = _clear_por(priv);
 		if (ret == DEVICE_GOOD) {
-  		ret = _handle_block_allocation_failure(device, pos, &por_retry_count, "write");
+  		ret = _handle_block_write_failure(device, pos, "write");
   		if (ret == -EDEV_RETRY)
   			goto start_write;
 		}
