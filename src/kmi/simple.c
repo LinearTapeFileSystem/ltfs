@@ -192,13 +192,20 @@ int simple_parse_opts(void *opt_args)
 		const size_t dk_list_len = (priv.dk_list ? strlen((char *) priv.dk_list) + strlen("/") : 0)
 			+ strlen((char *) key[i].dk) + strlen(":") + strlen((char *) key[i].dki) + 1;
 
-		if (priv.dk_list)
-			priv.dk_list = (unsigned char*)realloc(priv.dk_list, dk_list_len);
-		else
+		if (priv.dk_list) {
+			unsigned char *expanded = (unsigned char*)realloc(priv.dk_list, dk_list_len);
+			if (expanded == NULL) {
+				ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+				free(priv.dk_list);
+				return -LTFS_NO_MEMORY;
+			}
+			priv.dk_list = expanded;
+		} else {
 			priv.dk_list = (unsigned char*)calloc(dk_list_len, sizeof(unsigned char));
-		if (priv.dk_list == NULL) {
-			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
-			return -LTFS_NO_MEMORY;
+			if (priv.dk_list == NULL) {
+				ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+				return -LTFS_NO_MEMORY;
+			}
 		}
 		*(priv.dk_list + original_dk_list_len) = '\0';
 

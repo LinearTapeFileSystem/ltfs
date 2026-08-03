@@ -311,7 +311,13 @@ static int _get_dump(struct sg_data *priv, char *fname)
 	}
 
 	/* Get buffer capacity */
-	_cdb_read_buffer(priv, buf_id, cap_buf, 0, sizeof(cap_buf), 0x03);
+	ret = _cdb_read_buffer(priv, buf_id, cap_buf, 0, sizeof(cap_buf), 0x03);
+	if (ret < 0) {
+		/* cap_buf is indeterminate on failure; do not derive a transfer
+		 * length from it. */
+		free(dump_buf);
+		return ret;
+	}
 	data_length = (cap_buf[1] << 16) + (cap_buf[2] << 8) + (int)cap_buf[3];
 
 	/* Open dump file for write only*/
