@@ -154,7 +154,9 @@ root:table {
 		14115E:string { "Invalid scsi_append_only_mode option: %s." }
                 14116E:string { "This medium is not supported (%d)." }
 		14123W:string { "The main function of FUSE returned error (%d)." }
-		
+		14124I:string { "FUSE maximum request size is %u KiB." }
+		14125W:string { "The max_write option is ignored when built against FUSE 2." }
+
 		// 14150 - 14199 are reserved for LE+
 
 		// Help messages
@@ -244,5 +246,7 @@ root:table {
 		// Reserved 14466I
 		14467I:string { "    -o syslogtrace            Enable diagnostic output to stderr and syslog(same as verbose=303)" }
 		// Reserved 14468I
+		14469I:string { "    -o max_write=<num>        Maximum size of a FUSE request in bytes (FUSE 3 builds only, default: 1048576)" }
+		14470I:string { "    -o direct_io              Bypass the kernel page cache for all file I/O (disables mmap)" }
 	}
 }

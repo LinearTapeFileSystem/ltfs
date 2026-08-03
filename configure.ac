@@ -289,7 +289,55 @@ fi
 dnl
 dnl Check for FUSE, libuuid, and libxml2
 dnl
-PKG_CHECK_MODULES([FUSE_MODULE], [fuse >= 2.6.0])
+dnl libfuse 3 is preferred on Linux, falling back to libfuse 2 when the
+dnl fuse3 development files are not installed. --with-fuse2 forces the
+dnl legacy libfuse 2 API; it is also the default on the other platforms
+dnl until their fuse3 stacks are verified.
+dnl
+AC_ARG_WITH([fuse2],
+    [AS_HELP_STRING([--with-fuse2],
+        [build against libfuse 2 instead of libfuse 3])],
+    [with_fuse2=$withval],
+    [with_fuse2=default])
+if test "x${with_fuse2}" = "xdefault" && test "x${host_linux}" != "xyes"
+then
+    with_fuse2=yes
+fi
+
+if test "x${with_fuse2}" = "xyes"
+then
+    PKG_CHECK_MODULES([FUSE_MODULE], [fuse >= 2.6.0])
+elif test "x${with_fuse2}" = "xno"
+then
+    PKG_CHECK_MODULES([FUSE_MODULE], [fuse3 >= 3.4.0])
+else
+    PKG_CHECK_MODULES([FUSE_MODULE], [fuse3 >= 3.4.0],
+        [with_fuse2=no],
+        [PKG_CHECK_MODULES([FUSE_MODULE], [fuse >= 2.6.0], [with_fuse2=yes])])
+fi
+AC_MSG_CHECKING([for the FUSE API version to use])
+if test "x${with_fuse2}" = "xyes"
+then
+    AC_MSG_RESULT([2])
+else
+    AC_MSG_RESULT([3])
+fi
+
+dnl
+dnl struct fuse_file_info.parallel_direct_writes appeared in libfuse 3.15;
+dnl detect the member instead of relying on version numbers.
+dnl
+if test "x${with_fuse2}" != "xyes"
+then
+    SAVE_CFLAGS=$CFLAGS
+    CFLAGS="$CFLAGS ${FUSE_MODULE_CFLAGS} -DFUSE_USE_VERSION=31"
+    AC_CHECK_MEMBER([struct fuse_file_info.parallel_direct_writes],
+        [AC_DEFINE([HAVE_FUSE_PARALLEL_DIRECT_WRITES], [1],
+            [Define to 1 if struct fuse_file_info has parallel_direct_writes])],
+        [],
+        [[#include <fuse.h>]])
+    CFLAGS="$SAVE_CFLAGS"
+fi
 PKG_CHECK_MODULES([LIBXML2_MODULE], [libxml-2.0 >= 2.6.16])
 
 if test "x${host_mac}" = "xyes"
@@ -461,6 +509,10 @@ dnl Update flags
 dnl Sets CFLAGS to force optimization and debugging options, which isn't quite kosher
 dnl
 AM_CPPFLAGS="-D_GNU_SOURCE -I\$(top_srcdir)/src -DLTFS_CONFIG_FILE='\"${sysconfdir}/ltfs.conf\"' -DLTFS_BASE_DIR='\"${prefix}\"'"
+if test "x${with_fuse2}" != "xyes"
+then
+    AM_CPPFLAGS="${AM_CPPFLAGS} -DHAVE_FUSE3"
+fi
 AM_CFLAGS="-Wall -Wsign-compare -fsigned-char ${FUSE_MODULE_CFLAGS} ${UUID_MODULE_CFLAGS} ${LIBXML2_MODULE_CFLAGS} ${ICU_MODULE_CFLAGS} ${SNMP_ENABLE} ${SNMP_MODULE_CFLAGS}"
 
 if test "x$use_fast" = "xyes"
