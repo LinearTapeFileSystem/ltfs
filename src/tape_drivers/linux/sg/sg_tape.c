@@ -2145,13 +2145,13 @@ start_write:
 			} else
 				ret = -EDEV_POR_OR_BUS_RESET;
 		}
-	} else if (ret == -EDEV_BUFFER_ALLOCATE_ERROR && retry_count < MAX_RETRY) {
+	} else if (ret_write == -EDEV_BUFFER_ALLOCATE_ERROR && retry_count < MAX_RETRY) {
 		sleep(3); // Wait for kernel GC
 		ltfsmsg(LTFS_WARN, 30277W, ++retry_count);
 		ret = _handle_block_write_failure(device, pos, "write");
 		if (ret == -EDEV_RETRY)
 			goto start_write;
-	} else if (ret == -EDEV_HOST_ERROR && por_retry_count < POR_MAX_RETRIES) {
+	} else if (ret_write == -EDEV_HOST_ERROR && por_retry_count < POR_MAX_RETRIES) {
 		por_retry_count++;
 		sleep(5);
 		ret = _clear_por(priv);
