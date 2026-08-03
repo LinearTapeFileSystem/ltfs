@@ -36,7 +36,12 @@
 dnl
 dnl LTFS configure.ac.
 dnl
-AC_INIT([LTFS], [2.4.8.4 (Prelim)], IBM corporation.)
+dnl Package version is kept in the top-level VERSION file (line 1: numeric
+dnl X.Y.Z.W, line 2: optional suffix) so the autotools and CMake builds share
+dnl a single source of truth. The awk joins them into "X.Y.Z.W suffix".
+AC_INIT([LTFS],
+    m4_esyscmd_s([awk 'NR==1{n=$0} NR==2{s=$0} END{if(s=="")printf "%s",n; else printf "%s %s",n,s}' VERSION]),
+    IBM corporation.)
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4])
