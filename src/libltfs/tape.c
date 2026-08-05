@@ -1782,8 +1782,9 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	/* APPLICATION CLIENT SPECIFIC INFORMATION LENGTH */
 	coh_data[30] = 0;  /* Size of APPLICATION CLIENT SPECIFIC INFORMATION (Byte 1) */
 	coh_data[31] = 43; /* Size of APPLICATION CLIENT SPECIFIC INFORMATION (Byte 0) */
-	/* Size of the buffer to insert 'LTFS' needs to be size of 5 for the 4 letters and the null terminator*/
-	arch_strncpy((char *)coh_data + 32,"LTFS", 5, 4);
+	/* Bytes 32-36 hold the "LTFS" signature; the reader checks all five
+	 * bytes, so copy the terminator explicitly. */
+	memcpy(coh_data + 32, "LTFS", 5);
 	memcpy(coh_data + 37, coh->uuid, 37);
 	/*
 	   Version field
@@ -2978,7 +2979,7 @@ void parse_vol(char *str, int start_len, int end_len)
  */
 int u_get_truncate_size(const char *name, int name_len, int max_size)
 {
-	int32_t size = 0, re_size;
+	int32_t size = 0, re_size = 0;
 	UChar32 c;
 	UErrorCode err = U_ZERO_ERROR;
 
@@ -3001,6 +3002,17 @@ int u_get_truncate_size(const char *name, int name_len, int max_size)
  * @param Tape attribute
  * @return 0: success, negative : cannot set correct value to tape_attr
  */
+/* MAM attribute fields have fixed widths; truncation is intentional and
+ * parse_vol() pads and terminates afterwards. */
+static void mam_field_copy(char *dest, size_t field_size, const char *src)
+{
+	size_t n = strlen(src);
+
+	if (n > field_size)
+		n = field_size;
+	memcpy(dest, src, n);
+}
+
 void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 {
 	int len_volname = 0;
@@ -3016,16 +3028,16 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 	}
 
 	/*  APPLICATION VENDOR set */
-	arch_strncpy_auto(t_attr->vender, LTFS_VENDOR_NAME, TC_MAM_APP_VENDER_SIZE);
+	mam_field_copy(t_attr->vender, TC_MAM_APP_VENDER_SIZE, LTFS_VENDOR_NAME);
 	parse_vol(t_attr->vender, strlen(LTFS_VENDOR_NAME), TC_MAM_APP_VENDER_SIZE);
 
 	/* APPLICATION NAME set */
-	arch_strncpy_auto(t_attr->app_name, PACKAGE_NAME, TC_MAM_APP_NAME_SIZE);
+	mam_field_copy(t_attr->app_name, TC_MAM_APP_NAME_SIZE, PACKAGE_NAME);
 	parse_vol(t_attr->app_name, strlen(PACKAGE_NAME), TC_MAM_APP_NAME_SIZE);
 
 
 	/* APPLICATION VERSION set */
-	arch_strncpy_auto(t_attr->app_ver, PACKAGE_VERSION, TC_MAM_APP_VERSION_SIZE);
+	mam_field_copy(t_attr->app_ver, TC_MAM_APP_VERSION_SIZE, PACKAGE_VERSION);
 	parse_vol(t_attr->app_ver, strlen(PACKAGE_VERSION), TC_MAM_APP_VERSION_SIZE);
 
 	/* USER MEDIUM LABEL set */
@@ -3039,7 +3051,7 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 			if (len_volname == -LTFS_ICU_ERROR)
 				len_volname = TC_MAM_USER_MEDIUM_LABEL_SIZE - 1;
 		}
-		arch_strncpy(t_attr->medium_label, vol->index->volume_name.name, sizeof(t_attr->medium_label), len_volname);
+		memcpy(t_attr->medium_label, vol->index->volume_name.name, len_volname);
 	}
 
 	/* TEXT LOCALIZATION IDENTIFIER set */
@@ -3049,7 +3061,7 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 	if ( vol->label->barcode[0] ) {
 		if ( strlen(vol->label->barcode) > TC_MAM_BARCODE_SIZE)
 			ltfsmsg(LTFS_WARN, 17203W, "BARCODE", vol->label->barcode, TC_MAM_BARCODE_SIZE);
-		arch_strncpy_auto(t_attr->barcode, vol->label->barcode, TC_MAM_BARCODE_SIZE);
+		mam_field_copy(t_attr->barcode, TC_MAM_BARCODE_SIZE, vol->label->barcode);
 		parse_vol(t_attr->barcode, strlen(vol->label->barcode), TC_MAM_BARCODE_SIZE);
 	} else {
 		ltfsmsg(LTFS_WARN, 17230W);
@@ -3057,7 +3069,7 @@ void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr)
 	}
 
 	/* APPLICATION FORMAT VERSION set */
-	arch_strncpy_auto(t_attr->app_format_ver, LTFS_INDEX_VERSION_STR, TC_MAM_APP_FORMAT_VERSION_SIZE);
+	mam_field_copy(t_attr->app_format_ver, TC_MAM_APP_FORMAT_VERSION_SIZE, LTFS_INDEX_VERSION_STR);
 	parse_vol(t_attr->app_format_ver, strlen(LTFS_INDEX_VERSION_STR), TC_MAM_APP_FORMAT_VERSION_SIZE);
 
 	/* VOLUME LOCKED set */

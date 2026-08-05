@@ -82,13 +82,15 @@ int xml_format_time(struct ltfs_timespec t, char** out)
 		return -1;
 	}
 
-	timebuf = calloc(31, sizeof(char));
+	/* 31 bytes fit a normalized time exactly; the extra room keeps the
+	 * formatting safe for any field value. */
+	timebuf = calloc(64, sizeof(char));
 	if (!timebuf) {
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -1;
 	}
-	arch_sprintf(timebuf, (31*sizeof(char)), "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ", tm.tm_year + 1900, tm.tm_mon + 1,
-			tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, t.tv_nsec);
+	snprintf(timebuf, 64, "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ", tm.tm_year + 1900, tm.tm_mon + 1,
+			tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, (long)t.tv_nsec);
 	*out = timebuf;
 
 	return noramized;

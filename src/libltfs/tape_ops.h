@@ -62,7 +62,18 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 #include <libltfs/ltfs_types.h>
+
+/* Bounded, always-terminated string copy for the fixed-width identifier
+ * fields below; truncation of longer sources is intentional. */
+static inline void ltfs_string_copy(char *dest, size_t dest_size, const char *src)
+{
+	size_t n = strnlen(src, dest_size - 1);
+
+	memcpy(dest, src, n);
+	dest[n] = '\0';
+}
 
 #define VENDOR_ID_LENGTH           (8)
 #define PRODUCT_ID_LENGTH          (16)

@@ -532,7 +532,7 @@ static int _raw_open(struct sg_data *priv)
 			return -EDEV_DEVICE_UNOPENABLE; /* Unexpected device is opened */
 		}
 	} else
-		strncpy(priv->drive_serial, id_data.unit_serial, sizeof(priv->drive_serial) - 1);
+		ltfs_string_copy(priv->drive_serial, sizeof(priv->drive_serial), id_data.unit_serial);
 
 	/* Get SCSI ID */
 	if (! ioctl(priv->dev.fd, SG_GET_SCSI_ID, &scsi_id)) {
@@ -550,12 +550,14 @@ static int _raw_open(struct sg_data *priv)
 	ltfsmsg(LTFS_INFO, 30214I, id_data.product_rev);
 	ltfsmsg(LTFS_INFO, 30215I, priv->drive_serial);
 
-	strncpy(priv->info.name,          priv->devname,       TAPE_DEVNAME_LEN_MAX + 1);
-	strncpy(priv->info.vendor,        id_data.vendor_id,   TAPE_VENDOR_NAME_LEN_MAX + 1);
-	strncpy(priv->info.model,         id_data.product_id,  TAPE_MODEL_NAME_LEN_MAX + 1);
-	strncpy(priv->info.serial_number, id_data.unit_serial, TAPE_SERIAL_LEN_MAX + 1);
-	strncpy(priv->info.product_rev,   id_data.product_rev, PRODUCT_REV_LENGTH + 1);
-	strncpy(priv->info.product_name,  _generate_product_name(id_data.product_id), PRODUCT_NAME_LENGTH + 1);
+	/* ltfs_string_copy guarantees termination, which strncpy with a bound
+	 * equal to the field size did not */
+	ltfs_string_copy(priv->info.name,          TAPE_DEVNAME_LEN_MAX + 1,     priv->devname);
+	ltfs_string_copy(priv->info.vendor,        TAPE_VENDOR_NAME_LEN_MAX + 1, id_data.vendor_id);
+	ltfs_string_copy(priv->info.model,         TAPE_MODEL_NAME_LEN_MAX + 1,  id_data.product_id);
+	ltfs_string_copy(priv->info.serial_number, TAPE_SERIAL_LEN_MAX + 1,      id_data.unit_serial);
+	ltfs_string_copy(priv->info.product_rev,   PRODUCT_REV_LENGTH + 1,       id_data.product_rev);
+	ltfs_string_copy(priv->info.product_name,  PRODUCT_NAME_LENGTH + 1,      _generate_product_name(id_data.product_id));
 
 	return 0;
 }
@@ -1646,9 +1648,10 @@ int sg_inquiry(void *device, struct tc_inq *inq)
 		return ret;
 
 	memset(inq, 0, sizeof(struct tc_inq));
-	strncpy((char*)inq->vid,      (char*)inq_page.data + 8,  VENDOR_ID_LENGTH);
-	strncpy((char*)inq->pid,      (char*)inq_page.data + 16, PRODUCT_ID_LENGTH);
-	strncpy((char*)inq->revision, (char*)inq_page.data + 32, PRODUCT_REV_LENGTH);
+	/* Fixed-width INQUIRY fields; the memset above provides the terminators */
+	memcpy(inq->vid,      inq_page.data + 8,  VENDOR_ID_LENGTH);
+	memcpy(inq->pid,      inq_page.data + 16, PRODUCT_ID_LENGTH);
+	memcpy(inq->revision, inq_page.data + 32, PRODUCT_REV_LENGTH);
 
 	inq->devicetype = priv->drive_type;
 
@@ -1657,7 +1660,7 @@ int sg_inquiry(void *device, struct tc_inq *inq)
 	else
 		vendor_length = 20;
 
-	strncpy((char*)inq->vendor, (char*)inq_page.data + 36, vendor_length);
+	memcpy(inq->vendor, inq_page.data + 36, vendor_length);
 	inq->vendor[vendor_length] = '\0';
 
 	return ret;
@@ -1710,7 +1713,7 @@ int sg_test_unit_ready(void *device)
 			case -EDEV_NEED_INITIALIZE:
 			case -EDEV_CONFIGURE_CHANGED:
 				print_msg = false;
-				/* fall throuh */
+				/* fall through */
 			case -EDEV_NO_MEDIUM:
 			case -EDEV_BECOMING_READY:
 			case -EDEV_MEDIUM_MAY_BE_CHANGED:
@@ -4432,12 +4435,12 @@ int sg_get_device_list(struct tc_drive_info *buf, int count)
 		}
 
 		if (found < count && buf) {
-			strncpy(buf[found].name,          devname,                TAPE_DEVNAME_LEN_MAX + 1);
-			strncpy(buf[found].vendor,        identifier.vendor_id,   TAPE_VENDOR_NAME_LEN_MAX + 1);
-			strncpy(buf[found].model,         identifier.product_id,  TAPE_MODEL_NAME_LEN_MAX + 1);
-			strncpy(buf[found].serial_number, identifier.unit_serial, TAPE_SERIAL_LEN_MAX + 1);
-			strncpy(buf[found].product_rev,   identifier.product_rev, PRODUCT_REV_LENGTH + 1);
-			strncpy(buf[found].product_name,  _generate_product_name(identifier.product_id), PRODUCT_NAME_LENGTH + 1);
+			ltfs_string_copy(buf[found].name,          TAPE_DEVNAME_LEN_MAX + 1,     devname);
+			ltfs_string_copy(buf[found].vendor,        TAPE_VENDOR_NAME_LEN_MAX + 1, identifier.vendor_id);
+			ltfs_string_copy(buf[found].model,         TAPE_MODEL_NAME_LEN_MAX + 1,  identifier.product_id);
+			ltfs_string_copy(buf[found].serial_number, TAPE_SERIAL_LEN_MAX + 1,      identifier.unit_serial);
+			ltfs_string_copy(buf[found].product_rev,   PRODUCT_REV_LENGTH + 1,       identifier.product_rev);
+			ltfs_string_copy(buf[found].product_name,  PRODUCT_NAME_LENGTH + 1,      _generate_product_name(identifier.product_id));
 
 			if (! ioctl(dev.fd, SG_GET_SCSI_ID, &scsi_id)) {
 				buf[found].host    = scsi_id.host_no;
