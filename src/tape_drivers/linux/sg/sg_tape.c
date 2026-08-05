@@ -1982,8 +1982,8 @@ start_read:
 		priv->use_sili = false;
 		ret = _cdb_read(device, buf, datacount, unusual_size);
 	} else if (ret == -EDEV_BUFFER_ALLOCATE_ERROR && retry_count < MAX_RETRY) {
-		sleep(3); // Wait for kernel GC
 		ltfsmsg(LTFS_WARN, 30277W, ++retry_count);
+		sleep(3); // Wait for kernel GC
 		ret = _handle_block_write_failure(device, pos, "read");
 		if (ret == -EDEV_RETRY)
 			goto start_read;
@@ -2146,8 +2146,8 @@ start_write:
 				ret = -EDEV_POR_OR_BUS_RESET;
 		}
 	} else if (ret_write == -EDEV_BUFFER_ALLOCATE_ERROR && retry_count < MAX_RETRY) {
-		sleep(3); // Wait for kernel GC
 		ltfsmsg(LTFS_WARN, 30277W, ++retry_count);
+		sleep(3); // Wait for kernel GC
 		ret = _handle_block_write_failure(device, pos, "write");
 		if (ret == -EDEV_RETRY)
 			goto start_write;
@@ -2156,9 +2156,10 @@ start_write:
 		sleep(5);
 		ret = _clear_por(priv);
 		if (ret == DEVICE_GOOD) {
-  			ret = _handle_block_write_failure(device, pos, "write");
-  			if (ret == -EDEV_RETRY)
-  				goto start_write;
+			ret = _handle_block_write_failure(device, pos, "write");
+				if (ret == -EDEV_RETRY)
+					goto start_write;
+			ret_write = DEVICE_GOOD;
 		}
 	}
 

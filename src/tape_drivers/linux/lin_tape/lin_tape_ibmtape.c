@@ -1541,8 +1541,8 @@ write_start:
 				rc = DEVICE_GOOD;
 			}
 		} else if (errno == ENOMEM && retry < MAX_WRITE_RETRY) {
-			sleep(3); // Wait for kernel GC
 			ltfsmsg(LTFS_WARN, 30440W, ++retry);
+			sleep(3); // Wait for kernel GC
 			rc = _handle_block_write_failure(device, pos);
 			if (rc == WRITE_RETRY) {
 				errno = 0;
