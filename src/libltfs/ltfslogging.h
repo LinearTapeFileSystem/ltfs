@@ -162,6 +162,9 @@ void ltfsprintf_unload_plugin(void *handle);
  * only to stderr.
  * @param print_id Print the message prefix LTFSnnnnn ?
  * @param level Log level of this message, must be one of the ltfs_log_levels (LTFS_ERROR, etc.).
+ * @param msg_out Optional pointer to receive a dynamically allocated copy of the formatted message.
+ *                Pass NULL if not needed. If non-NULL, the caller must check if *msg_out is NULL
+ *                (indicating memory allocation failure) and must free the returned string when done.
  * @param id Unique ID of this error.
  * @return 0 if a message was printed or a negative value on error.
  */
