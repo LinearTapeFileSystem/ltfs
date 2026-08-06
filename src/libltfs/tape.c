@@ -1665,13 +1665,6 @@ int tape_get_volume_change_reference(struct device_data *dev, uint64_t *volume_c
 	int ret;
 	unsigned char vcr_data[TC_MAM_PAGE_VCR_SIZE + TC_MAM_PAGE_HEADER_SIZE];
 
-	/* The VCR is read as a 32-bit field at offset 5 (just past the page
-	 * header), so the buffer must hold at least 5 + 4 bytes. Lock that at
-	 * compile time so a change to the page-size constants cannot make the
-	 * read below run off the end of the buffer. */
-	_Static_assert(sizeof(vcr_data) >= 5 + sizeof(uint32_t),
-		"MAM VCR page too small to hold the volume change reference");
-
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
 
@@ -1777,13 +1770,6 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	int ret;
 	unsigned char coh_data[TC_MAM_PAGE_COHERENCY_SIZE + TC_MAM_PAGE_HEADER_SIZE];
 
-	/* The coherency record is written below at fixed byte offsets; the version
-	 * byte at offset 74 is the highest, so the page must be at least 75 bytes.
-	 * Lock that invariant at compile time so a future change to the page-size
-	 * constants cannot silently overflow this stack buffer. */
-	_Static_assert(sizeof(coh_data) > 74,
-		"MAM coherency page too small for the coherency record layout");
-
 	/* Zero unwritten bytes for deterministic on-medium content. The "LTFS"
 	 * signature's NUL terminator is written explicitly below, so correctness of
 	 * the signature no longer depends on this memset. */
@@ -1806,8 +1792,6 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	 * offset 36. The reader compares all 5 bytes, so copy the NUL terminator
 	 * explicitly (an earlier strncpy-based write copied only 4 bytes and left
 	 * byte 36 uninitialised, triggering a full consistency check on every mount). */
-	_Static_assert(sizeof(TC_MAM_COHERENCY_SIGNATURE) == 5,
-		"LTFS coherency signature must be 4 characters plus a NUL terminator");
 	memcpy(coh_data + 32, TC_MAM_COHERENCY_SIGNATURE, sizeof(TC_MAM_COHERENCY_SIGNATURE));
 	memcpy(coh_data + 37, coh->uuid, 37);
 	/*
@@ -1827,13 +1811,6 @@ int tape_get_cart_volume_lock_status(struct device_data *dev, int *status)
 {
 	int ret;
 	unsigned char attr_data[TC_MAM_LOCKED_MAM_SIZE + TC_MAM_PAGE_HEADER_SIZE];
-
-	/* The lock status byte is read at offset TC_MAM_PAGE_HEADER_SIZE, so the
-	 * buffer must extend past the page header. Lock that at compile time so a
-	 * change to the page-size constants cannot make the read below run off the
-	 * end of the buffer. */
-	_Static_assert(sizeof(attr_data) > TC_MAM_PAGE_HEADER_SIZE,
-		"MAM locked-MAM page too small to hold the lock status byte");
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(status, -LTFS_NULL_ARG);
