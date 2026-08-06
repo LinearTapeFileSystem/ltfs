@@ -44,9 +44,21 @@ AC_CANONICAL_HOST
 AC_CANONICAL_BUILD
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+
 AC_PROG_CC
 AC_USE_SYSTEM_EXTENSIONS
-AC_PROG_CC_C99
+dnl
+dnl Check that compiler supports C11 or newer standard
+dnl
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([[
+    #if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 201112L
+    # error C11 or newer required
+    #endif
+  ]])],
+  [],
+  [AC_MSG_ERROR([C11 or newer compiler required (GCC >= 4.9, Clang >= 3.3)])]
+)
 AM_PROG_CC_C_O
 AM_PROG_AR
 dnl
