@@ -130,6 +130,11 @@ static int encode_entry_name(char **new_name, const char *name)
 
 	*new_name = arch_strdup(tmp_name);
 	free(tmp_name);
+	
+	if (!*new_name) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+		return -LTFS_NO_MEMORY;
+	}
 
 	return 0;
 }
@@ -146,7 +151,10 @@ static int _xml_write_nametype(xmlTextWriterPtr writer, const char *tag, struct 
 	char *encoded_name = NULL;
 
 	if (n->percent_encode) {
-		encode_entry_name(&encoded_name, n->name);
+		if (encode_entry_name(&encoded_name, n->name) < 0) {
+			ltfsmsg(LTFS_ERR, 17098E, __FUNCTION__);
+			return -1;
+		}
 		xml_mktag(xmlTextWriterStartElement(writer, BAD_CAST tag), -1);
 		xml_mktag(xmlTextWriterWriteAttribute(writer, BAD_CAST "percentencoded", BAD_CAST "true"), -1);
 		xml_mktag(xmlTextWriterWriteString(writer, BAD_CAST encoded_name), -1);
@@ -542,24 +550,21 @@ static int _xml_write_schema(xmlTextWriterPtr writer, const char *creator,
 		writer, BAD_CAST NEXTUID_TAGNAME, "%"PRIu64, idx->uid_number), -1);
 
 	{
-		char *value = NULL;
+		const char *value;
 
 		switch (idx->vollock) {
 			case LOCKED_MAM:
-				asprintf(&value, "locked");
+				value = "locked";
 				break;
 			case PERMLOCKED_MAM:
-				asprintf(&value, "permlocked");
+				value = "permlocked";
 				break;
 			default:
-				asprintf(&value, "unlocked");
+				value = "unlocked";
 				break;
 		}
 
-		if (value)
-			xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "volumelockstate", BAD_CAST value), -1);
-
-		free(value);
+		xml_mktag(xmlTextWriterWriteElement(writer, BAD_CAST "volumelockstate", BAD_CAST value), -1);
 	}
 
 	xml_mktag(_xml_write_dirtree(writer, idx->root, idx, &offset, &list), -1);
@@ -784,26 +789,29 @@ int xml_schema_to_file(const char *filename, const char *creator,
 		return -1;
 	}
 
-	if (reason)
-		asprintf(&alt_creator, "%s - %s", creator , reason);
-	else
-		alt_creator = arch_strdup(creator);
-
-	if (alt_creator) {
-		ret = _xml_write_schema(writer, alt_creator, idx);
-		if (ret < 0)
-			ltfsmsg(LTFS_ERR, 17052E, ret, filename);
-		else
-			_commit_offset_caches(filename, idx);
-
-		xmlFreeTextWriter(writer);
-		free(alt_creator);
+	if (reason) {
+		ret = asprintf(&alt_creator, "%s - %s", creator , reason);
+		if (ret < 0) {
+			ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_file: alt_creator");
+			xmlFreeTextWriter(writer);
+			return -LTFS_NO_MEMORY;
+		}
 	} else {
-		ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_file: alt creator string");
-		xmlFreeTextWriter(writer);
-		return -1;
+		alt_creator = arch_strdup(creator);
+		if (!alt_creator) {
+			ltfsmsg(LTFS_ERR, 10001E, "xml_schema_to_file: alt_creator string");
+			xmlFreeTextWriter(writer);
+			return -LTFS_NO_MEMORY;
+		}
 	}
+	ret = _xml_write_schema(writer, alt_creator, idx);
+	if (ret < 0)
+		ltfsmsg(LTFS_ERR, 17052E, ret, filename);
+	else
+		_commit_offset_caches(filename, idx);
 
+	xmlFreeTextWriter(writer);
+	free(alt_creator);
 	return ret;
 }
 

@@ -1336,11 +1336,11 @@ int itdtimage_get_device_list(struct tc_drive_info *buf, int count)
 	FILE *infile;
 	DIR *dp;
 	struct dirent *entry;
-	int deventries = 0;
+	int deventries = 0, ret;
 
 	/* Create a file to indicate current directory of drive link (for tape file backend) */
-	asprintf(&filename, "%s/ltfs%ld", DRIVE_LIST_DIR, (long)getpid());
-	if (!filename) {
+	ret = asprintf(&filename, "%s/ltfs%ld", DRIVE_LIST_DIR, (long)getpid());
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10001E, "filechanger_data drive file name");
 		return -LTFS_NO_MEMORY;
 	}
@@ -1348,6 +1348,7 @@ int itdtimage_get_device_list(struct tc_drive_info *buf, int count)
 	infile = fopen(filename, "r");
 	if (!infile) {
 		ltfsmsg(LTFS_INFO, 31027I, filename);
+		free(filename);
 		return 0;
 	} else {
 		devdir = fgets(line, sizeof(line), infile);
