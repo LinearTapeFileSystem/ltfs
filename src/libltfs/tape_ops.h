@@ -252,6 +252,26 @@ typedef enum {
 #define TC_MAM_PAGE_COHERENCY_SIZE (0x46)
 #define TC_MAM_COHERENCY_SIGNATURE "LTFS" /* Volume coherency signature; 4 chars + NUL, reader compares all 5 */
 
+/* Byte offsets of the common MAM attribute header fields. The attribute value
+ * begins at TC_MAM_PAGE_HEADER_SIZE. */
+#define TC_MAM_ATTR_ID_OFFSET      (0)  /* 2-byte attribute identifier */
+#define TC_MAM_ATTR_FORMAT_OFFSET  (2)  /* 1-byte format byte          */
+#define TC_MAM_ATTR_LENGTH_OFFSET  (3)  /* 2-byte attribute length     */
+
+/* Byte offsets of the fields within the volume coherency attribute
+ * (TC_MAM_PAGE_COHERENCY), measured from the start of the attribute. */
+#define TC_MAM_COH_VCR_SIZE_OFFSET    (5)   /* 1-byte length of the VCR field         */
+#define TC_MAM_COH_VCR_OFFSET         (6)   /* 8-byte volume change reference         */
+#define TC_MAM_COH_COUNT_OFFSET       (14)  /* 8-byte coherency count                 */
+#define TC_MAM_COH_SETID_OFFSET       (22)  /* 8-byte coherency set identifier        */
+#define TC_MAM_COH_APPINFO_LEN_OFFSET (30)  /* 2-byte app client specific info length */
+#define TC_MAM_COH_SIGNATURE_OFFSET   (32)  /* 5-byte "LTFS\0" signature              */
+#define TC_MAM_COH_UUID_OFFSET        (37)  /* volume UUID (sizeof tc_coherency.uuid) */
+#define TC_MAM_COH_VERSION_OFFSET     (74)  /* 1-byte format version                  */
+#define TC_MAM_COH_VCR_LENGTH         (8)   /* value stored at the VCR size field     */
+#define TC_MAM_COH_APPINFO_LENGTH     (43)  /* signature + UUID + version byte count  */
+#define TC_MAM_COH_APPINFO_LENGTH_LEGACY (42) /* LTFS 1.0/1.0.1 wrote 42 (off-by-one) */
+
 #define TC_MAM_APP_VENDER          (0x0800)
 #define TC_MAM_APP_VENDER_SIZE     (0x8)
 #define TC_MAM_APP_NAME  (0x0801)
