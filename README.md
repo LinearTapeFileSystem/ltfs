@@ -289,15 +289,13 @@ You need to add `--enable-lintape` as an argument of ./configure script if you w
   | Ubuntu 16.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                   |
   | Ubuntu 18.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-ubuntu-bionic.yml/badge.svg) |
   | Ubuntu 18.04 LTS                   | ppc64le | OK - Not checked automatically                                                                                                   |
-  | Ubuntu 20.04 LTS (Need icu-config) | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-ubuntu-focal.yml/badge.svg) |
+  | Ubuntu 20.04 LTS                   | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-ubuntu-focal.yml/badge.svg) |
   | Debian 9                           | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-debian9.yml/badge.svg)        |
-  | Debian 10 (Need icu-config)        | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-debian10.yml/badge.svg)       |
+  | Debian 10                          | x86\_64 | ![GH Action status](https://github.com/LinearTapeFileSystem/ltfs/actions/workflows/build-debian10.yml/badge.svg)       |
   | ArchLinux 2018.08.01               | x86\_64 | OK - Not checked automatically                                                                                                   |
   | ArchLinux 2018.12.31 (rolling)     | x86\_64 | OK - Not checked automatically                                                                                                   |
 
 Currently, automatic build checking is working on GitHub Actions and Travis CI.
-
-For Ubuntu20.04 and Debian10, dummy `icu-config` is needed in the build machine. See Issue [#153](https://github.com/LinearTapeFileSystem/ltfs/issues/153).
 
 ### Build and install on OSX (macOS)
 
