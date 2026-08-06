@@ -52,12 +52,13 @@ except ImportError:
 
 class CopyItem:
     """"""
-    def __init__(self, src, dst, vea_pre, cp_attr, cp_xattr, logger): #initialization
+    def __init__(self, src, dst, vea_pre, cp_attr, cp_xattr, logger, move=False): #initialization
         self.src     = src
         self.dst     = dst
         self.vea_pre = vea_pre
         self.cp_attr = cp_attr
         self.cp_xattr = cp_xattr
+        self.move    = move
         self.vuuid   = ''
         self.part    = ''
         self.start   = -1
@@ -88,6 +89,7 @@ class CopyItem:
             copyfileobj(srcf, dstf, progress.update)
 
     def run(self, progress):
+        action = 'move' if self.move else 'copy'
         try:
             if len(self.vuuid):
                 logger.debug('"{0}" ({2}) -> "{1}"'.format(self.src, self.dst, str(self.start)))
@@ -110,8 +112,18 @@ class CopyItem:
                 self._run_copy(progress)
                 shutil.copymode(self.src, self.dst)
         except Exception as e:
-            self.logger.error('Failed to copy "{0}" to "{1}": {2}'.format(self.src, self.dst, str(str(e))))
+            self.logger.error('Failed to {3} "{0}" to "{1}": {2}'.format(self.src, self.dst, str(str(e)), action))
             return False
+
+        if self.move:
+            # The data is safely on the destination now; remove the source to
+            # complete the move. Deletion happens only after a successful copy so
+            # that nothing is lost if the copy above failed.
+            try:
+                os.remove(self.src)
+            except Exception as e:
+                self.logger.error('Copied "{0}" to "{1}" but failed to remove source: {2}'.format(self.src, self.dst, str(e)))
+                return False
 
         return True
 
@@ -129,6 +141,7 @@ class CopyQueue:
         self.logger = logger
         self.sort_files = sort_files
         self.total_bytes = 0
+        self.walked_dirs = [] # (source_dir, dest_dir) pairs for metadata replication
 
     def add_copy_item(self, c):
         (u, p, s) = c.eval()
@@ -165,7 +178,7 @@ class CopyQueue:
 
             self.items = self.items + 1
 
-    def walk_dir(self, source, dest, cp_attr, cp_xattr=False):
+    def walk_dir(self, source, dest, cp_attr, cp_xattr=False, move=False):
         (source_root, t) = os.path.split(source)
         prefix_len = len(source_root)
         dst = dest + "/" + t
@@ -180,12 +193,18 @@ class CopyQueue:
             dst = dest + "/" + t
             dst = os.path.normpath(dst)
 
+            # Record every directory (os.walk yields each one once, including
+            # empty ones) together with a snapshot of its metadata taken now,
+            # before any files are moved out -- removing a source file bumps its
+            # directory's mtime, so the snapshot must be captured up front.
+            self.walked_dirs.append((root, dst, os.stat(root)))
+
             for d in sorted(dirs) if self.sort_files else dirs:
                 walk_dirs.append(os.path.join(dst, d))
             for f in sorted(files) if self.sort_files else files:
                 self.logger.log(NOTSET + 1, 'Creating a copy item for file {}'.format(f))
                 c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX,
-                             cp_attr, cp_xattr, logger)
+                             cp_attr, cp_xattr, logger, move)
                 self.add_copy_item(c)
 
         for d in walk_dirs:
@@ -351,12 +370,17 @@ parser.add_argument('-v', help='Verbose output. Set VERBOSE level 5', action='st
 parser.add_argument('--verbose', help='Configure verbosity of logger. VERBOSE shall be 0-6. default is 4', default = str(logger_info))
 parser.add_argument('-q','--quiet', help='No message output', action='store_true')
 parser.add_argument('--sort-files', help='Sort the file list before copying', action='store_true')
+parser.add_argument('--move', help='Move files instead of copying. Each source file is removed only after it has been successfully copied to the destination, preserving tape read order. Implies -p so file attributes are preserved like a normal move. Empty source directories are pruned after a recursive move.', action='store_true')
 
 args=parser.parse_args()
 
 if args.all:
     args.p = True
     args.recursive = True
+
+if args.move:
+    # A move should preserve file metadata like a regular "mv".
+    args.p = True
 
 logger = getLogger(__name__)
 basicConfig(format = '')
@@ -422,7 +446,12 @@ if args.recursive == False and len(args.SOURCE) == 1:
                 (new_d, t) = os.path.split(dst)
                 if not os.path.exists(new_d):
                     os.makedirs(new_d)
-            shutil.copy(args.SOURCE[0], args.DEST)
+            if args.p:
+                shutil.copy2(args.SOURCE[0], args.DEST)
+            else:
+                shutil.copy(args.SOURCE[0], args.DEST)
+            if args.move:
+                os.remove(args.SOURCE[0])
         except Exception as e:
             logger.error(str(e))
             exit(1)
@@ -463,6 +492,9 @@ if len(args.SOURCE) == 0:
 
 # Create the list of copy item
 copyq = CopyQueue(logger, args.sort_files)
+# Track directory sources that were actually recursed into, so a --move run only
+# prunes trees it really moved (not plain files, not directories skipped without -r).
+moved_dirs = []
 for s in args.SOURCE:
     dst = args.DEST
     if os.path.isfile(s):
@@ -473,7 +505,7 @@ for s in args.SOURCE:
             (new_d, t) = os.path.split(dst)
             if not os.path.exists(new_d):
                 os.makedirs(new_d)
-        c = CopyItem(s, dst, VEA_PREFIX, args.p, args.all, logger)
+        c = CopyItem(s, dst, VEA_PREFIX, args.p, args.all, logger, args.move)
         copyq.add_copy_item(c)
     else:
         logger.log(NOTSET + 1, 'Creating copy item for directory {}'.format(s))
@@ -485,7 +517,9 @@ for s in args.SOURCE:
                 if not os.path.exists(new_d):
                    os.makedirs(new_d)
                 dst = new_d
-            copyq.walk_dir(s, dst, args.p, args.all)
+            copyq.walk_dir(s, dst, args.p, args.all, args.move)
+            if args.move:
+                moved_dirs.append(s)
         else:
             logger.warning("omitting directory '{0}'".format(s))
 
@@ -541,10 +575,43 @@ while tape != None:
     (tape_key, tape) = copyq.pop_tape()
     prog_tape.finish()
 
+# Replicate directory metadata (mode and timestamps with -p; xattrs with --all)
+# onto each walked destination directory. Mode/timestamps come from the snapshot
+# taken during the walk, before the move removed any files (which would bump the
+# source directory mtimes). Runs after all files are copied and before move-mode
+# pruning, deepest-first so setting a child never re-bumps an already-set parent.
+if args.p or args.all:
+    for (src_dir, dst_dir, src_stat) in reversed(copyq.walked_dirs):
+        try:
+            if args.p:
+                os.chmod(dst_dir, src_stat.st_mode & 0o7777)
+                os.utime(dst_dir, (src_stat.st_atime, src_stat.st_mtime))
+            if args.all:
+                for key in xattr.list(src_dir):
+                    xattr.set(dst_dir, key, xattr.get(src_dir, key))
+        except Exception as e:
+            logger.error('Failed to copy directory metadata to "{0}": {1}'.format(dst_dir, str(e)))
+
+# In move mode the source files have been removed as they were copied. Prune the
+# now-empty source directory trees bottom-up. Only directories that were actually
+# recursed into by this move are considered (moved_dirs), so a directory passed
+# without -r, or an empty directory outside the moved trees, is never touched.
+# Directories that still hold files (e.g. because a copy failed) make rmdir fail
+# and are left untouched, so no data is ever discarded.
+if args.move:
+    for s in moved_dirs:
+        if os.path.isdir(s):
+            for dirpath, dirnames, filenames in os.walk(s, topdown=False):
+                try:
+                    os.rmdir(dirpath)
+                except OSError:
+                    pass # Not empty or already removed
+
 # Return code
+done = 'Moved' if args.move else 'Copied'
 if fail:
-    logger.info("Copied {} files, Failed {} files.".format(success, fail))
+    logger.info("{} {} files, Failed {} files.".format(done, success, fail))
     exit(1)
 else:
-    logger.info("Copied {} files.".format(success, fail))
+    logger.info("{} {} files.".format(done, success))
     exit(0)
