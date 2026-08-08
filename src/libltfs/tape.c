@@ -1771,9 +1771,6 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	int ret;
 	unsigned char coh_data[TC_MAM_PAGE_COHERENCY_SIZE + TC_MAM_PAGE_HEADER_SIZE];
 
-	/* Zero unwritten bytes for deterministic on-medium content. The "LTFS"
-	 * signature's NUL terminator is written explicitly below, so correctness of
-	 * the signature no longer depends on this memset. */
 	memset(coh_data, 0, sizeof(coh_data));
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
@@ -1788,10 +1785,7 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	ltfs_u64tobe(coh_data + TC_MAM_COH_SETID_OFFSET, coh->set_id); /* VOLUME COHERENCY SET IDENTIFIER */
 	/* APPLICATION CLIENT SPECIFIC INFORMATION LENGTH: signature + UUID + version */
 	ltfs_u16tobe(coh_data + TC_MAM_COH_APPINFO_LEN_OFFSET, TC_MAM_COH_APPINFO_LENGTH);
-	/* Volume coherency signature: the 4 letters "LTFS" plus a trailing NUL. The
-	 * reader compares all 5 bytes, so copy the NUL terminator explicitly (an
-	 * earlier strncpy-based write copied only 4 bytes and left the terminator
-	 * byte uninitialised, triggering a full consistency check on every mount). */
+	/* memcpy instead of arch_strncpy to deterministically copy all bytes of the coherency signature including NULL terminator */
 	memcpy(coh_data + TC_MAM_COH_SIGNATURE_OFFSET, TC_MAM_COHERENCY_SIGNATURE, sizeof(TC_MAM_COHERENCY_SIGNATURE));
 	memcpy(coh_data + TC_MAM_COH_UUID_OFFSET, coh->uuid, sizeof(coh->uuid));
 	/*
