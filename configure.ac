@@ -339,12 +339,16 @@ fi
 
 dnl
 dnl Check for ICU
+dnl Prefer icu-config for legacy distros; fall back to pkg-config icu-uc/icu-i18n
+dnl (icu-config was removed in ICU 63+ and is absent on modern Debian/Ubuntu).
 dnl
 ICU_MODULE_CFLAGS="`icu-config --cppflags 2> /dev/null`";
 ICU_MODULE_LIBS="`icu-config --ldflags 2> /dev/null`";
 if test -z "$ICU_MODULE_LIBS"
 then
-    PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
+    PKG_CHECK_MODULES([ICU_MODULE], [icu-uc >= 0.21 icu-i18n >= 0.21],
+        [],
+        [PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])])
 fi
 
 AC_MSG_CHECKING([use latest ICU])
@@ -359,6 +363,10 @@ if test "x${icu_6x}" = "xyes"
 then
     AC_MSG_CHECKING(for ICU version)
     ICU_MODULE_VERSION="`icu-config --version 2> /dev/null`";
+    if test -z "$ICU_MODULE_VERSION"
+    then
+        ICU_MODULE_VERSION="`$PKG_CONFIG --modversion icu-uc 2> /dev/null`";
+    fi
     if test "${ICU_MODULE_VERSION%%.*}" -ge "60"
     then
         AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -D ICU6x"
