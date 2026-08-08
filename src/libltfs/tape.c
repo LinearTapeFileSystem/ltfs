@@ -1771,8 +1771,6 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	int ret;
 	unsigned char coh_data[TC_MAM_PAGE_COHERENCY_SIZE + TC_MAM_PAGE_HEADER_SIZE];
 
-	memset(coh_data, 0, sizeof(coh_data));
-
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
 
