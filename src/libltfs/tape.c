@@ -1674,7 +1674,7 @@ int tape_get_volume_change_reference(struct device_data *dev, uint64_t *volume_c
 									   sizeof(vcr_data));
 
 	if (ret == 0) {
-		*volume_change_ref = (uint64_t)ltfs_betou32(vcr_data + 5);
+		*volume_change_ref = (uint64_t)ltfs_betou32(vcr_data + TC_MAM_PAGE_HEADER_SIZE);
 		if (*volume_change_ref == UINT32_MAX)
 			*volume_change_ref = UINT64_MAX; /* maintain "unusable VCR" state correctly */
 	} else {
@@ -1705,9 +1705,9 @@ int tape_get_cart_coherency(struct device_data *dev, const tape_partition_t part
 									   sizeof(coh_data));
 
 	if (ret == 0) {
-		uint16_t id  = ltfs_betou16(coh_data);
-		uint16_t len = ltfs_betou16(coh_data + 3);
-		uint8_t  vcr_size = coh_data[5];
+		uint16_t id  = ltfs_betou16(coh_data + TC_MAM_ATTR_ID_OFFSET);
+		uint16_t len = ltfs_betou16(coh_data + TC_MAM_ATTR_LENGTH_OFFSET);
+		uint8_t  vcr_size = coh_data[TC_MAM_COH_VCR_SIZE_OFFSET];
 
 		if (id != TC_MAM_PAGE_COHERENCY) {
 			ltfsmsg(LTFS_WARN, 12058W, id);
@@ -1723,35 +1723,37 @@ int tape_get_cart_coherency(struct device_data *dev, const tape_partition_t part
 		coh->set_id = 0;
 
 		switch (vcr_size) {
-			case 8:
-				coh->volume_change_ref = ltfs_betou64(coh_data + 6);
+			case TC_MAM_COH_VCR_LENGTH:
+				coh->volume_change_ref = ltfs_betou64(coh_data + TC_MAM_COH_VCR_OFFSET);
 				break;
 			default:
 				ltfsmsg(LTFS_WARN, 12060W, vcr_size);
 				return -LTFS_UNEXPECTED_VALUE;
 		}
 
-		coh->count = ltfs_betou64(coh_data + 14);
-		coh->set_id = ltfs_betou64(coh_data + 22);
+		coh->count = ltfs_betou64(coh_data + TC_MAM_COH_COUNT_OFFSET);
+		coh->set_id = ltfs_betou64(coh_data + TC_MAM_COH_SETID_OFFSET);
 
 		/* Allow ap_clent_specific_len is 42 and 43 to keep backward compatibility.
 		 * It should be 43 but in LTFS 1.0 and 1.0.1, it was set 42 as a code bug...
 		 */
-		uint16_t ap_clent_specific_len = ltfs_betou16(coh_data + 30);
-		if (ap_clent_specific_len != 42 && ap_clent_specific_len != 43) {
+		uint16_t ap_clent_specific_len = ltfs_betou16(coh_data + TC_MAM_COH_APPINFO_LEN_OFFSET);
+		if (ap_clent_specific_len != TC_MAM_COH_APPINFO_LENGTH_LEGACY &&
+			ap_clent_specific_len != TC_MAM_COH_APPINFO_LENGTH) {
 			ltfsmsg(LTFS_WARN, 12061W, ap_clent_specific_len);
 			return -LTFS_UNEXPECTED_VALUE;
-		} else if (strncmp((char *)coh_data + 32, "LTFS", sizeof("LTFS")) != 0) {
+		} else if (strncmp((char *)coh_data + TC_MAM_COH_SIGNATURE_OFFSET, TC_MAM_COHERENCY_SIGNATURE,
+						   sizeof(TC_MAM_COHERENCY_SIGNATURE)) != 0) {
 			ltfsmsg(LTFS_WARN, 12062W);
 			return -LTFS_UNEXPECTED_VALUE;
 		}
 
-		memcpy(coh->uuid, coh_data + 37, 37);
+		memcpy(coh->uuid, coh_data + TC_MAM_COH_UUID_OFFSET, sizeof(coh->uuid));
 
 		/* Don't need to check the version field because the values parsed above are guaranteed
 		 * to be supported in every version of the LTFS MAM parameters.
 		 */
-		coh->version = coh_data[74];
+		coh->version = coh_data[TC_MAM_COH_VERSION_OFFSET];
 	} else
 		ltfsmsg(LTFS_WARN, 12057W, ret);
 
@@ -1772,25 +1774,24 @@ int tape_set_cart_coherency(struct device_data *dev, const tape_partition_t part
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
 
-	ltfs_u16tobe(coh_data, TC_MAM_PAGE_COHERENCY);
-	coh_data[2]  = 0;
-	ltfs_u16tobe(coh_data + 3, TC_MAM_PAGE_COHERENCY_SIZE);
-	coh_data[5]  = 0x08; /* Size of Volume Change Reference Value (VCR)*/
-	ltfs_u64tobe(coh_data + 6, coh->volume_change_ref);
-	ltfs_u64tobe(coh_data + 14, coh->count); /* VOLUME COHERENCY COUNT */
-	ltfs_u64tobe(coh_data + 22, coh->set_id); /* VOLUME COHERENCY SET IDENTIFIER */
-	/* APPLICATION CLIENT SPECIFIC INFORMATION LENGTH */
-	coh_data[30] = 0;  /* Size of APPLICATION CLIENT SPECIFIC INFORMATION (Byte 1) */
-	coh_data[31] = 43; /* Size of APPLICATION CLIENT SPECIFIC INFORMATION (Byte 0) */
-	/* Size of the buffer to insert 'LTFS' needs to be size of 5 for the 4 letters and the null terminator*/
-	arch_strncpy((char *)coh_data + 32,"LTFS", 5, 4);
-	memcpy(coh_data + 37, coh->uuid, 37);
+	ltfs_u16tobe(coh_data + TC_MAM_ATTR_ID_OFFSET, TC_MAM_PAGE_COHERENCY);
+	coh_data[TC_MAM_ATTR_FORMAT_OFFSET] = 0;
+	ltfs_u16tobe(coh_data + TC_MAM_ATTR_LENGTH_OFFSET, TC_MAM_PAGE_COHERENCY_SIZE);
+	coh_data[TC_MAM_COH_VCR_SIZE_OFFSET] = TC_MAM_COH_VCR_LENGTH; /* Size of Volume Change Reference (VCR) */
+	ltfs_u64tobe(coh_data + TC_MAM_COH_VCR_OFFSET, coh->volume_change_ref);
+	ltfs_u64tobe(coh_data + TC_MAM_COH_COUNT_OFFSET, coh->count); /* VOLUME COHERENCY COUNT */
+	ltfs_u64tobe(coh_data + TC_MAM_COH_SETID_OFFSET, coh->set_id); /* VOLUME COHERENCY SET IDENTIFIER */
+	/* APPLICATION CLIENT SPECIFIC INFORMATION LENGTH: signature + UUID + version */
+	ltfs_u16tobe(coh_data + TC_MAM_COH_APPINFO_LEN_OFFSET, TC_MAM_COH_APPINFO_LENGTH);
+	/* memcpy instead of arch_strncpy to deterministically copy all bytes of the coherency signature including NULL terminator */
+	memcpy(coh_data + TC_MAM_COH_SIGNATURE_OFFSET, TC_MAM_COHERENCY_SIGNATURE, sizeof(TC_MAM_COHERENCY_SIGNATURE));
+	memcpy(coh_data + TC_MAM_COH_UUID_OFFSET, coh->uuid, sizeof(coh->uuid));
 	/*
 	   Version field
 		0: GA and PGA1
 		1: From PGA2
 	*/
-	coh_data[74] = coh->version; /* version field should be specified before calling this function */
+	coh_data[TC_MAM_COH_VERSION_OFFSET] = coh->version; /* version field should be specified before calling this function */
 
 	ret = dev->backend->write_attribute(dev->backend_data, part, coh_data, sizeof(coh_data));
 	if (ret < 0)
@@ -1813,8 +1814,8 @@ int tape_get_cart_volume_lock_status(struct device_data *dev, int *status)
 									   sizeof(attr_data));
 
 	if (ret == 0) {
-		uint16_t id = ltfs_betou16(attr_data);
-		uint16_t len = ltfs_betou16(attr_data + 3);
+		uint16_t id = ltfs_betou16(attr_data + TC_MAM_ATTR_ID_OFFSET);
+		uint16_t len = ltfs_betou16(attr_data + TC_MAM_ATTR_LENGTH_OFFSET);
 
 		if (id != TC_MAM_LOCKED_MAM) {
 			ltfsmsg(LTFS_WARN, 17196W, id);
