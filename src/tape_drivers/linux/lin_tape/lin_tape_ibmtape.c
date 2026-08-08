@@ -1018,6 +1018,11 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 	if (!ret) {
 		/* Specified file is existed. Use it as a device file name */
 		devfile = strdup(devname);
+		if (!devfile) {
+			ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+			free(priv);
+			return -LTFS_NO_MEMORY;
+		}
 	} else {
 		/* Search device by serial number (Assume devname has a drive serial) */
 		devs = lin_tape_ibmtape_get_device_list(NULL, 0);
@@ -1025,6 +1030,7 @@ int lin_tape_ibmtape_open(const char *devname, void **handle)
 			buf = (struct tc_drive_info *)calloc(devs * 2, sizeof(struct tc_drive_info));
 			if (! buf) {
 				ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+				free(priv);
 				return -LTFS_NO_MEMORY;
 			}
 			info_devs = lin_tape_ibmtape_get_device_list(buf, devs * 2);

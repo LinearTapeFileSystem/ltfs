@@ -285,7 +285,7 @@ static int _get_dump(struct iokit_data *priv, char *fname)
 	long long               data_length, buf_offset;
 	int                     dumpfd = -1;
 	int                     transfer_size, num_transfers, excess_transfer;
-	int                     i, bytes;
+	int                     bytes;
 	unsigned char           cap_buf[DUMP_HEADER_SIZE];
 	unsigned char           *dump_buf;
 	int                     buf_id;
@@ -331,13 +331,10 @@ static int _get_dump(struct iokit_data *priv, char *fname)
 
 	/* start to transfer data */
 	buf_offset = 0;
-	i = 0;
 	ltfsmsg(LTFS_DEBUG, 30859D);
 	while(num_transfers)
 	{
 		int length;
-
-		i++;
 
 		/* Allocation Length is transfer_size or excess_transfer*/
 		if(excess_transfer && num_transfers == 1)
@@ -3412,7 +3409,9 @@ int iokit_set_xattr(void *device, const char *name, const char *buf, size_t size
 	free(null_terminated);
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETXATTR));
-	return -LTFS_NO_XATTR;
+	/* ret is DEVICE_GOOD when one of the vendor attributes matched above;
+	 * returning the hardcoded failure reported success as an error. */
+	return ret;
 }
 
 #define BLOCKLEN_DATA_SIZE 6
@@ -3629,7 +3628,7 @@ static const char *_generate_product_name(const char *product_id)
 
 int iokit_get_device_list(struct tc_drive_info *buf, int count)
 {
-	int i, ret;
+	int i;
 	int found = 0;
 	int32_t devs = iokit_get_ssc_device_count();
 	int drive_type;
@@ -3646,10 +3645,7 @@ int iokit_get_device_list(struct tc_drive_info *buf, int count)
 	if( devs > 0 ) {
 		for (i = 0; i < devs; i++) {
 			if(iokit_find_ssc_device(iokit_device, i) != 0)
-			{
-				ret = -EDEV_DEVICE_UNOPENABLE;
 				continue;
-			}
 			drive_type = iokit_get_drive_identifier(iokit_device, &identifier);
 			if (!drive_type) {
 				if (found < count && buf) {
@@ -3665,7 +3661,7 @@ int iokit_get_device_list(struct tc_drive_info *buf, int count)
 				}
 				found ++;
 			}
-			ret = iokit_free_device(iokit_device);
+			iokit_free_device(iokit_device);
 		}
 	}
 

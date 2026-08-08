@@ -46,6 +46,12 @@ import zlib
 from logging import getLogger, basicConfig, NOTSET, CRITICAL, ERROR, WARNING, INFO, DEBUG
 from collections import deque
 
+try:
+    from tqdm import tqdm
+    USE_TQDM = True
+except ImportError:
+    USE_TQDM = False
+
 # LTFS Format Specification 2.4, Annex F (Table F.1): file content hashes are stored as
 # ltfs.hash.<hashtype> extended attributes. Only these hashtypes are standardized; all
 # other hashtype values are reserved by the spec. Each maps to its underlying algorithm
@@ -193,15 +199,20 @@ class CopyItem:
 
         return (self.vuuid, self.part, self.start)
 
-    def run(self):
+    def _run_copy(self, progress):
+        with open(self.src, 'rb') as srcf, open(self.dst, 'wb') as dstf:
+            copyfileobj(srcf, dstf, progress.update)
+
+    def run(self, progress):
         try:
             if len(self.vuuid):
                 logger.debug('"{0}" ({2}) -> "{1}"'.format(self.src, self.dst, str(self.start)))
             else:
                 logger.debug('"{0}" -> "{1}"'.format(self.src, self.dst))
-
+            progress.update_file(self.src)
             if self.cp_attr: #Copy data and metadata
-                shutil.copy2(self.src, self.dst)
+                self._run_copy(progress)
+                shutil.copystat(self.src, self.dst)
                 if self.cp_xattr:
                     # Capture EAs of the source file
                     src_attributes = {}
@@ -212,16 +223,16 @@ class CopyItem:
                     for key in src_attributes:
                         xattr.set(self.dst, key, src_attributes[key])
             else: #Only copy data
-                shutil.copy(self.src, self.dst)
+                self._run_copy(progress)
+                shutil.copymode(self.src, self.dst)
         except Exception as e:
             self.logger.error('Failed to copy "{0}" to "{1}": {2}'.format(self.src, self.dst, str(str(e))))
             return False
 
         if self.store_hash:
             # Store one ltfs.hash.<hashtype> VEA per requested hashtype on the
-            # destination. The hash(es) are computed from the (on-disk) source, whose
-            # bytes are identical to what was just copied; on LTFS this is persisted
-            # into the index.
+            # destination, computed from the source (identical bytes to what was
+            # just copied). On LTFS this is persisted into the index.
             try:
                 target = self.dst
                 if os.path.isdir(target):
@@ -248,9 +259,11 @@ class CopyQueue:
         self.items = 0
         self.logger = logger
         self.sort_files = sort_files
+        self.total_bytes = 0
 
     def add_copy_item(self, c):
         (u, p, s) = c.eval()
+        self.total_bytes += os.path.getsize(c.src)
         if u == '':
             # Source is not on LTFS
             self.direct.append(c)
@@ -338,24 +351,83 @@ class CopyQueue:
     def get_size(self):
         return self.items
 
+RESULT_LOCK = threading.Lock()
+
+BUFSIZE = 256 * 1024 * 1024 # 256MiB
+
+# Based on shutil's code
+def copyfileobj(fsrc, fdst, callback, length=BUFSIZE):
+    try:
+        # check for optimisation opportunity
+        if "b" in fsrc.mode and "b" in fdst.mode and fsrc.readinto:
+            return _copyfileobj_readinto(fsrc, fdst, callback, length)
+    except AttributeError:
+        # one or both file objects do not support a .mode or .readinto attribute
+        pass
+
+    fsrc_read = fsrc.read
+    fdst_write = fdst.write
+
+    while True:
+        buf = fsrc_read(length)
+        if not buf:
+            break
+        fdst_write(buf)
+        callback(len(buf))
+
+def _copyfileobj_readinto(fsrc, fdst, callback, length=BUFSIZE):
+    """readinto()/memoryview() based variant of copyfileobj().
+    *fsrc* must support readinto() method and both files must be
+    open in binary mode.
+    """
+    # Localize variable access to minimize overhead.
+    fsrc_readinto = fsrc.readinto
+    fdst_write = fdst.write
+    with memoryview(bytearray(length)) as mv:
+        while True:
+            n = fsrc_readinto(mv)
+            if not n:
+                break
+            elif n < length:
+                with mv[:n] as smv:
+                    fdst.write(smv)
+            else:
+                fdst_write(mv)
+            callback(n)
+
 class Progress:
-    def __init__(self, logger, title, num): #initialization
+    def __init__(self, logger, title, total_files, total_bytes): #initialization
         self.logger = logger
         self.title = title
-        self.num = num
-        self.cur = 0
+        self.total_files = total_files
+        self.total_bytes = total_bytes
+        self.current_file = 0
+        self.tqdm = None
 
-    def update(self, step = 1):
+    def update_file(self, name):
+        # Delay the initialization of tqdm to prevent console spam
+        if self.logger.getEffectiveLevel() == INFO and USE_TQDM and self.tqdm is None:
+            self.tqdm = tqdm(total=self.total_bytes, unit='B', unit_scale=True, unit_divisor=1024)
+
+        self.current_file += 1
         if self.logger.getEffectiveLevel() == INFO:
-            self.cur = self.cur + 1
-            sys.stderr.write('\r{}: {}/{}'.format(self.title, self.cur, self.num))
-            sys.stderr.flush()
+            if self.tqdm is not None:
+                self.tqdm.set_description(f'{name} [{self.current_file} / {self.total_files}]')
+            else:
+                sys.stderr.write('\r{}: {}/{}'.format(self.title, self.current_file, self.total_files))
+                sys.stderr.flush()
+
+    def update(self, bytes_add):
+        if self.tqdm:
+            self.tqdm.update(bytes_add)
 
     def finish(self):
-        if self.logger.getEffectiveLevel() == INFO:
-            logger.info("")
+        if self.tqdm is not None:
+            self.tqdm.close()
+        else:
+            if self.logger.getEffectiveLevel() == INFO:
+                logger.info("")
 
-RESULT_LOCK = threading.Lock()
 
 def writer(logger, prog, q, r):
     while True:
@@ -368,9 +440,7 @@ def writer(logger, prog, q, r):
             logger.error('writer thread error: ' + str(e))
             exit(1)
 
-        prog.update()
-
-        result = ci.run()
+        result = ci.run(prog)
 
         with RESULT_LOCK:
             if result:
@@ -508,6 +578,9 @@ if args.store_hash:
     hash_probe = args.DEST if os.path.isdir(args.DEST) else (os.path.dirname(args.DEST) or '.')
     ensure_ltfs_hash_supported(hash_probe, logger)
 
+if args.keep_tree is None:
+    args.keep_tree = ''
+
 # Special case:
 #  Copy source is only one file
 if args.recursive == False and len(args.SOURCE) == 1:
@@ -542,7 +615,7 @@ direct_write_threads = 8
 try:
     sig = xattr.get(args.DEST, VEA_PREFIX + LTFS_SIG_VEA)
 
-    if sig.startswith("LTFS"):
+    if sig.startswith(b"LTFS"):
         logger.info("Destination {0} is LTFS".format(args.DEST))
         direct_write_threads = 1
     else:
@@ -565,9 +638,6 @@ if len(args.SOURCE) == 0:
     for line in sys.stdin:
         args.SOURCE.append(line.rstrip('\r\n'))
     logger.log(NOTSET + 1, 'Source: {}'.format(args.SOURCE))
-
-if args.keep_tree is None:
-    args.keep_tree = ''
 
 # Create the list of copy item
 copyq = CopyQueue(logger, args.sort_files)
@@ -604,7 +674,7 @@ success = 0
 fail = 0
 
 direct = copyq.pop_direct()
-prog_disk = Progress(logger, 'File copy from disk is on going', len(direct))
+prog_disk = Progress(logger, 'File copy from disk is on going', len(direct), copyq.total_bytes)
 if len(direct):
     logger.info("Copying on {} disk files with {} threads".format(len(direct), direct_write_threads))
     writers = []
@@ -623,7 +693,7 @@ if len(direct):
     prog_disk.finish()
 
 # Copy files on LTFS
-prog_tape = Progress(logger, 'File copy from tape is on going', copyq.get_size())
+prog_tape = Progress(logger, 'File copy from tape is on going', copyq.get_size(), copyq.total_bytes)
 (tape_key, tape) = copyq.pop_tape()
 while tape != None:
     logger.log(NOTSET + 1, "Processing {}".format(len(tape)))
@@ -640,8 +710,7 @@ while tape != None:
         for start_block_key in start_block_list:
             file_ind = partition[start_block_key]
             for cp in file_ind:
-                prog_tape.update()
-                result = cp.run()
+                result = cp.run(prog_tape)
                 if result:
                     success = success + 1
                 else:
