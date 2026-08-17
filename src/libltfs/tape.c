@@ -373,7 +373,7 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle, bool force)
 	int ret;
 	struct tc_drive_param param;
 	struct tc_remaining_cap cap;
-	uint16_t pews;
+	uint16_t pews = 0;
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
