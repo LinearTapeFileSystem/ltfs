@@ -856,6 +856,9 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 	fromdentry->name.percent_encode = fs_is_percent_encode_required(fromdentry->name.name);
 	fromdentry->platform_safe_name = to_filename_copy2;
 	fromdentry->matches_name_criteria = index_criteria_match(fromdentry, vol);
+	/* fromdentry owns the buffers now; keep out_free from freeing them again */
+	to_filename_copy = NULL;
+	to_filename_copy2 = NULL;
 
 	/* Add fromdentry to new directory */
 	todir->child_list = fs_add_key_to_hash_table(todir->child_list, fromdentry, &ret);
