@@ -469,7 +469,7 @@ dnl Update flags
 dnl Sets CFLAGS to force optimization and debugging options, which isn't quite kosher
 dnl
 AM_CPPFLAGS="-D_GNU_SOURCE -I\$(top_srcdir)/src -DLTFS_CONFIG_FILE='\"${sysconfdir}/ltfs.conf\"' -DLTFS_BASE_DIR='\"${prefix}\"'"
-AM_CFLAGS="-Wall -Wsign-compare -fsigned-char ${FUSE_MODULE_CFLAGS} ${UUID_MODULE_CFLAGS} ${LIBXML2_MODULE_CFLAGS} ${ICU_MODULE_CFLAGS} ${SNMP_ENABLE} ${SNMP_MODULE_CFLAGS}"
+AM_CFLAGS="${AM_CFLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wsign-compare -fsigned-char ${FUSE_MODULE_CFLAGS} ${UUID_MODULE_CFLAGS} ${LIBXML2_MODULE_CFLAGS} ${ICU_MODULE_CFLAGS} ${SNMP_ENABLE} ${SNMP_MODULE_CFLAGS}"
 
 if test "x$use_fast" = "xyes"
 then
@@ -529,7 +529,7 @@ then
         SSE42=yes
     fi
 
-    if test ${GCC_VERSION_MAJOR} -ge 8 -a ${GCC_VERSION_MINOR} -ge 0 -a "x$warning_as_error" = "xyes"
+    if test ${GCC_VERSION_MAJOR} -ge 8
     then
         AM_CFLAGS="${AM_CFLAGS} -Wno-stringop-truncation"
     fi
