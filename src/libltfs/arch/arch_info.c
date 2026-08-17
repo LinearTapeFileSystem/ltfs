@@ -72,7 +72,7 @@ void show_runtime_system_info(void)
 		ltfsmsg(LTFS_WARN, 17086W);
 	} else {
 		memset(kernel_version, 0, sizeof(kernel_version));
-		read(fd, kernel_version, sizeof(kernel_version));
+		(void)!read(fd, kernel_version, sizeof(kernel_version) - 1);
 		if((tmp = strchr(kernel_version, '\n')) != NULL)
 			*tmp = '\0';
 
@@ -118,7 +118,7 @@ void show_runtime_system_info(void)
 				} else {
 					if (fstat(fd, &stat_rel) != -1 && S_ISREG(stat_rel.st_mode)) {
 						memset(destribution, 0, sizeof(destribution));
-						read(fd, destribution, sizeof(destribution));
+						(void)!read(fd, destribution, sizeof(destribution) - 1);
 						if((tmp = strchr(destribution, '\n')) != NULL)
 							*tmp = '\0';
 						ltfsmsg(LTFS_INFO, 17089I, destribution);

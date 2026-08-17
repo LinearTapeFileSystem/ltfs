@@ -694,37 +694,37 @@ int ltfs_trace_dump(char *fname, const char *work_dir)
 			trc_header->header_size + req_header->header_size + fn_trc_header->header_size;
 
 		/* Write headers */
-		(void)arch_write(fd, trc_header, sizeof(struct trace_header));
-		(void)arch_write(fd, req_header, sizeof(struct request_header));
+		(void)!arch_write(fd, trc_header, sizeof(struct trace_header));
+		(void)!arch_write(fd, req_header, sizeof(struct request_header));
 
 		/* Write request trace data */
 		ltfs_mutex_lock(&req_trace->req_trace_lock);
-		(void)arch_write(fd, req_trace->entries, REQ_TRACE_SIZE);
+		(void)!arch_write(fd, req_trace->entries, REQ_TRACE_SIZE);
 		ltfs_mutex_unlock(&req_trace->req_trace_lock);
 
 		/* Write function trace header */
-		(void)arch_write(fd, &fn_trc_header->header_size, sizeof(uint32_t));
-		(void)arch_write(fd, &fn_trc_header->num_of_fn_trace, sizeof(uint32_t));
+		(void)!arch_write(fd, &fn_trc_header->header_size, sizeof(uint32_t));
+		(void)!arch_write(fd, &fn_trc_header->num_of_fn_trace, sizeof(uint32_t));
 		for (unsigned int i=0; i<n; i++)
-			(void)arch_write(fd, &fn_trc_header->req_t_desc[i], sizeof(struct function_trace_descriptor));
-		(void)arch_write(fd, &fn_trc_header->crc, sizeof(uint32_t));
+			(void)!arch_write(fd, &fn_trc_header->req_t_desc[i], sizeof(struct function_trace_descriptor));
+		(void)!arch_write(fd, &fn_trc_header->crc, sizeof(uint32_t));
 		free(fn_trc_header->req_t_desc);
 		fn_trc_header->req_t_desc = NULL;
 
 		/* Write function trace data */
 		for (fsitem=fs_tr_list; fsitem != NULL; fsitem=fsitem->hh.next) {
 			acquireread_mrsw(&fsitem->fn_entry->trace_lock);
-			(void)arch_write(fd, fsitem->fn_entry->entries, FS_FN_TRACE_SIZE);
+			(void)!arch_write(fd, fsitem->fn_entry->entries, FS_FN_TRACE_SIZE);
 			releaseread_mrsw(&fsitem->fn_entry->trace_lock);
 		}
 		for (admitem=admin_tr_list; admitem != NULL; admitem=admitem->hh.next) {
 			acquireread_mrsw(&admitem->fn_entry->trace_lock);
-			(void)arch_write(fd, admitem->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
+			(void)!arch_write(fd, admitem->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
 			releaseread_mrsw(&admitem->fn_entry->trace_lock);
 		}
 		TAILQ_FOREACH (tailq_item, acomp, list) {
 			acquireread_mrsw(&tailq_item->fn_entry->trace_lock);
-			(void)arch_write(fd, tailq_item->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
+			(void)!arch_write(fd, tailq_item->fn_entry->entries, ADMIN_FN_TRACE_SIZE);
 			releaseread_mrsw(&tailq_item->fn_entry->trace_lock);
 		}
 	}
