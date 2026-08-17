@@ -460,6 +460,9 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
 	}
 	parent = d->parent;
 
+	/* Lock order: parent contents_lock, parent meta_lock, then child meta_lock */
+	acquirewrite_mrsw(&parent->meta_lock);
+
 	if (parent->is_immutable || parent->is_appendonly) {
 		ltfsmsg(LTFS_ERR, 17237E, "unlink: parent is WORM");
 		ret = -LTFS_WORM_ENABLED;
@@ -482,7 +485,6 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
 			goto out;
 	}
 
-	acquirewrite_mrsw(&parent->meta_lock);
 	acquirewrite_mrsw(&d->meta_lock);
 
 	if (dcache_initialized(vol)) {
@@ -640,19 +642,6 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		goto out_release;
 	}
 
-	if (fromdir->is_appendonly || fromdir->is_immutable ) {
-		ltfsmsg(LTFS_ERR, 17237E, "rename: parent is WORM");
-		ret = -LTFS_WORM_ENABLED;
-		acquirewrite_mrsw(&fromdir->meta_lock);
-		goto out_release;
-	}
-	if (todir->is_immutable || todir->is_appendonly) {
-		ltfsmsg(LTFS_ERR, 17237E, "rename: target dir is WORM");
-		ret = -LTFS_WORM_ENABLED;
-		acquirewrite_mrsw(&fromdir->meta_lock);
-		goto out_release;
-	}
-
 	/* Take locks in the appropriate order and look up the source and destination dentries */
 	if (todir == fromdir || fs_is_predecessor(todir, fromdir)) {
 		acquirewrite_mrsw(&todir->contents_lock);
@@ -759,6 +748,16 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		goto out_unlock;
 	}
 #endif
+
+	if (fromdir->is_immutable || fromdir->is_appendonly ||
+		todir->is_immutable || todir->is_appendonly) {
+		ltfsmsg(LTFS_ERR, 17237E, "rename: source or target dir is WORM");
+		ret = -LTFS_WORM_ENABLED;
+		fs_release_dentry(fromdentry);
+		if (todentry && todentry != fromdentry)
+			fs_release_dentry(todentry);
+		goto out_unlock;
+	}
 
 	if (fromdentry->is_immutable || fromdentry->is_appendonly) {
 		ltfsmsg(LTFS_ERR, 17237E, "rename: src entry is WORM");
