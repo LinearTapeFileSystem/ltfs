@@ -2978,7 +2978,7 @@ void parse_vol(char *str, int start_len, int end_len)
  */
 int u_get_truncate_size(const char *name, int name_len, int max_size)
 {
-	int32_t size = 0, re_size;
+	int32_t size = 0, re_size = 0;
 	UChar32 c;
 	UErrorCode err = U_ZERO_ERROR;
 

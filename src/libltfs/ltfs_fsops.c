@@ -2000,7 +2000,8 @@ int ltfs_fsops_readlink_path(const char *path, char *buf, size_t size, ltfs_file
 
 int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* buf, size_t size )
 {
-	char *work_buf, *target_buf, *temp_buf, *token, *next_token; /* work buffers for string */
+	char *work_buf, *target_buf, *token, *next_token; /* work buffers for string */
+	const char *temp_buf;
 	int  len=0, len2=0;                                          /* work variables for string length */
 
 	CHECK_ARG_NULL(link, -LTFS_NULL_ARG);

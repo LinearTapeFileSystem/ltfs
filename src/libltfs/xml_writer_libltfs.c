@@ -882,8 +882,9 @@ int xml_schema_to_tape(char *reason, struct ltfs_volume *vol)
 	}
 
 	/* Generate the Index. */
-	asprintf(&creator, "%s - %s", vol->creator, reason);
-	if (creator) {
+	if (asprintf(&creator, "%s - %s", vol->creator, reason) < 0)
+		creator = NULL;
+	if (creator != NULL) {
 		ret = _xml_write_schema(writer, creator, vol->index);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 17055E, ret);
