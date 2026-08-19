@@ -460,6 +460,23 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
 	}
 	parent = d->parent;
 
+	/* Can't remove non-empty directories */
+	if (d->isdir) {
+		ret = 0;
+		acquireread_mrsw(&d->contents_lock);
+		if (HASH_COUNT(d->child_list) != 0)
+			ret = -LTFS_DIRNOTEMPTY;
+		releaseread_mrsw(&d->contents_lock);
+		if (ret < 0) {
+			releasewrite_mrsw(&parent->contents_lock);
+			fs_release_dentry(parent);
+			releaseread_mrsw(&vol->lock);
+			free(path_norm);
+			fs_release_dentry(d);
+			return ret;
+		}
+	}
+
 	/* Lock order: parent contents_lock, parent meta_lock, then child meta_lock */
 	acquirewrite_mrsw(&parent->meta_lock);
 
@@ -472,17 +489,6 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
 		ltfsmsg(LTFS_ERR, 17237E, "unlink: WORM ently");
 		ret = -LTFS_WORM_ENABLED;
 		goto out;
-	}
-
-	/* Can't remove non-empty directories */
-	if (d->isdir) {
-		ret = 0;
-		acquireread_mrsw(&d->contents_lock);
-		if (HASH_COUNT(d->child_list) != 0)
-			ret = -LTFS_DIRNOTEMPTY;
-		releaseread_mrsw(&d->contents_lock);
-		if (ret < 0)
-			goto out;
 	}
 
 	acquirewrite_mrsw(&d->meta_lock);
