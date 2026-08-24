@@ -29,8 +29,11 @@ else
 	else
 		PKGDATA=pkgdata
 	fi
-	if [ -f /usr/lib/x86_64-linux-gnu/icu/pkgdata.inc ]; then
-		ICU_PKGDATA_INC=/usr/lib/x86_64-linux-gnu/icu/pkgdata.inc
+	if pkg-config --exists icu-uc 2>/dev/null; then
+		_ICU_LIBDIR=$(pkg-config --variable=libdir icu-uc 2>/dev/null)
+		if [ -f "${_ICU_LIBDIR}/icu/pkgdata.inc" ]; then
+			ICU_PKGDATA_INC="${_ICU_LIBDIR}/icu/pkgdata.inc"
+		fi
 	fi
 fi
 
