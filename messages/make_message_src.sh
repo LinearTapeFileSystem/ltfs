@@ -29,7 +29,9 @@ else
 	else
 		PKGDATA=pkgdata
 	fi
-	ICU_PKGDATA_INC=/usr/lib/x86_64-linux-gnu/icu/pkgdata.inc
+	if [ -f /usr/lib/x86_64-linux-gnu/icu/pkgdata.inc ]; then
+		ICU_PKGDATA_INC=/usr/lib/x86_64-linux-gnu/icu/pkgdata.inc
+	fi
 fi
 
 if [ "$#" -ne "1" ]; then
