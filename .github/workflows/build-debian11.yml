@@ -14,7 +14,7 @@ jobs:
           submodules: recursive
       - name: Build LTFS
         id: build
-        uses: LinearTapeFileSystem/Debian11-Build@v1.1.1
+        uses: LinearTapeFileSystem/Debian11-Build@release/test-icu-config-removal
         with:
           destination: '/tmp/ltfs'
           submodules: recursive
