@@ -61,7 +61,7 @@ make_obj() {
 	${GENRB} -d work -q *.txt
 	cd work
 	ls *.res >packagelist.txt
-	${PKGDATA} -p ${BASENAME} -m static -q packagelist.txt >/dev/null
+	${PKGDATA} -O "$(pkg-config --variable=pkglibdir icu-uc)/icu/pkgdata.inc" -p ${BASENAME} -m static -q packagelist.txt >/dev/null
 
 	case $KERNEL_NAME in
 		MINGW32_NT*)
