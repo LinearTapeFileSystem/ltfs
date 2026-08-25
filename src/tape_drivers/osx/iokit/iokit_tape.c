@@ -2302,7 +2302,14 @@ int iokit_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 
 	memset(&buffer, 0, LOGSENSEPAGE);
 
-	if (IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) {
+	/*
+	 * HP LTO drives do not report VOLSTATS_PART_REMAIN_CAP (0x0204) on LogPage 0x17,
+	 * so the generic path below cannot get the remaining capacity from them. They do
+	 * provide both remaining and max capacity on LogPage 0x31 instead.
+	 * Verified against HP Ultrium 6-SCSI, firmware 253W.
+	 */
+	if (IS_LTO(priv->drive_type) &&
+		(DRIVE_GEN(priv->drive_type) == 0x05 || priv->vendor == VENDOR_HP)) {
 		/* Use LogPage 0x31 */
 		ret = iokit_logsense(device, (uint8_t)LOG_TAPECAPACITY, (uint8_t)0, (void *)buffer, LOGSENSEPAGE);
 		if(ret < 0)
@@ -2344,6 +2351,15 @@ int iokit_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 					break;
 			}
 		}
+
+		if (priv->vendor == VENDOR_HP) {
+			/* HP reports LogPage 0x31 values in MB while tc_remaining_cap is in MiB */
+			cap->max_p0 = (cap->max_p0 * 1000 * 1000) >> 20;
+			cap->max_p1 = (cap->max_p1 * 1000 * 1000) >> 20;
+			cap->remaining_p0 = (cap->remaining_p0 * 1000 * 1000) >> 20;
+			cap->remaining_p1 = (cap->remaining_p1 * 1000 * 1000) >> 20;
+		}
+
 		ret = DEVICE_GOOD;
 	} else {
 		/* Use LogPage 0x17 */
