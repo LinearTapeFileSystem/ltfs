@@ -56,7 +56,6 @@
  */
 
 #include "libltfs/ltfs.h"
-#include "libltfs/ltfs_locking_old.h"
 #include "libltfs/tape.h"
 #include "libltfs/ltfs_fsops_raw.h"
 #include "libltfs/index_criteria.h"
