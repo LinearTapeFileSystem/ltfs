@@ -104,6 +104,12 @@
             <para>No message outout</para>
           </listitem>
         </varlistentry>
+        <varlistentry>
+          <term><option>--move</option></term>
+          <listitem>
+            <para>Move files instead of copying them. Each source file is removed only after it has been successfully copied to the destination, so the LTFS tape read order is preserved and no data is lost if a copy fails. This option implies <option>-p</option> so that file attributes are preserved like a normal move. After a recursive move the emptied source directories are pruned; source directories that still contain files (for example because a copy failed) are left untouched.</para>
+          </listitem>
+        </varlistentry>
       </variablelist>
     </refsect1>
 
