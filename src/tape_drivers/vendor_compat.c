@@ -396,6 +396,37 @@ int is_supported_tape(unsigned char type, unsigned char density, bool *is_worm)
 	return ret;
 }
 
+int is_known_tape_type(unsigned char type)
+{
+	// Thought about using supported_cart[] here, but it does not contain
+	// all known tape types. Different use case.
+	switch (type) {
+		case TC_MP_LTO1D_CART:
+		case TC_MP_LTO2D_CART:
+		case TC_MP_LTO3D_CART:
+		case TC_MP_LTO4D_CART:
+		case TC_MP_LTO5D_CART:
+		case TC_MP_LTO6D_CART:
+		case TC_MP_LTO7D_CART:
+		case TC_MP_LTO8D_CART:
+		case TC_MP_LTO9D_CART:
+		case TC_MP_LTO10D_CART:
+		case TC_MP_LTOP10D_CART:
+		case TC_MP_LTO3W_CART:
+		case TC_MP_LTO4W_CART:
+		case TC_MP_LTO5W_CART:
+		case TC_MP_LTO6W_CART:
+		case TC_MP_LTO7W_CART:
+		case TC_MP_LTO8W_CART:
+		case TC_MP_LTO9W_CART:
+		case TC_MP_LTO10W_CART:
+			return 0;
+		default:
+			return -LTFS_UNSUPPORTED_CART;
+	}
+	return 0;
+}
+
 void init_error_table(int vendor,
 					  struct error_table **standard_table,
 					  struct error_table **vendor_table)
