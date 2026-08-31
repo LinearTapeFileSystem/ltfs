@@ -34,6 +34,16 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 include(GNUInstallDirs)
+
+# Keep the install libdir in the RUNPATH of the installed binaries and
+# plugins, as the libtool build does, unless it is a system directory.
+if("${CMAKE_INSTALL_RPATH}" STREQUAL "")
+    list(FIND CMAKE_C_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_FULL_LIBDIR}" _ltfs_system_libdir)
+    if(_ltfs_system_libdir EQUAL -1)
+        set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
+    endif()
+endif()
+
 include(CheckIncludeFile)
 include(CheckSymbolExists)
 include(CheckTypeSize)
