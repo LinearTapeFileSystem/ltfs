@@ -449,6 +449,7 @@ static int _inquiry_low(struct sg_tape *device, uint8_t page, unsigned char *buf
 int sg_get_drive_identifier(struct sg_tape *device, scsi_device_identifier *id_data)
 {
 	int ret;
+	size_t serial_len;
 	unsigned char inquiry_buf[MAX_INQ_LEN];
 
 	CHECK_ARG_NULL(id_data, -LTFS_NULL_ARG);
@@ -466,9 +467,9 @@ int sg_get_drive_identifier(struct sg_tape *device, scsi_device_identifier *id_d
 		return -EDEV_DEVICE_UNSUPPORTABLE;
 	}
 
-	strncpy(id_data->vendor_id,   (char*)(&(inquiry_buf[8])),  VENDOR_ID_LENGTH);
-	strncpy(id_data->product_id,  (char*)(&(inquiry_buf[16])), PRODUCT_ID_LENGTH);
-	strncpy(id_data->product_rev, (char*)(&(inquiry_buf[32])), PRODUCT_REV_LENGTH);
+	memcpy(id_data->vendor_id,   &inquiry_buf[8],  VENDOR_ID_LENGTH);
+	memcpy(id_data->product_id,  &inquiry_buf[16], PRODUCT_ID_LENGTH);
+	memcpy(id_data->product_rev, &inquiry_buf[32], PRODUCT_REV_LENGTH);
 
 	ret = _inquiry_low(device, 0x80, inquiry_buf, MAX_INQ_LEN);
 	if( ret < 0 ) {
@@ -476,7 +477,10 @@ int sg_get_drive_identifier(struct sg_tape *device, scsi_device_identifier *id_d
 		return ret;
 	}
 
-	strncpy(id_data->unit_serial, (char*)(&(inquiry_buf[4])), inquiry_buf[3]);
+	serial_len = inquiry_buf[3];
+	if (serial_len > UNIT_SERIAL_LENGTH)
+		serial_len = UNIT_SERIAL_LENGTH;
+	memcpy(id_data->unit_serial, &inquiry_buf[4], serial_len);
 
 	return 0;
 }
