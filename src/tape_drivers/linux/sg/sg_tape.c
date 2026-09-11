@@ -2393,7 +2393,7 @@ int sg_locate(void *device, struct tc_position dest, struct tc_position *pos)
 
 	ret = sg_issue_cdb_command(&priv->dev, &req, &msg);
 	if (ret < 0){
-		if (dest.block == TAPE_BLOCK_MAX && ret == -EDEV_EOD_DETECTED) {
+		if (dest.block == TAPE_BLOCK_MAX && ret == -EDEV_EOD_DETECTED || ret == -EDEV_EOD_NOT_FOUND)  {
 			ltfsmsg(LTFS_DEBUG, 30224D, "Locate");
 			ret = DEVICE_GOOD;
 		} else {
