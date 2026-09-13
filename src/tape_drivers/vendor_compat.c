@@ -264,6 +264,7 @@ struct error_table standard_tape_errors[] = {
 	/* Sense Key 8 (Blank Check) */
 	{0x080005, -EDEV_EOD_DETECTED,              "End-of-Data Detected"},
 	{0x081401, -EDEV_RECORD_NOT_FOUND,          "Record Not Found, Void Tape"},	
+	{0x081403, -EDEV_EOD_NOT_FOUND, 	    "End-of-Data (EOD) not found"},
 	/* Sense Key B (Aborted Command) */
 	{0x0B001E, -EDEV_ABORTED_COMMAND,           "Conflicting SA Creation Request"},
 	{0x0B0B01, -EDEV_OVER_TEMPERATURE,          "Warning - Specified Temperature Exceeded"},
@@ -318,6 +319,8 @@ int get_vendor_id(char* vendor)
 	else if (!strncmp(vendor, HP_VENDOR_ID, strlen(HP_VENDOR_ID)))
 		return VENDOR_HP;
 	else if (!strncmp(vendor, HPE_VENDOR_ID, strlen(HPE_VENDOR_ID)))
+		return VENDOR_HP;
+	else if (!strncmp(vendor, TANDBERG_VENDOR_ID, strlen(TANDBERG_VENDOR_ID)))
 		return VENDOR_HP;
 	else if (!strncmp(vendor, QUANTUM_VENDOR_ID, strlen(QUANTUM_VENDOR_ID)))
 		return VENDOR_QUANTUM;
