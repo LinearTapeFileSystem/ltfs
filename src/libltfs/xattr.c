@@ -446,6 +446,7 @@ static bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_vo
 			|| ! strcmp(name, "ltfs.indexVersion")
 			|| ! strcmp(name, "ltfs.labelVersion")
 			|| ! strcmp(name, "ltfs.sync")
+			|| ! strcmp(name, "ltfs.captureIndex")
 			|| ! strcmp(name, "ltfs.indexGeneration")
 			|| ! strcmp(name, "ltfs.indexTime")
 			|| ! strcmp(name, "ltfs.policyExists")
@@ -905,6 +906,9 @@ static int _xattr_set_virtual(struct dentry *d, const char *name, const char *va
 
 	if (! strcmp(name, "ltfs.sync") && d == vol->index->root)
 		ret = ltfs_sync_index(SYNC_EA, false, vol);
+	else if (! strcmp(name, "ltfs.captureIndex") && d == vol->index->root)
+		/* Write the current in-memory index to the work directory. No tape access. */
+		ret = ltfs_save_index_to_disk(vol->work_directory, SYNC_CAPTURE_EA, false, vol);
 	else if (! strcmp(name, "ltfs.commitMessage") && d == vol->index->root) {
 		char *value_null_terminated, *new_value;
 

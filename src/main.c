@@ -134,7 +134,6 @@ static struct fuse_opt ltfs_options[] = {
 	LTFS_OPT("allow_other",            allow_other, 1),
 	LTFS_OPT("noallow_other",          allow_other, 0),
 	LTFS_OPT("capture_index",          capture_index, 1),
-	LTFS_OPT("capture_index_at_mount", capture_index_at_mount, 1),
 	LTFS_OPT("symlink_type=%s",        symlink_str, 0),
 	LTFS_OPT("scsi_append_only_mode=%s", str_append_only_mode, 0),
 	LTFS_OPT_KEY("-a",                 KEY_ADVANCED_HELP),
@@ -174,7 +173,6 @@ void single_drive_advanced_usage(const char *default_driver, struct ltfs_fuse_da
 	ltfsresult(14437I); /* -o rollback_mount */
 	ltfsresult(14448I); /* -o release_device */
 	ltfsresult(14456I); /* -o capture_index */
-	ltfsresult(14469I); /* -o capture_index_at_mount */
 	ltfsresult(14463I); /* -o scsi_append_only_mode=<on|off> */
 	ltfsresult(14406I); /* -a */
 	/* TODO: future use for WORM */
@@ -1093,16 +1091,6 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		ltfsmsg(LTFS_ERR, 14116E, ret);
 		ltfs_volume_free(&priv->data);
 		return 1;
-	}
-
-	/*
-	 * Capture the index to the work directory right after mount, if requested.
-	 * The index is already in memory at this point, so this costs no tape access.
-	 * Failing to write it must not prevent the mount, so the return value is
-	 * ignored here; ltfs_save_index_to_disk() logs its own errors.
-	 */
-	if (priv->capture_index_at_mount) {
-		ltfs_save_index_to_disk(priv->work_directory, SYNC_MOUNT, false, priv->data);
 	}
 
 	/* Set up index criteria */

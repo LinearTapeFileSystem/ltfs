@@ -244,6 +244,5 @@ root:table {
 		// Reserved 14466I
 		14467I:string { "    -o syslogtrace            Enable diagnostic output to stderr and syslog(same as verbose=303)" }
 		// Reserved 14468I
-		14469I:string { "    -o capture_index_at_mount Capture latest index to work directory at mount" }
 	}
 }

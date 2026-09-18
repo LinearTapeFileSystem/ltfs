@@ -561,7 +561,7 @@ typedef enum {
 #define SYNC_EA              "Sync by EA"
 #define SYNC_CLOSE           "Sync on close"
 #define SYNC_DNO_SPACE       "Dcache no space"
-#define SYNC_MOUNT           "Mount"
+#define SYNC_CAPTURE_EA      "Capture by EA"
 #define SYNC_UNMOUNT         "Unmount"
 #define SYNC_UNMOUNT_NOMEM   "Unmount - no memory"
 #define SYNC_MOVE            "Unmount - %" PRIu64
