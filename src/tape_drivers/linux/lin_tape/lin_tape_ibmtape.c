@@ -503,12 +503,14 @@ start:
 		rc = lin_tape_ibmtape_ioctlrc2err(device, fd, &sense_data, msg);
 
 		if (rc == -EDEV_TIME_STAMP_CHANGED) {
-			ltfsmsg(LTFS_DEBUG, 30411D, cmd_name, cmd, rc);
+			ltfsmsg(LTFS_DEBUG, 30411D, cmd_name, cmd,
+				sense_data.key, sense_data.asc, sense_data.ascq, rc);
 			goto start;
 		}
 
 		if (is_expected_error(cmd, param, rc)) {
-			ltfsmsg(LTFS_DEBUG, 30410D, cmd_name, cmd, rc);
+			ltfsmsg(LTFS_DEBUG, 30410D, cmd_name, cmd,
+				sense_data.key, sense_data.asc, sense_data.ascq, rc);
 		}
 		else {
 			ltfsmsg(LTFS_INFO, 30408I, cmd_name, cmd, rc, errno, ((struct lin_tape_ibmtape *) device)->drive_serial);

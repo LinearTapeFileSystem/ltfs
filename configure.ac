@@ -36,7 +36,7 @@
 dnl
 dnl LTFS configure.ac.
 dnl
-AC_INIT([LTFS], [2.4.8.4 (Prelim)], IBM corporation.)
+AC_INIT([LTFS], [2.4.9.0 (Prelim)], IBM corporation.)
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4])
@@ -339,12 +339,16 @@ fi
 
 dnl
 dnl Check for ICU
+dnl Prefer icu-config for legacy distros; fall back to pkg-config icu-uc/icu-i18n
+dnl (icu-config was removed in ICU 63+ and is absent on modern Debian/Ubuntu).
 dnl
 ICU_MODULE_CFLAGS="`icu-config --cppflags 2> /dev/null`";
 ICU_MODULE_LIBS="`icu-config --ldflags 2> /dev/null`";
 if test -z "$ICU_MODULE_LIBS"
 then
-    PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])
+    PKG_CHECK_MODULES([ICU_MODULE], [icu-uc >= 0.21 icu-i18n >= 0.21],
+        [],
+        [PKG_CHECK_MODULES([ICU_MODULE], [icu >= 0.21])])
 fi
 
 AC_MSG_CHECKING([use latest ICU])
@@ -359,6 +363,10 @@ if test "x${icu_6x}" = "xyes"
 then
     AC_MSG_CHECKING(for ICU version)
     ICU_MODULE_VERSION="`icu-config --version 2> /dev/null`";
+    if test -z "$ICU_MODULE_VERSION"
+    then
+        ICU_MODULE_VERSION="`$PKG_CONFIG --modversion icu-uc 2> /dev/null`";
+    fi
     if test "${ICU_MODULE_VERSION%%.*}" -ge "60"
     then
         AM_EXTRA_CPPFLAGS="${AM_EXTRA_CPPFLAGS} -D ICU6x"
@@ -377,7 +385,7 @@ if test "x${snmp}" != "xno"
 then
     SNMP_ENABLE="-D ENABLE_SNMP"
     SNMP_MODULE_CFLAGS="`net-snmp-config --cflags 2> /dev/null`";
-    SNMP_MODULE_LIBS_A="`net-snmp-config --agent-libs` 2> /dev/null";
+    SNMP_MODULE_LIBS_A="`net-snmp-config --agent-libs 2> /dev/null`";
     SNMP_MODULE_LIBS="`net-snmp-config --libs 2> /dev/null`";
     if test -z "$SNMP_MODULE_LIBS_A"
     then
@@ -581,6 +589,8 @@ fi
 AM_CFLAGS=`echo ${AM_CFLAGS} | ${SED} 's|-D_FORTIFY_SOURCE=. ||g'`
 AM_LDFLAGS="${AM_LDFLAGS} ${MODULE_CHECK_LD} ${FUSE_MODULE_LIBS} ${UUID_MODULE_LIBS} ${LIBXML2_MODULE_LIBS} ${ICU_MODULE_LIBS} ${SNMP_MODULE_LIBS_A} ${SNMP_MODULE_LIBS}"
 CFLAGS="${CFLAGS} ${OPT_FLAGS}"
+CFLAGS=$(echo "$CFLAGS" | sed 's/,-Wp/-Wp/g')
+AM_CFLAGS=$(echo "$AM_CFLAGS" | sed 's/,-Wp/-Wp/g')
 
 dnl
 dnl Define options

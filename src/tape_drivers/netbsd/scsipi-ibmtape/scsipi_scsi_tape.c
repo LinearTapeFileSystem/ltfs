@@ -185,6 +185,7 @@ int scsipi_issue_cdb_command(struct scsipi_tape *device, scsireq_t *req,
 {
 	int status = 0;
 	int ret = -1;
+	uint32_t sense = 0;
 
 	CHECK_ARG_NULL(req, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(msg, -LTFS_NULL_ARG);
@@ -233,7 +234,6 @@ int scsipi_issue_cdb_command(struct scsipi_tape *device, scsireq_t *req,
 
 	if (req->retsts == SCCMD_SENSE) {
 		if (req->senselen_used) {
-			uint32_t sense = 0;
 			ret = scsipi_sense2errno(req, &sense, msg);
 			ltfsmsg(LTFS_DEBUG, 30201D, sense, *msg);
 		} else {
@@ -242,10 +242,14 @@ int scsipi_issue_cdb_command(struct scsipi_tape *device, scsireq_t *req,
 		}
 	}
 
-	if (is_expected_error(device, req->cmd, ret)) {
-		ltfsmsg(LTFS_DEBUG, 30204D, desc, req->cmd[0], ret);
-	} else {
-		ltfsmsg(LTFS_INFO, 30205I, desc, req->cmd[0], ret);
+	if (ret != DEVICE_GOOD) {
+		if (is_expected_error(device, req->cmd, ret)) {
+			ltfsmsg(LTFS_DEBUG, 30204D, desc, req->cmd[0],
+				(sense >> 16) & 0xFF, (sense >> 8) & 0xFF, sense & 0xFF, ret);
+		} else {
+			ltfsmsg(LTFS_INFO, 30205I, desc, req->cmd[0],
+				(sense >> 16) & 0xFF, (sense >> 8) & 0xFF, sense & 0xFF, ret);
+		}
 	}
 
 out:

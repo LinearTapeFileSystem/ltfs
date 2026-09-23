@@ -49,8 +49,8 @@ root:table {
 		30804D:string { "CDB check condition: sense = %06x, %s." }
 		30805D:string { "CDB %s." }
 		30806I:string { "Unexpected CDB status: 0x%08x." }
-		30807D:string { "%s (0x%02x) expected error %d." }
-		30808I:string { "%s (0x%02x) returns %d." }
+		30807D:string { "%s (0x%02x) expected error %02x/%02x%02x (%d)." }
+		30808I:string { "%s (0x%02x) returns %02x/%02x%02x (%d)." }
 		30809I:string { "Cannot open device: inquiry failed (%d)." }
 		30810I:string { "Opening a device through iokit driver (%s)." }
 		30811I:string { "Cannot open device: failed to convert devname to devnumber (%s)." }

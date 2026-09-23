@@ -393,9 +393,11 @@ start:
 
 	if (ret != DEVICE_GOOD) {
 		if (is_expected_error(device, req->cmdp, ret)) {
-			ltfsmsg(LTFS_DEBUG, 30204D, (char *)req->usr_ptr, req->cmdp[0], ret);
+			ltfsmsg(LTFS_DEBUG, 30204D, (char *)req->usr_ptr, req->cmdp[0],
+				(sense >> 16) & 0xFF, (sense >> 8) & 0xFF, sense & 0xFF, ret);
 		} else {
-			ltfsmsg(LTFS_INFO, 30205I, (char *)req->usr_ptr, req->cmdp[0], ret);
+			ltfsmsg(LTFS_INFO, 30205I, (char *)req->usr_ptr, req->cmdp[0],
+				(sense >> 16) & 0xFF, (sense >> 8) & 0xFF, sense & 0xFF, ret);
 		}
 	}
 
