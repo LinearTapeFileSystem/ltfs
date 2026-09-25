@@ -48,6 +48,9 @@
 #ifndef __LTFS_ENDIAN_H__
 #define __LTFS_ENDIAN_H__
 
+#include <stdint.h>
+#include <string.h>
+
 /* TODO: verify that this is correct for mingw */
 #ifdef mingw_PLATFORM
 #include <winsock2.h>
@@ -55,54 +58,79 @@
 #include <arpa/inet.h>
 #endif /* mingw_PLATFORM */
 
+/*
+ * These were function-like macros that cast the buffer to uint16_t/uint32_t and
+ * dereferenced it directly. Buffers are byte arrays accessed at arbitrary offsets
+ * (e.g. cdb + 3), so those casts performed unaligned accesses, which are undefined
+ * behaviour and fault on architectures that require natural alignment. They are now
+ * static inline functions that copy through memcpy; the compiler lowers each fixed
+ * size memcpy to a single load/store (plus a byte swap), so there is no overhead.
+ */
+
 /**
  * Convert a uint64_t value (src) to big endian and store it in the 8-byte buffer
  * pointed to by dest.
  */
-#define ltfs_u64tobe(dest, src) \
-	do { \
-		uint32_t *tmp = (uint32_t *)(dest); \
-		uint64_t stmp = (src); \
-		tmp[0] = htonl((stmp >> 32) & 0xffffffff); \
-		tmp[1] = htonl(stmp & 0xffffffff); \
-	} while (0)
+static inline void ltfs_u64tobe(void *dest, uint64_t src)
+{
+	uint32_t tmp[2];
+	tmp[0] = htonl((uint32_t)((src >> 32) & 0xffffffff));
+	tmp[1] = htonl((uint32_t)(src & 0xffffffff));
+	memcpy(dest, tmp, sizeof(tmp));
+}
 
 /**
  * Convert a uint32_t value (src) to big endian and store it in the 4-byte buffer
  * pointed to by dest.
  */
-#define ltfs_u32tobe(dest, src) \
-	do { \
-		*((uint32_t *)(dest)) = htonl((src)); \
-	} while (0)
+static inline void ltfs_u32tobe(void *dest, uint32_t src)
+{
+	uint32_t tmp = htonl(src);
+	memcpy(dest, &tmp, sizeof(tmp));
+}
 
 /**
  * Convert a uint16_t value (src) to big endian and store it in the 2-byte buffer
  * pointed to by dest.
  */
-#define ltfs_u16tobe(dest, src) \
-	do { \
-		*((uint16_t *)(dest)) = htons((src)); \
-	} while (0)
+static inline void ltfs_u16tobe(void *dest, uint16_t src)
+{
+	uint16_t tmp = htons(src);
+	memcpy(dest, &tmp, sizeof(tmp));
+}
 
 /**
  * Convert a big endian 64-bit unsigned integer (pointed to by buf)
  * to a uint64_t in local byte order.
  */
-#define ltfs_betou64(buf) \
-	(((uint64_t)ntohl(*((uint32_t *)(buf)))) << 32) + (uint64_t)ntohl(*(((uint32_t *)(buf))+1))
+static inline uint64_t ltfs_betou64(const void *buf)
+{
+	uint32_t tmp[2];
+	memcpy(tmp, buf, sizeof(tmp));
+	return ((uint64_t)ntohl(tmp[0]) << 32) | (uint64_t)ntohl(tmp[1]);
+}
 
 /**
  * Convert a big endian 32-bit unsigned integer (pointed to by buf)
  * to a uint32_t in local byte order.
  */
-#define ltfs_betou32(buf) ntohl(*((uint32_t *)(buf)))
+static inline uint32_t ltfs_betou32(const void *buf)
+{
+	uint32_t tmp;
+	memcpy(&tmp, buf, sizeof(tmp));
+	return ntohl(tmp);
+}
 
 /**
  * Convert a big endian 16-bit unsigned integer (pointed to by buf)
  * to a uint16_t in local byte order.
  */
-#define ltfs_betou16(buf) ntohs(*((uint16_t *)(buf)))
+static inline uint16_t ltfs_betou16(const void *buf)
+{
+	uint16_t tmp;
+	memcpy(&tmp, buf, sizeof(tmp));
+	return ntohs(tmp);
+}
 
 #endif /* __LTFS_ENDIAN_H__ */
 
