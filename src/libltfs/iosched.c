@@ -50,8 +50,11 @@
 **
 *************************************************************************************
 */
+#include "ltfs_error.h"
 #include "ltfs_fuse.h"
+#include "ltfs_fsops_raw.h"
 #include "ltfs.h"
+#include "tape.h"
 #include "iosched.h"
 
 struct iosched_priv {
@@ -60,6 +63,53 @@ struct iosched_priv {
 	struct iosched_ops *ops;       /**< I/O scheduler operations */
 	void *backend_handle;          /**< Backend private data */
 };
+
+int _iosched_write_index_after_perm(int write_ret, struct ltfs_volume *volume)
+{
+	int ret = 0;
+	struct tc_position err_pos;
+	uint64_t last_index_pos = UINT64_MAX;
+	unsigned long blocksize;
+
+	if (!IS_WRITE_PERM(-write_ret)) {
+		/* Nothing to do for non-medium error */
+		return ret;
+	}
+
+	ltfsmsg(LTFS_INFO, 13024I, write_ret);
+	blocksize = ltfs_get_blocksize(volume);
+
+	ret = tape_get_first_untransfered_position(volume->device, &err_pos);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 13026E, "get error pos", ret);
+		return ret;
+	}
+
+	/* Check the err_pos is larger than the last index position of the partition */
+	if (err_pos.partition == ltfs_part_id2num(volume->label->partid_ip, volume)) {
+		last_index_pos = volume->ip_coh.set_id;
+	} else {
+		last_index_pos = volume->dp_coh.set_id;
+	}
+
+	if (last_index_pos > err_pos.block) {
+		ltfsmsg(LTFS_INFO, 13027I, (int)err_pos.partition,
+				(unsigned long long)err_pos.block, (unsigned long long)last_index_pos);
+		err_pos.block = last_index_pos + 1;
+	}
+
+	ltfsmsg(LTFS_INFO, 13025I, (int)err_pos.partition, (unsigned long long)err_pos.block, blocksize);
+	ret = ltfs_fsraw_cleanup_extent(volume->index->root, err_pos, blocksize, volume);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, 13026E, "extent cleanup", ret);
+		return ret;
+	}
+
+	ret = ltfs_write_index(ltfs_ip_id(volume), SYNC_WRITE_PERM, volume);
+
+	return ret;
+}
+
 
 /**
  * Initialize the I/O scheduler.
@@ -230,10 +280,20 @@ ssize_t iosched_write(struct dentry *d, const char *buf, size_t size, off_t offs
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 
 	ret = priv->ops->write(d, buf, size, offset, isupdatetime, priv->backend_handle);
-	if (ret > 0 && (size_t) ret > size)
-		ret = size;
+	if (ret < 0) {
+		if (IS_WRITE_PERM(-ret)) {
+			mam_lockval vollock = d->matches_name_criteria ? PWE_MAM_IP : PWE_MAM_DP;
+			int sync_ret = _iosched_write_index_after_perm(ret, vol);
+			if (sync_ret < 0) {
+				tape_set_cart_volume_lock_status(vol, PWE_MAM);
+				return sync_ret;
+			}
+			tape_set_cart_volume_lock_status(vol, vollock);
+		}
+		return ret;
+	}
 
-	return ret;
+	return ret > (ssize_t)size? (ssize_t)size : ret;
 }
 
 /**
