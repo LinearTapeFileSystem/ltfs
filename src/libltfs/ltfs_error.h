@@ -317,6 +317,7 @@
 #define LTFS_XML_WRONG_PART_MAP   5048  /* Unexpected partition map in a label */
 #define LTFS_XML_WRONG_BLOCKSIZE  5049  /* Unexpected blocksize in a label */
 #define LTFS_XML_WRONG_COMP       5050  /* Unexpected compression in a label */
+#define LTFS_XML_DEEP_NESTING     5051  /* Directory nesting in the index is too deep */
 
 #define LTFS_ERR_MAX              19999
 
