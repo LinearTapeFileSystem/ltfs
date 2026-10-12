@@ -54,6 +54,7 @@
 #include <dirent.h>
 #include <sys/ioctl.h>
 
+#include "libltfs/ltfs_error.h"
 #include "ltfs_copyright.h"
 #include "libltfs/ltfslogging.h"
 #include "libltfs/fs.h"
@@ -104,6 +105,7 @@ struct sg_global_data global_data;
 #define MAX_RETRY          (100)
 
 #define MAX_TAKE_DUMP_ATTEMPTS (10)
+#define POR_MAX_RETRIES (3)
 
 /* Forward references (For keep function order to struct tape_ops) */
 int sg_readpos(void *device, struct tc_position *pos);
@@ -604,7 +606,7 @@ int _raw_tur(const int fd)
 
 #define _clear_por(p) _clear_por_raw((p)->dev.fd);
 
-void _clear_por_raw(const int fd)
+int _clear_por_raw(const int fd)
 {
 	int i = 0, ret = -1;
 
@@ -624,6 +626,7 @@ void _clear_por_raw(const int fd)
 		}
 		i++;
 	}
+	return ret;
 }
 
 #define _get_stable_tur_response(p) _get_stable_tur_response_raw((p)->dev.fd)
@@ -1861,15 +1864,10 @@ static int _cdb_read(void *device, char *buf, size_t size, bool sili)
 	return length;
 }
 
-static inline int _handle_block_allocation_failure(void *device, struct tc_position *pos,
-												   int *retry, char *op)
+static inline int _resolve_position_after_io_cmd_failure(void *device, struct tc_position *pos, char *op)
 {
 	int ret = 0;
 	struct tc_position tmp_pos = {0, 0};
-
-	/* Sleep 3 secs to wait garbage correction in kernel side and retry */
-	ltfsmsg(LTFS_WARN, 30277W, ++(*retry));
-	sleep(3);
 
 	ret = sg_readpos(device, &tmp_pos);
 	if (ret == DEVICE_GOOD && pos->partition == tmp_pos.partition) {
@@ -1923,11 +1921,12 @@ static inline int _handle_block_allocation_failure(void *device, struct tc_posit
 int sg_read(void *device, char *buf, size_t size,
 					struct tc_position *pos, const bool unusual_size)
 {
-	int32_t ret = -EDEV_UNKNOWN;
+ 	int32_t ret = -EDEV_UNKNOWN, ret_read = -1;
 	struct sg_data *priv = (struct sg_data*)device;
 	size_t datacount = size;
 	struct tc_position pos_retry = {0, 0};
-	int retry_count = 0;
+	int retry_count = 0, por_retry_count = 0;
+	struct timespec delay_ts = {0};
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_READ));
 	ltfsmsg(LTFS_DEBUG3, 30395D, "read", size, priv->drive_serial);
@@ -1952,7 +1951,7 @@ int sg_read(void *device, char *buf, size_t size,
 	}
 
 start_read:
-	ret = _cdb_read(device, buf, datacount, unusual_size);
+	ret_read = ret = _cdb_read(device, buf, datacount, unusual_size);
 	if (ret == -EDEV_LENGTH_MISMATCH) {
 		if (pos_retry.partition || pos_retry.block) {
 			/* Return error when retry is already executed */
@@ -1984,10 +1983,37 @@ start_read:
 		priv->use_sili = false;
 		ret = _cdb_read(device, buf, datacount, unusual_size);
 	} else if (ret == -EDEV_BUFFER_ALLOCATE_ERROR && retry_count < MAX_RETRY) {
-		ret = _handle_block_allocation_failure(device, pos, &retry_count, "read");
+		ltfsmsg(LTFS_WARN, 30277W, ++retry_count);
+		struct timespec delay_ts;
+		delay_ts.tv_sec  = 3;
+		delay_ts.tv_nsec = 0;
+		nanosleep(&delay_ts, NULL); // Wait for kernel GC
+		ret = _resolve_position_after_io_cmd_failure(device, pos, "read");
 		if (ret == -EDEV_RETRY)
 			goto start_read;
+	} else if (ret == -EDEV_HOST_ERROR && por_retry_count < POR_MAX_RETRIES) {
+	  ltfsmsg(LTFS_WARN, 30298W, "read", por_retry_count);
+		por_retry_count++;
+		delay_ts.tv_sec  = 5;
+		delay_ts.tv_nsec = 0;
+		nanosleep(&delay_ts, NULL);
+		ret = _clear_por(priv);
+		if (ret == DEVICE_GOOD) {
+			ret = _resolve_position_after_io_cmd_failure(device, pos, "read");
+			/* If the original command did not reach the driver, or it reached it but after failing there is a position mismatch; retry */
+			if (ret == -EDEV_RETRY) {
+				goto start_read;
+			} else if (ret == 0) {
+			  ret_read = datacount; // This is OK? Might need to set the block instead of that
+			} else {
+	      ltfsmsg(LTFS_ERR, 30300E, ret);
+			}
+		} else {
+		  ltfsmsg(LTFS_ERR, 30299E, ret);
+		}
+		ret = ret_read;
 	}
+
 
 	if(ret == -EDEV_FILEMARK_DETECTED)
 	{
@@ -2093,12 +2119,13 @@ static int _cdb_write(void *device, uint8_t *buf, size_t size, bool *ew, bool *p
 
 int sg_write(void *device, const char *buf, size_t count, struct tc_position *pos)
 {
-	int ret, ret_fo;
+	int ret, ret_fo, ret_write = -1;
 	bool ew = false, pew = false;
 	struct sg_data *priv = (struct sg_data*)device;
 	struct tc_position cur_pos;
 	size_t datacount = count;
-	int retry_count = 0;
+	int retry_count = 0, por_retry_count = 0;
+	struct timespec delay_ts = {0};
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_WRITE));
 
@@ -2128,7 +2155,7 @@ int sg_write(void *device, const char *buf, size_t count, struct tc_position *po
 	}
 
 start_write:
-	ret = _cdb_write(device, (uint8_t *)buf, datacount, &ew, &pew);
+	ret_write = ret = _cdb_write(device, (uint8_t *)buf, datacount, &ew, &pew);
 	if (ret == DEVICE_GOOD) {
 		pos->block++;
 		pos->early_warning = ew;
@@ -2146,9 +2173,34 @@ start_write:
 				ret = -EDEV_POR_OR_BUS_RESET;
 		}
 	} else if (ret == -EDEV_BUFFER_ALLOCATE_ERROR && retry_count < MAX_RETRY) {
-		ret = _handle_block_allocation_failure(device, pos, &retry_count, "write");
+		ltfsmsg(LTFS_WARN, 30277W, ++retry_count);
+		delay_ts.tv_sec  = 3;
+		delay_ts.tv_nsec = 0;
+		nanosleep(&delay_ts, NULL); // Wait for kernel GC
+		ret = _resolve_position_after_io_cmd_failure(device, pos, "write");
 		if (ret == -EDEV_RETRY)
 			goto start_write;
+	} else if (ret == -EDEV_HOST_ERROR && por_retry_count < POR_MAX_RETRIES) {
+    ltfsmsg(LTFS_WARN, 30298W, "write", por_retry_count);
+		por_retry_count++;
+		delay_ts.tv_sec  = 5;
+		delay_ts.tv_nsec = 0;
+		nanosleep(&delay_ts, NULL);
+		ret = _clear_por(priv);
+		if (ret == DEVICE_GOOD) {
+			ret = _resolve_position_after_io_cmd_failure(device, pos, "write");
+			/* If the original command did not reach the driver, or it reached it but after failing there is a position mismatch; retry */
+			if (ret == -EDEV_RETRY) {
+				goto start_write;
+			} else if (ret == 0) {
+			  ret_write = datacount; // This is OK? Might need to set the blocksize instead of that
+			} else {
+	      ltfsmsg(LTFS_ERR, 30300E, ret);
+			}
+		} else {
+		  ltfsmsg(LTFS_ERR, 30299E, ret);
+		}
+		ret = ret_write;
 	}
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_WRITE));
@@ -3324,7 +3376,15 @@ int sg_modeselect(void *device, unsigned char *buf, const size_t size)
 
 	/* Build CDB */
 	cdb[0] = MODE_SELECT10;
-	cdb[1] = 0x10; /* Set PF bit */
+	/*
+	*  Set PF and SP bit
+	* NOTE: Not all modepages support SP bit.
+	* The SCSI reference says:
+	*     • SP (Save Pages): Only allowed to be set to one when explicitly mentioned in the description of the
+	*       specific mode page
+	* Right now SDE and LE does not set any non savable pages, but this could change.
+	* */
+	cdb[1] = 0x11;
 	ltfs_u16tobe(cdb + 7, size);
 
 	timeout = get_timeout(priv->timeouts, cdb[0]);
