@@ -3031,7 +3031,8 @@ int sg_remaining_capacity(void *device, struct tc_remaining_cap *cap)
 
 	memset(buffer, 0, LOGSENSEPAGE);
 
-	if (IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) {
+	if ((IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) ||
+		(priv->vendor == VENDOR_HP && IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x06))) {
 		/* Use LogPage 0x31 */
 		ret = sg_logsense(device, (uint8_t)LOG_TAPECAPACITY, (uint8_t)0, (void *)buffer, LOGSENSEPAGE);
 		if(ret < 0)
@@ -4630,7 +4631,9 @@ static bool is_ame(void *device)
 	unsigned char buf[TC_MP_READ_WRITE_CTRL_SIZE] = {0};
 	const int ret = sg_modesense(device, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
 
-	if (ret != 0) {
+	/* sg_modesense returns the transferred byte count (> 0) on success and a
+	 * negative error code on failure. */
+	if (ret < 0) {
 		char message[100] = {0};
 		sprintf(message, "failed to get MP %02Xh (%d)", TC_MP_READ_WRITE_CTRL, ret);
 		ltfsmsg(LTFS_DEBUG, 30392D, __FUNCTION__, message);
@@ -4720,7 +4723,7 @@ int sg_set_key(void *device, const unsigned char *keyalias, const unsigned char 
 
 	unsigned char buf[TC_MP_READ_WRITE_CTRL_SIZE] = {0};
 	ret = sg_modesense(device, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
-	if (ret != DEVICE_GOOD)
+	if (ret < 0)  /* sg_modesense returns a byte count (> 0) on success */
 		goto out;
 
 	ltfs_u16tobe(buffer + 0, sps);
@@ -4767,8 +4770,9 @@ int sg_set_key(void *device, const unsigned char *keyalias, const unsigned char 
 
 	memset(buf, 0, sizeof(buf));
 	ret = sg_modesense(device, TC_MP_READ_WRITE_CTRL, TC_MP_PC_CURRENT, 0, buf, sizeof(buf));
-	if (ret != DEVICE_GOOD)
+	if (ret < 0)  /* sg_modesense returns a byte count (> 0) on success */
 		goto out;
+	ret = DEVICE_GOOD; /* normalize the byte count to a success code */
 
 free:
 	free(buffer);

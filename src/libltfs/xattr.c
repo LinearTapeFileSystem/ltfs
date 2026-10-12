@@ -664,7 +664,12 @@ static int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, cons
 				default:
 					break;
 			}
-			asprintf(&val, "0x%08x", (uint32_t)(vol->device->write_protected | lock));
+			ret = asprintf(&val, "0x%08x", (uint32_t)(vol->device->write_protected | lock));
+			if (ret < 0) {
+				ltfsmsg(LTFS_ERR, 10001E, name);
+				val = NULL;
+				ret = -LTFS_NO_MEMORY;
+			}
 		} else {
 			val = NULL;
 			ret = -LTFS_CART_NOT_MOUNTED;

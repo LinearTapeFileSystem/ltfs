@@ -1913,6 +1913,10 @@ int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, 
 	id->uid = d->uid;
 	id->ino = d->ino;
 	d->target.name = arch_strdup(to);
+	if (!d->target.name) {
+		ltfs_fsops_close(d, true, true, use_iosche, vol);
+		return -LTFS_NO_MEMORY;
+	}
 	d->target.percent_encode = fs_is_percent_encode_required(to);
 	d->isslink = true;
 
@@ -2063,7 +2067,7 @@ int ltfs_fsops_target_absolute_path(const char* link, const char* target, char* 
 			len -= strlen(temp_buf); /* length of "/aaa" */
 		} else if (strcmp(token, "." )) {                    /* have directory name */
 			work_buf[len] = '/';                             /* put '/ 'as "/aaa/" */
-			arch_strncpy(work_buf+len+1, token, work_buf_len, strlen(token) ); /* "/aaa/ccc\0" */
+			arch_strncpy(work_buf+len+1, token, work_buf_len, strlen(token)); /* "/aaa/ccc\0" */
 			len = strlen(work_buf);
 		}
 		token = next_token;

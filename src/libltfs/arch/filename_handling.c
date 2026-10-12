@@ -131,6 +131,9 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
 	}
 #else
 	dentry->platform_safe_name = arch_strdup(dentry->name.name);
+	if (!dentry->platform_safe_name) {
+		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+	}
 #endif
 }
 

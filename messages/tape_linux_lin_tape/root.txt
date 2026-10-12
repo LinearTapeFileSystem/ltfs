@@ -52,8 +52,8 @@ root:table {
 		30407D:string { "IOCTL: pos = 0x%02x%02x%02x%02x %s." }
 		30408I:string { "IOCTL: %s %d returns %d (generic %d) %s." }
 		30409D:string { "IOCTL: no sense info." }
-		30410D:string { "IOCTL: %s %d expected error %d." }
-		30411D:string { "IOCTL: %s %d expected error %d. retry the operation." }
+		30410D:string { "IOCTL: %s %d expected error %02x/%02x%02x (%d)." }
+		30411D:string { "IOCTL: %s %d expected error %02x/%02x%02x (%d). retry the operation." }
 		30412I:string { "Cannot get sense (%d)." }
 		30413I:string { "Error on %s: %s (%d) %s." }
 		30414E:string { "Error on %s: msg = NULL (%d) %s." }

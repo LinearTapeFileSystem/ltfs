@@ -123,6 +123,12 @@ int read_trap_def_file(char *deffile)
 					return -LTFS_NO_MEMORY;
 				}
 				entry->id = arch_strdup(tok);
+				if (! entry->id) {
+					ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
+					free(entry);
+					fclose(fp);
+					return -LTFS_NO_MEMORY;
+				}
 				TAILQ_INSERT_TAIL(&trap_entries, entry, list);
 			}
 		}

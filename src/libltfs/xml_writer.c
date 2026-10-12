@@ -409,8 +409,8 @@ retry:
 
 	/* Create backup file if required */
 	if (bk_fd) {
-		asprintf(&backup_file, "%s.%s", file, "bk");
-		if (!backup_file){
+		ret = asprintf(&backup_file, "%s.%s", file, "bk");
+		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, 10001E, "xml_acquire_file_lock: backup name");
 			arch_close(*fd);
 			*fd = -1;
@@ -510,8 +510,8 @@ int xml_release_file_lock(const char *file, int fd, int bk_fd, bool revert)
 	if (bk_fd >= 0) arch_close(bk_fd);
     errno = errno_save;
 
-	asprintf(&backup_file, "%s.%s", file, "bk");
-	if (!backup_file){
+	ret = asprintf(&backup_file, "%s.%s", file, "bk");
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 10001E, "xml_release_file_lock: backup name");
 		ret = -LTFS_NO_MEMORY;
 	} else {
