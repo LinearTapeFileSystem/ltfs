@@ -88,10 +88,23 @@ enum {
 	KEY_VERSION,
 	KEY_VERBOSE,
 	KEY_ADVANCED_HELP,
+#ifdef HAVE_FUSE3
+	KEY_FUSE2_OPTION,
+#endif
 };
 
 #define LTFS_OPT(templ,offset,value) { templ, offsetof(struct ltfs_fuse_data, offset), value }
 #define LTFS_OPT_KEY(templ, key)     { templ, -1U, key }
+
+#ifdef HAVE_FUSE3
+/* fuse_main() result when the session loop ended, also by a signal. Lower
+ * non-zero values mean that the file system did not start. */
+#if FUSE_VERSION >= FUSE_MAKE_VERSION(3, 12)
+#define LTFS_FUSE_LOOP_ENDED 8
+#else
+#define LTFS_FUSE_LOOP_ENDED 7
+#endif
+#endif
 
 /* Forward declarations */
 int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv);
@@ -139,9 +152,43 @@ static struct fuse_opt ltfs_options[] = {
 	LTFS_OPT("capture_index",          capture_index, 1),
 	LTFS_OPT("symlink_type=%s",        symlink_str, 0),
 	LTFS_OPT("scsi_append_only_mode=%s", str_append_only_mode, 0),
+#ifdef HAVE_FUSE3
 	LTFS_OPT("max_write=%lu",          fuse_max_write, 0),
+	LTFS_OPT("max_read=%u",            fuse_max_read, 0),
+	FUSE_OPT_KEY("max_read=",          FUSE_OPT_KEY_KEEP),
+	/* FUSE 2 options that libfuse 3 rejects */
+	LTFS_OPT_KEY("big_writes",         KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("sync_read",          KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("async_read",         KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("nonempty",           KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("large_read",         KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("use_ino",            KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("hard_remove",        KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("atomic_o_trunc",     KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("max_readahead=",     KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("readdir_ino",        KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("nopath",             KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("intr",               KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("intr_signal=",       KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("no_remote_lock",     KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("no_remote_flock",    KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("no_remote_posix_lock", KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("splice_read",        KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("no_splice_read",     KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("splice_write",       KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("no_splice_write",    KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("splice_move",        KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("no_splice_move",     KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("max_background=",    KEY_FUSE2_OPTION),
+	LTFS_OPT_KEY("congestion_threshold=", KEY_FUSE2_OPTION),
+#ifdef __APPLE__
+	LTFS_OPT_KEY("direct_io",          KEY_FUSE2_OPTION),
+#endif
+#endif
+#ifndef __APPLE__
 	LTFS_OPT("direct_io",              direct_io, 1),
 	LTFS_OPT("nodirect_io",            direct_io, 0),
+#endif
 	LTFS_OPT_KEY("-a",                 KEY_ADVANCED_HELP),
 	FUSE_OPT_KEY("-h",                 KEY_HELP),
 	FUSE_OPT_KEY("--help",             KEY_HELP),
@@ -180,8 +227,12 @@ void single_drive_advanced_usage(const char *default_driver, struct ltfs_fuse_da
 	ltfsresult(14448I); /* -o release_device */
 	ltfsresult(14456I); /* -o capture_index */
 	ltfsresult(14463I); /* -o scsi_append_only_mode=<on|off> */
+#ifdef HAVE_FUSE3
 	ltfsresult(14469I); /* -o max_write=<num> */
+#endif
+#ifndef __APPLE__
 	ltfsresult(14470I); /* -o direct_io */
+#endif
 	ltfsresult(14406I); /* -a */
 	/* TODO: future use for WORM */
 	/* set worm rollback flag and rollback_str by this option */
@@ -389,6 +440,11 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 	int i;
 
 	switch(key) {
+#ifdef HAVE_FUSE3
+		case KEY_FUSE2_OPTION:
+			ltfsmsg(LTFS_WARN, 14125W, arg);
+			return 0;
+#endif
 		case KEY_VERSION:
 			ltfsresult(14058I, PACKAGE_NAME, PACKAGE_VERSION);
 			ltfsresult(14058I, "LTFS Format Specification", LTFS_INDEX_VERSION_STR);
@@ -938,7 +994,8 @@ int main(int argc, char **argv)
 
 int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 {
-	int ret, altret;
+	int ret, altret, fuse_ret;
+	bool fuse_failed;
 	char *index_rules_utf8;
 	char fsname[strlen(priv->devname) + 16];
 	char *invalid_start;
@@ -994,9 +1051,6 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		priv->fuse_max_write = LTFS_FUSE_MAX_WRITE_DEFAULT;
 	else if (priv->fuse_max_write < LTFS_FUSE_MAX_WRITE_MIN)
 		priv->fuse_max_write = LTFS_FUSE_MAX_WRITE_MIN;
-#else
-	if (priv->fuse_max_write != 0)
-		ltfsmsg(LTFS_WARN, 14125W);
 #endif
 
 #ifndef HAVE_FUSE3
@@ -1284,10 +1338,14 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	ltfsmsg(LTFS_INFO, 14113I);
 	/* Set handlers for signals that need to be caught while fuse main is running*/
 	ltfs_extra_signal_handlers();
-	ret = fuse_main(args->argc, args->argv, &ltfs_ops, priv);
-	if (ret != 0) {
-		ltfsmsg(LTFS_WARN, 14123W, ret);
-	}
+	fuse_ret = fuse_main(args->argc, args->argv, &ltfs_ops, priv);
+#ifdef HAVE_FUSE3
+	fuse_failed = fuse_ret != 0 && fuse_ret != LTFS_FUSE_LOOP_ENDED;
+#else
+	fuse_failed = fuse_ret != 0;
+#endif
+	if (fuse_failed)
+		ltfsmsg(LTFS_WARN, 14123W, fuse_ret);
 	/* Unset extra handlers once fuse main exits */
 	ltfs_unset_extra_signal_handler();
 
@@ -1310,5 +1368,5 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	ltfs_volume_free(&priv->data);
 	ltfs_unset_signal_handlers();
 
-	return ret;
+	return fuse_failed ? 1 : ret;
 }

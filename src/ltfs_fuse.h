@@ -136,6 +136,7 @@ struct ltfs_fuse_data {
 	char *str_append_only_mode;    /**< option sting of scsi_append_only_mode */
 	int append_only_mode;          /**< Use append-only mode */
 	unsigned long fuse_max_write;  /**< Maximum size of a FUSE request in bytes (FUSE 3) */
+	unsigned int fuse_max_read;    /**< Value of the max_read option, 0 if not set (FUSE 3) */
 	int direct_io;                 /**< Bypass the kernel page cache for all file I/O */
 
 	bool advanced_help;            /**< Include standard FUSE options on --help? */
