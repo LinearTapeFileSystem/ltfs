@@ -23,10 +23,14 @@ if [ "${LTFS_DOCKER_SHELL:-0}" = "1" ]; then
 fi
 
 # Build from a copy of the source files so the host tree stays untouched.
+cd "$top_srcdir"
 # shellcheck disable=SC2086
-cd "$top_srcdir" && git ls-files -z --cached --others --exclude-standard \
-    | COPYFILE_DISABLE=1 tar --null -T - -cf - \
-    | docker run $run_flags -i "$image" sh -ec '
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git ls-files -z --cached --others --exclude-standard \
+        | COPYFILE_DISABLE=1 tar --null -T - -cf -
+else
+    COPYFILE_DISABLE=1 tar -cf - .
+fi | docker run $run_flags -i "$image" sh -ec '
         mkdir -p /build && cd /build && tar -xf -
         ./autogen.sh
         ./configure "$@"

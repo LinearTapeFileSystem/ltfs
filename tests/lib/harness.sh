@@ -77,6 +77,7 @@ _fusermount() {
 
 ltfs_cleanup() {
 	status=$?
+	trap '' INT TERM
 	set +e
 	if [ -n "$MNT" ] && mountpoint -q "$MNT" 2>/dev/null; then
 		_fusermount -u "$MNT" 2>/dev/null || _fusermount -u -z "$MNT" 2>/dev/null \
