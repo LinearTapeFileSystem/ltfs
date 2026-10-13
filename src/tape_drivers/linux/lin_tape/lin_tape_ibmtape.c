@@ -2268,8 +2268,7 @@ int lin_tape_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *c
 	struct lin_tape_ibmtape *priv = (struct lin_tape_ibmtape *) device;
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_ENTER(REQ_TC_REMAINCAP));
-	if ((IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) ||
-		(priv->vendor == VENDOR_HP && IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x06))) {
+	if (IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) {
 		/* Issue LogPage 0x31 */
 		rc = lin_tape_ibmtape_logsense(device, LOG_TAPECAPACITY, (uint8_t)0, logdata, LOGSENSEPAGE);
 		if (rc) {

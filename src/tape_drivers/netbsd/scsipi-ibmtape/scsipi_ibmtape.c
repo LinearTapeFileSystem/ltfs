@@ -2575,8 +2575,7 @@ int scsipi_ibmtape_remaining_capacity(void *device, struct tc_remaining_cap *cap
 
 	memset(buffer, 0, LOGSENSEPAGE);
 
-	if ((IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) ||
-		(priv->vendor == VENDOR_HP && IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x06))) {
+	if (IS_LTO(priv->drive_type) && (DRIVE_GEN(priv->drive_type) == 0x05)) {
 		/* Use LogPage 0x31 */
 		ret = scsipi_ibmtape_logsense(device, (uint8_t)LOG_TAPECAPACITY, (uint8_t)0, (void *)buffer, LOGSENSEPAGE);
 		if(ret < 0)
