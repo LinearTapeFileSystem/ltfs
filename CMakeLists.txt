@@ -5,6 +5,10 @@
 #
 cmake_minimum_required(VERSION 3.18)
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+    message(FATAL_ERROR "In-source builds would overwrite autotools files; use a build directory, e.g. cmake -S . -B build")
+endif()
+
 # --- Version (single source of truth: ./VERSION) -----------------------------
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" _ltfs_ver_lines)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
@@ -21,6 +25,10 @@ else()
 endif()
 
 project(ltfs VERSION ${LTFS_VERSION_NUM} LANGUAGES C)
+
+if(NOT CMAKE_SYSTEM_NAME MATCHES "^(Linux|Darwin)$")
+    message(WARNING "The CMake build is not tested on ${CMAKE_SYSTEM_NAME}.")
+endif()
 
 set(LTFS_PACKAGE_NAME "LTFS")
 set(LTFS_PACKAGE_TARNAME "ltfs")
