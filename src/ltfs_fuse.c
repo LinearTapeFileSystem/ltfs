@@ -591,20 +591,46 @@ int ltfs_fuse_flush(const char *path, struct fuse_file_info *fi)
 	return errormap_fuse_error(ret);
 }
 
+static struct ltfs_timespec _ltfs_fuse_utime(const struct timespec *ts,
+	const struct ltfs_timespec *now, const struct ltfs_timespec *current)
+{
+	struct ltfs_timespec ret;
+
+	if (ts->tv_nsec == UTIME_NOW)
+		ret = *now;
+	else if (ts->tv_nsec == UTIME_OMIT)
+		ret = *current;
+	else
+		ret = ltfs_timespec_from_timespec(ts);
+
+	return ret;
+}
+
 int ltfs_fuse_utimens(const char *path, const struct timespec ts[2])
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
+	struct dentry_attr attr;
 	struct ltfs_timespec tsTmp[2];
+	struct ltfs_timespec now;
 	ltfs_file_id id;
-	int ret;
+	int ret = 0;
 
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_UTIMENS), 0, 0);
 
-	tsTmp[0] = ltfs_timespec_from_timespec(&ts[0]);
-	tsTmp[1] = ltfs_timespec_from_timespec(&ts[1]);
+	id.uid = 0;
+	id.ino = 0;
 
 	ltfsmsg(LTFS_DEBUG, 14038D, path);
-	ret = ltfs_fsops_utimens_path(path, tsTmp, &id, priv->data);
+
+	if (ts[0].tv_nsec == UTIME_OMIT || ts[1].tv_nsec == UTIME_OMIT)
+		ret = ltfs_fsops_getattr_path(path, &attr, &id, priv->data);
+
+	if (ret == 0) {
+		get_current_timespec(&now);
+		tsTmp[0] = _ltfs_fuse_utime(&ts[0], &now, &attr.access_time);
+		tsTmp[1] = _ltfs_fuse_utime(&ts[1], &now, &attr.modify_time);
+		ret = ltfs_fsops_utimens_path(path, tsTmp, &id, priv->data);
+	}
 
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_UTIMENS), ret, id.uid);
 
@@ -1237,5 +1263,9 @@ struct fuse_operations ltfs_ops = {
 	.readlink    = ltfs_fuse_readlink,
 #if FUSE_VERSION >= 28
 	.flag_nullpath_ok = 1,
+#endif
+#if FUSE_VERSION >= 29
+	/* Without it, libfuse 2 drops atime-only and mtime-only updates. */
+	.flag_utime_omit_ok = 1,
 #endif
 };
