@@ -23,6 +23,8 @@ exec 3<"$MNT/openfile"
 rm "$MNT/openfile"
 [ ! -e "$MNT/openfile" ] || fail "unlink of open file did not remove the name"
 ls -a "$MNT" | grep -q '\.fuse_hidden' && fail ".fuse_hidden file left behind"
+IFS= read -r line <&3 || fail "open file unreadable after unlink"
+[ "$line" = "openme" ] || fail "open file reads '$line' after unlink"
 exec 3<&-
 
 ltfs_finish

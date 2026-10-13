@@ -6,10 +6,11 @@ jobs:
   test:
     name: Build and test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Set up Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -20,13 +21,12 @@ jobs:
             build-essential automake autoconf libtool pkg-config \
             icu-devtools libicu-dev libxml2-dev uuid-dev libsnmp-dev \
             libfuse-dev attr
-          sudo install -m 755 tests/docker/icu-config /usr/local/bin/icu-config
 
       - name: Build
         run: |
           ./autogen.sh
-          ./configure --enable-icu-6x
+          ./configure
           make -j"$(nproc)"
 
       - name: Run tests
-        run: make check VERBOSE=1 || { cat tests/test-suite.log; exit 1; }
+        run: make check VERBOSE=1

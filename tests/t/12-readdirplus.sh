@@ -1,11 +1,14 @@
 #!/bin/sh
-# readdirplus: listing a directory must return correct attributes and,
-# on FUSE 3, must not trigger a getattr request per entry.
+# readdirplus: listing a directory must return correct attributes and
+# must not trigger a getattr request per entry.
 . "${top_srcdir}/tests/lib/harness.sh"
 
 LTFS_MOUNT_OPTS="-o verbose=6"
 
 NFILES=100
+
+ltfs_check_env
+ltfs_is_fuse3 || skip "readdirplus needs a FUSE 3 build"
 
 ltfs_setup
 
@@ -35,21 +38,19 @@ ltfs_finish
 getattrs=$(grep -c "FUSE f*getattr" "$WORK/ltfs-remount.log" || true)
 echo "getattr requests during ls -l of $NFILES files: $getattrs"
 
-if ltfs_is_fuse3; then
-	# readdirplus delivers attributes with the listing; without it the
-	# kernel issues one getattr (via lookup) per entry. The prefill is
-	# only effective with libfuse >= 3.17 (verified there; libfuse 3.14
-	# never sends READDIRPLUS to the high-level API), so the strict
-	# assertion is gated on the runtime library version.
-	ver=$(fusermount3 -V 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1)
-	maj=${ver%%.*}
-	min=${ver#*.}
-	if [ "${maj:-0}" -gt 3 ] || { [ "${maj:-0}" -eq 3 ] && [ "${min:-0}" -ge 17 ]; }; then
-		[ "$getattrs" -lt $((NFILES / 2)) ] \
-			|| fail "expected readdirplus to suppress per-entry getattr, saw $getattrs"
-	else
-		echo "libfuse ${ver:-unknown}: readdirplus prefill not asserted (verified on >= 3.17)"
-	fi
+# readdirplus delivers attributes with the listing; without it the
+# kernel issues one getattr (via lookup) per entry. The prefill is
+# only effective with libfuse >= 3.17 (verified there; libfuse 3.14
+# never sends READDIRPLUS to the high-level API), so the strict
+# assertion is gated on the runtime library version.
+ver=$(fusermount3 -V 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1)
+maj=${ver%%.*}
+min=${ver#*.}
+if [ "${maj:-0}" -gt 3 ] || { [ "${maj:-0}" -eq 3 ] && [ "${min:-0}" -ge 17 ]; }; then
+	[ "$getattrs" -lt $((NFILES / 2)) ] \
+		|| fail "expected readdirplus to suppress per-entry getattr, saw $getattrs"
+else
+	echo "libfuse ${ver:-unknown}: readdirplus prefill not asserted (verified on >= 3.17)"
 fi
 
 echo "PASS"

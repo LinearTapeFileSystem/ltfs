@@ -9,6 +9,9 @@
 
 set -eu
 
+# Error texts are compared literally.
+export LC_ALL=C
+
 SKIP=77
 
 : "${top_builddir:?top_builddir must be set (run via make check)}"
@@ -17,6 +20,7 @@ SKIP=77
 LTFS_BIN="$top_builddir/src/ltfs"
 MKLTFS_BIN="$top_builddir/src/utils/mkltfs"
 LTFSCK_BIN="$top_builddir/src/utils/ltfsck"
+HELPER="$top_builddir/tests/helpers/fsops_helper"
 
 # Extra mount options for the ltfs invocation; tests may override.
 LTFS_MOUNT_OPTS="${LTFS_MOUNT_OPTS:-}"
@@ -34,6 +38,19 @@ skip() {
 fail() {
 	echo "FAIL: $*" >&2
 	exit 1
+}
+
+# helper_fails <expected error> <helper arguments...>: the fsops_helper
+# syscall must fail with exactly that error text.
+helper_fails() {
+	[ -x "$HELPER" ] || fail "fsops_helper not built"
+	expected=$1
+	shift
+	rc=0
+	out=$("$HELPER" "$@") || rc=$?
+	[ "$rc" -eq 4 ] && skip "fsops_helper $* is not supported on this platform"
+	[ "$rc" -eq 2 ] || fail "fsops_helper $*: exit code $rc, output: $out"
+	[ "$out" = "$expected" ] || fail "fsops_helper $*: expected '$expected', got '$out'"
 }
 
 ltfs_check_env() {
@@ -62,7 +79,8 @@ ltfs_cleanup() {
 	status=$?
 	set +e
 	if [ -n "$MNT" ] && mountpoint -q "$MNT" 2>/dev/null; then
-		_fusermount -u "$MNT" 2>/dev/null || umount "$MNT" 2>/dev/null
+		_fusermount -u "$MNT" 2>/dev/null || _fusermount -u -z "$MNT" 2>/dev/null \
+			|| umount -l "$MNT" 2>/dev/null
 	fi
 	if [ -n "$LTFS_PID" ] && kill -0 "$LTFS_PID" 2>/dev/null; then
 		# Give the daemon time to flush the index after unmount.
@@ -71,6 +89,12 @@ ltfs_cleanup() {
 			sleep 0.2
 		done
 		kill "$LTFS_PID" 2>/dev/null
+		for _ in $(seq 25); do
+			kill -0 "$LTFS_PID" 2>/dev/null || break
+			sleep 0.2
+		done
+		kill -9 "$LTFS_PID" 2>/dev/null
+		wait "$LTFS_PID"
 	fi
 	[ -n "$WORK" ] && rm -rf "$WORK"
 	exit "$status"
@@ -94,12 +118,17 @@ _find_plugin() {
 
 # Generate an ltfs.conf pointing at the plugins in the build tree.
 _write_config() {
+	tape_file=$(_find_plugin tape_drivers/generic/file libtape-file)
+	iosched_unified=$(_find_plugin iosched libiosched-unified)
+	iosched_fcfs=$(_find_plugin iosched libiosched-fcfs)
+	kmi_flatfile=$(_find_plugin kmi libkmi-flatfile)
+	kmi_simple=$(_find_plugin kmi libkmi-simple)
 	cat >"$WORK/ltfs.conf" <<EOF
-plugin tape file $(_find_plugin tape_drivers/generic/file libtape-file)
-plugin iosched unified $(_find_plugin iosched libiosched-unified)
-plugin iosched fcfs $(_find_plugin iosched libiosched-fcfs)
-plugin kmi flatfile $(_find_plugin kmi libkmi-flatfile)
-plugin kmi simple $(_find_plugin kmi libkmi-simple)
+plugin tape file $tape_file
+plugin iosched unified $iosched_unified
+plugin iosched fcfs $iosched_fcfs
+plugin kmi flatfile $kmi_flatfile
+plugin kmi simple $kmi_simple
 default tape file
 default iosched unified
 default kmi none
@@ -111,7 +140,9 @@ ltfs_setup() {
 	ltfs_check_env
 
 	WORK=$(mktemp -d "${TMPDIR:-/tmp}/ltfstest.XXXXXX")
-	trap ltfs_cleanup EXIT INT TERM
+	trap ltfs_cleanup EXIT
+	trap 'exit 130' INT
+	trap 'exit 143' TERM
 	MNT="$WORK/mnt"
 	TAPE="$WORK/tape"
 	mkdir -p "$MNT" "$TAPE"
@@ -151,8 +182,8 @@ ltfs_umount() {
 }
 
 # ltfs_fsck: verify the volume is consistent.
-# Exit codes follow fsck conventions: 0 = clean, 1 = corrected/treat as
-# success (e.g. MAM coherency update); anything else is a failure.
+# ltfsck exits 1 (LTFSCK_CORRECTED) after a successful check, so 0 and 1
+# are success; anything else is a failure.
 ltfs_fsck() {
 	rc=0
 	"$LTFSCK_BIN" -i "$WORK/ltfs.conf" -e file "$TAPE" >"$WORK/ltfsck.log" 2>&1 || rc=$?

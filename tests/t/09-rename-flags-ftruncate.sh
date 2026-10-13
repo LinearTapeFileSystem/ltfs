@@ -2,8 +2,6 @@
 # rename(2) flag semantics, ftruncate on an open fd, and inode stability.
 . "${top_srcdir}/tests/lib/harness.sh"
 
-HELPER="$top_builddir/tests/helpers/fsops_helper"
-
 ltfs_setup
 
 [ -x "$HELPER" ] || fail "fsops_helper not built"
@@ -12,12 +10,12 @@ echo one >"$MNT/a"
 echo two >"$MNT/b"
 
 # RENAME_NOREPLACE with an existing target must fail and leave it intact
-"$HELPER" noreplace "$MNT/a" "$MNT/b" && fail "RENAME_NOREPLACE overwrote target"
+helper_fails "File exists" noreplace "$MNT/a" "$MNT/b"
 [ "$(cat "$MNT/b")" = "two" ] || fail "target changed by failed RENAME_NOREPLACE"
 [ "$(cat "$MNT/a")" = "one" ] || fail "source changed by failed RENAME_NOREPLACE"
 
 # RENAME_EXCHANGE is not supported by LTFS; it must fail without touching data
-"$HELPER" exchange "$MNT/a" "$MNT/b" && fail "RENAME_EXCHANGE unexpectedly succeeded"
+helper_fails "Invalid argument" exchange "$MNT/a" "$MNT/b"
 [ "$(cat "$MNT/a")" = "one" ] || fail "source changed by failed RENAME_EXCHANGE"
 [ "$(cat "$MNT/b")" = "two" ] || fail "target changed by failed RENAME_EXCHANGE"
 

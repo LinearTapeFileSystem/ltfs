@@ -4,13 +4,17 @@
 
 ltfs_setup
 
-dd if=/dev/urandom of="$MNT/file" bs=1M count=2 status=none
+dd if=/dev/urandom of="$WORK/source" bs=1M count=2 status=none
+head -c 1048576 "$WORK/source" >"$WORK/head"
+cp "$WORK/source" "$MNT/file"
 
 truncate -s 1M "$MNT/file"
 [ "$(stat -c %s "$MNT/file")" -eq 1048576 ] || fail "shrink truncate size"
+cmp -s "$WORK/head" "$MNT/file" || fail "content changed by shrink truncate"
 
 truncate -s 3M "$MNT/file"
 [ "$(stat -c %s "$MNT/file")" -eq 3145728 ] || fail "extend truncate size"
+head -c 1048576 "$MNT/file" | cmp -s "$WORK/head" - || fail "content changed by extend truncate"
 
 # Extended region must read back as zeros
 tail -c 2097152 "$MNT/file" >"$WORK/tail"

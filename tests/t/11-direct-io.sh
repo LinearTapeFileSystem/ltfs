@@ -3,8 +3,6 @@
 # even for buffered application I/O, and graceful mmap failure.
 . "${top_srcdir}/tests/lib/harness.sh"
 
-HELPER="$top_builddir/tests/helpers/fsops_helper"
-
 LTFS_MOUNT_OPTS="-o direct_io -o verbose=6"
 
 ltfs_setup
@@ -15,8 +13,7 @@ cp "$WORK/data" "$MNT/data"
 cmp -s "$WORK/data" "$MNT/data" || fail "data mismatch while mounted"
 
 # mmap is not available on direct-I/O files; it must fail cleanly
-out=$("$HELPER" mmap "$MNT/data" 4096) && fail "mmap unexpectedly succeeded"
-echo "mmap failed as expected: $out"
+helper_fails "No such device" mmap "$MNT/data" 4096
 
 # Buffered writes from the application reach the daemon at the
 # application's block size (no page-cache splitting)
