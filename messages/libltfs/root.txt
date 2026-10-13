@@ -836,6 +836,7 @@ v
 		17292I:string { "Current position is (%llu, %llu), Error position is (%llu, %llu)." }
 	 	17293E:string { "Position mismatch. Cached tape position = %llu. Current tape position = %llu." }
 	 	17294I:string { "Continue signal (%d) received" }
+		17295E:string { "XML parser: directory nesting is too deep (limit %d)." }
 
 		// For Debug 19999I:string { "%s %s %d." }
 
