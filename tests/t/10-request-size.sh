@@ -13,8 +13,13 @@ dd if=/dev/zero of="$MNT/big" bs=1M count=8 conv=fsync status=none
 
 # O_DIRECT reads bypass the readahead window, so the application's
 # request size reaches the daemon (split at the negotiated maximum)
-dd if="$MNT/big" of=/dev/null bs=1M iflag=direct status=none \
-	|| skip "O_DIRECT reads not supported on this kernel"
+err=$(dd if="$MNT/big" of=/dev/null bs=1M iflag=direct status=none 2>&1) || {
+	case $err in
+	*"failed to open"*"Invalid argument"*)
+		skip "O_DIRECT is not supported on this kernel" ;;
+	esac
+	fail "O_DIRECT read failed: $err"
+}
 
 ltfs_finish
 
@@ -34,7 +39,7 @@ if ltfs_is_fuse3; then
 	[ "$read_max" -ge 524288 ] || fail "read requests capped at $read_max bytes"
 else
 	# big_writes raises the FUSE 2 limit to 128 KiB
-	[ "$write_max" -ge 65536 ] || fail "write requests capped at $write_max bytes"
+	[ "$write_max" -ge 131072 ] || fail "write requests capped at $write_max bytes"
 fi
 
 echo "PASS"

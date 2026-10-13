@@ -9,8 +9,4 @@ RUN apt-get -q update && apt-get -q -y install --no-install-recommends \
         attr file procps util-linux tar \
     && rm -rf /var/lib/apt/lists/*
 
-# configure.ac probes icu-config, which modern ICU no longer ships.
-COPY icu-config /usr/local/bin/icu-config
-RUN chmod +x /usr/local/bin/icu-config
-
-WORKDIR /ltfs
+WORKDIR /build
