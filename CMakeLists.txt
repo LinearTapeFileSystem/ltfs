@@ -170,6 +170,7 @@ unset(CMAKE_REQUIRED_LIBRARIES)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in
                ${CMAKE_CURRENT_BINARY_DIR}/config.h @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config.h" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ltfs")
 
 # --- Common compile settings -------------------------------------------------
 # Definitions every translation unit gets, mirroring AM_CPPFLAGS/AM_CFLAGS.

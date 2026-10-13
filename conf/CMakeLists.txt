@@ -25,12 +25,10 @@ string(REPLACE "__CONFDIR__" "${CMAKE_INSTALL_FULL_SYSCONFDIR}" _conf "${_conf}"
 file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/ltfs.conf" CONTENT "${_conf}")
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/ltfs.conf"
-        DESTINATION ${CMAKE_INSTALL_SYSCONFDIR})
-# ltfs.conf.local holds user edits: install only when absent. The prefix is
-# resolved at install time (escaped) so --prefix overrides are honored.
+        DESTINATION "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
+# ltfs.conf.local holds user edits: install it only when absent.
 install(CODE "
-    set(_confdir \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_SYSCONFDIR}\")
-    if(NOT EXISTS \"\${_confdir}/ltfs.conf.local\")
+    if(NOT EXISTS \"\$ENV{DESTDIR}${CMAKE_INSTALL_FULL_SYSCONFDIR}/ltfs.conf.local\")
         file(INSTALL \"${CMAKE_CURRENT_SOURCE_DIR}/ltfs.conf.local\"
-             DESTINATION \"\${_confdir}\")
+             DESTINATION \"${CMAKE_INSTALL_FULL_SYSCONFDIR}\")
     endif()")

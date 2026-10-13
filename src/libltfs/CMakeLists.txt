@@ -83,8 +83,12 @@ endforeach()
 
 # SNMP MIB definitions.
 if(LTFS_ENABLE_SNMP)
-    install(FILES
-        "${CMAKE_CURRENT_SOURCE_DIR}/LtfsSnmpTrapDef.txt"
-        "${CMAKE_CURRENT_SOURCE_DIR}/LTFS-MIB.txt"
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/share/snmp")
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/LTFS-MIB.txt"
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/share/snmp")
+    # LtfsSnmpTrapDef.txt holds user edits: install it only when absent.
+    install(CODE "
+        if(NOT EXISTS \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/snmp/LtfsSnmpTrapDef.txt\")
+            file(INSTALL \"${CMAKE_CURRENT_SOURCE_DIR}/LtfsSnmpTrapDef.txt\"
+                 DESTINATION \"${CMAKE_INSTALL_PREFIX}/share/snmp\")
+        endif()")
 endif()
