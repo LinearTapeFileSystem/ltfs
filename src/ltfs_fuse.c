@@ -681,6 +681,7 @@ int ltfs_fuse_utimens(const char *path, const struct timespec ts[2])
 	struct ltfs_timespec tsTmp[2];
 	struct ltfs_timespec now;
 	ltfs_file_id id;
+	const char *name = path;
 	int ret = 0;
 
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_UTIMENS), 0, 0);
@@ -694,11 +695,12 @@ int ltfs_fuse_utimens(const char *path, const struct timespec ts[2])
 	id.ino = 0;
 
 #ifdef HAVE_FUSE3
-	/* With nullpath_ok set, FUSE 3 may pass a NULL path for a handle-based
-	 * call on an open (possibly unlinked) file; operate on the handle. */
+	/* With nullpath_ok set, FUSE 3 passes a NULL path with a file handle;
+	 * operate on the handle. */
 	if (fi) {
 		struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
-		ltfsmsg(LTFS_DEBUG, 14038D, _dentry_name(path, file->file_info));
+		name = _dentry_name(path, file->file_info);
+		ltfsmsg(LTFS_DEBUG, 14038D, name);
 		d = file->file_info->dentry_handle;
 		id.uid = d->uid;
 	} else
@@ -727,7 +729,7 @@ int ltfs_fuse_utimens(const char *path, const struct timespec ts[2])
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_UTIMENS), ret, id.uid);
 
 	if (ret)
-		ltfsmsg(LTFS_ERR, 10020E, "utimens", path ? path : "(fh)", 0, 0);
+		ltfsmsg(LTFS_ERR, 10020E, "utimens", name, 0, 0);
 
 	return errormap_fuse_error(ret);
 }
@@ -744,6 +746,7 @@ int ltfs_fuse_chmod(const char *path, mode_t mode)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	ltfs_file_id id;
+	const char *name = path;
 	int ret;
 	bool new_readonly = (mode & 0222) ? false : true;
 
@@ -753,11 +756,12 @@ int ltfs_fuse_chmod(const char *path, mode_t mode)
 	id.ino = 0;
 
 #ifdef HAVE_FUSE3
-	/* With nullpath_ok set, FUSE 3 may pass a NULL path for a handle-based
-	 * call on an open (possibly unlinked) file; operate on the handle. */
+	/* With nullpath_ok set, FUSE 3 passes a NULL path with a file handle;
+	 * operate on the handle. */
 	if (fi) {
 		struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
-		ltfsmsg(LTFS_DEBUG, 14039D, _dentry_name(path, file->file_info));
+		name = _dentry_name(path, file->file_info);
+		ltfsmsg(LTFS_DEBUG, 14039D, name);
 		ret = ltfs_fsops_set_readonly(file->file_info->dentry_handle, new_readonly, priv->data);
 		id.uid = ((struct dentry *)(file->file_info->dentry_handle))->uid;
 	} else
@@ -770,7 +774,7 @@ int ltfs_fuse_chmod(const char *path, mode_t mode)
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_CHMOD), ret, id.uid);
 
 	if (ret)
-		ltfsmsg(LTFS_ERR, 10020E, "chmod", path ? path : "(fh)", mode, 0);
+		ltfsmsg(LTFS_ERR, 10020E, "chmod", name, mode, 0);
 
 	return errormap_fuse_error(ret);
 }
