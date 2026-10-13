@@ -1340,7 +1340,8 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	ltfs_extra_signal_handlers();
 	fuse_ret = fuse_main(args->argc, args->argv, &ltfs_ops, priv);
 #ifdef HAVE_FUSE3
-	fuse_failed = fuse_ret != 0 && fuse_ret != LTFS_FUSE_LOOP_ENDED;
+	fuse_failed = fuse_ret != 0
+		&& (fuse_ret != LTFS_FUSE_LOOP_ENDED || ! ltfs_fuse_stop_signal());
 #else
 	fuse_failed = fuse_ret != 0;
 #endif

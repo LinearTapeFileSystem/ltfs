@@ -145,6 +145,10 @@ struct ltfs_fuse_data {
 	struct file_info *file_table;    /**< Hash table of open file handles */
 };
 
+#ifdef HAVE_FUSE3
+int ltfs_fuse_stop_signal(void);
+#endif
+
 #ifdef __cplusplus
 }
 #endif
