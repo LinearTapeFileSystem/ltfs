@@ -63,6 +63,7 @@
 #include "libltfs/arch/time_internal.h"
 #include "libltfs/arch/errormap.h"
 #include "libltfs/kmi.h"
+#include <signal.h>
 
 #ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
@@ -1276,6 +1277,59 @@ int ltfs_fuse_removexattr(const char *path, const char *name)
 	return errormap_fuse_error(ret);
 }
 
+#ifdef HAVE_FUSE3
+/* fuse_main() returns the same value after a session loop error and after a
+ * stop by a signal. init() wraps the libfuse exit handler to note the signal;
+ * destroy() restores the default handling, as libfuse does for its own. */
+static void (*_ltfs_fuse_exit_handler)(int);
+static volatile sig_atomic_t _ltfs_fuse_stop_signal;
+
+static void _ltfs_fuse_note_stop(int sig)
+{
+	_ltfs_fuse_stop_signal = sig;
+	_ltfs_fuse_exit_handler(sig);
+}
+
+static void _ltfs_fuse_wrap_exit_handler(void)
+{
+	const int sigs[] = { SIGHUP, SIGINT, SIGTERM };
+	struct sigaction sa;
+	size_t i;
+
+	for (i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++) {
+		if (sigaction(sigs[i], NULL, &sa) < 0 || (sa.sa_flags & SA_SIGINFO)
+			|| sa.sa_handler == SIG_DFL || sa.sa_handler == SIG_IGN
+			|| sa.sa_handler == _ltfs_fuse_note_stop)
+			continue;
+		if (! _ltfs_fuse_exit_handler)
+			_ltfs_fuse_exit_handler = sa.sa_handler;
+		if (sa.sa_handler != _ltfs_fuse_exit_handler)
+			continue;
+		sa.sa_handler = _ltfs_fuse_note_stop;
+		sigaction(sigs[i], &sa, NULL);
+	}
+}
+
+static void _ltfs_fuse_unwrap_exit_handler(void)
+{
+	const int sigs[] = { SIGHUP, SIGINT, SIGTERM };
+	struct sigaction sa;
+	size_t i;
+
+	for (i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++) {
+		if (sigaction(sigs[i], NULL, &sa) == 0 && sa.sa_handler == _ltfs_fuse_note_stop) {
+			sa.sa_handler = SIG_DFL;
+			sigaction(sigs[i], &sa, NULL);
+		}
+	}
+}
+
+int ltfs_fuse_stop_signal(void)
+{
+	return _ltfs_fuse_stop_signal;
+}
+#endif
+
 /**
  * Mount the filesystem. This function assumes a volume has been
  * allocated and ltfs_mount has been called; it just does some secondary setup.
@@ -1292,6 +1346,8 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_MOUNT), 0, 0);
 
 #ifdef HAVE_FUSE3
+	_ltfs_fuse_wrap_exit_handler();
+
 	/* Options that were passed as -o arguments on FUSE 2.
 	 * use_ino: pass LTFS UIDs through as inode numbers (needs 64-bit ino_t).
 	 * hard_remove: unlink files instead of renaming them to .fuse_hidden.
@@ -1409,6 +1465,9 @@ void ltfs_fuse_umount(void *userdata)
 {
 	struct ltfs_fuse_data *priv = userdata;
 
+#ifdef HAVE_FUSE3
+	_ltfs_fuse_unwrap_exit_handler();
+#endif
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_UNMOUNT), 0, 0);
 
 	if (periodic_sync_thread_initialized(priv->data))
