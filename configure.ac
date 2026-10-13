@@ -318,7 +318,9 @@ then
 else
     PKG_CHECK_MODULES([FUSE_MODULE], [fuse3 >= 3.4.0],
         [with_fuse2=no],
-        [PKG_CHECK_MODULES([FUSE_MODULE], [fuse >= 2.6.0], [with_fuse2=yes])])
+        [PKG_CHECK_MODULES([FUSE_MODULE], [fuse >= 2.6.0],
+            [with_fuse2=yes],
+            [AC_MSG_ERROR([neither fuse3 >= 3.4.0 nor fuse >= 2.6.0 was found. Install the libfuse 3 development package (libfuse3-dev or fuse3-devel) or the libfuse 2 one (libfuse-dev or fuse-devel)])])])
 fi
 AC_MSG_CHECKING([for the FUSE API version to use])
 if test "x${with_fuse2}" = "xyes"
@@ -522,11 +524,13 @@ dnl Update flags
 dnl Sets CFLAGS to force optimization and debugging options, which isn't quite kosher
 dnl
 AM_CPPFLAGS="-D_GNU_SOURCE -I\$(top_srcdir)/src -DLTFS_CONFIG_FILE='\"${sysconfdir}/ltfs.conf\"' -DLTFS_BASE_DIR='\"${prefix}\"'"
+AM_CFLAGS="-Wall -Wsign-compare -fsigned-char ${FUSE_MODULE_CFLAGS} ${UUID_MODULE_CFLAGS} ${LIBXML2_MODULE_CFLAGS} ${ICU_MODULE_CFLAGS} ${SNMP_ENABLE} ${SNMP_MODULE_CFLAGS}"
+
 if test "x${with_fuse2}" != "xyes"
 then
-    AM_CPPFLAGS="${AM_CPPFLAGS} -DHAVE_FUSE3"
+    dnl fuse3.pc does not add the 64-bit off_t define that fuse.pc adds
+    AM_CPPFLAGS="${AM_CPPFLAGS} -DHAVE_FUSE3 -D_FILE_OFFSET_BITS=64"
 fi
-AM_CFLAGS="-Wall -Wsign-compare -fsigned-char ${FUSE_MODULE_CFLAGS} ${UUID_MODULE_CFLAGS} ${LIBXML2_MODULE_CFLAGS} ${ICU_MODULE_CFLAGS} ${SNMP_ENABLE} ${SNMP_MODULE_CFLAGS}"
 
 if test "x$use_fast" = "xyes"
 then

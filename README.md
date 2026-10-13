@@ -201,25 +201,17 @@ make install
 
 On Linux the build uses libfuse 3 (package `libfuse3-dev` on Debian/Ubuntu,
 `fuse3-devel` on Fedora/RHEL). Pass `--with-fuse2` to build against the
-legacy libfuse 2 API instead; macOS, FreeBSD, and NetBSD currently use the
+legacy libfuse 2 API instead; macOS, FreeBSD, and NetBSD use the
 libfuse 2 API by default. On macOS with macFUSE 5 or later, which ships a
-libfuse 3, the FUSE 3 build can be selected with `--with-fuse2=no`
-(autotools) or `-DLTFS_WITH_FUSE2=OFF` (CMake).
+libfuse 3, the FUSE 3 build can be selected with `--with-fuse2=no`.
 
-FUSE 3 builds negotiate request sizes up to 1 MiB (tunable with
-`-o max_write=<bytes>`), serve directory listings through readdirplus, and
-support `-o direct_io` to bypass the kernel page cache entirely so large
-archive jobs do not fill it (mmap does not work on files opened this way).
+FUSE 3 builds negotiate request sizes up to 1 MiB (128 KiB with libfuse 3.4
+and 3.5; tunable with `-o max_write=<bytes>`), serve directory listings
+through readdirplus, and support `-o direct_io` to bypass the kernel page
+cache entirely so large archive jobs do not fill it (mmap does not work on
+files opened this way).
 
 In some systems, you might need `sudo ldconfig -v` after `make install` to load the shared libraries correctly.
-
-## Running the test suite
-
-`make check` runs integration tests against a tape emulated in a local
-directory by the file backend; no tape hardware is required. The tests need
-a Linux host with `/dev/fuse` and are skipped elsewhere. On macOS,
-`tests/run-in-docker.sh [configure-options...]` builds and runs the suite
-inside an Ubuntu container.
 
 #### Parameter settings of the sg driver
 
