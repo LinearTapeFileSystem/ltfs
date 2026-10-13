@@ -270,7 +270,7 @@ const char *_dentry_name(const char *path, struct file_info *fi)
 		return "(unnamed)";
 }
 
-static void _ltfs_fuse_attr_to_stat(struct stat *stbuf, struct dentry_attr *attr,
+static void _ltfs_fuse_attr_to_stat(struct stat *stbuf, const struct dentry_attr *attr,
 	struct ltfs_fuse_data *priv)
 {
 	stbuf->st_dev = LTFS_SUPER_MAGIC;
@@ -1002,11 +1002,11 @@ int ltfs_fuse_rename(const char *from, const char *to)
 	return errormap_fuse_error(ret);
 }
 
-int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
+static int _ltfs_fuse_fill_entry(fuse_fill_dir_t filler, void *buf, const char *name,
+	const struct stat *st)
 {
 	int ret;
 	char *new_name;
-	fuse_fill_dir_t filler = priv;
 
 	ret = pathname_unformat(name, &new_name);
 	if (ret < 0) {
@@ -1022,16 +1022,24 @@ int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
 		ltfsmsg(LTFS_ERR, 14027E, "nfd", ret);
 		return ret;
 	}
+	name = new_name;
+#endif
 
-	ret = LTFS_FILL(filler, buf, new_name, NULL, 0);
+#ifdef HAVE_FUSE3
+	ret = filler(buf, name, st, 0, st ? FUSE_FILL_DIR_PLUS : 0);
 #else
-	ret = LTFS_FILL(filler, buf, name, NULL, 0);
+	ret = LTFS_FILL(filler, buf, name, st, 0);
 #endif
 
 	free(new_name);
 	if (ret)
 		return -ENOBUFS;
 	return 0;
+}
+
+int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
+{
+	return _ltfs_fuse_fill_entry(priv, buf, name, NULL);
 }
 
 #ifdef HAVE_FUSE3
@@ -1048,39 +1056,13 @@ static int _ltfs_fuse_filldir_plus(void *buf, const char *name,
 {
 	struct ltfs_fuse_fill_plus *fill = vpriv;
 	struct stat st;
-	char *new_name;
-	int ret;
 
 	if (! attr)
 		return _ltfs_fuse_filldir(buf, name, fill->filler);
 
 	memset(&st, 0, sizeof(st));
-	_ltfs_fuse_attr_to_stat(&st, (struct dentry_attr *)attr, fill->priv);
-
-	ret = pathname_unformat(name, &new_name);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 14027E, "unformat", ret);
-		return ret;
-	}
-
-#ifdef __APPLE__
-	free(new_name);
-
-	ret = pathname_nfd_normalize(name, &new_name);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, 14027E, "nfd", ret);
-		return ret;
-	}
-
-	ret = fill->filler(buf, new_name, &st, 0, FUSE_FILL_DIR_PLUS);
-#else
-	ret = fill->filler(buf, name, &st, 0, FUSE_FILL_DIR_PLUS);
-#endif
-
-	free(new_name);
-	if (ret)
-		return -ENOBUFS;
-	return 0;
+	_ltfs_fuse_attr_to_stat(&st, attr, fill->priv);
+	return _ltfs_fuse_fill_entry(fill->filler, buf, name, &st);
 }
 #endif /* HAVE_FUSE3 */
 

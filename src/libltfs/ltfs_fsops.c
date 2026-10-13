@@ -1358,102 +1358,19 @@ out_free:
 	return ret;
 }
 
-int ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler, void *filler_priv,
-	struct ltfs_volume *vol)
-{
-	int ret = 0;
-	struct name_list *entry, *tmp;
-
-	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(filler, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
-
-	if (! d->isdir)
-		return -LTFS_ISFILE;
-
-	ret = ltfs_get_volume_lock(false, vol);
-	if (ret < 0)
-		return ret;
-
-	acquireread_mrsw(&d->contents_lock);
-	if (dcache_initialized(vol)) {
-		int i;
-		char **namelist = NULL;
-		ret = dcache_readdir(d, false, (void ***) &namelist, vol);
-		if (ret == 0 && namelist) {
-			for (i=0; namelist[i]; ++i) {
-				ret = filler(buf, namelist[i], filler_priv);
-				if (ret < 0)
-					break;
-			}
-			for (i=0; namelist[i]; ++i)
-				free(namelist[i]);
-			free(namelist);
-		}
-	} else {
-		if (HASH_COUNT(d->child_list) != 0) {
-			HASH_SORT(d->child_list, fs_hash_sort_by_uid);
-			HASH_ITER(hh, d->child_list, entry, tmp) {
-				ret = filler(buf, entry->d->platform_safe_name, filler_priv);
-				if (ret < 0)
-					break;
-			}
-		}
-	}
-	releaseread_mrsw(&d->contents_lock);
-
-	/* Update access time */
-	if (ret == 0) {
-		acquirewrite_mrsw(&d->meta_lock);
-		get_current_timespec(&d->access_time);
-		releasewrite_mrsw(&d->meta_lock);
-		ltfs_set_index_dirty(true, true, vol->index);
-	}
-
-	releaseread_mrsw(&vol->lock);
-	return ret;
-}
-
-/* Copy a child's attributes without taking the volume lock again;
- * the caller already holds it (same fields as ltfs_fsops_getattr). */
-static void _fsops_child_attr(struct dentry *child, struct dentry_attr *attr,
-	struct ltfs_volume *vol)
-{
-	acquireread_mrsw(&child->meta_lock);
-
-	if (child->isslink)
-		attr->size = strlen(child->target.name);
-	else
-		attr->size = child->size;
-
-	attr->alloc_size = child->realsize;
-	attr->blocksize = vol->label->blocksize;
-	attr->uid = child->uid;
-	attr->nlink = child->link_count;
-	attr->create_time = child->creation_time;
-	attr->access_time = child->access_time;
-	attr->modify_time = child->modify_time;
-	attr->change_time = child->change_time;
-	attr->backup_time = child->backup_time;
-	attr->readonly = child->readonly;
-	attr->isdir = child->isdir;
-	attr->isslink = child->isslink;
-
-	releaseread_mrsw(&child->meta_lock);
-
-	if (! child->isdir && ! child->isslink && iosched_initialized(vol))
-		attr->size = iosched_get_filesize(child, vol);
-}
-
-int ltfs_fsops_readdir_attr(struct dentry *d, void *buf, ltfs_dir_filler_attr filler,
-	void *filler_priv, struct ltfs_volume *vol)
+static int _ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler,
+	ltfs_dir_filler_attr filler_attr, void *filler_priv, struct ltfs_volume *vol)
 {
 	int ret = 0;
 	struct name_list *entry, *tmp;
 	struct dentry_attr attr;
+	struct readdir_child {
+		struct dentry *d;
+		char *name;
+	} *children = NULL;
+	size_t count = 0, n;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(filler, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	if (! d->isdir)
@@ -1471,7 +1388,10 @@ int ltfs_fsops_readdir_attr(struct dentry *d, void *buf, ltfs_dir_filler_attr fi
 		ret = dcache_readdir(d, false, (void ***) &namelist, vol);
 		if (ret == 0 && namelist) {
 			for (i=0; namelist[i]; ++i) {
-				ret = filler(buf, namelist[i], NULL, filler_priv);
+				if (filler_attr)
+					ret = filler_attr(buf, namelist[i], NULL, filler_priv);
+				else
+					ret = filler(buf, namelist[i], filler_priv);
 				if (ret < 0)
 					break;
 			}
@@ -1482,15 +1402,58 @@ int ltfs_fsops_readdir_attr(struct dentry *d, void *buf, ltfs_dir_filler_attr fi
 	} else {
 		if (HASH_COUNT(d->child_list) != 0) {
 			HASH_SORT(d->child_list, fs_hash_sort_by_uid);
-			HASH_ITER(hh, d->child_list, entry, tmp) {
-				_fsops_child_attr(entry->d, &attr, vol);
-				ret = filler(buf, entry->d->platform_safe_name, &attr, filler_priv);
-				if (ret < 0)
-					break;
+			if (filler_attr) {
+				/* Take references and get the attributes after the locks are released:
+				 * the file size comes from the I/O scheduler, which must not be called
+				 * with the volume lock held. */
+				children = calloc(HASH_COUNT(d->child_list), sizeof(*children));
+				if (! children) {
+					ltfsmsg(LTFS_ERR, 10001E, "_ltfs_fsops_readdir: children");
+					ret = -LTFS_NO_MEMORY;
+				} else {
+					HASH_ITER(hh, d->child_list, entry, tmp) {
+						children[count].name = arch_strdup(entry->d->platform_safe_name);
+						if (! children[count].name) {
+							ltfsmsg(LTFS_ERR, 10001E, "_ltfs_fsops_readdir: name");
+							ret = -LTFS_NO_MEMORY;
+							break;
+						}
+						acquirewrite_mrsw(&entry->d->meta_lock);
+						++entry->d->numhandles;
+						releasewrite_mrsw(&entry->d->meta_lock);
+						children[count++].d = entry->d;
+					}
+				}
+			} else {
+				HASH_ITER(hh, d->child_list, entry, tmp) {
+					ret = filler(buf, entry->d->platform_safe_name, filler_priv);
+					if (ret < 0)
+						break;
+				}
 			}
 		}
 	}
 	releaseread_mrsw(&d->contents_lock);
+
+	if (children) {
+		releaseread_mrsw(&vol->lock);
+		for (n = 0; n < count; ++n) {
+			if (ret >= 0) {
+				ret = ltfs_fsops_getattr(children[n].d, &attr, vol);
+				if (ret == 0)
+					ret = filler_attr(buf, children[n].name, &attr, filler_priv);
+			}
+			fs_release_dentry(children[n].d);
+			free(children[n].name);
+		}
+		free(children);
+		if (ret != 0)
+			return ret;
+
+		ret = ltfs_get_volume_lock(false, vol);
+		if (ret < 0)
+			return ret;
+	}
 
 	/* Update access time */
 	if (ret == 0) {
@@ -1502,6 +1465,20 @@ int ltfs_fsops_readdir_attr(struct dentry *d, void *buf, ltfs_dir_filler_attr fi
 
 	releaseread_mrsw(&vol->lock);
 	return ret;
+}
+
+int ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler, void *filler_priv,
+	struct ltfs_volume *vol)
+{
+	CHECK_ARG_NULL(filler, -LTFS_NULL_ARG);
+	return _ltfs_fsops_readdir(d, buf, filler, NULL, filler_priv, vol);
+}
+
+int ltfs_fsops_readdir_attr(struct dentry *d, void *buf, ltfs_dir_filler_attr filler,
+	void *filler_priv, struct ltfs_volume *vol)
+{
+	CHECK_ARG_NULL(filler, -LTFS_NULL_ARG);
+	return _ltfs_fsops_readdir(d, buf, NULL, filler, filler_priv, vol);
 }
 
 int _ltfs_fsops_read_direntry(struct dentry *d, struct ltfs_direntry *dirent,
