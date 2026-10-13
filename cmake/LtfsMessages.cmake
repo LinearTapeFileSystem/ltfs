@@ -14,7 +14,8 @@ function(ltfs_add_message_bundle name)
     add_custom_command(
         OUTPUT "${_archive}"
         COMMAND ${CMAKE_COMMAND} -E make_directory "${_out_dir}"
-        COMMAND ${CMAKE_COMMAND} -E env "GENRB=${GENRB}" "PKGDATA=${PKGDATA}"
+        COMMAND ${CMAKE_COMMAND} -E rm -f "${_archive}"
+        COMMAND ${CMAKE_COMMAND} -E env "GENRB=${ICU_GENRB_EXECUTABLE}" "PKGDATA=${ICU_PKGDATA_EXECUTABLE}"
                 sh "${CMAKE_SOURCE_DIR}/messages/make_message_src.sh"
                 "lib${name}_dat.a" "${_src_dir}" "${_out_dir}"
         DEPENDS ${_txt} "${CMAKE_SOURCE_DIR}/messages/make_message_src.sh"

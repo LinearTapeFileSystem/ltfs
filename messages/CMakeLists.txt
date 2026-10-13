@@ -1,5 +1,5 @@
-# Compile the ICU message bundles needed by the Linux build. Platform bundles
-# (lin_tape, iokit, cam, scsipi-ibmtape) are added when those backends build.
+# Compile the ICU message bundles. Platform bundles (lin_tape, iokit) are
+# added when those backends build.
 set(LTFS_MESSAGE_BUNDLES
     libltfs
     internal_error
@@ -26,11 +26,3 @@ endif()
 foreach(_b ${LTFS_MESSAGE_BUNDLES})
     ltfs_add_message_bundle(${_b})
 endforeach()
-
-# Optional: regenerate src/ltfsmsg.h in message-check mode.
-if(LTFS_MESSAGE_CHECK)
-    add_custom_target(ltfsmsg_header ALL
-        COMMAND ${CMAKE_COMMAND} -E echo "message check enabled"
-        COMMENT "(message checking) generate src/ltfsmsg.h via print_error_messages.py"
-        VERBATIM)
-endif()
