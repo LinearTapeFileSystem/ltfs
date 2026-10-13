@@ -19,7 +19,9 @@ echo "$listing" | grep -q user.test1 || fail "listxattr missing user.test1"
 echo "$listing" | grep -q user.test2 || fail "listxattr missing user.test2"
 
 setfattr -x user.test2 "$MNT/file"
-getfattr -n user.test2 "$MNT/file" >/dev/null 2>&1 && fail "removexattr: user.test2 still present"
+listing=$(getfattr "$MNT/file") || fail "listxattr failed after removexattr"
+echo "$listing" | grep -q user.test2 && fail "removexattr: user.test2 still present"
+echo "$listing" | grep -q user.test1 || fail "removexattr also removed user.test1"
 
 ltfs_remount
 [ "$(getfattr --only-values -n user.test1 "$MNT/file")" = "value1" ] \
