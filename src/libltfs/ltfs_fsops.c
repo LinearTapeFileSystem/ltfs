@@ -1759,6 +1759,11 @@ int ltfs_fsops_set_readonly(struct dentry *d, bool readonly, struct ltfs_volume 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
+	if (d->is_appendonly || d->is_immutable) {
+		ltfsmsg(LTFS_ERR, 17237E, "chmod");
+		return -LTFS_WORM_ENABLED;
+	}
+
 	/* Make sure the device is online and writable */
 	ret = ltfs_get_tape_readonly(vol);
 	if (ret < 0 && ret != -LTFS_LESS_SPACE)
@@ -1800,11 +1805,6 @@ int ltfs_fsops_set_readonly_path(const char *path, bool readonly, ltfs_file_id *
 	ret = ltfs_fsops_open(path, false, false, &d, vol);
 	if (ret < 0)
 		return ret;
-
-	if (d->is_appendonly || d->is_immutable) {
-		ltfsmsg(LTFS_ERR, 17237E, "chmod");
-		return -LTFS_WORM_ENABLED;
-	}
 
 	ret = ltfs_fsops_set_readonly(d, readonly, vol);
 	id->uid = d->uid;
