@@ -29,6 +29,12 @@ else
 	else
 		PKGDATA=pkgdata
 	fi
+	if pkg-config --exists icu-uc 2>/dev/null; then
+		_ICU_LIBDIR=$(pkg-config --variable=libdir icu-uc 2>/dev/null)
+		if [ -f "${_ICU_LIBDIR}/icu/pkgdata.inc" ]; then
+			ICU_PKGDATA_INC="${_ICU_LIBDIR}/icu/pkgdata.inc"
+		fi
+	fi
 fi
 
 if [ "$#" -ne "1" ]; then
@@ -61,7 +67,7 @@ make_obj() {
 	${GENRB} -d work -q *.txt
 	cd work
 	ls *.res >packagelist.txt
-	${PKGDATA} -p ${BASENAME} -m static -q packagelist.txt >/dev/null
+	${PKGDATA} ${ICU_PKGDATA_INC:+-O} ${ICU_PKGDATA_INC} -p ${BASENAME} -m static -q packagelist.txt >/dev/null
 
 	case $KERNEL_NAME in
 		MINGW32_NT*)
