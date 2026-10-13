@@ -9,7 +9,7 @@ function(ltfs_add_message_bundle name)
     set(_src_dir "${CMAKE_SOURCE_DIR}/messages/${name}")
     set(_out_dir "${CMAKE_BINARY_DIR}/messages")
     set(_archive "${_out_dir}/lib${name}_dat.a")
-    file(GLOB _txt "${_src_dir}/*.txt")
+    file(GLOB _txt CONFIGURE_DEPENDS "${_src_dir}/*.txt")
 
     add_custom_command(
         OUTPUT "${_archive}"

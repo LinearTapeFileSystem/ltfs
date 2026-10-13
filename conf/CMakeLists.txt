@@ -16,6 +16,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
 endif()
 
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ltfs.conf.in" _conf)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/ltfs.conf.in")
 string(REPLACE "__PLATFORM_DRIVERS__" "${_plat_drivers}" _conf "${_conf}")
 string(REPLACE "__LIBDIR__" "${CMAKE_INSTALL_FULL_LIBDIR}" _conf "${_conf}")
 string(REPLACE "__DEFAULT_TAPE__" "${DEFAULT_TAPE}" _conf "${_conf}")

@@ -7,6 +7,7 @@ cmake_minimum_required(VERSION 3.18)
 
 # --- Version (single source of truth: ./VERSION) -----------------------------
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" _ltfs_ver_lines)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
 list(GET _ltfs_ver_lines 0 LTFS_VERSION_NUM)
 list(LENGTH _ltfs_ver_lines _ltfs_ver_n)
 set(LTFS_VERSION_SUFFIX "")

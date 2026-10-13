@@ -36,6 +36,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 nobase_pkginclude_HEADERS = config.h
+EXTRA_DIST = VERSION
 
 SUBDIRS = messages src conf init.d man
 
