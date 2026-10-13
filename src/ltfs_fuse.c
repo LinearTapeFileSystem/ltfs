@@ -1306,8 +1306,19 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	/* Request sizes up to max_write (libfuse >= 3.6 negotiates the
 	 * matching max_pages with the kernel). Read requests are bounded by
 	 * the same page limit. */
+#if FUSE_VERSION < FUSE_MAKE_VERSION(3, 17)
+	/* libfuse < 3.17 sizes its receive buffer before init() and passes
+	 * max_write limited to it; larger requests would not fit. */
+	if (conn->max_write > priv->fuse_max_write)
+		conn->max_write = priv->fuse_max_write;
+#else
 	conn->max_write = priv->fuse_max_write;
+#endif
 	ltfsmsg(LTFS_INFO, 14124I, (unsigned int)(conn->max_write / 1024));
+
+	/* libfuse 3 fails the mount unless init() keeps the max_read option. */
+	if (priv->fuse_max_read)
+		conn->max_read = priv->fuse_max_read;
 
 	/* Always use readdirplus, not only when the kernel heuristic asks
 	 * for it: attributes come from the in-memory index, so handing them
