@@ -51,7 +51,7 @@ if(RT_LIBRARY)
     target_link_libraries(ltfs PUBLIC ${RT_LIBRARY})
 endif()
 if(LTFS_ENABLE_SNMP)
-    target_link_libraries(ltfs PUBLIC PkgConfig::NETSNMP)
+    target_link_libraries(ltfs PUBLIC ${LTFS_SNMP_LIBS})
 endif()
 
 ltfs_link_message(ltfs libltfs)

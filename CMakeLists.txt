@@ -50,7 +50,13 @@ include(CheckTypeSize)
 include(CheckCCompilerFlag)
 
 # --- Options (mirror the autotools --enable/--with switches) ------------------
-option(LTFS_ENABLE_SNMP "Build with SNMP support" ON)
+# SNMP is not supported on macOS (README: configure --disable-snmp there).
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set(_ltfs_snmp_default OFF)
+else()
+    set(_ltfs_snmp_default ON)
+endif()
+option(LTFS_ENABLE_SNMP "Build with SNMP support" ${_ltfs_snmp_default})
 option(LTFS_ENABLE_LINTAPE "Build the IBM lin_tape backend (Linux only)" OFF)
 option(LTFS_SUPPORT_BUGGY_IFS "Work around buggy tape interfaces" OFF)
 option(LTFS_LIVELINK "Enable livelink symlink mode" ON)
@@ -113,10 +119,26 @@ endif()
 
 # SNMP (optional).
 if(LTFS_ENABLE_SNMP)
-    pkg_check_modules(NETSNMP IMPORTED_TARGET net-snmp>=5.3)
-    if(NOT NETSNMP_FOUND)
-        message(WARNING "net-snmp not found via pkg-config; disabling SNMP")
-        set(LTFS_ENABLE_SNMP OFF)
+    pkg_check_modules(NETSNMP IMPORTED_TARGET netsnmp-agent>=5.3)
+    if(NETSNMP_FOUND)
+        set(LTFS_SNMP_LIBS PkgConfig::NETSNMP)
+    else()
+        find_program(NET_SNMP_CONFIG net-snmp-config)
+        if(NET_SNMP_CONFIG)
+            execute_process(COMMAND ${NET_SNMP_CONFIG} --agent-libs
+                            RESULT_VARIABLE _snmp_result
+                            OUTPUT_VARIABLE _snmp_libs
+                            OUTPUT_STRIP_TRAILING_WHITESPACE)
+            if(_snmp_result EQUAL 0 AND NOT _snmp_libs STREQUAL "")
+                separate_arguments(LTFS_SNMP_LIBS UNIX_COMMAND "${_snmp_libs}")
+                # net-snmp-config repeats -lm and -lssl; CMake would then also repeat the
+                # message objects (plain object files) on the link line.
+                list(REMOVE_DUPLICATES LTFS_SNMP_LIBS)
+            endif()
+        endif()
+    endif()
+    if(NOT LTFS_SNMP_LIBS)
+        message(FATAL_ERROR "net-snmp development files not found; install them or configure with -DLTFS_ENABLE_SNMP=OFF")
     endif()
 endif()
 
