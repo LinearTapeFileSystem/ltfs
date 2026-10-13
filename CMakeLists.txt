@@ -228,9 +228,16 @@ endif()
 # -Wno-missing-field-initializers: designated initializers of operation and
 # option tables intentionally leave the remaining members zeroed.
 add_compile_options(-Wall -Wextra -Wno-unused-parameter
-                    -Wno-missing-field-initializers -Wsign-compare -fsigned-char)
+                    -Wno-missing-field-initializers -Wsign-compare -fsigned-char
+                    -fno-strict-aliasing)
 if(LTFS_WERROR)
     add_compile_options(-Werror -Wno-deprecated-declarations)
+    if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 8)
+        add_compile_options(-Wno-stringop-truncation)
+    endif()
+endif()
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    add_link_options(LINKER:--no-undefined LINKER:--as-needed)
 endif()
 
 # config.h (binary dir) and the src tree on the include path for every target.

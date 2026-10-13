@@ -41,7 +41,7 @@ add_subdirectory(utils)
 # The ltfs mount executable.
 add_executable(ltfs_bin main.c ltfs_fuse.c)
 set_target_properties(ltfs_bin PROPERTIES OUTPUT_NAME ltfs)
-set_target_properties(ltfs_bin PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(ltfs_bin PROPERTIES POSITION_INDEPENDENT_CODE ON ENABLE_EXPORTS ON)
 target_link_libraries(ltfs_bin PRIVATE ltfs)
 ltfs_link_message(ltfs_bin bin_ltfs)
 install(TARGETS ltfs_bin RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

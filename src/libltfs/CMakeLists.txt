@@ -33,9 +33,14 @@ add_library(ltfs SHARED
     arch/arch_info.c
     arch/errormap.c)
 
+# Versioning is taken from the autotools build, which passes no -version-info
+# (libtool default 0.0.0). Both builds should probably move to real SOVERSIONs,
+# bumped on incompatible ABI changes.
 set_target_properties(ltfs PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    SOVERSION ${PROJECT_VERSION_MAJOR})
+    VERSION 0.0.0
+    SOVERSION 0
+    MACHO_COMPATIBILITY_VERSION 1
+    MACHO_CURRENT_VERSION 1.0)
 
 # Dependencies are PUBLIC so executables and plugins that link ltfs inherit
 # the include paths and link flags, mirroring the autotools "flags are
@@ -49,6 +54,9 @@ target_link_libraries(ltfs PUBLIC
     ${CMAKE_DL_LIBS})
 if(RT_LIBRARY)
     target_link_libraries(ltfs PUBLIC ${RT_LIBRARY})
+endif()
+if(Backtrace_LIBRARIES)
+    target_link_libraries(ltfs PUBLIC ${Backtrace_LIBRARIES})
 endif()
 if(LTFS_ENABLE_SNMP)
     target_link_libraries(ltfs PUBLIC ${LTFS_SNMP_LIBS})
