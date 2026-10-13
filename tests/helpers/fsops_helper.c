@@ -34,14 +34,16 @@
 */
 
 /* Test helper exercising syscalls that shell utilities do not reach
- * directly: renameat2() flags, ftruncate() on an open descriptor and
- * mmap().
+ * directly: renameat2() flags, ftruncate() on an open descriptor, mmap()
+ * and utimensat() with UTIME_OMIT.
  *
  * Usage:
  *   fsops_helper noreplace <old> <new>   renameat2 with RENAME_NOREPLACE
  *   fsops_helper exchange <a> <b>        renameat2 with RENAME_EXCHANGE
  *   fsops_helper ftruncate <file> <len>  ftruncate an open fd, print new size
  *   fsops_helper mmap <file> <len>       map the file shared and writable
+ *   fsops_helper atime <file> <sec>      set atime, UTIME_OMIT for mtime
+ *   fsops_helper mtime <file> <sec>      set mtime, UTIME_OMIT for atime
  *
  * Exit codes: 0 = success, 2 = syscall failed (strerror printed on stdout),
  * 3 = usage, 4 = not supported on this platform.
@@ -60,7 +62,7 @@
 
 static int usage(const char *prog)
 {
-	fprintf(stderr, "usage: %s noreplace|exchange|ftruncate|mmap <arg> <arg>\n",
+	fprintf(stderr, "usage: %s noreplace|exchange|ftruncate|mmap|atime|mtime <arg> <arg>\n",
 		prog);
 	return 3;
 }
@@ -134,6 +136,20 @@ int main(int argc, char **argv)
 			return syscall_failed(fd);
 		munmap(addr, (size_t)len);
 		close(fd);
+		return 0;
+	}
+
+	if (!strcmp(argv[1], "atime") || !strcmp(argv[1], "mtime")) {
+		struct timespec ts[2] = { { 0, UTIME_OMIT }, { 0, UTIME_OMIT } };
+		int i = !strcmp(argv[1], "mtime");
+		long long sec;
+
+		if (!parse_len(argv[3], &sec))
+			return usage(argv[0]);
+		ts[i].tv_sec = (time_t)sec;
+		ts[i].tv_nsec = 0;
+		if (utimensat(AT_FDCWD, argv[2], ts, 0) < 0)
+			return syscall_failed(-1);
 		return 0;
 	}
 
