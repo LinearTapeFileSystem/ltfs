@@ -15,7 +15,7 @@ dd if=/dev/zero of="$MNT/big" bs=1M count=8 conv=fsync status=none
 # request size reaches the daemon (split at the negotiated maximum)
 err=$(dd if="$MNT/big" of=/dev/null bs=1M iflag=direct status=none 2>&1) || {
 	case $err in
-	*"failed to open"*"Invalid argument"*)
+	*"failed to open"*"Invalid argument"* | *"failed to open"*"Invalid input"*)
 		skip "O_DIRECT is not supported on this kernel" ;;
 	esac
 	fail "O_DIRECT read failed: $err"
