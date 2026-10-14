@@ -576,8 +576,7 @@ int ltfs_dump(char *fname, const char *work_dir)
 	int ret = 0, num_args = 0, status;
 	char *path, *pid;
 	pid_t fork_pid;
-	const unsigned int max_arguments = 32;
-	const char *args[max_arguments];
+	const char *args[32];
 
 	if(!work_dir)
 		return -LTFS_BAD_ARG;
