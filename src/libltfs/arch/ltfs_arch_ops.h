@@ -145,9 +145,9 @@ extern "C" {
 #define PERMISSION_WRITE  0222
 #define INVALID_KEY (-1U)
 
-    #define arch_vsprintf(buffer,unused, fmt, ...) vsprintf((buffer), (fmt), __VA_ARGS__)
+    #define arch_vsprintf(buffer, size, fmt, ...) vsnprintf((buffer), (size), (fmt), __VA_ARGS__)
 
-    #define arch_sprintf(buffer,unused, fmt, ...) sprintf((buffer), (fmt), __VA_ARGS__)
+    #define arch_sprintf(buffer, size, fmt, ...) snprintf((buffer), (size), (fmt), __VA_ARGS__)
 
     #define arch_sscanf     sscanf
 
