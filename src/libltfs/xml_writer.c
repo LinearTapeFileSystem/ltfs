@@ -70,7 +70,7 @@ int xml_format_time(struct ltfs_timespec t, char** out)
 	char *timebuf;
 	struct tm tm, *gmt;
 	ltfs_time_t sec;
-	int noramized;
+	int noramized, len;
 
 	*out = NULL;
 	noramized = normalize_ltfs_time(&t);
@@ -87,8 +87,12 @@ int xml_format_time(struct ltfs_timespec t, char** out)
 		ltfsmsg(LTFS_ERR, 10001E, __FUNCTION__);
 		return -1;
 	}
-	arch_sprintf(timebuf, (31*sizeof(char)), "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ", tm.tm_year + 1900, tm.tm_mon + 1,
+	len = arch_sprintf(timebuf, (31*sizeof(char)), "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ", tm.tm_year + 1900, tm.tm_mon + 1,
 			tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, t.tv_nsec);
+	if (len < 0 || len >= 31) {
+		free(timebuf);
+		return -1;
+	}
 	*out = timebuf;
 
 	return noramized;
