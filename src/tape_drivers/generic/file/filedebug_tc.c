@@ -880,9 +880,9 @@ int filedebug_write(void *device, const char *buf, size_t count, struct tc_posit
 		if ( state->write_counter > state->force_writeperm ) {
 			ltfsmsg(LTFS_ERR, 30007E, "write");
 			if (state->force_errortype)
-				return -EDEV_NO_SENSE;
+  			return -EDEV_WRITE_PERM;
 			else
-				return -EDEV_WRITE_PERM;
+  			return -EDEV_NO_SENSE;
 		} else if ( state->write_counter > (state->force_writeperm - THRESHOLD_FORCE_WRITE_NO_WRITE) ) {
 			ltfsmsg(LTFS_INFO, 30019I);
 			++state->current_position.block;
@@ -1426,7 +1426,7 @@ static inline int _sanitize_tape(struct filedebug_data *state)
 				ret = -EDEV_MEDIUM_FORMAT_ERROR;
 				break;
 		}
-	} 
+	}
 	else if (gen == DRIVE_GEN_JAG4) {
 		switch (state->conf.cart_type) {
 		case TC_MP_JB:
