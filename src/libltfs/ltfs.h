@@ -210,6 +210,11 @@ struct device_data;
  * or a negative value on error. */
 typedef int (*ltfs_dir_filler) (void *buf, const char *name, void *priv);
 
+/* Directory listing callback that also receives the entry's attributes.
+ * attr may be NULL when the backing store yields names only. */
+typedef int (*ltfs_dir_filler_attr) (void *buf, const char *name,
+	const struct dentry_attr *attr, void *priv);
+
 /**
  * All capacities are relative to filesystem block size.
  */

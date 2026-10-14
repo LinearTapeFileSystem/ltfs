@@ -38,7 +38,7 @@ These instructions will get you a copy of the project up and running on your loc
   * automake 1.13.4 or later
   * autoconf 2.69 or later
   * libtool 2.4.2 or later
-  * fuse 2.6.0 or later
+  * fuse3 3.4.0 or later (default), or fuse 2.6.0 or later with `--with-fuse2`
   * uuid 1.36 or later (Linux)
   * libxml-2.0 2.6.16 or later
   * net-snmp 5.3 or later
@@ -198,6 +198,20 @@ make install
 ```
 
 `./configure --help` shows various options for build and install.
+
+On Linux the build uses libfuse 3 (package `libfuse3-dev` on Debian/Ubuntu,
+`fuse3-devel` on Fedora/RHEL). Pass `--with-fuse2` to build against the
+legacy libfuse 2 API instead; macOS, FreeBSD, and NetBSD use the
+libfuse 2 API by default. On macOS with macFUSE 5 or later, which ships a
+libfuse 3, the FUSE 3 build can be selected with `--with-fuse2=no`. The
+CMake build selects the API with `-DLTFS_WITH_FUSE2=ON` or `OFF`; the
+default `AUTO` behaves as configure does.
+
+FUSE 3 builds negotiate request sizes up to 1 MiB (128 KiB with libfuse 3.4
+and 3.5; tunable with `-o max_write=<bytes>`), serve directory listings
+through readdirplus, and support `-o direct_io` to bypass the kernel page
+cache entirely so large archive jobs do not fill it (mmap does not work on
+files opened this way).
 
 In some systems, you might need `sudo ldconfig -v` after `make install` to load the shared libraries correctly.
 
