@@ -203,7 +203,9 @@ On Linux the build uses libfuse 3 (package `libfuse3-dev` on Debian/Ubuntu,
 `fuse3-devel` on Fedora/RHEL). Pass `--with-fuse2` to build against the
 legacy libfuse 2 API instead; macOS, FreeBSD, and NetBSD use the
 libfuse 2 API by default. On macOS with macFUSE 5 or later, which ships a
-libfuse 3, the FUSE 3 build can be selected with `--with-fuse2=no`.
+libfuse 3, the FUSE 3 build can be selected with `--with-fuse2=no`. The
+CMake build selects the API with `-DLTFS_WITH_FUSE2=ON` or `OFF`; the
+default `AUTO` behaves as configure does.
 
 FUSE 3 builds negotiate request sizes up to 1 MiB (128 KiB with libfuse 3.4
 and 3.5; tunable with `-o max_write=<bytes>`), serve directory listings
