@@ -502,7 +502,7 @@ static int _raw_open(struct sg_data *priv)
 	priv->vendor = get_vendor_id(id_data.vendor_id);
 
 	struct supported_device **cur = get_supported_devs(priv->vendor);
-	while(*cur) {
+	while(cur && *cur) {
 		if((! strncmp(id_data.vendor_id, (*cur)->vendor_id, strlen((*cur)->vendor_id)) ) &&
 		   (! strncmp(id_data.product_id, (*cur)->product_id, strlen((*cur)->product_id)) ) ) {
 			drive_type = (*cur)->drive_type;
