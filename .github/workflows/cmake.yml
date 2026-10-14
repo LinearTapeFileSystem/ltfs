@@ -4,8 +4,12 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: Build and test with CMake
+    name: Build and test with CMake (${{ matrix.fuse }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        fuse: [fuse3, fuse2]
 
     steps:
       - name: Set up Git repository
@@ -19,11 +23,11 @@ jobs:
           sudo apt-get -q -y install --no-install-recommends \
             build-essential cmake pkg-config \
             icu-devtools libicu-dev libxml2-dev uuid-dev libsnmp-dev \
-            libfuse-dev attr
+            libfuse-dev fuse3 libfuse3-dev attr
 
       - name: Build
         run: |
-          cmake -S . -B build
+          cmake -S . -B build ${{ matrix.fuse == 'fuse2' && '-DLTFS_WITH_FUSE2=ON' || '' }}
           cmake --build build -j"$(nproc)"
 
       - name: Run tests
