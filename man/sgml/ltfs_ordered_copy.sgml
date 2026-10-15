@@ -104,6 +104,12 @@
             <para>No message outout</para>
           </listitem>
         </varlistentry>
+        <varlistentry>
+          <term><option>--sort-files</option></term>
+          <listitem>
+            <para>Sort the source file list alphabetically before copying (default: not sorted)</para>
+          </listitem>
+        </varlistentry>
       </variablelist>
     </refsect1>
 
