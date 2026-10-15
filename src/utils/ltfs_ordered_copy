@@ -129,6 +129,7 @@ class CopyQueue:
         self.logger = logger
         self.sort_files = sort_files
         self.total_bytes = 0
+        self.dir_items = []
 
     def add_copy_item(self, c):
         (u, p, s) = c.eval()
@@ -172,7 +173,7 @@ class CopyQueue:
         dst = os.path.normpath(dst)
 
         walk_dirs = []
-        walk_dirs.append(dst)
+        walk_dirs.append((source, dst))
 
         self.logger.log(NOTSET + 1, 'Walking {}'.format(source))
         for root, dirs, files in os.walk(source):
@@ -181,14 +182,14 @@ class CopyQueue:
             dst = os.path.normpath(dst)
 
             for d in sorted(dirs) if self.sort_files else dirs:
-                walk_dirs.append(os.path.join(dst, d))
+                walk_dirs.append((os.path.join(root, d), os.path.join(dst, d)))
             for f in sorted(files) if self.sort_files else files:
                 self.logger.log(NOTSET + 1, 'Creating a copy item for file {}'.format(f))
                 c = CopyItem(os.path.join(root, f), os.path.join(dst, f), VEA_PREFIX,
                              cp_attr, cp_xattr, logger)
                 self.add_copy_item(c)
 
-        for d in walk_dirs:
+        for (s, d) in walk_dirs:
             try:
                 self.logger.log(NOTSET + 1, 'Making a directory {}'.format(d))
                 os.mkdir(d)
@@ -196,6 +197,31 @@ class CopyQueue:
                 if e.errno != 17: # Not EEXIST
                     self.logger.error(str(e) + "\n")
                     exit(1)
+            self.dir_items.append((s, d, cp_attr, cp_xattr))
+
+    def apply_dir_attributes(self):
+        # Copied after the files are in place: writing a file bumps the mtime
+        # of the directory containing it, so the timestamps could not survive
+        # otherwise.  Deepest first, because updating a child directory bumps
+        # the mtime of its parent.
+        for (s, d, cp_attr, cp_xattr) in sorted(self.dir_items,
+                                                key = lambda i: len(i[0]),
+                                                reverse = True):
+            if not cp_attr:
+                continue
+            try:
+                shutil.copystat(s, d)
+            except Exception as e:
+                self.logger.warning('Failed to copy attributes of "{0}": {1}'.format(d, str(e)))
+                continue
+
+            if not cp_xattr:
+                continue
+            for key in xattr.list(s):
+                try:
+                    xattr.set(d, key, xattr.get(s, key))
+                except Exception as e:
+                    self.logger.warning('Failed to copy attribute "{0}" of "{1}": {2}'.format(key, d, str(e)))
 
     def pop_direct(self):
         self.items = self.items - len(self.direct)
@@ -540,6 +566,9 @@ while tape != None:
 
     (tape_key, tape) = copyq.pop_tape()
     prog_tape.finish()
+
+# Copy directory attributes
+copyq.apply_dir_attributes()
 
 # Return code
 if fail:
