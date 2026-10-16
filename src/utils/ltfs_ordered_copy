@@ -436,6 +436,8 @@ logger.log(NOTSET + 1, 'Checking destination is LTFS or not')
 direct_write_threads = 8
 try:
     sig = xattr.get(args.DEST, VEA_PREFIX + LTFS_SIG_VEA)
+    if isinstance(sig, str): # some xattr implementations return str
+        sig = sig.encode()
 
     if sig.startswith(b"LTFS"):
         logger.info("Destination {0} is LTFS".format(args.DEST))
