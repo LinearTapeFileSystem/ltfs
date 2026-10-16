@@ -197,31 +197,40 @@ class CopyQueue:
                 if e.errno != 17: # Not EEXIST
                     self.logger.error(str(e) + "\n")
                     exit(1)
-            self.dir_items.append((s, d, cp_attr, cp_xattr))
+            # A source of "dir/" or "." copies the contents of the directory
+            # into DEST itself; leave the attributes of DEST alone.
+            if d != os.path.normpath(dest):
+                self.dir_items.append((s, d, cp_attr, cp_xattr))
 
     def apply_dir_attributes(self):
         # Copied after the files are in place: writing a file bumps the mtime
         # of the directory containing it, so the timestamps could not survive
-        # otherwise.  Deepest first, because updating a child directory bumps
-        # the mtime of its parent.
+        # otherwise.  Deepest destination first, so that a parent directory
+        # made read-only here does not block the update of its children.
         for (s, d, cp_attr, cp_xattr) in sorted(self.dir_items,
-                                                key = lambda i: len(i[0]),
+                                                key = lambda i: len(i[1]),
                                                 reverse = True):
             if not cp_attr:
                 continue
+
+            # Extended attributes go first: copystat() may make the directory
+            # read-only, after which setxattr() fails with EACCES.
+            if cp_xattr:
+                try:
+                    keys = xattr.list(s)
+                except Exception as e:
+                    self.logger.warning('Failed to list attributes of "{0}": {1}'.format(s, str(e)))
+                    keys = []
+                for key in keys:
+                    try:
+                        xattr.set(d, key, xattr.get(s, key))
+                    except Exception as e:
+                        self.logger.warning('Failed to copy attribute "{0}" of "{1}": {2}'.format(key, d, str(e)))
+
             try:
                 shutil.copystat(s, d)
             except Exception as e:
                 self.logger.warning('Failed to copy attributes of "{0}": {1}'.format(d, str(e)))
-                continue
-
-            if not cp_xattr:
-                continue
-            for key in xattr.list(s):
-                try:
-                    xattr.set(d, key, xattr.get(s, key))
-                except Exception as e:
-                    self.logger.warning('Failed to copy attribute "{0}" of "{1}": {2}'.format(key, d, str(e)))
 
     def pop_direct(self):
         self.items = self.items - len(self.direct)
