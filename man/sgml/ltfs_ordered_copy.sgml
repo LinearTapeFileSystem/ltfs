@@ -31,6 +31,7 @@
         <arg><option>-v</option></arg>
         <arg><option>--verbose <replaceable>LOG_LEVEL</replaceable></option></arg>
         <arg><option>-q</option></arg>
+        <arg><option>--sort-files</option></arg>
         <arg><option>-h</option></arg>
         <arg choice="opt" Rep="Repeat">SOURCE </arg>
         <arg choice="opt">DESTINATION</arg>
