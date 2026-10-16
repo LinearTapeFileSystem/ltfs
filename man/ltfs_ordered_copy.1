@@ -4,7 +4,7 @@
 ltfs_ordered_copy \- Copy files from source to destination with LTFS order optimization
 .SH SYNOPSIS
 .sp
-\fBltfs_ordered_copy\fR [ \fB-p\fR ]  [ \fB-r\fR ]  [ \fB-t \fITARGET_DIRECTORY\fB\fR ]  [ \fB--keep-tree \fICUTOFF_PREFIX\fB\fR ]  [ \fB-a\fR ]  [ \fB-v\fR ]  [ \fB--verbose \fILOG_LEVEL\fB\fR ]  [ \fB-q\fR ]  [ \fB-h\fR ]  [ \fBSOURCE \fR\fI...\fR ]  [ \fBDESTINATION\fR ] 
+\fBltfs_ordered_copy\fR [ \fB-p\fR ]  [ \fB-r\fR ]  [ \fB-t \fITARGET_DIRECTORY\fB\fR ]  [ \fB--keep-tree \fICUTOFF_PREFIX\fB\fR ]  [ \fB-a\fR ]  [ \fB-v\fR ]  [ \fB--verbose \fILOG_LEVEL\fB\fR ]  [ \fB-q\fR ]  [ \fB--sort-files\fR ]  [ \fB-h\fR ]  [ \fBSOURCE \fR\fI...\fR ]  [ \fBDESTINATION\fR ] 
 .SH "DESCRIPTION"
 .PP
 \fBltfs_ordered_copy\fR is a program to copy files from source to destination with LTFS
@@ -40,6 +40,9 @@ Configure verbosity of logger. VERBOSE shall be 0-6. (Default: 4)
 .TP
 \fB-q, --quiet\fR
 No message outout
+.TP
+\fB--sort-files\fR
+Sort the source file list alphabetically before copying (default: not sorted)
 .SH "COMMAND EXAMPLES"
 .PP
 This section shows various command examples.
