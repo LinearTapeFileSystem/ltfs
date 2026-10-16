@@ -54,6 +54,10 @@ class CopyItem:
     """"""
     def __init__(self, src, dst, vea_pre, cp_attr, cp_xattr, logger): #initialization
         self.src     = src
+        if os.path.isdir(dst):
+            # Copying into a directory: keep the source file name, as
+            # shutil.copy() did before the progress-bar copy was introduced.
+            dst = os.path.join(dst, os.path.basename(src))
         self.dst     = dst
         self.vea_pre = vea_pre
         self.cp_attr = cp_attr
