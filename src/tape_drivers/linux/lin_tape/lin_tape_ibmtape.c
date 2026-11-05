@@ -2432,7 +2432,7 @@ int lin_tape_ibmtape_modesense(void *device, const uint8_t page, const TC_MP_PC_
  * @param size length of buf
  * @return 0 on success or a negative value on error
  */
-int lin_tape_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size)
+int lin_tape_ibmtape_modeselect(void *device, unsigned char *buf, const size_t size, bool save)
 {
 	struct sioc_pass_through spt;
 	int rc;
@@ -2765,7 +2765,7 @@ int lin_tape_ibmtape_set_compression(void *device, const bool enable_compression
 	else
 		buf[18] &= 0x7F; /* Unset DCE field*/
 
-	rc = lin_tape_ibmtape_modeselect(device, buf, sizeof(buf));
+	rc = lin_tape_ibmtape_modeselect(device, buf, sizeof(buf), false);
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCOMPRS));
 	return rc;
@@ -2800,7 +2800,7 @@ int lin_tape_ibmtape_set_default(void *device)
 		buf[1]  = 0x00;
 		buf[24] = 0x0C;
 
-		rc = lin_tape_ibmtape_modeselect(device, buf, sizeof(buf));
+		rc = lin_tape_ibmtape_modeselect(device, buf, sizeof(buf), false);
 		if (rc != DEVICE_GOOD) {
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETDEFAULT));
 			return rc;
@@ -3360,7 +3360,7 @@ int lin_tape_ibmtape_setcap(void *device, uint16_t proportion)
 		buf[27] |= 0x01;
 		buf[28]  = 0x00;
 
-		rc = lin_tape_ibmtape_modeselect(device, buf, sizeof(buf));
+		rc = lin_tape_ibmtape_modeselect(device, buf, sizeof(buf), false);
 	} else {
 
 		memset(&spt, 0, sizeof(spt));
