@@ -108,7 +108,7 @@ int iokit_logsense(void *device, const uint8_t page, const uint8_t subpage,
 				   unsigned char *buf, const size_t size);
 int iokit_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
 							const unsigned char subpage, unsigned char *buf, const size_t size);
-int iokit_modeselect(void *device, unsigned char *buf, const size_t size);
+int iokit_modeselect(void *device, unsigned char *buf, const size_t size, bool save);
 static const char *_generate_product_name(const char *product_id);
 
 /* Local functions */
@@ -229,7 +229,7 @@ static int _set_lbp(void *device, bool enable)
 		buf[22] = 0;
 	}
 
-	ret = iokit_modeselect(device, buf, sizeof(buf));
+	ret = iokit_modeselect(device, buf, sizeof(buf), false);
 
 	if (ret == DEVICE_GOOD) {
 		if (enable) {
@@ -2198,7 +2198,7 @@ int iokit_setcap(void *device, uint16_t proportion)
 		buf[27] |= 0x01;
 		buf[28]  = 0x00;
 
-		ret = iokit_modeselect(device, buf, sizeof(buf));
+		ret = iokit_modeselect(device, buf, sizeof(buf), false);
 	} else {
 		/* Zero out the CDB and the result buffer */
 		memset(cdb, 0, sizeof(cdb));
@@ -2524,7 +2524,7 @@ int iokit_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE 
 	return ret;
 }
 
-int iokit_modeselect(void *device, unsigned char *buf, const size_t size)
+int iokit_modeselect(void *device, unsigned char *buf, const size_t size, bool save)
 {
 	int ret = -EDEV_UNKNOWN;
 	struct iokit_data *priv = (struct iokit_data*)device;
@@ -3011,7 +3011,7 @@ int iokit_set_compression(void *device, const bool enable_compression, struct tc
 	else
 		buf[18] = buf[18] & 0x7E;
 
-	ret = iokit_modeselect(device, buf, sizeof(buf));
+	ret = iokit_modeselect(device, buf, sizeof(buf), false);
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCOMPRS));
 
@@ -3041,7 +3041,7 @@ int iokit_set_default(void *device)
 		buf[1]  = 0x00;
 		buf[24] = 0x0C;
 
-		ret = iokit_modeselect(device, buf, sizeof(buf));
+		ret = iokit_modeselect(device, buf, sizeof(buf), false);
 		if (ret < 0) {
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETDEFAULT));
 			return ret;
