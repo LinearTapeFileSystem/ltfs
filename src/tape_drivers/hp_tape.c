@@ -63,12 +63,12 @@
 #include "libltfs/ltfs_endian.h"
 
 struct supported_device *hp_supported_drives[] = {
-		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 5-SCSI", DRIVE_LTO5,    "[Ultrium 5-SCSI]" ),  /* HP Ultrium Gen 5  */
-		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 6-SCSI", DRIVE_LTO6,    "[Ultrium 6-SCSI]" ),  /* HP Ultrium Gen 6  */
-		TAPEDRIVE( HP_VENDOR_ID,  "Ultrium 7-SCSI", DRIVE_LTO7,    "[Ultrium 7-SCSI]" ),  /* HP Ultrium Gen 7  */
-		TAPEDRIVE( HPE_VENDOR_ID, "Ultrium 8-SCSI", DRIVE_LTO8,    "[Ultrium 8-SCSI]" ),  /* HPE Ultrium Gen 8 */
-		TAPEDRIVE( HPE_VENDOR_ID, "Ultrium 9-SCSI", DRIVE_LTO9,    "[Ultrium 9-SCSI]" ),  /* HPE Ultrium Gen 9 */
-		TAPEDRIVE( TANDBERG_VENDOR_ID, "LTO-6 HH       ", DRIVE_LTO6_HH, "[LTO-6 HH]" ),  /* TANDBERG LTO-6 HH */
+		TAPEDRIVE( HP_VENDOR_ID,       "Ultrium 5-SCSI", DRIVE_LTO5,    "[Ultrium 5-SCSI]" ),  /* HP Ultrium Gen 5  */
+		TAPEDRIVE( HP_VENDOR_ID,       "Ultrium 6-SCSI", DRIVE_LTO6,    "[Ultrium 6-SCSI]" ),  /* HP Ultrium Gen 6  */
+		TAPEDRIVE( HP_VENDOR_ID,       "Ultrium 7-SCSI", DRIVE_LTO7,    "[Ultrium 7-SCSI]" ),  /* HP Ultrium Gen 7  */
+		TAPEDRIVE( HPE_VENDOR_ID,      "Ultrium 8-SCSI", DRIVE_LTO8,    "[Ultrium 8-SCSI]" ),  /* HPE Ultrium Gen 8 */
+		TAPEDRIVE( HPE_VENDOR_ID,      "Ultrium 9-SCSI", DRIVE_LTO9,    "[Ultrium 9-SCSI]" ),  /* HPE Ultrium Gen 9 */
+		TAPEDRIVE( TANDBERG_VENDOR_ID, "LTO-6 HH      ", DRIVE_LTO6_HH, "[LTO-6 HH]" ),  /* TANDBERG LTO-6 HH */
 		/* End of supported_devices */
 		NULL
 };

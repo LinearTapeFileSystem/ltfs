@@ -80,6 +80,6 @@ if CHK_MESSAGE
 endif
 
 clean-local:
-	rm -rf $(RESOURCES) */work
+	rm -rf $(RESOURCES) */work .work-*
 	rm -f ../src/ltfsmsg.h
 	rm -f *.la

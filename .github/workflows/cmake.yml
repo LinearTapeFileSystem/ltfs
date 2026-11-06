@@ -1,0 +1,30 @@
+name: CMake Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build and test with CMake
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get -q update
+          sudo apt-get -q -y install --no-install-recommends \
+            build-essential cmake pkg-config \
+            icu-devtools libicu-dev libxml2-dev uuid-dev libsnmp-dev \
+            libfuse-dev attr
+
+      - name: Build
+        run: |
+          cmake -S . -B build
+          cmake --build build -j"$(nproc)"
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
