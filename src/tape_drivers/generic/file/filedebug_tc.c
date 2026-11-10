@@ -1426,7 +1426,7 @@ static inline int _sanitize_tape(struct filedebug_data *state)
 				ret = -EDEV_MEDIUM_FORMAT_ERROR;
 				break;
 		}
-	} 
+	}
 	else if (gen == DRIVE_GEN_JAG4) {
 		switch (state->conf.cart_type) {
 		case TC_MP_JB:
@@ -2036,7 +2036,7 @@ int filedebug_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc
 	return DEVICE_GOOD;
 }
 
-int filedebug_modeselect(void *device, unsigned char *buf, const size_t size)
+int filedebug_modeselect(void *device, unsigned char *buf, const size_t size, bool save)
 {
 	int ret = 0;
 	struct filedebug_data *state = (struct filedebug_data *)device;
