@@ -760,7 +760,7 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		ltfsmsg(LTFS_ERR, 17237E, "rename: source or target dir is WORM");
 		ret = -LTFS_WORM_ENABLED;
 		fs_release_dentry(fromdentry);
-		if (todentry && todentry != fromdentry)
+		if (todentry)
 			fs_release_dentry(todentry);
 		goto out_unlock;
 	}
