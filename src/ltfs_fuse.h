@@ -68,6 +68,10 @@ extern "C" {
 #include "libltfs/plugin.h"
 #include "libltfs/uthash.h"
 
+/* Default and minimum for the -o max_write option (FUSE 3 builds) */
+#define LTFS_FUSE_MAX_WRITE_DEFAULT (1UL << 20)
+#define LTFS_FUSE_MAX_WRITE_MIN     (128UL << 10)
+
 struct ltfs_fuse_data {
 	bool first_parsing_pass;       /**< Just looking for a config file? If so, don't print help */
 
@@ -131,12 +135,19 @@ struct ltfs_fuse_data {
 	char *symlink_str;             /**< Symbolic Link type fetched by option (live or posix)*/
 	char *str_append_only_mode;    /**< option sting of scsi_append_only_mode */
 	int append_only_mode;          /**< Use append-only mode */
+	unsigned long fuse_max_write;  /**< Maximum size of a FUSE request in bytes (FUSE 3) */
+	unsigned int fuse_max_read;    /**< Value of the max_read option, 0 if not set (FUSE 3) */
+	int direct_io;                 /**< Bypass the kernel page cache for all file I/O */
 
 	bool advanced_help;            /**< Include standard FUSE options on --help? */
 
 	ltfs_mutex_t file_table_lock; /**< Controls access to 'open_files' */
 	struct file_info *file_table;    /**< Hash table of open file handles */
 };
+
+#ifdef HAVE_FUSE3
+int ltfs_fuse_stop_signal(void);
+#endif
 
 #ifdef __cplusplus
 }

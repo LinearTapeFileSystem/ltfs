@@ -1358,14 +1358,19 @@ out_free:
 	return ret;
 }
 
-int ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler, void *filler_priv,
-	struct ltfs_volume *vol)
+static int _ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler,
+	ltfs_dir_filler_attr filler_attr, void *filler_priv, struct ltfs_volume *vol)
 {
 	int ret = 0;
 	struct name_list *entry, *tmp;
+	struct dentry_attr attr;
+	struct readdir_child {
+		struct dentry *d;
+		char *name;
+	} *children = NULL;
+	size_t count = 0, n;
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(filler, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	if (! d->isdir)
@@ -1377,12 +1382,16 @@ int ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler, void
 
 	acquireread_mrsw(&d->contents_lock);
 	if (dcache_initialized(vol)) {
+		/* The dentry cache yields names only */
 		int i;
 		char **namelist = NULL;
 		ret = dcache_readdir(d, false, (void ***) &namelist, vol);
 		if (ret == 0 && namelist) {
 			for (i=0; namelist[i]; ++i) {
-				ret = filler(buf, namelist[i], filler_priv);
+				if (filler_attr)
+					ret = filler_attr(buf, namelist[i], NULL, filler_priv);
+				else
+					ret = filler(buf, namelist[i], filler_priv);
 				if (ret < 0)
 					break;
 			}
@@ -1393,14 +1402,58 @@ int ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler, void
 	} else {
 		if (HASH_COUNT(d->child_list) != 0) {
 			HASH_SORT(d->child_list, fs_hash_sort_by_uid);
-			HASH_ITER(hh, d->child_list, entry, tmp) {
-				ret = filler(buf, entry->d->platform_safe_name, filler_priv);
-				if (ret < 0)
-					break;
+			if (filler_attr) {
+				/* Take references and get the attributes after the locks are released:
+				 * the file size comes from the I/O scheduler, which must not be called
+				 * with the volume lock held. */
+				children = calloc(HASH_COUNT(d->child_list), sizeof(*children));
+				if (! children) {
+					ltfsmsg(LTFS_ERR, 10001E, "_ltfs_fsops_readdir: children");
+					ret = -LTFS_NO_MEMORY;
+				} else {
+					HASH_ITER(hh, d->child_list, entry, tmp) {
+						children[count].name = arch_strdup(entry->d->platform_safe_name);
+						if (! children[count].name) {
+							ltfsmsg(LTFS_ERR, 10001E, "_ltfs_fsops_readdir: name");
+							ret = -LTFS_NO_MEMORY;
+							break;
+						}
+						acquirewrite_mrsw(&entry->d->meta_lock);
+						++entry->d->numhandles;
+						releasewrite_mrsw(&entry->d->meta_lock);
+						children[count++].d = entry->d;
+					}
+				}
+			} else {
+				HASH_ITER(hh, d->child_list, entry, tmp) {
+					ret = filler(buf, entry->d->platform_safe_name, filler_priv);
+					if (ret < 0)
+						break;
+				}
 			}
 		}
 	}
 	releaseread_mrsw(&d->contents_lock);
+
+	if (children) {
+		releaseread_mrsw(&vol->lock);
+		for (n = 0; n < count; ++n) {
+			if (ret >= 0) {
+				ret = ltfs_fsops_getattr(children[n].d, &attr, vol);
+				if (ret == 0)
+					ret = filler_attr(buf, children[n].name, &attr, filler_priv);
+			}
+			fs_release_dentry(children[n].d);
+			free(children[n].name);
+		}
+		free(children);
+		if (ret != 0)
+			return ret;
+
+		ret = ltfs_get_volume_lock(false, vol);
+		if (ret < 0)
+			return ret;
+	}
 
 	/* Update access time */
 	if (ret == 0) {
@@ -1412,6 +1465,20 @@ int ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler, void
 
 	releaseread_mrsw(&vol->lock);
 	return ret;
+}
+
+int ltfs_fsops_readdir(struct dentry *d, void *buf, ltfs_dir_filler filler, void *filler_priv,
+	struct ltfs_volume *vol)
+{
+	CHECK_ARG_NULL(filler, -LTFS_NULL_ARG);
+	return _ltfs_fsops_readdir(d, buf, filler, NULL, filler_priv, vol);
+}
+
+int ltfs_fsops_readdir_attr(struct dentry *d, void *buf, ltfs_dir_filler_attr filler,
+	void *filler_priv, struct ltfs_volume *vol)
+{
+	CHECK_ARG_NULL(filler, -LTFS_NULL_ARG);
+	return _ltfs_fsops_readdir(d, buf, NULL, filler, filler_priv, vol);
 }
 
 int _ltfs_fsops_read_direntry(struct dentry *d, struct ltfs_direntry *dirent,
@@ -1692,6 +1759,11 @@ int ltfs_fsops_set_readonly(struct dentry *d, bool readonly, struct ltfs_volume 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
+	if (d->is_appendonly || d->is_immutable) {
+		ltfsmsg(LTFS_ERR, 17237E, "chmod");
+		return -LTFS_WORM_ENABLED;
+	}
+
 	/* Make sure the device is online and writable */
 	ret = ltfs_get_tape_readonly(vol);
 	if (ret < 0 && ret != -LTFS_LESS_SPACE)
@@ -1733,11 +1805,6 @@ int ltfs_fsops_set_readonly_path(const char *path, bool readonly, ltfs_file_id *
 	ret = ltfs_fsops_open(path, false, false, &d, vol);
 	if (ret < 0)
 		return ret;
-
-	if (d->is_appendonly || d->is_immutable) {
-		ltfsmsg(LTFS_ERR, 17237E, "chmod");
-		return -LTFS_WORM_ENABLED;
-	}
 
 	ret = ltfs_fsops_set_readonly(d, readonly, vol);
 	id->uid = d->uid;
