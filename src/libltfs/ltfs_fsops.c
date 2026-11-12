@@ -56,6 +56,7 @@
 */
 
 #include "ltfs.h"
+#include "ltfs_error.h"
 #include "ltfs_internal.h"
 #include "ltfs_fsops.h"
 #include "ltfs_fsops_raw.h"
@@ -1781,10 +1782,7 @@ int ltfs_fsops_write(struct dentry *d, const char *buf, size_t count, off_t offs
 		}
 	}
 
-	if (ret < 0)
-		return ret;
-	else
-		return 0;
+	return ret < 0? ret : 0;
 }
 
 ssize_t ltfs_fsops_read(struct dentry *d, char *buf, size_t count, off_t offset,
