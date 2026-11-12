@@ -84,6 +84,58 @@ static struct fuse_context *context;
 #define FUSE_REQ_ENTER(r)   REQ_NUMBER(REQ_STAT_ENTER, REQ_FUSE, r)
 #define FUSE_REQ_EXIT(r)    REQ_NUMBER(REQ_STAT_EXIT,  REQ_FUSE, r)
 
+/* The FUSE 3 directory filler takes an extra flags argument. */
+#ifdef HAVE_FUSE3
+#define LTFS_FILL(filler, buf, name, st, off) (filler)(buf, name, st, off, 0)
+#else
+#define LTFS_FILL(filler, buf, name, st, off) (filler)(buf, name, st, off)
+#endif
+
+#ifdef HAVE_FUSE3
+#ifndef RENAME_NOREPLACE
+#define RENAME_NOREPLACE (1 << 0)
+#endif
+#ifndef RENAME_EXCHANGE
+#define RENAME_EXCHANGE  (1 << 1)
+#endif
+#endif
+
+/* Handle-based variants; on FUSE 3 they are reached through getattr/truncate. */
+int ltfs_fuse_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi);
+int ltfs_fuse_ftruncate(const char *path, off_t length, struct fuse_file_info *fi);
+
+/* The fuse2 macFUSE API adds a position argument to the xattr handlers; the
+ * fuse3 build uses the upstream signatures (Darwin extensions disabled in
+ * ltfs_fuse_version.h). */
+#if defined(__APPLE__) && !defined(HAVE_FUSE3)
+#define LTFS_XATTR_POSITION 1
+#endif
+
+#if !defined(__APPLE__) && FUSE_VERSION > 27
+/* Per-open cache policy. With -o direct_io every read and write bypasses
+ * the kernel page cache: requests arrive at the application's I/O size
+ * (up to the negotiated maximum) and stream straight to the daemon, at
+ * the cost of mmap support and kernel readahead. Otherwise the page
+ * cache is used and kept across opens (the daemon is the only writer).
+ * keep_cache must never be set while another open of the same file uses
+ * direct_io; the policy is mount-wide, so the modes cannot mix. */
+static void _ltfs_fuse_set_cache_flags(struct fuse_file_info *fi, struct ltfs_fuse_data *priv)
+{
+	if (priv->direct_io) {
+		fi->direct_io = 1;
+		fi->keep_cache = 0;
+#ifdef HAVE_FUSE_PARALLEL_DIRECT_WRITES
+		/* Writes are serialized further down; this only removes the
+		 * kernel-side exclusive lock for non-extending direct writes. */
+		fi->parallel_direct_writes = 1;
+#endif
+	} else {
+		fi->direct_io = 0;
+		fi->keep_cache = 1;
+	}
+}
+#endif
+
 struct ltfs_file_handle *_new_ltfs_file_handle(struct file_info *fi)
 {
 	int ret;
@@ -218,7 +270,7 @@ const char *_dentry_name(const char *path, struct file_info *fi)
 		return "(unnamed)";
 }
 
-static void _ltfs_fuse_attr_to_stat(struct stat *stbuf, struct dentry_attr *attr,
+static void _ltfs_fuse_attr_to_stat(struct stat *stbuf, const struct dentry_attr *attr,
 	struct ltfs_fuse_data *priv)
 {
 	stbuf->st_dev = LTFS_SUPER_MAGIC;
@@ -278,7 +330,7 @@ int ltfs_fuse_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_in
 	return errormap_fuse_error(ret);
 }
 
-int ltfs_fuse_getattr(const char *path, struct stat *stbuf)
+static int _ltfs_fuse_getattr_path(const char *path, struct stat *stbuf)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	struct dentry_attr attr;
@@ -298,6 +350,20 @@ int ltfs_fuse_getattr(const char *path, struct stat *stbuf)
 
 	return errormap_fuse_error(ret);
 }
+
+#ifdef HAVE_FUSE3
+int ltfs_fuse_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi)
+{
+	if (fi)
+		return ltfs_fuse_fgetattr(path, stbuf, fi);
+	return _ltfs_fuse_getattr_path(path, stbuf);
+}
+#else
+int ltfs_fuse_getattr(const char *path, struct stat *stbuf)
+{
+	return _ltfs_fuse_getattr_path(path, stbuf);
+}
+#endif
 
 
 int ltfs_fuse_access(const char *path, int mode)
@@ -408,10 +474,7 @@ int ltfs_fuse_open(const char *path, struct fuse_file_info *fi)
 		fi->direct_io = 1;
 	fi->keep_cache = 0;
 #else
-	/* cannot set keep cache if any process has the file open with direct_io set! so only
-	 * set it on newer FUSE versions, where we don't use direct_io. */
-	fi->direct_io = 0;
-	fi->keep_cache = 1;
+	_ltfs_fuse_set_cache_flags(fi, priv);
 #endif
 #endif
 
@@ -591,25 +654,82 @@ int ltfs_fuse_flush(const char *path, struct fuse_file_info *fi)
 	return errormap_fuse_error(ret);
 }
 
+static struct ltfs_timespec _ltfs_fuse_utime(const struct timespec *ts,
+	const struct ltfs_timespec *now, const struct ltfs_timespec *current)
+{
+	struct ltfs_timespec ret;
+
+	if (ts->tv_nsec == UTIME_NOW)
+		ret = *now;
+	else if (ts->tv_nsec == UTIME_OMIT)
+		ret = *current;
+	else
+		ret = ltfs_timespec_from_timespec(ts);
+
+	return ret;
+}
+
+#ifdef HAVE_FUSE3
+int ltfs_fuse_utimens(const char *path, const struct timespec ts[2], struct fuse_file_info *fi)
+#else
 int ltfs_fuse_utimens(const char *path, const struct timespec ts[2])
+#endif
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
+	struct dentry *d = NULL;
+	struct dentry_attr attr;
 	struct ltfs_timespec tsTmp[2];
+	struct ltfs_timespec now;
 	ltfs_file_id id;
-	int ret;
+	const char *name = path;
+	int ret = 0;
 
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_UTIMENS), 0, 0);
 
-	tsTmp[0] = ltfs_timespec_from_timespec(&ts[0]);
-	tsTmp[1] = ltfs_timespec_from_timespec(&ts[1]);
+	if (ts[0].tv_nsec == UTIME_OMIT && ts[1].tv_nsec == UTIME_OMIT) {
+		ltfs_request_trace(FUSE_REQ_EXIT(REQ_UTIMENS), 0, 0);
+		return 0;
+	}
 
-	ltfsmsg(LTFS_DEBUG, 14038D, path);
-	ret = ltfs_fsops_utimens_path(path, tsTmp, &id, priv->data);
+	id.uid = 0;
+	id.ino = 0;
+
+#ifdef HAVE_FUSE3
+	/* With nullpath_ok set, FUSE 3 passes a NULL path with a file handle;
+	 * operate on the handle. */
+	if (fi) {
+		struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
+		name = _dentry_name(path, file->file_info);
+		ltfsmsg(LTFS_DEBUG, 14038D, name);
+		d = file->file_info->dentry_handle;
+		id.uid = d->uid;
+	} else
+#endif
+	{
+		ltfsmsg(LTFS_DEBUG, 14038D, path);
+	}
+
+	if (ts[0].tv_nsec == UTIME_OMIT || ts[1].tv_nsec == UTIME_OMIT) {
+		if (d)
+			ret = ltfs_fsops_getattr(d, &attr, priv->data);
+		else
+			ret = ltfs_fsops_getattr_path(path, &attr, &id, priv->data);
+	}
+
+	if (ret == 0) {
+		get_current_timespec(&now);
+		tsTmp[0] = _ltfs_fuse_utime(&ts[0], &now, &attr.access_time);
+		tsTmp[1] = _ltfs_fuse_utime(&ts[1], &now, &attr.modify_time);
+		if (d)
+			ret = ltfs_fsops_utimens(d, tsTmp, priv->data);
+		else
+			ret = ltfs_fsops_utimens_path(path, tsTmp, &id, priv->data);
+	}
 
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_UTIMENS), ret, id.uid);
 
 	if (ret)
-		ltfsmsg(LTFS_ERR, 10020E, "utimens", path, 0, 0);
+		ltfsmsg(LTFS_ERR, 10020E, "utimens", name, 0, 0);
 
 	return errormap_fuse_error(ret);
 }
@@ -618,22 +738,43 @@ int ltfs_fuse_utimens(const char *path, const struct timespec ts[2])
  * Change the mode of a file or directory. Since LTFS does not support full Unix permissions,
  * this function just sets or clears the read-only flag.
  */
+#ifdef HAVE_FUSE3
+int ltfs_fuse_chmod(const char *path, mode_t mode, struct fuse_file_info *fi)
+#else
 int ltfs_fuse_chmod(const char *path, mode_t mode)
+#endif
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	ltfs_file_id id;
+	const char *name = path;
 	int ret;
 	bool new_readonly = (mode & 0222) ? false : true;
 
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_CHMOD), (uint64_t)mode, 0);
 
-	ltfsmsg(LTFS_DEBUG, 14039D, path);
-	ret = ltfs_fsops_set_readonly_path(path, new_readonly, &id, priv->data);
+	id.uid = 0;
+	id.ino = 0;
+
+#ifdef HAVE_FUSE3
+	/* With nullpath_ok set, FUSE 3 passes a NULL path with a file handle;
+	 * operate on the handle. */
+	if (fi) {
+		struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
+		name = _dentry_name(path, file->file_info);
+		ltfsmsg(LTFS_DEBUG, 14039D, name);
+		ret = ltfs_fsops_set_readonly(file->file_info->dentry_handle, new_readonly, priv->data);
+		id.uid = ((struct dentry *)(file->file_info->dentry_handle))->uid;
+	} else
+#endif
+	{
+		ltfsmsg(LTFS_DEBUG, 14039D, path);
+		ret = ltfs_fsops_set_readonly_path(path, new_readonly, &id, priv->data);
+	}
 
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_CHMOD), ret, id.uid);
 
 	if (ret)
-		ltfsmsg(LTFS_ERR, 10020E, "chmod", path, mode, 0);
+		ltfsmsg(LTFS_ERR, 10020E, "chmod", name, mode, 0);
 
 	return errormap_fuse_error(ret);
 }
@@ -642,7 +783,11 @@ int ltfs_fuse_chmod(const char *path, mode_t mode)
  * Set ownership of a file or directory. Succeeds, but has no effect: user/group are
  * controlled by mount-time options uid and gid.
  */
+#ifdef HAVE_FUSE3
+int ltfs_fuse_chown(const char *path, uid_t user, gid_t group, struct fuse_file_info *fi)
+#else
 int ltfs_fuse_chown(const char *path, uid_t user, gid_t group)
+#endif
 {
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_CHOWN), ((uint64_t)user << 32) + group, 0);
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_CHOWN), 0, 0);
@@ -711,10 +856,7 @@ int ltfs_fuse_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 	fi->direct_io = 1;
 	fi->keep_cache = 0;
 #else
-	/* cannot set keep cache if any process has the file open with direct_io set! so only
-	 * set it on newer FUSE versions, where we don't use direct_io. */
-	fi->direct_io = 0;
-	fi->keep_cache = 1;
+	_ltfs_fuse_set_cache_flags(fi, priv);
 #endif
 #endif
 
@@ -746,7 +888,7 @@ int ltfs_fuse_mkdir(const char *path, mode_t mode)
 	return errormap_fuse_error(ret);
 }
 
-int ltfs_fuse_truncate(const char *path, off_t length)
+static int _ltfs_fuse_truncate_path(const char *path, off_t length)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	ltfs_file_id id;
@@ -762,6 +904,20 @@ int ltfs_fuse_truncate(const char *path, off_t length)
 
 	return errormap_fuse_error(ret);
 }
+
+#ifdef HAVE_FUSE3
+int ltfs_fuse_truncate(const char *path, off_t length, struct fuse_file_info *fi)
+{
+	if (fi)
+		return ltfs_fuse_ftruncate(path, length, fi);
+	return _ltfs_fuse_truncate_path(path, length);
+}
+#else
+int ltfs_fuse_truncate(const char *path, off_t length)
+{
+	return _ltfs_fuse_truncate_path(path, length);
+}
+#endif
 
 int ltfs_fuse_ftruncate(const char *path, off_t length, struct fuse_file_info *fi)
 {
@@ -815,11 +971,29 @@ int ltfs_fuse_rmdir(const char *path)
 	return errormap_fuse_error(ret);
 }
 
+#ifdef HAVE_FUSE3
+int ltfs_fuse_rename(const char *from, const char *to, unsigned int flags)
+#else
 int ltfs_fuse_rename(const char *from, const char *to)
+#endif
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	ltfs_file_id id;
 	int ret;
+
+#ifdef HAVE_FUSE3
+	/* LTFS cannot swap two dentries atomically, and unknown flags
+	 * must be rejected rather than ignored. */
+	if (flags & ~(unsigned int)RENAME_NOREPLACE)
+		return -EINVAL;
+	if (flags & RENAME_NOREPLACE) {
+		struct dentry_attr attr;
+		ltfs_file_id existing_id;
+
+		if (ltfs_fsops_getattr_path(to, &attr, &existing_id, priv->data) == 0)
+			return -EEXIST;
+	}
+#endif
 
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_RENAME), 0, 0);
 
@@ -832,11 +1006,11 @@ int ltfs_fuse_rename(const char *from, const char *to)
 	return errormap_fuse_error(ret);
 }
 
-int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
+static int _ltfs_fuse_fill_entry(fuse_fill_dir_t filler, void *buf, const char *name,
+	const struct stat *st)
 {
 	int ret;
 	char *new_name;
-	fuse_fill_dir_t filler = priv;
 
 	ret = pathname_unformat(name, &new_name);
 	if (ret < 0) {
@@ -852,10 +1026,13 @@ int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
 		ltfsmsg(LTFS_ERR, 14027E, "nfd", ret);
 		return ret;
 	}
+	name = new_name;
+#endif
 
-	ret = filler(buf, new_name, NULL, 0);
+#ifdef HAVE_FUSE3
+	ret = filler(buf, name, st, 0, st ? FUSE_FILL_DIR_PLUS : 0);
 #else
-	ret = filler(buf, name, NULL, 0);
+	ret = LTFS_FILL(filler, buf, name, st, 0);
 #endif
 
 	free(new_name);
@@ -864,8 +1041,42 @@ int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
 	return 0;
 }
 
+int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
+{
+	return _ltfs_fuse_fill_entry(priv, buf, name, NULL);
+}
+
+#ifdef HAVE_FUSE3
+/* Context for _ltfs_fuse_filldir_plus */
+struct ltfs_fuse_fill_plus {
+	fuse_fill_dir_t filler;
+	struct ltfs_fuse_data *priv;
+};
+
+/* readdirplus filler: hand the entry's attributes to the kernel so it can
+ * prefill its inode cache and no getattr round trip is needed per entry. */
+static int _ltfs_fuse_filldir_plus(void *buf, const char *name,
+	const struct dentry_attr *attr, void *vpriv)
+{
+	struct ltfs_fuse_fill_plus *fill = vpriv;
+	struct stat st;
+
+	if (! attr)
+		return _ltfs_fuse_filldir(buf, name, fill->filler);
+
+	memset(&st, 0, sizeof(st));
+	_ltfs_fuse_attr_to_stat(&st, attr, fill->priv);
+	return _ltfs_fuse_fill_entry(fill->filler, buf, name, &st);
+}
+#endif /* HAVE_FUSE3 */
+
+#ifdef HAVE_FUSE3
+int ltfs_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+	off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags)
+#else
 int ltfs_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	off_t offset, struct fuse_file_info *fi)
+#endif
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
@@ -875,17 +1086,25 @@ int ltfs_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	ltfsmsg(LTFS_DEBUG, 14047D, _dentry_name(path, file->file_info));
 
-	if (filler(buf, ".",  NULL, 0)) {
+	if (LTFS_FILL(filler, buf, ".",  NULL, 0)) {
 		/* No buffer space */
 		ltfsmsg(LTFS_DEBUG, 14026D);
 		return -ENOBUFS;
 	}
-	if (filler(buf, "..", NULL, 0)) {
+	if (LTFS_FILL(filler, buf, "..", NULL, 0)) {
 		/* No buffer space */
 		ltfsmsg(LTFS_DEBUG, 14026D);
 		return -ENOBUFS;
 	}
 
+#ifdef HAVE_FUSE3
+	if (flags & FUSE_READDIR_PLUS) {
+		struct ltfs_fuse_fill_plus fill = { .filler = filler, .priv = priv };
+
+		ret = ltfs_fsops_readdir_attr(file->file_info->dentry_handle, buf,
+									  _ltfs_fuse_filldir_plus, &fill, priv->data);
+	} else
+#endif
 	ret = ltfs_fsops_readdir(file->file_info->dentry_handle, buf, _ltfs_fuse_filldir,
 							 filler, priv->data);
 
@@ -945,13 +1164,13 @@ int ltfs_fuse_read(const char *path, char *buf, size_t size, off_t offset, struc
 	return errormap_fuse_error(ret);
 }
 
-#ifdef __APPLE__
+#ifdef LTFS_XATTR_POSITION
 int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, size_t size,
 	int flags, uint32_t position)
 #else
 int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, size_t size,
 	int flags)
-#endif /* __APPLE__ */
+#endif /* LTFS_XATTR_POSITION */
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	ltfs_file_id id;
@@ -965,14 +1184,14 @@ int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, si
 	 * on OS X, and we have no resource forks
 	 * TODO: is it correct to behave this way?
 	 */
-#ifdef __APPLE__
+#ifdef LTFS_XATTR_POSITION
 	if (position) {
 		/* Position argument must be zero */
 		ltfsmsg(LTFS_ERR, 14023E);
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_SETXATTR), -EINVAL, 0);
 		return -EINVAL;
 	}
-#endif /* __APPLE__ */
+#endif /* LTFS_XATTR_POSITION */
 
 	ret = ltfs_fsops_setxattr(path, name, value, size, flags, &id, priv->data);
 
@@ -981,12 +1200,12 @@ int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, si
 	return errormap_fuse_error(ret);
 }
 
-#ifdef __APPLE__
+#ifdef LTFS_XATTR_POSITION
 int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t size,
 	uint32_t position)
 #else
 int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t size)
-#endif /* __APPLE__ */
+#endif /* LTFS_XATTR_POSITION */
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	ltfs_file_id id;
@@ -1000,7 +1219,7 @@ int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t s
 	 * on OS X, and we have no resource forks
 	 * TODO: is it correct to behave this way?
 	 */
-#ifdef __APPLE__
+#ifdef LTFS_XATTR_POSITION
 	if (position) {
 		/* Position argument must be zero */
 		ltfsmsg(LTFS_ERR, 14024E);
@@ -1014,7 +1233,7 @@ int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t s
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_GETXATTR), -LTFS_NO_XATTR, 0);
 		return errormap_fuse_error(-LTFS_NO_XATTR);
 	}
-#endif /* __APPLE__ */
+#endif /* LTFS_XATTR_POSITION */
 
 	ret = ltfs_fsops_getxattr(path, name, value, size, &id, priv->data);
 
@@ -1061,12 +1280,55 @@ int ltfs_fuse_removexattr(const char *path, const char *name)
  * Mount the filesystem. This function assumes a volume has been
  * allocated and ltfs_mount has been called; it just does some secondary setup.
  */
+#ifdef HAVE_FUSE3
+void * ltfs_fuse_mount(struct fuse_conn_info *conn, struct fuse_config *cfg)
+#else
 void * ltfs_fuse_mount(struct fuse_conn_info *conn)
+#endif
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	struct statvfs *stats = &priv->fs_stats;
 
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_MOUNT), 0, 0);
+
+#ifdef HAVE_FUSE3
+	/* Options that were passed as -o arguments on FUSE 2.
+	 * use_ino: pass LTFS UIDs through as inode numbers (needs 64-bit ino_t).
+	 * hard_remove: unlink files instead of renaming them to .fuse_hidden.
+	 * nullpath_ok: handle-based operations may receive a NULL path. */
+	if (sizeof(ino_t) >= 8)
+		cfg->use_ino = 1;
+	cfg->hard_remove = 1;
+	cfg->nullpath_ok = 1;
+
+	/* Keep the FUSE 2 behaviour: reads and direct I/O reach the daemon in
+	 * order (tape), the kernel truncates through setattr instead of passing
+	 * O_TRUNC to open(), and operations on one directory are serialized. */
+	conn->want &= ~(FUSE_CAP_ASYNC_READ | FUSE_CAP_ASYNC_DIO | FUSE_CAP_ATOMIC_O_TRUNC
+		| FUSE_CAP_PARALLEL_DIROPS);
+
+	/* Request sizes up to max_write (libfuse >= 3.6 negotiates the
+	 * matching max_pages with the kernel). Read requests are bounded by
+	 * the same page limit. */
+#if FUSE_VERSION < FUSE_MAKE_VERSION(3, 17)
+	/* libfuse < 3.17 sizes its receive buffer before init() and passes
+	 * max_write limited to it; larger requests would not fit. */
+	if (conn->max_write > priv->fuse_max_write)
+		conn->max_write = priv->fuse_max_write;
+#else
+	conn->max_write = priv->fuse_max_write;
+#endif
+	ltfsmsg(LTFS_INFO, 14124I, (unsigned int)(conn->max_write / 1024));
+
+	/* libfuse 3 fails the mount unless init() keeps the max_read option. */
+	if (priv->fuse_max_read)
+		conn->max_read = priv->fuse_max_read;
+
+	/* Always use readdirplus, not only when the kernel heuristic asks
+	 * for it: attributes come from the in-memory index, so handing them
+	 * out with the listing is free and avoids a getattr per entry. */
+	conn->want &= ~FUSE_CAP_READDIRPLUS_AUTO;
+#endif
 
 	if (priv->pid_orig != getpid()) {
 		/*
@@ -1206,7 +1468,9 @@ struct fuse_operations ltfs_ops = {
 	.init        = ltfs_fuse_mount,
 	.destroy     = ltfs_fuse_umount,
 	.getattr     = ltfs_fuse_getattr,
+#ifndef HAVE_FUSE3
 	.fgetattr    = ltfs_fuse_fgetattr,
+#endif
 	.access      = ltfs_fuse_access,
 	.statfs      = ltfs_fuse_statfs,
 	.open        = ltfs_fuse_open,
@@ -1218,7 +1482,9 @@ struct fuse_operations ltfs_ops = {
 	.chown       = ltfs_fuse_chown,
 	.create      = ltfs_fuse_create,
 	.truncate    = ltfs_fuse_truncate,
+#ifndef HAVE_FUSE3
 	.ftruncate   = ltfs_fuse_ftruncate,
+#endif
 	.unlink      = ltfs_fuse_unlink,
 	.rename      = ltfs_fuse_rename,
 	.mkdir       = ltfs_fuse_mkdir,
@@ -1235,7 +1501,9 @@ struct fuse_operations ltfs_ops = {
 	.removexattr = ltfs_fuse_removexattr,
 	.symlink     = ltfs_fuse_symlink,
 	.readlink    = ltfs_fuse_readlink,
+#ifndef HAVE_FUSE3
 #if FUSE_VERSION >= 28
 	.flag_nullpath_ok = 1,
+#endif
 #endif
 };
