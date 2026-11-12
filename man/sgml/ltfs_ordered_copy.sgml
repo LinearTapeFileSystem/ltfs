@@ -31,6 +31,7 @@
         <arg><option>-v</option></arg>
         <arg><option>--verbose <replaceable>LOG_LEVEL</replaceable></option></arg>
         <arg><option>-q</option></arg>
+        <arg><option>--sort-files</option></arg>
         <arg><option>-h</option></arg>
         <arg choice="opt" Rep="Repeat">SOURCE </arg>
         <arg choice="opt">DESTINATION</arg>
@@ -102,6 +103,12 @@
           <term><option>-q, --quiet</option></term>
           <listitem>
             <para>No message outout</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>--sort-files</option></term>
+          <listitem>
+            <para>Sort the source file list alphabetically before copying (default: not sorted)</para>
           </listitem>
         </varlistentry>
       </variablelist>
