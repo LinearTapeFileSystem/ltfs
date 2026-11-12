@@ -73,6 +73,7 @@
 
 
 #include "ltfs_error.h"
+#include "tape_drivers/ibm_tape.h"
 #include "tape.h"
 #include "tape_ops.h"
 #include "ltfs_endian.h"
@@ -1245,7 +1246,7 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 	}
 
 	if (ltfs_caught_sigcont()) {
-		// Unset flag to avoid checking it again if it is not needed 
+		// Unset flag to avoid checking it again if it is not needed
 		ltfs_sigcont_set(false);
 
 		ret_for_current_position = tape_get_position_from_drive(dev, &current_position);
@@ -1470,7 +1471,7 @@ static int tape_update_density(struct device_data *dev, int density_code)
 	mp_read_write_ctrl[1] = 0x00;
 	mp_read_write_ctrl[26] = density_code;
 
-	ret = dev->backend->modeselect(dev->backend_data, mp_read_write_ctrl, TC_MP_READ_WRITE_CTRL_SIZE);
+	ret = dev->backend->modeselect(dev->backend_data, mp_read_write_ctrl, TC_MP_READ_WRITE_CTRL_SIZE, false);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, 17239E, "modeselect", ret);
 	}
@@ -1577,7 +1578,8 @@ int tape_format(struct device_data *dev, tape_partition_t index_part, int densit
 	ret = dev->backend->modeselect(
 		dev->backend_data,
 		mp_medium_partition,
-		page_length
+		page_length,
+		false
 		);
 
 	/* Issue Format Medium (Make partitioned medium) */
@@ -2426,9 +2428,11 @@ int tape_set_pews(struct device_data *dev, bool set_value)
 	int ret;
 	unsigned char mp_dev_config_ext[TC_MP_DEV_CONFIG_EXT_SIZE];
 	struct tc_remaining_cap cap;
+	struct tc_drive_info tcinfo;
 	uint64_t half_of_max_p0 = 0;
 	static const uint16_t max_pews = 0xFFFF;
 	uint16_t pews;
+	bool savable = false;
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
@@ -2472,7 +2476,12 @@ int tape_set_pews(struct device_data *dev, bool set_value)
 	mp_dev_config_ext[22]  = (uint8_t)(pews >> 8 & 0xFF);
 	mp_dev_config_ext[23]  = (uint8_t)(pews      & 0xFF);
 
-	ret = dev->backend->modeselect(dev->backend_data, mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
+	if (tape_get_info(dev, &tcinfo) == 0) {
+	  if (!strcmp(IBM_VENDOR_ID, tcinfo.vendor)) {
+			  savable = true;
+			}
+	}
+	ret = dev->backend->modeselect(dev->backend_data, mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE, savable);
 	if (ret < 0)
 		ltfsmsg(LTFS_ERR, 17103E, ret);
 	return 0;
@@ -2530,6 +2539,8 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable)
 	bool loaded = false;
 	bool supported = true;
 	unsigned char mp_dev_config_ext[TC_MP_DEV_CONFIG_EXT_SIZE];
+	struct tc_drive_info tcinfo;
+	bool savable = false;
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
@@ -2588,7 +2599,12 @@ int tape_enable_append_only_mode(struct device_data *dev, bool enable)
 	mp_dev_config_ext[21] &= 0x0F;
 	mp_dev_config_ext[21] |= enable ? 0x10 : 0x00;
 
-	ret = dev->backend->modeselect(dev->backend_data, mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE);
+	if (tape_get_info(dev, &tcinfo) == 0) {
+	  if (!strcmp(IBM_VENDOR_ID, tcinfo.vendor)) {
+			  savable = true;
+			}
+	}
+	ret = dev->backend->modeselect(dev->backend_data, mp_dev_config_ext, TC_MP_DEV_CONFIG_EXT_SIZE, savable);
 	if (ret < 0) {
 		if (ret == -EDEV_ILLEGAL_REQUEST) {
 			ltfsmsg(LTFS_INFO, 17266I);
@@ -3137,7 +3153,7 @@ int tape_set_attribute_to_cm(struct device_data* dev,
 	if (!attr_data) {
 		return -LTFS_NO_MEMORY;
 	}
-	
+
 	/* fill the MAM header information */
 	ltfs_u16tobe(attr_data, type);			/* set attribute type	*/
 	attr_data[2] = format;					/* set data format type */

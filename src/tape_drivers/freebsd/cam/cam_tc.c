@@ -1955,7 +1955,7 @@ bailout:
  * @param size length of buf
  * @return 0 on success or a negative value on error
  */
-int camtape_modeselect(void *device, unsigned char *buf, const size_t size)
+int camtape_modeselect(void *device, unsigned char *buf, const size_t size, bool save)
 {
 	int rc;
 	char *msg = NULL;
@@ -2351,7 +2351,7 @@ int camtape_set_compression(void *device, const bool enable_compression, struct 
 	else
 		buf[18] &= 0x7F; /* Unset DCE field*/
 
-	rc = camtape_modeselect(device, buf, sizeof(buf));
+	rc = camtape_modeselect(device, buf, sizeof(buf), false);
 
 	ltfs_profiler_add_entry(softc->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCOMPRS));
 	return rc;
@@ -2385,7 +2385,7 @@ int camtape_set_default(void *device)
 		buf[1]  = 0x00;
 		buf[24] = 0x0C;
 
-		rc = camtape_modeselect(device, buf, sizeof(buf));
+		rc = camtape_modeselect(device, buf, sizeof(buf), false);
 		if (rc != DEVICE_GOOD)
 			goto bailout;
 	}
@@ -3031,7 +3031,7 @@ int camtape_setcap(void *device, uint16_t proportion)
 		buf[27] |= 0x01;
 		buf[28]  = 0x00;
 
-		rc = camtape_modeselect(device, buf, sizeof(buf));
+		rc = camtape_modeselect(device, buf, sizeof(buf), false);
 	} else {
 		int timeout;
 
@@ -3510,7 +3510,7 @@ static int camtape_set_encryption_state(struct camtape_data *softc,
 	 */
 	rwc_page->encryption_state |= encryption_state;
 
-	rc = camtape_modeselect(softc, buf, buf_fill_len);
+	rc = camtape_modeselect(softc, buf, buf_fill_len, false);
 
 bailout:
 	if (rc != DEVICE_GOOD)
@@ -3696,7 +3696,7 @@ int camtape_set_key(void *device, const unsigned char * const keyalias, const un
 
 	scsi_ulto2b(0, mode_hdr->data_length);
 
-	rc = camtape_modeselect(device, buf, bufsize);
+	rc = camtape_modeselect(device, buf, bufsize, false);
 
 bailout:
 	if (rc != DEVICE_GOOD)
