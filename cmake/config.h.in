@@ -16,6 +16,7 @@
 #cmakedefine HAVE_SYS_SYSCTL_H 1
 #cmakedefine HAVE_XML_PARSE_HUGE 1
 #cmakedefine HAVE_XML_READER_SETUP 1
+#cmakedefine HAVE_FUSE_PARALLEL_DIRECT_WRITES 1
 #define SIZEOF_TIME_T @SIZEOF_TIME_T@
 
 /* Header availability (parity with autotools; mostly unreferenced) */
