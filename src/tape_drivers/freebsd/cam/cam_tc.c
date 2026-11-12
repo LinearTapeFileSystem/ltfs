@@ -281,7 +281,7 @@ int camtape_open(const char *devname, void **handle)
 	/* Check the drive is supportable */
 	softc->vendor = get_vendor_id(vendor);
 	struct supported_device **cur = get_supported_devs(softc->vendor);
-	while(*cur) {
+	while(cur && *cur) {
 		if ((! strncmp((char*)softc->cd->inq_data.vendor, (*cur)->vendor_id,
 					   strlen((*cur)->vendor_id)) ) &&
 		   (! strncmp((char*)softc->cd->inq_data.product, (*cur)->product_id,
