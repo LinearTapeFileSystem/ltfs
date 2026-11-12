@@ -426,7 +426,9 @@ uint64_t fs_allocate_uid(struct ltfs_index *idx)
 int fs_dentry_lookup(struct dentry *dentry, char **name)
 {
 	char **dentry_names = NULL, *tmp_name = NULL;
-	int i, names, namelen = 0, ret = 0;
+	int ret = 0;
+	ssize_t i;
+	size_t names, namelen = 0;
 	struct dentry *d, *parent;
 	const char *lookup_name;
 
@@ -447,7 +449,7 @@ int fs_dentry_lookup(struct dentry *dentry, char **name)
 
 	d = dentry;
 	parent = d->parent;
-	for (i=names-1; i>=0; --i) {
+	for (i = (ssize_t)names - 1; i >= 0; --i) {
 		if (parent)
 			acquireread_mrsw(&parent->contents_lock);
 
@@ -483,9 +485,9 @@ int fs_dentry_lookup(struct dentry *dentry, char **name)
 		goto out;
 	}
 
-	for (namelen=0, i=0; i<names; ++i) {
+	for (namelen=0, i=0; i < (ssize_t)names; ++i) {
 		arch_strcat(tmp_name,tmp_len, dentry_names[i]);
-		if (i > 0 && i < names-1)
+		if (i > 0 && i < (ssize_t)names-1)
 			arch_strcat(tmp_name, tmp_len, "/");
 	}
 
@@ -496,7 +498,7 @@ out:
 	if (ret != 0 && tmp_name)
 		free(tmp_name);
 	if (dentry_names) { /* BEAM: constant condition - dentry_names has always non-zero value here. */
-		while (--names >= 0)
+		while (names-- > 0)
 			if (dentry_names[names])
 				free(dentry_names[names]);
 		free(dentry_names);

@@ -947,7 +947,10 @@ int itdtimage_read_attribute(void *vstate, const tape_partition_t part, const ui
 		return -EDEV_HARDWARE_ERROR;
 	}
 
-	fread(buf, 1, data2ReadFromFile, state->img_file);
+	if (fread(buf, 1, data2ReadFromFile, state->img_file) != data2ReadFromFile) {
+		ltfsmsg(LTFS_ERR, 31002E, (long long)attrLength, state->filename, offset);
+		return -EDEV_HARDWARE_ERROR;
+	}
 	return DEVICE_GOOD;
 }
 
