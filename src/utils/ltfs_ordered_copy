@@ -54,6 +54,9 @@ class CopyItem:
     """"""
     def __init__(self, src, dst, vea_pre, cp_attr, cp_xattr, logger): #initialization
         self.src     = src
+        # Keep the source name when copying into a directory.
+        if os.path.isdir(dst):
+            dst = os.path.join(dst, os.path.basename(src))
         self.dst     = dst
         self.vea_pre = vea_pre
         self.cp_attr = cp_attr
@@ -84,6 +87,14 @@ class CopyItem:
         return (self.vuuid, self.part, self.start)
 
     def _run_copy(self, progress):
+        if os.path.exists(self.dst):
+            same_file = os.path.samefile(self.src, self.dst)
+        else:
+            same_file = os.path.realpath(self.src) == os.path.realpath(self.dst)
+        if same_file:
+            self.logger.error('Failed to copy "{0}" to "{1}": same file'.format(self.src, self.dst))
+            return False
+
         with open(self.src, 'rb') as srcf, open(self.dst, 'wb') as dstf:
             copyfileobj(srcf, dstf, progress.update)
 
@@ -94,8 +105,9 @@ class CopyItem:
             else:
                 logger.debug('"{0}" -> "{1}"'.format(self.src, self.dst))
             progress.update_file(self.src)
+            if self._run_copy(progress) is False:
+                return False
             if self.cp_attr: #Copy data and metadata
-                self._run_copy(progress)
                 shutil.copystat(self.src, self.dst)
                 if self.cp_xattr:
                     # Capture EAs of the source file
@@ -107,7 +119,6 @@ class CopyItem:
                     for key in src_attributes:
                         xattr.set(self.dst, key, src_attributes[key])
             else: #Only copy data
-                self._run_copy(progress)
                 shutil.copymode(self.src, self.dst)
         except Exception as e:
             self.logger.error('Failed to copy "{0}" to "{1}": {2}'.format(self.src, self.dst, str(str(e))))
