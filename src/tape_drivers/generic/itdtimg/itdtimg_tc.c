@@ -870,7 +870,7 @@ int itdtimage_modesense(void *device, const uint8_t page, const TC_MP_PC_TYPE pc
 	return DEVICE_GOOD;
 }
 
-int itdtimage_modeselect(void *device, unsigned char *buf, const size_t size)
+int itdtimage_modeselect(void *device, unsigned char *buf, const size_t size, bool save)
 {
 	/* Do nothing */
 	return DEVICE_GOOD;

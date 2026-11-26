@@ -52,6 +52,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <stdbool.h>
 #include <sys/ioctl.h>
 
 #include "libltfs/ltfs_error.h"
@@ -114,7 +115,7 @@ int sg_space(void *device, size_t count, TC_SPACE_TYPE type, struct tc_position 
 int sg_logsense(void *device, const uint8_t page, const uint8_t subpage, unsigned char *buf, const size_t size);
 int sg_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
 						 const unsigned char subpage, unsigned char *buf, const size_t size);
-int sg_modeselect(void *device, unsigned char *buf, const size_t size);
+int sg_modeselect(void *device, unsigned char *buf, const size_t size, bool save);
 static const char *_generate_product_name(const char *product_id);
 
 /* Local functions */
@@ -234,7 +235,7 @@ static int _set_lbp(void *device, bool enable)
 		buf[22] = 0;
 	}
 
-	ret = sg_modeselect(device, buf, sizeof(buf));
+	ret = sg_modeselect(device, buf, sizeof(buf), false);
 
 	if (ret == DEVICE_GOOD) {
 		if (enable) {
@@ -2965,7 +2966,7 @@ int sg_setcap(void *device, uint16_t proportion)
 		buf[27] |= 0x01;
 		buf[28]  = 0x00;
 
-		ret = sg_modeselect(device, buf, sizeof(buf));
+		ret = sg_modeselect(device, buf, sizeof(buf), false);
 	} else {
 		/* Zero out the CDB and the result buffer */
 		ret = init_sg_io_header(&req);
@@ -3350,7 +3351,7 @@ int sg_modesense(void *device, const unsigned char page, const TC_MP_PC_TYPE pc,
 	return ret;
 }
 
-int sg_modeselect(void *device, unsigned char *buf, const size_t size)
+int sg_modeselect(void *device, unsigned char *buf, const size_t size, bool save)
 {
 	int ret = -EDEV_UNKNOWN;
 	int ret_ep = DEVICE_GOOD;
@@ -3384,7 +3385,7 @@ int sg_modeselect(void *device, unsigned char *buf, const size_t size)
 	*       specific mode page
 	* Right now SDE and LE does not set any non savable pages, but this could change.
 	* */
-	cdb[1] = 0x11;
+	cdb[1] = 0x10 | (save? 1 : 0);
 	ltfs_u16tobe(cdb + 7, size);
 
 	timeout = get_timeout(priv->timeouts, cdb[0]);
@@ -3800,7 +3801,7 @@ int sg_set_compression(void *device, const bool enable_compression, struct tc_po
 	else
 		buf[18] = buf[18] & 0x7E;
 
-	ret = sg_modeselect(device, buf, sizeof(buf));
+	ret = sg_modeselect(device, buf, sizeof(buf), false);
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCOMPRS));
 
@@ -3830,7 +3831,7 @@ int sg_set_default(void *device)
 		buf[1]  = 0x00;
 		buf[24] = 0x0C;
 
-		ret = sg_modeselect(device, buf, sizeof(buf));
+		ret = sg_modeselect(device, buf, sizeof(buf), false);
 		if (ret < 0) {
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETDEFAULT));
 			return ret;

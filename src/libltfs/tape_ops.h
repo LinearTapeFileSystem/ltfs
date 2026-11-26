@@ -631,7 +631,7 @@ struct tape_ops {
 	 * @return 0 on success or a negative value on error. Backends for which Mode Select is
 	 *         meaningless should return 0.
 	 */
-	int   (*modeselect)(void *device, unsigned char *buf, const size_t size);
+	int   (*modeselect)(void *device, unsigned char *buf, const size_t size, bool save);
 
 	/**
 	 * Send a SCSI Reserve Unit command to a device.

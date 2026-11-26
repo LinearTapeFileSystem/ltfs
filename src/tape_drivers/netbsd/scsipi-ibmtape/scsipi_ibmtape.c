@@ -226,7 +226,7 @@ static int _set_lbp(void *device, bool enable)
 		buf[22] = 0;
 	}
 
-	ret = scsipi_ibmtape_modeselect(device, buf, sizeof(buf));
+	ret = scsipi_ibmtape_modeselect(device, buf, sizeof(buf), false);
 
 	if (ret == DEVICE_GOOD) {
 		if (enable) {
@@ -2466,7 +2466,7 @@ int scsipi_ibmtape_setcap(void *device, uint16_t proportion)
 		buf[27] |= 0x01;
 		buf[28]  = 0x00;
 
-		ret = scsipi_ibmtape_modeselect(device, buf, sizeof(buf));
+		ret = scsipi_ibmtape_modeselect(device, buf, sizeof(buf), false);
 	} else {
 		/* Zero out the CDB and the result buffer */
 		ret = init_scsireq(&req);
@@ -3258,7 +3258,7 @@ int scsipi_ibmtape_set_compression(void *device, const bool enable_compression, 
 	else
 		buf[18] = buf[18] & 0x7E;
 
-	ret = scsipi_ibmtape_modeselect(device, buf, sizeof(buf));
+	ret = scsipi_ibmtape_modeselect(device, buf, sizeof(buf), false);
 
 	ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETCOMPRS));
 
@@ -3288,7 +3288,7 @@ int scsipi_ibmtape_set_default(void *device)
 		buf[1]  = 0x00;
 		buf[24] = 0x0C;
 
-		ret = scsipi_ibmtape_modeselect(device, buf, sizeof(buf));
+		ret = scsipi_ibmtape_modeselect(device, buf, sizeof(buf), false);
 		if (ret < 0) {
 			ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_SETDEFAULT));
 			return ret;
