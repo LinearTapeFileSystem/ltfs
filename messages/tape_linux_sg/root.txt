@@ -141,6 +141,7 @@ root:table {
 		30298W:string { "Retrying %s operation due Power On-Reset event reached. Tried (%d) times." }
 		30299E:string { "Could not clear POR status, device might be faulty, ret: (%d)." }
 		30300E:string { "Could resolve block position after failure, ret: (%d)." }
+		30301I:string { "Sense data returned unknown cart type, compat: assume_cart_type from density code (%x %x) " }
 
 		30392D:string { "Backend %s %s." }
 		30393D:string { "Backend %s: %d %s." }

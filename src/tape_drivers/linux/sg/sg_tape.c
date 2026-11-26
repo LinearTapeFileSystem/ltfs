@@ -2814,6 +2814,13 @@ int sg_load(void *device, struct tc_position *pos)
 		priv->cart_type = buf[2];
 	}
 
+	ret = is_known_tape_type(priv->cart_type);
+	if (ret == -LTFS_UNSUPPORTED_CART) {
+		priv->cart_type = assume_cart_type(priv->density_code);
+		ltfsmsg(LTFS_INFO, 30301I, priv->cart_type, priv->density_code);
+	}
+
+
 	if (priv->cart_type == 0x00) {
 		ltfsmsg(LTFS_WARN, 30265W);
 		ltfs_profiler_add_entry(priv->profiler, NULL, TAPEBEND_REQ_EXIT(REQ_TC_LOAD));
