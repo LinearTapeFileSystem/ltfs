@@ -14,8 +14,8 @@ export LC_ALL=C
 
 SKIP=77
 
-: "${top_builddir:?top_builddir must be set (run via make check)}"
-: "${top_srcdir:?top_srcdir must be set (run via make check)}"
+: "${top_builddir:?top_builddir must be set (run through make check or ctest)}"
+: "${top_srcdir:?top_srcdir must be set (run through make check or ctest)}"
 
 LTFS_BIN="$top_builddir/src/ltfs"
 MKLTFS_BIN="$top_builddir/src/utils/mkltfs"
@@ -27,6 +27,8 @@ LTFS_MOUNT_OPTS="${LTFS_MOUNT_OPTS:-}"
 
 WORK=
 LTFS_PID=
+# Log of the running daemon: ltfs.log, or ltfs-remount.log after ltfs_remount.
+LTFS_LOG=
 MNT=
 TAPE=
 
@@ -161,6 +163,7 @@ ltfs_setup() {
 	"$LTFS_BIN" "$MNT" -o config_file="$WORK/ltfs.conf" -o tape_backend=file \
 		-o devname="$TAPE" $LTFS_MOUNT_OPTS -f >"$WORK/ltfs.log" 2>&1 &
 	LTFS_PID=$!
+	LTFS_LOG="$WORK/ltfs.log"
 
 	for _ in $(seq 150); do
 		mountpoint -q "$MNT" && return 0
@@ -171,20 +174,42 @@ ltfs_setup() {
 	fail "ltfs did not mount within timeout"
 }
 
-# ltfs_umount: unmount and wait for the daemon to flush and exit.
+# ltfs_umount: unmount and wait for the daemon to flush and exit. A daemon
+# that exits with an error fails the test.
 ltfs_umount() {
 	_fusermount -u "$MNT"
 	for _ in $(seq 150); do
-		kill -0 "$LTFS_PID" 2>/dev/null || { LTFS_PID=; return 0; }
+		kill -0 "$LTFS_PID" 2>/dev/null || break
 		sleep 0.2
 	done
-	cat "$WORK/ltfs.log" >&2
-	fail "ltfs daemon did not exit after unmount"
+	if kill -0 "$LTFS_PID" 2>/dev/null; then
+		cat "$LTFS_LOG" >&2
+		fail "ltfs daemon did not exit after unmount"
+	fi
+	rc=0
+	wait "$LTFS_PID" || rc=$?
+	LTFS_PID=
+	if [ "$rc" -ne 0 ]; then
+		cat "$LTFS_LOG" >&2
+		fail "ltfs daemon exited with status $rc after unmount"
+	fi
 }
 
-# ltfs_fsck: verify the volume is consistent.
+# _fail_if_repaired <log> <program>: fail when the log shows that the
+# program had to repair the volume. ltfsck and a mounting daemon write
+# indexes with the reason "Recovery" (message LTFS17235I) to a volume that
+# an unmount left inconsistent.
+_fail_if_repaired() {
+	if grep -q "LTFS17235I.*Reason: Recovery" "$1"; then
+		cat "$1" >&2
+		fail "$2 had to restore consistency after the unmount"
+	fi
+}
+
+# ltfs_fsck: verify that the unmount left the volume consistent.
 # ltfsck exits 1 (LTFSCK_CORRECTED) after a successful check, so 0 and 1
-# are success; anything else is a failure.
+# are success; anything else is a failure. It also exits 1 and reports a
+# consistent volume after it has repaired the volume itself.
 ltfs_fsck() {
 	rc=0
 	"$LTFSCK_BIN" -i "$WORK/ltfs.conf" -e file "$TAPE" >"$WORK/ltfsck.log" 2>&1 || rc=$?
@@ -192,6 +217,7 @@ ltfs_fsck() {
 		cat "$WORK/ltfsck.log" >&2
 		fail "ltfsck reported errors (exit $rc)"
 	fi
+	_fail_if_repaired "$WORK/ltfsck.log" ltfsck
 	grep -q "Volume is consistent" "$WORK/ltfsck.log" || {
 		cat "$WORK/ltfsck.log" >&2
 		fail "ltfsck did not report a consistent volume"
@@ -210,15 +236,20 @@ ltfs_is_fuse3() {
 		| grep -q libfuse3
 }
 
-# ltfs_remount: unmount and mount again (e.g. to verify persistence).
+# ltfs_remount: unmount and mount again (e.g. to verify persistence). The
+# mount must find the volume as the unmount left it, without a repair.
 ltfs_remount() {
 	ltfs_umount
 	# shellcheck disable=SC2086
 	"$LTFS_BIN" "$MNT" -o config_file="$WORK/ltfs.conf" -o tape_backend=file \
 		-o devname="$TAPE" $LTFS_MOUNT_OPTS -f >"$WORK/ltfs-remount.log" 2>&1 &
 	LTFS_PID=$!
+	LTFS_LOG="$WORK/ltfs-remount.log"
 	for _ in $(seq 150); do
-		mountpoint -q "$MNT" && return 0
+		if mountpoint -q "$MNT"; then
+			_fail_if_repaired "$LTFS_LOG" ltfs
+			return 0
+		fi
 		kill -0 "$LTFS_PID" 2>/dev/null || break
 		sleep 0.2
 	done
