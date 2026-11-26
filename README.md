@@ -373,7 +373,12 @@ make install
 
 ## Running the test suite
 
-`make check` runs the integration tests. They mount LTFS through FUSE on a tape that the file backend emulates in a local directory, so no tape hardware is needed.
+The integration tests mount LTFS through FUSE on a tape that the file backend emulates in a local directory, so no tape hardware is needed. They run from the build tree:
+
+- autotools build: `make check`
+- CMake build: `ctest --output-on-failure` in the build directory, with `-R <name>` for one test, for example `-R 05-xattr`
+
+A script added to `tests/t/` is found by the next CMake build; with autotools, run `./configure` again.
 
 The tests need Linux with `/dev/fuse` and are skipped on other systems. On macOS, `tests/run-in-docker.sh [configure-options...]` builds LTFS and runs the tests in an Ubuntu container.
 

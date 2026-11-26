@@ -52,7 +52,8 @@ check_PROGRAMS = helpers/fsops_helper
 helpers_fsops_helper_SOURCES = helpers/fsops_helper.c
 
 # TESTS_LIST is set by configure from tests/t/*.sh; GNU make functions
-# cannot be used because automake runs with -Wall -Werror.
+# cannot be used because automake runs with -Wall -Werror. Run configure
+# again after adding a script.
 TESTS = $(TESTS_LIST)
 
 EXTRA_DIST = \
