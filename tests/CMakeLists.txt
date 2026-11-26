@@ -1,5 +1,6 @@
 # Integration tests: the shell scripts under t/, if present, run through ctest;
-# SKIP_RETURN_CODE 77 covers hosts without /dev/fuse.
+# SKIP_RETURN_CODE 77 covers hosts without /dev/fuse. TIMEOUT ends a test whose
+# daemon hangs; a test needs a few seconds.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/helpers/fsops_helper.c")
     add_executable(fsops_helper helpers/fsops_helper.c)
     set_target_properties(fsops_helper PROPERTIES
@@ -12,5 +13,6 @@ foreach(_path ${_test_scripts})
     add_test(NAME ${_t} COMMAND sh "${_path}")
     set_tests_properties(${_t} PROPERTIES
         SKIP_RETURN_CODE 77
+        TIMEOUT 300
         ENVIRONMENT "top_srcdir=${CMAKE_SOURCE_DIR};top_builddir=${CMAKE_BINARY_DIR}")
 endforeach()
