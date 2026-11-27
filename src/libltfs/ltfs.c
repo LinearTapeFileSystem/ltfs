@@ -4404,7 +4404,7 @@ void ltfs_enable_livelink_mode(struct ltfs_volume *vol)
  */
 int ltfs_profiler_set(uint64_t source, struct ltfs_volume *vol)
 {
-	int ret, ret_save = 0;
+	int ret = 0, ret_save = 0;
 
 	if (vol->iosched_handle) {
 		if (source & PROF_IOSCHED) {
