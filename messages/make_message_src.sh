@@ -35,6 +35,22 @@ elif [ "$KERNEL_NAME" = "FreeBSD" ]; then
 else
 	if [ -x /usr/bin/genrb ]; then : "${GENRB:=/usr/bin/genrb}"; else : "${GENRB:=genrb}"; fi
 	if [ -x /usr/bin/pkgdata ]; then : "${PKGDATA:=/usr/bin/pkgdata}"; else : "${PKGDATA:=pkgdata}"; fi
+
+	# icu-config was removed in ICU 63+; pkgdata then needs -O <pkgdata.inc>.
+	# Locate pkgdata.inc through pkg-config (the file lives either directly
+	# in <libdir>/icu or in a versioned subdirectory).
+	if [ -z "${ICU_PKGDATA_INC:-}" ] && pkg-config --exists icu-uc 2>/dev/null; then
+		_ICU_LIBDIR=`pkg-config --variable=libdir icu-uc 2>/dev/null`
+		_ICU_VERSION=`pkg-config --modversion icu-uc 2>/dev/null`
+		for _inc in "${_ICU_LIBDIR}/icu/pkgdata.inc" \
+		            "${_ICU_LIBDIR}/icu/${_ICU_VERSION}/pkgdata.inc" \
+		            "${_ICU_LIBDIR}"/icu/*/pkgdata.inc; do
+			if [ -f "$_inc" ]; then
+				ICU_PKGDATA_INC="$_inc"
+				break
+			fi
+		done
+	fi
 fi
 
 if [ "$#" -lt "1" ]; then
@@ -69,7 +85,7 @@ make_obj() {
 	# Generate the resource files, then package them statically.
 	${GENRB} -d "$WORK" -q "${SRC_DIR}"/*.txt
 	( cd "$WORK" && ls *.res > packagelist.txt && \
-	  ${PKGDATA} -p ${BASENAME} -m static -q packagelist.txt >/dev/null )
+	  ${PKGDATA} ${ICU_PKGDATA_INC:+-O "$ICU_PKGDATA_INC"} -p ${BASENAME} -m static -q packagelist.txt >/dev/null )
 
 	case $KERNEL_NAME in
 		MINGW32_NT*)
